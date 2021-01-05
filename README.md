@@ -22,4 +22,5 @@ participants in limited access privilege programs), were not issued waivers in 2
 for trawl catcher vessels fishing under the trawl EM exempted fishing permit and only a few trips were released from coverage under the fixed gear 
 EM portion of the partial coverage category for circumstances when an EM service technician was unable to travel.
 
-
+The Team noted on Jan 4 2021 that the evaluations post June 28 would still be sample vs entire population and not just the sampling frame because 
+that is what the data is used for.  The same observer effects would be applied for that period as well. 
