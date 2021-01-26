@@ -1,29 +1,33 @@
-# 1_AR_data.R
-# Includes queries, data checks, and clean up for the Annual Report analyses.
-# See AR_helpfile.doc for information on file structure and workflow, column names and descriptions, etc.
+# Get packages ------------------------------------------------------------
+library(getPass)
 
-# I. Setup----
+# User inputs -------------------------------------------------------------
+
+# Random number seed
 set.seed(052870)
-year <- 2020 # Report year (year that fishing and observing took place)
 
-# Load ADP output
-load(file = "4_final_ADP.RData")
+# Report year (year that fishing and observing took place)
+year <- 2020 
 
-# Retain from the ADP:
-# to_draw = the predicted number of trips to occur in each domain that ADP year (the number of trips to draw from draw_from)
-# draw_from = the population of trips that were drawn from to simulate deployment in 2019
-# sample_pops_out = the results of sampling each simulated population many times
-# total_days_obs = the predicted total number of observed days for the year
-# BUDGET = the budget
-# DAILY_RATE = cost per day of observer coverage in partial coverage
+# The user's physical location when running this code (used to pull data from the closest database)
+location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
-# Remove all but the objects needed
-rm(list=setdiff(ls(), c("year", "to_draw", "draw_from", "sample_pops_out", "total_days_obs", "BUDGET", "DAILY_RATE")))
+# ADP inputs --------------------------------------------------------------
+
+# Loads two objects: efrt and efrt_adpyear
+# efrt contains 3 years of effort data used for the ADP
+# efrt_adpyear contains the effort predictions for each domain and the 1 year of trips used to simulate effort
+load("data/effort_prediction.rdata")
+
+# Remove the efrt object
+rm(efrt)
+
+# ADP outputs -------------------------------------------------------------
+adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 
 # Load libraries and user-created functions
 source("3_helper.R")
 
-location <- "JUNEAU" # User location ("SEATTLE" or "JUNEAU")
 channel_afsc  <- channel.fxn(location)
 channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
