@@ -4,7 +4,7 @@
 
 # I. Setup----
 set.seed(052870)
-year <- 2019 # Report year (year that fishing and observing took place)
+year <- 2020 # Report year (year that fishing and observing took place)
 
 # Load ADP output
 load(file = "4_final_ADP.RData")
