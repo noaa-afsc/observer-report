@@ -1,5 +1,5 @@
-# Get packages ------------------------------------------------------------
-library(getPass)
+# Get packages and user-defined functions ---------------------------------
+source("3_helper.R")
 
 # User inputs -------------------------------------------------------------
 
@@ -25,14 +25,9 @@ rm(efrt)
 # ADP outputs -------------------------------------------------------------
 adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 
-# Load libraries and user-created functions
-source("3_helper.R")
-
+# Get data ----------------------------------------------------------------
 channel_afsc  <- channel.fxn(location)
 channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
-
-
-# II. Data retrieval ----
 
 # a. Valhalla ----
 # Pull in last report year's Valhalla from database:
