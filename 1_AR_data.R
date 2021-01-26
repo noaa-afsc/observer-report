@@ -1,5 +1,5 @@
 # Get packages and user-defined functions ---------------------------------
-source("3_helper.R")
+source("functions/3_helper.R")
 
 # User inputs -------------------------------------------------------------
 
