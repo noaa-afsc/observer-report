@@ -29,43 +29,11 @@ adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 channel_afsc  <- channel.fxn(location)
 channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
-# a. Valhalla ----
-# Pull in last report year's Valhalla from database:
-if(location=="SEATTLE") {
-  work.data.old <- dbGetQuery(channel_afsc, paste0("SELECT * from loki.AKR_VALHALLA
-                                                   WHERE ADP BETWEEN 2016 AND ", year-1))
-} else {
-  work.data.old <- dbGetQuery(channel_akro, paste0("SELECT * from akfish_sf.VALHALLA
-                                                   WHERE ADP BETWEEN 2016 AND ", year-1))
-}
-
-#Summary of coverage by strata and processing sector
-#This is a check to make sure no entries look wonky
-table(work.data.old$COVERAGE_TYPE, work.data.old$STRATA, work.data.old$PROCESSING_SECTOR, useNA='always')
-
-# Data check for observed vessels under 40 ft.
-work.data.old %>% 
-filter(LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y") %>% 
-distinct(VESSEL_ID, .keep_all=TRUE) %>% 
-arrange(VESSEL_ID)
-
-# Disregard ZERO and HAL observed trips for < 40 ft. boats because we are only using this data for the
-# NPT and PTR permutation test in 2018 
-
-# Two trips in 2018 had incorrect begin fishing dates that resulted in an extremely long trip durations.
-# Correct landing dates in accordance with emails received from AKRO by 4/4/19:
-work.data.old <- work.data.old %>% 
-                 mutate(TRIP_TARGET_DATE = as.character(TRIP_TARGET_DATE)) %>% 
-                 mutate(TRIP_TARGET_DATE=ifelse(TRIP_ID=="10785863",  "2018-08-16", TRIP_TARGET_DATE)) %>%  
-                 mutate(TRIP_TARGET_DATE=ifelse(TRIP_ID=="10786634", "2018-11-02", TRIP_TARGET_DATE)) %>% 
-                 mutate(TRIP_TARGET_DATE = as.POSIXct(TRIP_TARGET_DATE))
-
+# * Valhalla ----
 # Pull in this report year's Valhalla
-if(location=="SEATTLE") {
-  work.data <- dbGetQuery(channel_afsc, paste0("SELECT * from loki.AKR_VALHALLA_SCRATCH_V"))
-} else {
-  work.data <- dbGetQuery(channel_akro, paste0("SELECT * from akfish_sf.VALHALLA_SCRATCH"))
-}
+load("data/2021-01-25CAS_VALHALLA.RData")
+work.data <- VALHALLA
+rm(VALHALLA)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
@@ -78,54 +46,16 @@ select(VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP
 distinct() %>% 
 arrange(VESSEL_ID)
 
-# Before binding work.data.old to work.data.recent, compare the two dataframes in two steps:
-# Find columns that are different in each data.frame
-# https://dplyr.tidyverse.org/reference/all_equal.html
-dplyr::all_equal(work.data.old, work.data)
-
-work.data.old <- rename(work.data.old, MONTH=month)
-
-# find columns that are formatted differently ----
-compareColumns <- function(df1, df2) {
-  commonNames <- names(df1)[names(df1) %in% names(df2)]
-  
-  x <- data.frame(stack(setNames(commonNames, sapply(df1[,commonNames], class))))
-  names(x) <- c("Column", as.character(deparse(substitute(df1))))
-  
-  y <-data.frame(stack(setNames(commonNames, sapply(df2[,commonNames], class))))
-  names(y) <- c("Column", as.character(deparse(substitute(df2))))
-  
-  z <- merge(x, y) 
-  z <- mutate_all(z, as.character)
-  z <- z %>% filter(z[,2] != z[,3])
-  return(z)           
-}
- 
-if(nrow(compareColumns(work.data.old, work.data)) > 0){
-  print("the following columns are different", quote = FALSE)
-  print("", quote = FALSE)
-  compareColumns(work.data.old, work.data)
-} else {
-  "No columns in common have different formats"
-}
-
 # Change date format to eliminate times and match what is in the database
-work.data.old <- mutate(work.data.old, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
 work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
 
-# Common work.data created -------------------------------------------------------
-work.data.all <- plyr::rbind.fill(work.data.old, work.data)
-
 # Add ADP year to all TRIP_IDs if there are duplicates
-if(nrow(select(work.data.all, TRIP_ID, ADP) %>% 
+if(nrow(select(work.data, TRIP_ID, ADP) %>% 
         distinct() %>% 
         group_by(TRIP_ID) %>% 
         filter(n()>1) %>% 
         data.frame()) > 0){
-  work.data.all$TRIP_ID <- paste(work.data.all$ADP, work.data.all$TRIP_ID, sep = ".")}
-
-# Remove work.data.old now that it's been folded into work.data.all
-rm(work.data.old)
+  work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")}
 
 # b. Salmon dockside monitoring ----
 
