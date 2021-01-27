@@ -59,7 +59,7 @@ if(nrow(select(work.data, TRIP_ID, ADP) %>%
         data.frame()) > 0){
   work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")}
 
-# b. Salmon dockside monitoring ----
+# * Salmon dockside monitoring ----
 
 # Queries
 script <- paste0("
@@ -85,7 +85,7 @@ salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 #Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
 salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 
-# c. ODDS ----
+# * ODDS ----
 
 # Queries
 script <- paste("
@@ -139,7 +139,6 @@ AND EXTRACT(YEAR FROM pl.original_embark_date) =", year)
 
 odds.dat <- dbGetQuery(channel_afsc, script)
 
-
 # Data checks and clean up
 
 # Check for duplicates - should be no records (= 0)
@@ -152,7 +151,7 @@ length(odds.dat[!is.na(odds.dat$TRIP_SELECTED_OBS) & odds.dat$TRIP_STATUS_CODE==
 table(odds.dat$TRIP_SELECTED_OBS, odds.dat$TRIP_STATUS_CODE, useNA='always')  
 
 # Summary of trip dispositions and observer assignments 
-# Sample plan sequences: 11 = gear + tender, 13 = EM selected for review, 
+# Sample plan sequences: 11 = gear + tender, 13 = EM selected for review, 14 = EM EFP
 # 98 = EM not selected for review where IFQ fishing was to occur in more than one NMFS area.
 # Trip status codes: CS	= Cancel by System, PD = Pending, CN = Cancelled, CP = Completed, CC = Cancel Cascaded
 table(odds.dat$TRIP_OBS_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$SAMPLE_PLAN_SEQ, useNA='ifany')
