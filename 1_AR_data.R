@@ -1,7 +1,7 @@
-# Get packages and user-defined functions ---------------------------------
-source("functions/3_helper.R")
+# Setup -------------------------------------------------------------------
 
-# User inputs -------------------------------------------------------------
+# Get packages and user-defined functions
+source("functions/3_helper.R")
 
 # Random number seed
 set.seed(052870)
@@ -12,7 +12,13 @@ year <- 2020
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
-# ADP inputs --------------------------------------------------------------
+# Establish database connections
+channel_afsc  <- channel.fxn(location)
+channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
+
+# Get data ----------------------------------------------------------------
+
+# * ADP inputs ----
 
 # Loads two objects: efrt and efrt_adpyear
 # efrt contains 3 years of effort data used for the ADP
@@ -22,12 +28,8 @@ load("data/effort_prediction.rdata")
 # Remove the efrt object
 rm(efrt)
 
-# ADP outputs -------------------------------------------------------------
+# * ADP outputs ----
 adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
-
-# Get data ----------------------------------------------------------------
-channel_afsc  <- channel.fxn(location)
-channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
 # * Valhalla ----
 # Pull in this report year's Valhalla
