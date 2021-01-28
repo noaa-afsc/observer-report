@@ -96,7 +96,7 @@ vtr.sample_plan_seq,
 --vtr.gear_type_code, --Change #1 for 2018 Annual Report
 -- vtr.tender_trip_flag, --Change #2 for 2018 Annual Report
 -- vtr.trip_rate_strata, 
-vtr.description AS STRATA,
+vtr.description,
 lov.akr_vessel_id AS VESSEL_ID,
 lov.vessel_seq,
 pl.trip_plan_log_seq,
@@ -163,10 +163,10 @@ table(odds.dat$TRIP_OBS_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$SAMPLE_PLAN_SE
 # and gear_type_code = 8 (longline).
 odds.dat <- odds.dat %>% 
             mutate(TRIP_SELECTED_OBS=ifelse(SAMPLE_PLAN_SEQ==98, "N", TRIP_SELECTED_OBS),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="N", paste0(STRATA, " - POT - No Tender"), STRATA),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="Y", paste0(STRATA, " - POT - Tender"), STRATA),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="N", paste0(STRATA, " - HAL - No Tender"), STRATA),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="Y", paste0(STRATA, " - HAL - Tender"), STRATA))
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="N", paste0(DESCRIPTION, " - POT - No Tender"), DESCRIPTION),
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="Y", paste0(DESCRIPTION, " - POT - Tender"), DESCRIPTION),
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="N", paste0(DESCRIPTION, " - HAL - No Tender"), DESCRIPTION),
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="Y", paste0(DESCRIPTION, " - HAL - Tender"), DESCRIPTION))
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
@@ -224,7 +224,7 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
 single_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
-                   distinct(VESSEL_ID, GEAR_TYPE_CODE,STRATA) %>% 
+                   distinct(VESSEL_ID, GEAR_TYPE_CODE,DESCRIPTION) %>% 
                    arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
                    group_by(VESSEL_ID) %>% 
                    filter(uniqueN(GEAR_TYPE_CODE) == 1) %>% 
@@ -243,8 +243,8 @@ multiple_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>%
 # Compare ODDS to EM.data for VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE
 # to determine the most likely AGENCY_GEAR_CODE
 filter(odds.dat, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
-  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATA) %>% 
-  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATA)
+  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION) %>% 
+  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION)
 
 filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
@@ -377,6 +377,12 @@ EM.review <- dbGetQuery(channel_afsc, script)
 # For clarification, see email from Glenn Campbell on 3/11/20
 EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
 
+# Fixed-gear EM research
+em_research <- dbGetQuery(channel_afsc, paste("select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
+                                              from loki.em_vessels_by_adp
+                                              where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
+                                              and adp =", year))
+
 # * Shapefiles ----
 ## Load land and NMFS stat area shapefiles 
 ## (".." points the directory back one level)
@@ -384,67 +390,39 @@ shp_land      <- st_read("../shapefiles/P3_AK_All.shp")
 shp_nmfs      <- st_read("../shapefiles/NMFS_Zones_Clean.shp")
 shp_centroids <- st_read("../shapefiles/NMFS_Area_Centroid.shp")
 
-# III. Rename strata ----
+# Format strata names -----------------------------------------------------
 
-# Rename strata for brevity and consistency
-to_draw <- mutate(to_draw, STRATA_NEW = recode(STRATA_NEW, 
-                                                   "HAL" = "HAL",
-                                                   "POT" = "POT - No Tender",
-                                                   "POT_TENDER" = "POT - Tender",
-                                                   "TRW_TENDER" = "TRW - Tender",
-                                                   "TRW" = "TRW - No Tender"))
-
-draw_from <- mutate(draw_from, STRATA_NEW = recode(STRATA_NEW, 
-                                             "HAL" = "HAL",
-                                             "POT" = "POT - No Tender",
-                                             "POT_TENDER" = "POT - Tender",
-                                             "TRW_TENDER" = "TRW - Tender",
-                                             "TRW" = "TRW - No Tender"))
-
-sample_pops_out <- mutate(sample_pops_out, STRATA_NEW = recode(STRATA_NEW, 
-                                                   "HAL" = "HAL",
-                                                   "POT" = "POT - No Tender",
-                                                   "POT_TENDER" = "POT - Tender",
-                                                   "TRW_TENDER" = "TRW - Tender",
-                                                   "TRW" = "TRW - No Tender"))
-
-odds.dat <- mutate(odds.dat, STRATA = recode(STRATA, 
-                                             "Declared Gear & Tender Delivery - Pot No  Tender Delivery" = "POT - No Tender",    
-                                             "Declared Gear & Tender Delivery - Pot   Tender Delivery" = "POT - Tender",      
-                                             "Declared Gear & Tender Delivery - Trawl  No Tender Delivery" = "TRW - No Tender",  
+# Translate ODDS sample plans into strata
+odds.dat <- mutate(odds.dat, STRATA = recode(DESCRIPTION, 
+                                             "Declared Gear & Tender Delivery - Pot No  Tender Delivery" = "POT",    
+                                             "Declared Gear & Tender Delivery - Pot   Tender Delivery" = "POT",      
+                                             "Declared Gear & Tender Delivery - Trawl  No Tender Delivery" = "TRW",  
                                              "EM Declared Gear & Tender - Longline No Tender Delivery" = "EM HAL",      
                                              "Declared Gear & Tender Delivery - Longline No Tender Delivery" = "HAL",
                                              "EM Declared Gear & Tender - Pot gear - No Tender Delivery" = "EM POT",    
-                                             "Declared Gear & Tender Delivery - Trawl  Tender Delivery" = "TRW - Tender",    
+                                             "Declared Gear & Tender Delivery - Trawl  Tender Delivery" = "TRW",    
                                              "EM Compliance Monitoring - Fishing IFQ mulitple Areas - HAL - No Tender" = "EM Compliance HAL",
                                              "Declared Gear & Tender Delivery - Longline  Tender Delivery" = "HAL",
                                              "EM Declared Gear & Tender -  Pot gear Tender delivery" = "EM POT",
                                              "EM Declared Gear & Tender - Longline Tender Delivery" = "EM HAL",
-                                             "EM Compliance Monitoring - Fishing IFQ mulitple Areas - POT - No Tender" = "EM Compliance POT"))
+                                             "EM Compliance Monitoring - Fishing IFQ mulitple Areas - POT - No Tender" = "EM Compliance POT",
+                                             "EM Exempt fish Permit - Trawl - No Tender Delivery" = "EM TRW EFP",
+                                             "EM Exempt Fish Permit -  Trawl - Tender Delivery" = "EM TRW EFP"))
 
-work.data <- mutate(work.data, STRATA=ifelse(STRATA=="EM_TenP", "EM_POT", STRATA))
+# Format strata names in Valhalla
+work.data <- mutate(work.data, STRATA = recode(STRATA,
+                    "EM_POT" = "EM POT",
+                    "EM_HAL" = "EM HAL",
+                    "EM_TRW_EFP" = "EM TRW EFP"))
 
-work.data <- mutate(work.data, STRATA = recode(STRATA, 
-                                               "HAL" = "HAL",
-                                               "TRW" = "TRW - No Tender",
-                                               "FULL" = "FULL", 
-                                               "ZERO" = "ZERO", 
-                                               "POT" = "POT - No Tender",
-                                               "TenTR" = "TRW - Tender", 
-                                               "EM_POT" = "EM POT",
-                                               "TenP" = "POT - Tender",
-                                               "EM_HAL" = "EM HAL"))
-
-# Add the Predator (2844) to the EMResearch list used in the 2019 ADP (per Farron's email on 12/2/2018)
+# Identify trips by EM research vessels
 work.data <- work.data %>% 
-             mutate(STRATA = ifelse(VESSEL_ID %in% c("5029", "3759", "1472", "2844"), "Zero EM Research", STRATA))
+             mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
 
-# Look up table for strata in partial coverage category
-
-## Observed and EM partial coverage strata
-partial <- data.frame(STRATA = c("HAL", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "EM HAL", "EM POT"), 
-                      Rate = c(0.1771, 0.1543, 0.1611, 0.2370, 0.2712, 0.3000, 0.3000),
-                      descriptions = c("hook-and-line gear", "non-tendered pot gear", "tendered pot gear", "non-tendered trawl gear", "tendered trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring")) %>% 
+# Lookup table for strata in partial coverage category
+partial <- data.frame(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TRW EFP"), 
+                      Rate = c(0.1540, 0.1523, 0.1959, 0.3000, 0.3000, 0.3000),
+                      descriptions = c("hook-and-line gear", "pot gear", "trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring", "trawl gear with electronic monitoring")) %>% 
            mutate(formatted_strat = paste0("*", STRATA, "*"),
                   txt = paste0(formatC(round(Rate*100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum'))
 
