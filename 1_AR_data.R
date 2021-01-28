@@ -377,7 +377,7 @@ EM.review <- dbGetQuery(channel_afsc, script)
 # For clarification, see email from Glenn Campbell on 3/11/20
 EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
 
-# e. Shapefiles ----
+# * Shapefiles ----
 ## Load land and NMFS stat area shapefiles 
 ## (".." points the directory back one level)
 shp_land      <- st_read("../shapefiles/P3_AK_All.shp")
