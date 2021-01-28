@@ -168,12 +168,11 @@ odds.dat <- odds.dat %>%
                    STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="N", paste0(STRATA, " - HAL - No Tender"), STRATA),
                    STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="Y", paste0(STRATA, " - HAL - Tender"), STRATA))
 
-# d. EM ----
+# * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
                   WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
 
 EM.data <- dbGetQuery(channel_afsc, script)
-
 
 # In the EM data the field EM_VESSEL means either ADFG NUMBER OR COAST GUARD NUMBER
 # Get the translation to permit
@@ -189,7 +188,6 @@ script <- paste0("SELECT DISTINCT et.vessel_id as EM_VESSEL_ID,
 
 transform.EM.data.vessel <- dbGetQuery(channel_afsc, script)
 
-
 #Fix EM.data VESSEL_ID
 EM.data <- rename(EM.data, PS_VESSEL_ID = VESSEL_ID)
 
@@ -204,7 +202,6 @@ script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
                   WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
 
 EM.gear <- dbGetQuery(channel_afsc, script)
-
 
 #Select data for this report year and recode gear type to those used by CAS
 EM.gear <- select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
@@ -257,8 +254,7 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
 EM.data <- EM.data %>% 
            mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
            mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
-           mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER %in% c("19_POLARSTAR04.03", "19_MARILYNJ01.01", "19_ALEUTIANISLE08.01"), "POT", AGENCY_GEAR_CODE))
-
+           mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER  == "20_POLARSTAR03.02", "HAL", AGENCY_GEAR_CODE))
 
 # The following query will provide a list of em selectecd trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
@@ -266,10 +262,7 @@ EM.data <- EM.data %>%
 # This query will also show when the HD was received by PSFMC and when the EM reviewed data was exported and sent to AFSC
 # This query will also show the actual em trip start date and time and actual em trip end date and time which comes from the data on the HD.
 
-# Important note, this query is setup to pull a specific year of data.  That year is based on when the ODDS declared trip start date is.  
-# To change the year find the declared year in the below sub-query (2 places) and change it to the year wanted.
-
-# Also an important note, if an EM reviewed trip used multiple gear types on a trip (ie.  pot and longline) there will be 2 records in the output.
+# Important note: if an EM reviewed trip used multiple gear types on a trip (ie.  pot and longline) there will be 2 records in the output.
 
 script <- paste(
   "select all_data.*, em_rev_gear.em_gear_code, 
@@ -379,7 +372,6 @@ script <- paste(
 )
 
 EM.review <- dbGetQuery(channel_afsc, script)
-  
 
 # Flip pending trips to completed if they have data reviewed
 # For clarification, see email from Glenn Campbell on 3/11/20
