@@ -426,11 +426,10 @@ partial <- data.frame(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TR
            mutate(formatted_strat = paste0("*", STRATA, "*"),
                   txt = paste0(formatC(round(Rate*100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum'))
 
-
-# IV. Save ----
+# Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
 rm(location, channel_afsc, channel_akro)
 
-# Save (save.session saves loaded packages in addition to objects)
+# Save
 save.image(file = "2_AR_data.Rdata")
