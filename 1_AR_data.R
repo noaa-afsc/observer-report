@@ -39,8 +39,13 @@ adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 
 # * Valhalla ----
 # Pull in this report year's Valhalla
+# The code that creates Valhalla is maintained separately from this project
 load("data/2021-01-25CAS_VALHALLA.RData")
+
+# Rename VALHALLA, which is the only object in the above file
 work.data <- VALHALLA
+
+# Remove the VALHALLA object
 rm(VALHALLA)
 
 #Summary of coverage by strata and processing sector
