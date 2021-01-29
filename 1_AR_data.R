@@ -62,13 +62,15 @@ arrange(VESSEL_ID)
 # Change date format to eliminate times and match what is in the database
 work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
 
-# Add ADP year to all TRIP_IDs if there are duplicates
+# Check for TRIP_IDs that are repeated across ADP years
 if(nrow(select(work.data, TRIP_ID, ADP) %>% 
         distinct() %>% 
         group_by(TRIP_ID) %>% 
         filter(n()>1) %>% 
         data.frame()) > 0){
-  work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")}
+
+# If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
+work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")}
 
 # * Salmon dockside monitoring ----
 
