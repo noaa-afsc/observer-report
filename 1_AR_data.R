@@ -18,6 +18,12 @@ channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in
 
 # Get data ----------------------------------------------------------------
 
+# To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
+# effort_prediction.rdata (created in the most recent final ADP project)
+# fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
+# 2021-01-25CAS_VALHALLA.RData (temporary version of Valhalla created by AKRO)
+# These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
+
 # * ADP inputs ----
 
 # Loads two objects: efrt and efrt_adpyear
