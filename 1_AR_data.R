@@ -265,8 +265,10 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
 
 # Fix NAs in AGENCY_GEAR_CODE for EM.data
 EM.data <- EM.data %>% 
+           # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
            mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
            mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
+           # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
            mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER  == "20_POLARSTAR03.02", "HAL", AGENCY_GEAR_CODE))
 
 # The following query will provide a list of em selectecd trips and if they have been reviewed or not
