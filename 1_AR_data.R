@@ -1,72 +1,52 @@
-# 1_AR_data.R
-# Includes queries, data checks, and clean up for the Annual Report analyses.
-# See AR_helpfile.doc for information on file structure and workflow, column names and descriptions, etc.
+# Setup -------------------------------------------------------------------
 
-# I. Setup----
+# Get packages and user-defined functions
+source("functions/3_helper.R")
+
+# Random number seed
 set.seed(052870)
-year <- 2019 # Report year (year that fishing and observing took place)
 
-# Load ADP output
-load(file = "4_final_ADP.RData")
+# Report year (year that fishing and observing took place)
+year <- 2020 
 
-# Retain from the ADP:
-# to_draw = the predicted number of trips to occur in each domain that ADP year (the number of trips to draw from draw_from)
-# draw_from = the population of trips that were drawn from to simulate deployment in 2019
-# sample_pops_out = the results of sampling each simulated population many times
-# total_days_obs = the predicted total number of observed days for the year
-# BUDGET = the budget
-# DAILY_RATE = cost per day of observer coverage in partial coverage
+# The user's physical location when running this code (used to pull data from the closest database)
+location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
-# Remove all but the objects needed
-rm(list=setdiff(ls(), c("year", "to_draw", "draw_from", "sample_pops_out", "total_days_obs", "BUDGET", "DAILY_RATE")))
-
-# Load libraries and user-created functions
-source("3_helper.R")
-
-location <- "JUNEAU" # User location ("SEATTLE" or "JUNEAU")
+# Establish database connections
 channel_afsc  <- channel.fxn(location)
 channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
+# Get data ----------------------------------------------------------------
 
-# II. Data retrieval ----
+# To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
+# effort_prediction.rdata (created in the most recent final ADP project)
+# fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
+# 2021-01-25CAS_VALHALLA.RData (temporary version of Valhalla created by AKRO)
+# These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
 
-# a. Valhalla ----
-# Pull in last report year's Valhalla from database:
-if(location=="SEATTLE") {
-  work.data.old <- dbGetQuery(channel_afsc, paste0("SELECT * from loki.AKR_VALHALLA
-                                                   WHERE ADP BETWEEN 2016 AND ", year-1))
-} else {
-  work.data.old <- dbGetQuery(channel_akro, paste0("SELECT * from akfish_sf.VALHALLA
-                                                   WHERE ADP BETWEEN 2016 AND ", year-1))
-}
+# * ADP inputs ----
 
-#Summary of coverage by strata and processing sector
-#This is a check to make sure no entries look wonky
-table(work.data.old$COVERAGE_TYPE, work.data.old$STRATA, work.data.old$PROCESSING_SECTOR, useNA='always')
+# Loads two objects: efrt and efrt_adpyear
+# efrt contains 3 years of effort data used for the ADP
+# efrt_adpyear contains the effort predictions for each domain and the 1 year of trips used to simulate effort
+load("data/effort_prediction.rdata")
 
-# Data check for observed vessels under 40 ft.
-work.data.old %>% 
-filter(LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y") %>% 
-distinct(VESSEL_ID, .keep_all=TRUE) %>% 
-arrange(VESSEL_ID)
+# Remove the efrt object
+rm(efrt)
 
-# Disregard ZERO and HAL observed trips for < 40 ft. boats because we are only using this data for the
-# NPT and PTR permutation test in 2018 
+# * ADP outputs ----
+adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 
-# Two trips in 2018 had incorrect begin fishing dates that resulted in an extremely long trip durations.
-# Correct landing dates in accordance with emails received from AKRO by 4/4/19:
-work.data.old <- work.data.old %>% 
-                 mutate(TRIP_TARGET_DATE = as.character(TRIP_TARGET_DATE)) %>% 
-                 mutate(TRIP_TARGET_DATE=ifelse(TRIP_ID=="10785863",  "2018-08-16", TRIP_TARGET_DATE)) %>%  
-                 mutate(TRIP_TARGET_DATE=ifelse(TRIP_ID=="10786634", "2018-11-02", TRIP_TARGET_DATE)) %>% 
-                 mutate(TRIP_TARGET_DATE = as.POSIXct(TRIP_TARGET_DATE))
-
+# * Valhalla ----
 # Pull in this report year's Valhalla
-if(location=="SEATTLE") {
-  work.data <- dbGetQuery(channel_afsc, paste0("SELECT * from loki.AKR_VALHALLA_SCRATCH_V"))
-} else {
-  work.data <- dbGetQuery(channel_akro, paste0("SELECT * from akfish_sf.VALHALLA_SCRATCH"))
-}
+# The code that creates Valhalla is maintained separately from this project
+load("data/2021-01-25CAS_VALHALLA.RData")
+
+# Rename VALHALLA, which is the only object in the above file
+work.data <- VALHALLA
+
+# Remove the VALHALLA object
+rm(VALHALLA)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
@@ -79,56 +59,20 @@ select(VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP
 distinct() %>% 
 arrange(VESSEL_ID)
 
-# Before binding work.data.old to work.data.recent, compare the two dataframes in two steps:
-# Find columns that are different in each data.frame
-# https://dplyr.tidyverse.org/reference/all_equal.html
-dplyr::all_equal(work.data.old, work.data)
-
-work.data.old <- rename(work.data.old, MONTH=month)
-
-# find columns that are formatted differently ----
-compareColumns <- function(df1, df2) {
-  commonNames <- names(df1)[names(df1) %in% names(df2)]
-  
-  x <- data.frame(stack(setNames(commonNames, sapply(df1[,commonNames], class))))
-  names(x) <- c("Column", as.character(deparse(substitute(df1))))
-  
-  y <-data.frame(stack(setNames(commonNames, sapply(df2[,commonNames], class))))
-  names(y) <- c("Column", as.character(deparse(substitute(df2))))
-  
-  z <- merge(x, y) 
-  z <- mutate_all(z, as.character)
-  z <- z %>% filter(z[,2] != z[,3])
-  return(z)           
-}
- 
-if(nrow(compareColumns(work.data.old, work.data)) > 0){
-  print("the following columns are different", quote = FALSE)
-  print("", quote = FALSE)
-  compareColumns(work.data.old, work.data)
-} else {
-  "No columns in common have different formats"
-}
-
 # Change date format to eliminate times and match what is in the database
-work.data.old <- mutate(work.data.old, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
 work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
 
-# Common work.data created -------------------------------------------------------
-work.data.all <- plyr::rbind.fill(work.data.old, work.data)
-
-# Add ADP year to all TRIP_IDs if there are duplicates
-if(nrow(select(work.data.all, TRIP_ID, ADP) %>% 
+# Check for TRIP_IDs that are repeated across ADP years
+if(nrow(select(work.data, TRIP_ID, ADP) %>% 
         distinct() %>% 
         group_by(TRIP_ID) %>% 
         filter(n()>1) %>% 
         data.frame()) > 0){
-  work.data.all$TRIP_ID <- paste(work.data.all$ADP, work.data.all$TRIP_ID, sep = ".")}
 
-# Remove work.data.old now that it's been folded into work.data.all
-rm(work.data.old)
+# If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
+work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")}
 
-# b. Salmon dockside monitoring ----
+# * Salmon dockside monitoring ----
 
 # Queries
 script <- paste0("
@@ -154,7 +98,7 @@ salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 #Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
 salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 
-# c. ODDS ----
+# * ODDS ----
 
 # Queries
 script <- paste("
@@ -165,7 +109,7 @@ vtr.sample_plan_seq,
 --vtr.gear_type_code, --Change #1 for 2018 Annual Report
 -- vtr.tender_trip_flag, --Change #2 for 2018 Annual Report
 -- vtr.trip_rate_strata, 
-vtr.description AS STRATA,
+vtr.description,
 lov.akr_vessel_id AS VESSEL_ID,
 lov.vessel_seq,
 pl.trip_plan_log_seq,
@@ -208,7 +152,6 @@ AND EXTRACT(YEAR FROM pl.original_embark_date) =", year)
 
 odds.dat <- dbGetQuery(channel_afsc, script)
 
-
 # Data checks and clean up
 
 # Check for duplicates - should be no records (= 0)
@@ -221,7 +164,7 @@ length(odds.dat[!is.na(odds.dat$TRIP_SELECTED_OBS) & odds.dat$TRIP_STATUS_CODE==
 table(odds.dat$TRIP_SELECTED_OBS, odds.dat$TRIP_STATUS_CODE, useNA='always')  
 
 # Summary of trip dispositions and observer assignments 
-# Sample plan sequences: 11 = gear + tender, 13 = EM selected for review, 
+# Sample plan sequences: 11 = gear + tender, 13 = EM selected for review, 14 = EM EFP
 # 98 = EM not selected for review where IFQ fishing was to occur in more than one NMFS area.
 # Trip status codes: CS	= Cancel by System, PD = Pending, CN = Cancelled, CP = Completed, CC = Cancel Cascaded
 table(odds.dat$TRIP_OBS_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$SAMPLE_PLAN_SEQ, useNA='ifany')
@@ -233,17 +176,16 @@ table(odds.dat$TRIP_OBS_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$SAMPLE_PLAN_SE
 # and gear_type_code = 8 (longline).
 odds.dat <- odds.dat %>% 
             mutate(TRIP_SELECTED_OBS=ifelse(SAMPLE_PLAN_SEQ==98, "N", TRIP_SELECTED_OBS),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="N", paste0(STRATA, " - POT - No Tender"), STRATA),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="Y", paste0(STRATA, " - POT - Tender"), STRATA),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="N", paste0(STRATA, " - HAL - No Tender"), STRATA),
-                   STRATA=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="Y", paste0(STRATA, " - HAL - Tender"), STRATA))
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="N", paste0(DESCRIPTION, " - POT - No Tender"), DESCRIPTION),
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="Y", paste0(DESCRIPTION, " - POT - Tender"), DESCRIPTION),
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="N", paste0(DESCRIPTION, " - HAL - No Tender"), DESCRIPTION),
+                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="Y", paste0(DESCRIPTION, " - HAL - Tender"), DESCRIPTION))
 
-# d. EM ----
+# * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
                   WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
 
 EM.data <- dbGetQuery(channel_afsc, script)
-
 
 # In the EM data the field EM_VESSEL means either ADFG NUMBER OR COAST GUARD NUMBER
 # Get the translation to permit
@@ -259,7 +201,6 @@ script <- paste0("SELECT DISTINCT et.vessel_id as EM_VESSEL_ID,
 
 transform.EM.data.vessel <- dbGetQuery(channel_afsc, script)
 
-
 #Fix EM.data VESSEL_ID
 EM.data <- rename(EM.data, PS_VESSEL_ID = VESSEL_ID)
 
@@ -274,7 +215,6 @@ script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
                   WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
 
 EM.gear <- dbGetQuery(channel_afsc, script)
-
 
 #Select data for this report year and recode gear type to those used by CAS
 EM.gear <- select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
@@ -297,7 +237,7 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
 single_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
-                   distinct(VESSEL_ID, GEAR_TYPE_CODE,STRATA) %>% 
+                   distinct(VESSEL_ID, GEAR_TYPE_CODE,DESCRIPTION) %>% 
                    arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
                    group_by(VESSEL_ID) %>% 
                    filter(uniqueN(GEAR_TYPE_CODE) == 1) %>% 
@@ -316,8 +256,8 @@ multiple_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>%
 # Compare ODDS to EM.data for VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE
 # to determine the most likely AGENCY_GEAR_CODE
 filter(odds.dat, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
-  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATA) %>% 
-  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATA)
+  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION) %>% 
+  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION)
 
 filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
@@ -325,10 +265,11 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
 
 # Fix NAs in AGENCY_GEAR_CODE for EM.data
 EM.data <- EM.data %>% 
+           # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
            mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
            mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
-           mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER %in% c("19_POLARSTAR04.03", "19_MARILYNJ01.01", "19_ALEUTIANISLE08.01"), "POT", AGENCY_GEAR_CODE))
-
+           # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
+           mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER  == "20_POLARSTAR03.02", "HAL", AGENCY_GEAR_CODE))
 
 # The following query will provide a list of em selectecd trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
@@ -336,10 +277,7 @@ EM.data <- EM.data %>%
 # This query will also show when the HD was received by PSFMC and when the EM reviewed data was exported and sent to AFSC
 # This query will also show the actual em trip start date and time and actual em trip end date and time which comes from the data on the HD.
 
-# Important note, this query is setup to pull a specific year of data.  That year is based on when the ODDS declared trip start date is.  
-# To change the year find the declared year in the below sub-query (2 places) and change it to the year wanted.
-
-# Also an important note, if an EM reviewed trip used multiple gear types on a trip (ie.  pot and longline) there will be 2 records in the output.
+# Important note: if an EM reviewed trip used multiple gear types on a trip (ie.  pot and longline) there will be 2 records in the output.
 
 script <- paste(
   "select all_data.*, em_rev_gear.em_gear_code, 
@@ -449,88 +387,64 @@ script <- paste(
 )
 
 EM.review <- dbGetQuery(channel_afsc, script)
-  
 
 # Flip pending trips to completed if they have data reviewed
 # For clarification, see email from Glenn Campbell on 3/11/20
 EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
 
-# e. Shapefiles ----
+# Fixed-gear EM research
+em_research <- dbGetQuery(channel_afsc, paste("select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
+                                              from loki.em_vessels_by_adp
+                                              where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
+                                              and adp =", year))
+
+# * Shapefiles ----
 ## Load land and NMFS stat area shapefiles 
 ## (".." points the directory back one level)
 shp_land      <- st_read("../shapefiles/P3_AK_All.shp")
 shp_nmfs      <- st_read("../shapefiles/NMFS_Zones_Clean.shp")
 shp_centroids <- st_read("../shapefiles/NMFS_Area_Centroid.shp")
 
-# III. Rename strata ----
+# Format strata names -----------------------------------------------------
 
-# Rename strata for brevity and consistency
-to_draw <- mutate(to_draw, STRATA_NEW = recode(STRATA_NEW, 
-                                                   "HAL" = "HAL",
-                                                   "POT" = "POT - No Tender",
-                                                   "POT_TENDER" = "POT - Tender",
-                                                   "TRW_TENDER" = "TRW - Tender",
-                                                   "TRW" = "TRW - No Tender"))
-
-draw_from <- mutate(draw_from, STRATA_NEW = recode(STRATA_NEW, 
-                                             "HAL" = "HAL",
-                                             "POT" = "POT - No Tender",
-                                             "POT_TENDER" = "POT - Tender",
-                                             "TRW_TENDER" = "TRW - Tender",
-                                             "TRW" = "TRW - No Tender"))
-
-sample_pops_out <- mutate(sample_pops_out, STRATA_NEW = recode(STRATA_NEW, 
-                                                   "HAL" = "HAL",
-                                                   "POT" = "POT - No Tender",
-                                                   "POT_TENDER" = "POT - Tender",
-                                                   "TRW_TENDER" = "TRW - Tender",
-                                                   "TRW" = "TRW - No Tender"))
-
-odds.dat <- mutate(odds.dat, STRATA = recode(STRATA, 
-                                             "Declared Gear & Tender Delivery - Pot No  Tender Delivery" = "POT - No Tender",    
-                                             "Declared Gear & Tender Delivery - Pot   Tender Delivery" = "POT - Tender",      
-                                             "Declared Gear & Tender Delivery - Trawl  No Tender Delivery" = "TRW - No Tender",  
+# Translate ODDS sample plans into strata
+odds.dat <- mutate(odds.dat, STRATA = recode(DESCRIPTION, 
+                                             "Declared Gear & Tender Delivery - Pot No  Tender Delivery" = "POT",    
+                                             "Declared Gear & Tender Delivery - Pot   Tender Delivery" = "POT",      
+                                             "Declared Gear & Tender Delivery - Trawl  No Tender Delivery" = "TRW",  
                                              "EM Declared Gear & Tender - Longline No Tender Delivery" = "EM HAL",      
                                              "Declared Gear & Tender Delivery - Longline No Tender Delivery" = "HAL",
                                              "EM Declared Gear & Tender - Pot gear - No Tender Delivery" = "EM POT",    
-                                             "Declared Gear & Tender Delivery - Trawl  Tender Delivery" = "TRW - Tender",    
+                                             "Declared Gear & Tender Delivery - Trawl  Tender Delivery" = "TRW",    
                                              "EM Compliance Monitoring - Fishing IFQ mulitple Areas - HAL - No Tender" = "EM Compliance HAL",
                                              "Declared Gear & Tender Delivery - Longline  Tender Delivery" = "HAL",
                                              "EM Declared Gear & Tender -  Pot gear Tender delivery" = "EM POT",
                                              "EM Declared Gear & Tender - Longline Tender Delivery" = "EM HAL",
-                                             "EM Compliance Monitoring - Fishing IFQ mulitple Areas - POT - No Tender" = "EM Compliance POT"))
+                                             "EM Compliance Monitoring - Fishing IFQ mulitple Areas - POT - No Tender" = "EM Compliance POT",
+                                             "EM Exempt fish Permit - Trawl - No Tender Delivery" = "EM TRW EFP",
+                                             "EM Exempt Fish Permit -  Trawl - Tender Delivery" = "EM TRW EFP"))
 
-work.data <- mutate(work.data, STRATA=ifelse(STRATA=="EM_TenP", "EM_POT", STRATA))
+# Format strata names in Valhalla
+work.data <- mutate(work.data, STRATA = recode(STRATA,
+                    "EM_POT" = "EM POT",
+                    "EM_HAL" = "EM HAL",
+                    "EM_TRW_EFP" = "EM TRW EFP"))
 
-work.data <- mutate(work.data, STRATA = recode(STRATA, 
-                                               "HAL" = "HAL",
-                                               "TRW" = "TRW - No Tender",
-                                               "FULL" = "FULL", 
-                                               "ZERO" = "ZERO", 
-                                               "POT" = "POT - No Tender",
-                                               "TenTR" = "TRW - Tender", 
-                                               "EM_POT" = "EM POT",
-                                               "TenP" = "POT - Tender",
-                                               "EM_HAL" = "EM HAL"))
-
-# Add the Predator (2844) to the EMResearch list used in the 2019 ADP (per Farron's email on 12/2/2018)
+# Identify trips by EM research vessels
 work.data <- work.data %>% 
-             mutate(STRATA = ifelse(VESSEL_ID %in% c("5029", "3759", "1472", "2844"), "Zero EM Research", STRATA))
+             mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
 
-# Look up table for strata in partial coverage category
-
-## Observed and EM partial coverage strata
-partial <- data.frame(STRATA = c("HAL", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "EM HAL", "EM POT"), 
-                      Rate = c(0.1771, 0.1543, 0.1611, 0.2370, 0.2712, 0.3000, 0.3000),
-                      descriptions = c("hook-and-line gear", "non-tendered pot gear", "tendered pot gear", "non-tendered trawl gear", "tendered trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring")) %>% 
+# Lookup table for strata in partial coverage category
+partial <- data.frame(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TRW EFP"), 
+                      Rate = c(0.1540, 0.1523, 0.1959, 0.3000, 0.3000, 0.3000),
+                      descriptions = c("hook-and-line gear", "pot gear", "trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring", "trawl gear with electronic monitoring")) %>% 
            mutate(formatted_strat = paste0("*", STRATA, "*"),
                   txt = paste0(formatC(round(Rate*100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum'))
 
-
-# IV. Save ----
+# Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
 rm(location, channel_afsc, channel_akro)
 
-# Save (save.session saves loaded packages in addition to objects)
+# Save
 save.image(file = "2_AR_data.Rdata")

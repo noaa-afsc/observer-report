@@ -3,25 +3,24 @@
 # See AR_helpfile.doc for information on file structure and workflow, column names and descriptions, etc.
 
 # I. Libraries ----
-
-if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed
-if(!require("maptools"))   install.packages("maptools")
-if(!require("reshape2"))   install.packages("reshape2") 
-if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
-if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles
-if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
-if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derivedVariable(), careful it masks some stats fxns like binomial.test() 
-if(!require("knitr"))   install.packages("knitr") #markdown
-if(!require("data.table"))   install.packages("data.table") #use for EM vessel seleciton (foverlaps fxn)
 if(!require("captioner"))   install.packages("captioner") #numbering, ordering, & creating captions for tables and figures
-if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
-if(!require("rstudioapi"))  install.packages("rstudioapi")
-if(!require("sf"))  install.packages("sf")
+if(!require("data.table"))   install.packages("data.table") #use for EM vessel seleciton (foverlaps fxn)
 if(!require("devtools"))  install.packages("devtools")
-if(!require("patchwork"))  devtools::install_github("thomasp85/patchwork")
-if(!require("zoo"))  install.packages("zoo")
+if(!require("getPass"))   install.packages("getPass")
+if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
+if(!require("knitr"))   install.packages("knitr") #markdown
 if(!require("lubridate"))  install.packages("lubridate")
+if(!require("maptools"))   install.packages("maptools")
+if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derivedVariable(), careful it masks some stats fxns like binomial.test() 
+if(!require("patchwork"))  devtools::install_github("thomasp85/patchwork")
+if(!require("reshape2"))   install.packages("reshape2") 
+if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
+if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles
+if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed
 if(!require("scales"))  install.packages("scales")
+if(!require("sf"))  install.packages("sf")
+if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
+if(!require("zoo"))  install.packages("zoo")
 
 # II. Functions ----
 
