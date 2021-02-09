@@ -435,11 +435,37 @@ work.data <- work.data %>%
              mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
 
 # Lookup table for strata in partial coverage category
-partial <- data.frame(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TRW EFP"), 
-                      Rate = c(0.1540, 0.1523, 0.1959, 0.3000, 0.3000, 0.3000),
-                      descriptions = c("hook-and-line gear", "pot gear", "trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring", "trawl gear with electronic monitoring")) %>% 
-           mutate(formatted_strat = paste0("*", STRATA, "*"),
-                  txt = paste0(formatC(round(Rate*100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum'))
+partial_desc <- data.table(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TRW EFP"), 
+                      descriptions = c("hook-and-line gear", "pot gear", "trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring", "trawl gear with electronic monitoring")) 
+# Pull selection rates from norpac.odds_pct_trip_select table
+partial <- setDT(dbGetQuery(channel_afsc, paste(
+  "
+  SELECT DISTINCT 
+    a.percent, a.effective_date, 
+    b.sample_plan_seq, 
+    c.description AS GEAR,
+    d.description AS SAMPLE_PLAN
+  FROM norpac.odds_pct_trip_select a
+    JOIN norpac.odds_vessel_to_rate_strata b
+      ON a.trip_rate_strata = b.trip_rate_strata
+    JOIN norpac.atl_lov_gear_type c
+      ON b.gear_type_code = c.gear_type_code
+    JOIN norpac.odds_lov_sample_plan d
+      ON b.sample_plan_seq = d.sample_plan_seq
+  WHERE EXTRACT(YEAR FROM a.effective_date) = ", year, "
+  "
+)))
+
+partial[, GEAR := ifelse(GEAR %like% "Pot", "POT", ifelse(GEAR %like% "Longline", "HAL", ifelse(GEAR %like% "Trawl", "TRW", GEAR)))] # Simplify gear types
+partial[, STRATA := ifelse(           # Define strata based on sample plan and gear type
+  SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
+    SAMPLE_PLAN %like% "EM EFP" & GEAR == "TRW", "EM TRW EFP", ifelse(
+      SAMPLE_PLAN %like% "Gear Type", GEAR, NA)))]
+partial <- unique(partial[, .(Effective_Date = EFFECTIVE_DATE, STRATA, Rate = PERCENT)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
+partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    # Merge descriptions in 
+partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
+partial[, txt := paste0(formatC(round(Rate, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
+dcast(partial, STRATA ~ Effective_Date, value.var="Rate")   # Note that if the rates change for some strata and not others, 'NA' is returned
 
 # Save --------------------------------------------------------------------
 
