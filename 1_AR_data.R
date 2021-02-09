@@ -441,7 +441,7 @@ partial_desc <- data.table(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "
 partial <- setDT(dbGetQuery(channel_afsc, paste(
   "
   SELECT DISTINCT 
-    a.percent, a.effective_date, 
+    a.percent / 100 as rate, a.effective_date, 
     b.sample_plan_seq, 
     c.description AS GEAR,
     d.description AS SAMPLE_PLAN
@@ -461,10 +461,10 @@ partial[, STRATA := ifelse(           # Define strata based on sample plan and g
   SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
     SAMPLE_PLAN %like% "EM EFP" & GEAR == "TRW", "EM TRW EFP", ifelse(
       SAMPLE_PLAN %like% "Gear Type", GEAR, NA)))]
-partial <- unique(partial[, .(Effective_Date = EFFECTIVE_DATE, STRATA, Rate = PERCENT)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
+partial <- unique(partial[, .(Effective_Date = EFFECTIVE_DATE, STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
 partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    # Merge descriptions in 
 partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
-partial[, txt := paste0(formatC(round(Rate, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
+partial[, txt := paste0(formatC(round(Rate * 100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
 dcast(partial, STRATA ~ Effective_Date, value.var="Rate")   # Note that if the rates change for some strata and not others, 'NA' is returned
 
 # Save --------------------------------------------------------------------
