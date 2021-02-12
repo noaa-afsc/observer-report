@@ -1,7 +1,7 @@
 # Setup -------------------------------------------------------------------
 
 # Get packages and user-defined functions
-source("functions/3_helper.R")
+source("3_helper.R")
 
 # Random number seed
 set.seed(052870)
