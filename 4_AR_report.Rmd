@@ -98,25 +98,28 @@ The following items from the `r year` ADP have been identified as objectives for
 
 ```{r actual_observerdays_paid, include=FALSE}
 # Available budget for the year (in days)
-AvailableYR <- round(BUDGET / DAILY_RATE)
+# FIXME: Broken by new ADP structure
+# AvailableYR <- round(BUDGET / DAILY_RATE)
   
 # Predicted cost for the year (in days)
-PredictedYR <- total_days_obs
+# FIXME: Broken by new ADP structure
+# PredictedYR <- total_days_obs
 
 # Actual cost for the year (actual number of observer days paid for)
-ActualYR <- 3315.5 # Email from Lisa Thompson 3/5/20
+# TODO: ActualYR <- 3315.5 # Email from Lisa Thompson 3/5/20
 
 # Percent of budget predicted to be spent
-eval <- data.frame(ActualYR, PredictedYR) %>%
-        mutate(
-        #Percent of the budget used
-        pct.budget.spent = round(ActualYR/PredictedYR,3)*100,
-        #Percent of budget remaining
-        pct.budget.remain = round(100 - pct.budget.spent, 3),
-        #Was it more, less, or equal to the predicted budget?
-        more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
-                       ifelse(pct.budget.remain == 0, "equal to",
-                                 " greater than ")))
+# FIXME: Broken by new ADP structure
+# eval <- data.frame(ActualYR, PredictedYR) %>%
+#         mutate(
+#         #Percent of the budget used
+#         pct.budget.spent = round(ActualYR/PredictedYR,3)*100,
+#         #Percent of budget remaining
+#         pct.budget.remain = round(100 - pct.budget.spent, 3),
+#         #Was it more, less, or equal to the predicted budget?
+#         more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+#                        ifelse(pct.budget.remain == 0, "equal to",
+#                                  " greater than ")))
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
