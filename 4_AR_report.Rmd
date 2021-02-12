@@ -17,7 +17,6 @@ output:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
-rm(work.data.all) # This is currently only used for the trawl appendix
 
 # Load packages and functions 
 source("3_helper.R")
