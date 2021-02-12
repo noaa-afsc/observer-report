@@ -29,12 +29,12 @@ tech.memo     <- FALSE
 
 ```{r set-options, echo=FALSE, message=FALSE, warning=FALSE}
 #Total deployment strata:
-# 1 full coverage (FULL)
-# 5 gear and tender partial (HAL, POT - No Tender, POT - Tender, TRW - No Tender, TRW - Tender)
-# 2 regulated EM (EM HAL, EM POT) + 
-# 1 EM research (Zero EM Research) +
+# 2 full coverage (FULL, EM TRW EFP)
+# 3 partial coverage observed (HAL, POT, TRW)
+# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP) + 
+# 1 zero coverage EM research (Zero EM Research) +
 # 1 zero coverage (ZERO)
-total.strat <- length(unique(work.data$STRATA))
+total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 ```
 
 `r if(tech.memo){'#Abstract'}`  
