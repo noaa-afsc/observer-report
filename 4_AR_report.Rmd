@@ -21,6 +21,12 @@ load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 # Load packages and functions 
 source("3_helper.R")
 
+# Avoid scientific notation
+options(scipen=10000)
+
+# Avoid dplyr summarise warnings
+options(dplyr.summarise.inform = FALSE)
+
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included
 annual.report <- TRUE
@@ -98,28 +104,36 @@ The following items from the `r year` ADP have been identified as objectives for
 
 ```{r actual_observerdays_paid, include=FALSE}
 # Available budget for the year (in days)
-# FIXME: Broken by new ADP structure
-# AvailableYR <- round(BUDGET / DAILY_RATE)
+AvailableYR <- adp_out$ADJ %>% 
+               filter(ALLO == "min_plus_opt") %>% 
+               group_by(SIM_ITER, STEP) %>% 
+               summarise(OB_D = sum(OB_D)) %>% 
+               ungroup() %>% 
+               summarise(OB_D = mean(OB_D)) %>% 
+               unlist() %>% 
+               as.vector()
   
 # Predicted cost for the year (in days)
-# FIXME: Broken by new ADP structure
-# PredictedYR <- total_days_obs
+PredictedYR <- adp_out$BUD %>% 
+               filter(ALLO == "min_plus_opt") %>% 
+               summarise(ADP_D = mean(ADP_D)) %>% 
+               unlist() %>% 
+               as.vector()
 
 # Actual cost for the year (actual number of observer days paid for)
-# TODO: ActualYR <- 3315.5 # Email from Lisa Thompson 3/5/20
+ActualYR <- 1229.5 # Email from Lisa Thompson 2/12/21
 
 # Percent of budget predicted to be spent
-# FIXME: Broken by new ADP structure
-# eval <- data.frame(ActualYR, PredictedYR) %>%
-#         mutate(
-#         #Percent of the budget used
-#         pct.budget.spent = round(ActualYR/PredictedYR,3)*100,
-#         #Percent of budget remaining
-#         pct.budget.remain = round(100 - pct.budget.spent, 3),
-#         #Was it more, less, or equal to the predicted budget?
-#         more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
-#                        ifelse(pct.budget.remain == 0, "equal to",
-#                                  " greater than ")))
+eval <- data.frame(ActualYR, PredictedYR) %>%
+        mutate(
+        #Percent of the budget used
+        pct.budget.spent = round(ActualYR/PredictedYR,3)*100,
+        #Percent of budget remaining
+        pct.budget.remain = round(100 - pct.budget.spent, 3),
+        #Was it more, less, or equal to the predicted budget?
+        more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+                       ifelse(pct.budget.remain == 0, "equal to",
+                                 " greater than ")))
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
@@ -183,23 +197,17 @@ This year we made several updates to our analyses.  These include two major and 
 The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
 
 ##Evaluating Effort Predictions  
-```{r outcomes.plot, include=FALSE}
-# Add predicted total observed days to the sims_out object
-sample_pops_out <- sample_pops_out %>% 
-                   group_by(pop_num, sampling_iter) %>% 
-                   mutate(total_days_obs = sum(days_obs)) %>% 
-                   ungroup()
-
+```{r outcomes.plot}
 # Plot effort predictions against actual
 outcomes.plot <-
-  ggplot(sample_pops_out, aes(x = total_days_obs)) +
+  ggplot(adp_out$BUD[ALLO == "min_plus_opt"], aes(x = ADP_D)) +
   geom_histogram(aes(y = ..density..), binwidth = 20, alpha=0.2, fill="blue", col="cornflowerblue") +
   geom_vline(xintercept = AvailableYR, lty=2, col="black") +
   geom_vline(xintercept = ActualYR, lty=1, col="blue") +
   annotate("text", x=AvailableYR + 20, y=0.002,
             label=paste("Available Day Budget: ", AvailableYR, sep=""),
             col="black", angle = 90) + 
-  annotate("text", x=ActualYR - 20, y=0.002,
+  annotate("text", x=ActualYR - 30, y=0.002,
            label=paste("Actual Days Paid: ", ActualYR, sep=""),
            col="blue", angle = 90) +
   theme_bw() +
@@ -209,7 +217,7 @@ outcomes.plot <-
         axis.line=element_line(size=.5, color="black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(limits = c(2400, 3500), breaks=seq(2400, 4000, 100)) +
+  scale_x_continuous(limits = c(1100, 3100), breaks=seq(1500, 3000, 500)) +
   labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
        x=paste("\nTotal days used in ", year, sep = ""))
 ```
@@ -229,9 +237,6 @@ days_paid_sum <- days_paid %>%
                            Total.Option.Dollars = sum(Option.Dollars, na.rm = TRUE),
                            Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE)) %>% 
                  mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars)
-
-# Avoid scientific notation
-options(scipen=10000)
 
 # Plot
 costs.plot <- ggplot(pred_costs, aes(x = total_cost)) +
