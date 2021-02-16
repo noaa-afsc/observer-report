@@ -35,6 +35,11 @@ load("data/effort_prediction.rdata")
 rm(efrt)
 
 # * ADP outputs ----
+
+# Output from the days paid function, which sets the budget
+load("data/dp_res.rdata")
+
+# Output from simulations
 adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 
 # * Valhalla ----

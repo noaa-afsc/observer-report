@@ -198,9 +198,12 @@ The deployment of observers into the `r year` Federal fisheries in Alaska is pri
 
 ##Evaluating Effort Predictions  
 ```{r outcomes.plot}
+# Isolate ADP sampling effort predictions for the chosen design
+sample_pops_out <- adp_out$BUD[ALLO == "min_plus_opt"]
+
 # Plot effort predictions against actual
 outcomes.plot <-
-  ggplot(adp_out$BUD[ALLO == "min_plus_opt"], aes(x = ADP_D)) +
+  ggplot(sample_pops_out, aes(x = ADP_D)) +
   geom_histogram(aes(y = ..density..), binwidth = 20, alpha=0.2, fill="blue", col="cornflowerblue") +
   geom_vline(xintercept = AvailableYR, lty=2, col="black") +
   geom_vline(xintercept = ActualYR, lty=1, col="blue") +
@@ -223,30 +226,31 @@ outcomes.plot <-
 ```
 
 ```{r costs.plot, include=FALSE}
-# Get predicted costs from ADP
-pred_costs <- sample_pops_out %>% 
-              distinct(pop_num, sampling_iter, total_cost)
+# Get the budget used in the ADP
+BUDGET <- dp_res$BUD$BUD
 
 # Get actual costs from spreadsheet provided by FMA
-days_paid <- read.csv("FMA Days Paid.csv")
-days_paid <- filter(days_paid, Calendar == 2019)
+days_paid <- read.csv("data/FMA Days Paid.csv")
+days_paid <- filter(days_paid, Calendar == 2020)
 
 # Get total costs
 days_paid_sum <- days_paid %>% 
                  summarise(Total.Base.Dollars = sum(Base.Dollars, na.rm = TRUE),
                            Total.Option.Dollars = sum(Option.Dollars, na.rm = TRUE),
-                           Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE)) %>% 
-                 mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars)
+                           Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE),
+                           Total.Quarantine.Dollars = sum(Quarantine..Dollars, na.rm = TRUE),
+                           Total.Plant.Dollars = sum(Plant..Dollars, na.rm = TRUE)) %>% 
+                 mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot <- ggplot(pred_costs, aes(x = total_cost)) +
+costs.plot <- ggplot(sample_pops_out, aes(x = ADP_C)) +
               geom_histogram(aes(y = ..density..), binwidth = 20000, alpha=0.2, 
                              fill="green", col="darkseagreen2") +
               geom_vline(xintercept = BUDGET, lty=2, col="black") +
               geom_vline(xintercept = days_paid_sum$Total.Dollars, lty=1, col="darkgreen") +
-              annotate("text", x=BUDGET + 21000, y=0.000001, 
+              annotate("text", x=BUDGET + 30000, y=0.000001, 
                        label=paste("Available Contract Budget: $", prettyNum(BUDGET, big.mark=","), sep=""), col="black", angle = 90) +
-              annotate("text", x=days_paid_sum$Total.Dollars - 21000, y=0.000001, 
+              annotate("text", x=days_paid_sum$Total.Dollars - 30000, y=0.000001, 
                        label=paste("Actual Contract Cost: $", prettyNum(days_paid_sum$Total.Dollars, big.mark=","), sep=""), 
                        col="darkgreen", angle = 90) +
               theme_bw() +
@@ -256,7 +260,7 @@ costs.plot <- ggplot(pred_costs, aes(x = total_cost)) +
                     axis.line=element_line(size=.5, color="black"),
                     panel.grid.major = element_blank(),
                     panel.grid.minor = element_blank()) +
-              scale_x_continuous(limits = c(3800000, 5200000), breaks=c(4000000, 4500000, 5000000),
+              scale_x_continuous(limits = c(2600000, 4250000), breaks=c(3000000, 4000000, 5000000),
                                  labels = dollar) +
               labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""), 
                    x=paste("\nTotal contract costs in ", year, sep = ""))
