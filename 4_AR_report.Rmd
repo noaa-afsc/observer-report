@@ -198,12 +198,12 @@ The deployment of observers into the `r year` Federal fisheries in Alaska is pri
 
 ##Evaluating Effort Predictions  
 ```{r outcomes.plot}
-# Isolate ADP sampling effort predictions for the chosen design
-sample_pops_out <- adp_out$BUD[ALLO == "min_plus_opt"]
+# Isolate ADP budget predictions for the chosen design
+sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"]
 
 # Plot effort predictions against actual
 outcomes.plot <-
-  ggplot(sample_pops_out, aes(x = ADP_D)) +
+  ggplot(sample_budget_out, aes(x = ADP_D)) +
   geom_histogram(aes(y = ..density..), binwidth = 20, alpha=0.2, fill="blue", col="cornflowerblue") +
   geom_vline(xintercept = AvailableYR, lty=2, col="black") +
   geom_vline(xintercept = ActualYR, lty=1, col="blue") +
@@ -243,7 +243,7 @@ days_paid_sum <- days_paid %>%
                  mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot <- ggplot(sample_pops_out, aes(x = ADP_C)) +
+costs.plot <- ggplot(sample_budget_out, aes(x = ADP_C)) +
               geom_histogram(aes(y = ..density..), binwidth = 20000, alpha=0.2, 
                              fill="green", col="darkseagreen2") +
               geom_vline(xintercept = BUDGET, lty=2, col="black") +
