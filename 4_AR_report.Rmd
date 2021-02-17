@@ -267,108 +267,40 @@ costs.plot <- ggplot(sample_budget_out, aes(x = ADP_C)) +
 ```
 
 ```{r budget_eval, include=FALSE}
-# Evaluate why we were off budget in 2019
-# Group by strata, fmp, and target, with strata-specifc totals
-trip.budget <- merge(
-  # Predicted trips days by strata, fmp, and target
-  plyr::rbind.fill(
-    sample_pops_out %>%
-      group_by(STRATA_NEW, FMP, TRIP_TARGET_CODE, pop_num, sampling_iter) %>%
-      summarise(pred_days = sum(Days)) %>%
-      group_by(STRATA_NEW, FMP, TRIP_TARGET_CODE) %>% 
-      summarise(pred_days = round(mean(pred_days))) %>%
-      arrange(STRATA_NEW, FMP, TRIP_TARGET_CODE) %>% 
-      select(STRATA = STRATA_NEW, FMP, TARGET = TRIP_TARGET_CODE, pred_days)
-    ,
-    # Predicted totals by strata
-    sample_pops_out %>%
-      group_by(STRATA_NEW, pop_num, sampling_iter) %>%
-      summarise(pred_days = sum(Days)) %>%
-      group_by(STRATA_NEW) %>% 
-      summarise(pred_days = round(mean(pred_days))) %>% 
-      arrange(STRATA_NEW) %>% 
-      select(STRATA = STRATA_NEW, pred_days)
-  ) %>% arrange(STRATA, FMP, TARGET, pred_days)
-  ,
-  # Actual trip days by strata, fmp, and target
-  plyr::rbind.fill(
-    work.data %>%
-      filter(STRATA %in% partial$STRATA) %>% 
-      filter(!(STRATA %like% "EM")) %>%
-      mutate(TRIP_TARGET_CODE=ifelse(!(TRIP_TARGET_CODE %in% c("P", "B", "C", "I", "S")), "Other", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("P", "B"), "Pollock", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("C"), "Pacific Cod", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("I"), "Halibut", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("S"), "Sablefish", TRIP_TARGET_CODE)) %>% 
-      mutate(FMP=ifelse(FMP %in% c("BS", "AI", "BSAI"), "BSAI", FMP)) %>% 
-      mutate(FMP=ifelse(TRIP_TARGET_CODE=="Sablefish", "AK", FMP)) %>% 
-      group_by(TRIP_ID, STRATA, FMP, TRIP_TARGET_CODE) %>%
-      dplyr::summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                       dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
-      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
-      group_by(STRATA, FMP, TARGET = TRIP_TARGET_CODE) %>%
-      summarise(act_days = sum(days))
-    ,
-    # Actual totals by strata
-    work.data %>%
-      filter(STRATA %in% partial$STRATA) %>%
-      filter(!(STRATA %like% "EM")) %>%
-      mutate(TRIP_TARGET_CODE=ifelse(!(TRIP_TARGET_CODE %in% c("P", "B", "C", "I", "S")), "Other", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("P", "B"), "Pollock", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("C"), "Pacific Cod", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("I"), "Halibut", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("S"), "Sablefish", TRIP_TARGET_CODE)) %>% 
-      mutate(FMP=ifelse(FMP %in% c("BS", "AI", "BSAI"), "BSAI", FMP)) %>% 
-      mutate(FMP=ifelse(TRIP_TARGET_CODE=="Sablefish", "AK", FMP)) %>%
-      group_by(TRIP_ID, STRATA) %>%
-      dplyr::summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                       dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
-      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
-      group_by(STRATA) %>% 
-      summarise(act_days = sum(days)) %>%
-      select(STRATA, act_days)
-  ) %>% arrange(STRATA, FMP, TARGET, act_days), all = TRUE) %>% 
-  # Change NAs to 0 for predicted and actual days
-  mutate(pred_days = ifelse(is.na(pred_days), 0, pred_days),
-         act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
-  # Percent difference between predicted and actual
-  mutate(diff = act_days -  pred_days,
-         perc = (diff)/pred_days * 100) %>%
-  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>% 
-  arrange(STRATA, TARGET, FMP)
-  
+# Isolate ADP rate predictions for the chosen design
+sample_pops_out <- adp_out$ADJ[ALLO == "min_plus_opt"]
+
+# Evaluate why we were off budget
+trip.budget.table <- merge(
+                     # Predicted trips days by strata
+                     sample_pops_out %>%
+                     group_by(STRATA) %>%
+                     summarise(pred_days = round(mean(STRATA_N) * mean(TRP_DUR)))
+                     ,
+                     # Actual trip days by strata
+                     work.data %>%
+                     filter(STRATA %in% partial$STRATA) %>%
+                     filter(!(STRATA %like% "EM")) %>% 
+                     group_by(TRIP_ID, STRATA) %>%
+                     summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
+                                      dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
+                     mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
+                     group_by(STRATA) %>% 
+                     summarise(act_days = sum(days))
+                     ) %>% 
+                     # Change NAs to 0 for predicted and actual days
+                     mutate(pred_days = ifelse(is.na(pred_days), 0, pred_days),
+                     act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+                     # Percent difference between predicted and actual
+                     mutate(diff = act_days -  pred_days,
+                     perc = (diff)/pred_days * 100) %>%
+                     mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
+
+
 # Format strata column  
-trip.budget.table.full <- 
-  full_join(trip.budget, filter(partial, !(STRATA %like% "EM")), by="STRATA") %>%
-    mutate(Strata = ifelse(is.na(FMP) & is.na(TARGET), paste(formatted_strat, "Total"), formatted_strat)) %>% 
-    select(Strata, FMP, TARGET, pred_days, act_days, perc)
-
-# Bind overall total to strata-specific results
-trip.budget.table.full <- 
-  plyr::rbind.fill(
-    trip.budget.table.full,
-    trip.budget.table.full %>% 
-      summarise(pred_days = sum(pred_days[!(Strata %like% "Total")]),
-                act_days = sum(act_days[!(Strata %like% "Total")])) %>% 
-      mutate(Strata = "Total", diff = act_days - pred_days) %>% 
-      mutate(perc = format((diff)/pred_days * 100, digits = 1, nsmall = 1)) %>% 
-      select(Strata, pred_days, act_days, perc)) %>% 
-    mutate(FMP = ifelse(is.na(FMP), "", FMP),
-           TARGET = ifelse(is.na(TARGET), "", TARGET),
-           diff = act_days - pred_days) %>% 
-    select(Strata,
-           FMP,
-           Target = TARGET,
-           `Predicted number of trip days in ADP` = pred_days, 
-           `Actual number of trip days` = act_days, 
-           `Difference from predicted` = diff, 
-           `% Difference from predicted` = perc)
-
-# Create a version without fmp and target for the report
-trip.budget.table <- trip.budget.table.full %>%
-                     select(-FMP, -Target) %>% 
-                     filter(Strata %like% "Total") %>% 
-                     mutate(Strata = ifelse(Strata %like% "HAL" | Strata %like% "POT" | Strata %like% "TRW", substr(Strata, 1, nchar(Strata) - 6), Strata))
+trip.budget.table <- 
+  full_join(trip.budget.table, filter(partial, !(STRATA %like% "EM")) %>% distinct(STRATA, formatted_strat), by="STRATA") %>%
+  select(Strata = formatted_strat, pred_days, act_days, diff, perc)
 ```
 
 Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
