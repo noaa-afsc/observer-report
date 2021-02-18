@@ -120,8 +120,16 @@ PredictedYR <- adp_out$BUD %>%
                unlist() %>% 
                as.vector()
 
-# Actual cost for the year (actual number of observer days paid for)
-ActualYR <- 1229.5 # Email from Lisa Thompson 2/12/21
+# Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!)
+days_paid <- read.csv("data/FMA Days Paid.csv")
+days_paid <- filter(days_paid, Calendar == year)
+
+# Actual number of observer days paid for
+ActualYR <- days_paid %>% 
+            replace(is.na(.), 0) %>%
+            summarise(Total.Days = sum(Base.Days + na.omit(Option.Days))) %>% 
+            unlist() %>% 
+            as.vector()
 
 # Percent of budget predicted to be spent
 eval <- data.frame(ActualYR, PredictedYR) %>%
@@ -229,10 +237,6 @@ outcomes.plot <-
 # Get the budget used in the ADP
 BUDGET <- dp_res$BUD$BUD
 
-# Get actual costs from spreadsheet provided by FMA
-days_paid <- read.csv("data/FMA Days Paid.csv")
-days_paid <- filter(days_paid, Calendar == 2020)
-
 # Get total costs
 days_paid_sum <- days_paid %>% 
                  summarise(Total.Base.Dollars = sum(Base.Dollars, na.rm = TRUE),
@@ -295,7 +299,6 @@ trip.budget.table <- merge(
                      mutate(diff = act_days -  pred_days,
                      perc = (diff)/pred_days * 100) %>%
                      mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
-
 
 # Format strata column  
 trip.budget.table <- 
