@@ -283,26 +283,29 @@ trip.budget.table <- merge(
                      ,
                      # Actual trip days by strata
                      work.data %>%
-                     filter(STRATA %in% partial$STRATA) %>%
-                     filter(!(STRATA %like% "EM")) %>% 
+                     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
                      group_by(TRIP_ID, STRATA) %>%
                      summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                                      dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
+                     dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
                      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
                      group_by(STRATA) %>% 
                      summarise(act_days = sum(days))
-                     ) %>% 
-                     # Change NAs to 0 for predicted and actual days
-                     mutate(pred_days = ifelse(is.na(pred_days), 0, pred_days),
-                     act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+                     , all = TRUE) %>% 
+                     # Calculate total predicted days for EM strata from final  
+                     # ADP document, since their trip duration isn't in ADP output 
+                     mutate(pred_days = ifelse(STRATA == "EM HAL", round(806 * (1204/242)), pred_days),
+                            pred_days = ifelse(STRATA == "EM POT", round(113 * (159/34)), pred_days),
+                            pred_days = ifelse(STRATA == "EM TRW EFP", round(496 * (401/149)), pred_days)) %>% 
+                     # Change NAs to 0 for actual days      
+                     mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
                      # Percent difference between predicted and actual
                      mutate(diff = act_days -  pred_days,
-                     perc = (diff)/pred_days * 100) %>%
+                            perc = (diff)/pred_days * 100) %>%
                      mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
 
 # Format strata column  
 trip.budget.table <- 
-  full_join(trip.budget.table, filter(partial, !(STRATA %like% "EM")) %>% distinct(STRATA, formatted_strat), by="STRATA") %>%
+  full_join(trip.budget.table, distinct(partial, STRATA, formatted_strat), by="STRATA") %>%
   select(Strata = formatted_strat, pred_days, act_days, diff, perc)
 ```
 
