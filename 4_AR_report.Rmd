@@ -1,6 +1,7 @@
 ---
 title: "Deployment Performance Review of the 2019 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
+always_allow_html: true
 output:
   word_document:
     reference_docx: word-styles-reference-01.docx
@@ -303,15 +304,10 @@ trip.budget.table <- merge(
                             perc = (diff)/pred_days * 100) %>%
                      mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
 
-# Format strata column  
-trip.budget.table <- 
-  full_join(trip.budget.table, distinct(partial, STRATA, formatted_strat), by="STRATA") %>%
-  select(Strata = formatted_strat, pred_days, act_days, diff, perc)
-
 # Append total
 trip.budget.table <- rbind(trip.budget.table,
                            trip.budget.table %>% 
-summarise(Strata = "Total", pred_days = sum(pred_days), act_days = sum(act_days), diff = sum(diff), perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1)))
+summarise(STRATA = "Total", pred_days = sum(pred_days), act_days = sum(act_days), diff = sum(diff), perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1)))
 ```
 
 Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
@@ -1879,9 +1875,19 @@ NMFS. 2013. 2014 Annual deployment plan for observers in the groundfish and hali
 ####`r tbl_nums('trip.budget.table', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
 ```{r trip.budget.tbl, echo=FALSE}
+# Add commas to numbers >= 1000
 trip.budget.table[2:4] <- lapply(trip.budget.table[,2:4], prettyNum, trim=TRUE, big.mark=",")
-kable(trip.budget.table)
 
+# Italicize strata
+trip.budget.table$Strata <- cell_spec(trip.budget.table$STRATA, italic = ifelse(trip.budget.table$STRATA != "Total", TRUE, FALSE))
+
+# Print table
+kbl(
+  select(trip.budget.table, Strata, pred_days, act_days, diff, perc) %>% 
+  rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
+  kable_paper() %>%
+  # Group columns 
+  add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
 ```
 
 #####
