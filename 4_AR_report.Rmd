@@ -1,6 +1,7 @@
 ---
 title: "Deployment Performance Review of the 2019 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
+always_allow_html: true
 output:
   word_document:
     reference_docx: word-styles-reference-01.docx
@@ -17,10 +18,15 @@ output:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
-rm(work.data.all) # This is currently only used for the trawl appendix
 
 # Load packages and functions 
 source("3_helper.R")
+
+# Avoid scientific notation
+options(scipen=10000)
+
+# Avoid dplyr summarise warnings
+options(dplyr.summarise.inform = FALSE)
 
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included
@@ -30,12 +36,12 @@ tech.memo     <- FALSE
 
 ```{r set-options, echo=FALSE, message=FALSE, warning=FALSE}
 #Total deployment strata:
-# 1 full coverage (FULL)
-# 5 gear and tender partial (HAL, POT - No Tender, POT - Tender, TRW - No Tender, TRW - Tender)
-# 2 regulated EM (EM HAL, EM POT) + 
-# 1 EM research (Zero EM Research) +
+# 2 full coverage (FULL, EM TRW EFP)
+# 3 partial coverage observed (HAL, POT, TRW)
+# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP) + 
+# 1 zero coverage EM research (Zero EM Research) +
 # 1 zero coverage (ZERO)
-total.strat <- length(unique(work.data$STRATA))
+total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 ```
 
 `r if(tech.memo){'#Abstract'}`  
@@ -99,13 +105,32 @@ The following items from the `r year` ADP have been identified as objectives for
 
 ```{r actual_observerdays_paid, include=FALSE}
 # Available budget for the year (in days)
-AvailableYR <- round(BUDGET / DAILY_RATE)
+AvailableYR <- adp_out$ADJ %>% 
+               filter(ALLO == "min_plus_opt") %>% 
+               group_by(SIM_ITER, STEP) %>% 
+               summarise(OB_D = sum(OB_D)) %>% 
+               ungroup() %>% 
+               summarise(OB_D = mean(OB_D)) %>% 
+               unlist() %>% 
+               as.vector()
   
 # Predicted cost for the year (in days)
-PredictedYR <- total_days_obs
+PredictedYR <- adp_out$BUD %>% 
+               filter(ALLO == "min_plus_opt") %>% 
+               summarise(ADP_D = mean(ADP_D)) %>% 
+               unlist() %>% 
+               as.vector()
 
-# Actual cost for the year (actual number of observer days paid for)
-ActualYR <- 3315.5 # Email from Lisa Thompson 3/5/20
+# Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!)
+days_paid <- read.csv("data/FMA Days Paid.csv")
+days_paid <- filter(days_paid, Calendar == year)
+
+# Actual number of observer days paid for
+ActualYR <- days_paid %>% 
+            replace(is.na(.), 0) %>%
+            summarise(Total.Days = sum(Base.Days + na.omit(Option.Days))) %>% 
+            unlist() %>% 
+            as.vector()
 
 # Percent of budget predicted to be spent
 eval <- data.frame(ActualYR, PredictedYR) %>%
@@ -181,23 +206,20 @@ This year we made several updates to our analyses.  These include two major and 
 The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
 
 ##Evaluating Effort Predictions  
-```{r outcomes.plot, include=FALSE}
-# Add predicted total observed days to the sims_out object
-sample_pops_out <- sample_pops_out %>% 
-                   group_by(pop_num, sampling_iter) %>% 
-                   mutate(total_days_obs = sum(days_obs)) %>% 
-                   ungroup()
+```{r outcomes.plot}
+# Isolate ADP budget predictions for the chosen design
+sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"]
 
 # Plot effort predictions against actual
 outcomes.plot <-
-  ggplot(sample_pops_out, aes(x = total_days_obs)) +
+  ggplot(sample_budget_out, aes(x = ADP_D)) +
   geom_histogram(aes(y = ..density..), binwidth = 20, alpha=0.2, fill="blue", col="cornflowerblue") +
   geom_vline(xintercept = AvailableYR, lty=2, col="black") +
   geom_vline(xintercept = ActualYR, lty=1, col="blue") +
   annotate("text", x=AvailableYR + 20, y=0.002,
             label=paste("Available Day Budget: ", AvailableYR, sep=""),
             col="black", angle = 90) + 
-  annotate("text", x=ActualYR - 20, y=0.002,
+  annotate("text", x=ActualYR - 30, y=0.002,
            label=paste("Actual Days Paid: ", ActualYR, sep=""),
            col="blue", angle = 90) +
   theme_bw() +
@@ -207,39 +229,33 @@ outcomes.plot <-
         axis.line=element_line(size=.5, color="black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(limits = c(2400, 3500), breaks=seq(2400, 4000, 100)) +
+  scale_x_continuous(limits = c(1100, 3100), breaks=seq(1500, 3000, 500)) +
   labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
        x=paste("\nTotal days used in ", year, sep = ""))
 ```
 
 ```{r costs.plot, include=FALSE}
-# Get predicted costs from ADP
-pred_costs <- sample_pops_out %>% 
-              distinct(pop_num, sampling_iter, total_cost)
-
-# Get actual costs from spreadsheet provided by FMA
-days_paid <- read.csv("FMA Days Paid.csv")
-days_paid <- filter(days_paid, Calendar == 2019)
+# Get the budget used in the ADP
+BUDGET <- dp_res$BUD$BUD
 
 # Get total costs
 days_paid_sum <- days_paid %>% 
                  summarise(Total.Base.Dollars = sum(Base.Dollars, na.rm = TRUE),
                            Total.Option.Dollars = sum(Option.Dollars, na.rm = TRUE),
-                           Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE)) %>% 
-                 mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars)
-
-# Avoid scientific notation
-options(scipen=10000)
+                           Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE),
+                           Total.Quarantine.Dollars = sum(Quarantine..Dollars, na.rm = TRUE),
+                           Total.Plant.Dollars = sum(Plant..Dollars, na.rm = TRUE)) %>% 
+                 mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot <- ggplot(pred_costs, aes(x = total_cost)) +
+costs.plot <- ggplot(sample_budget_out, aes(x = ADP_C)) +
               geom_histogram(aes(y = ..density..), binwidth = 20000, alpha=0.2, 
                              fill="green", col="darkseagreen2") +
               geom_vline(xintercept = BUDGET, lty=2, col="black") +
               geom_vline(xintercept = days_paid_sum$Total.Dollars, lty=1, col="darkgreen") +
-              annotate("text", x=BUDGET + 21000, y=0.000001, 
+              annotate("text", x=BUDGET + 30000, y=0.000001, 
                        label=paste("Available Contract Budget: $", prettyNum(BUDGET, big.mark=","), sep=""), col="black", angle = 90) +
-              annotate("text", x=days_paid_sum$Total.Dollars - 21000, y=0.000001, 
+              annotate("text", x=days_paid_sum$Total.Dollars - 30000, y=0.000001, 
                        label=paste("Actual Contract Cost: $", prettyNum(days_paid_sum$Total.Dollars, big.mark=","), sep=""), 
                        col="darkgreen", angle = 90) +
               theme_bw() +
@@ -249,115 +265,49 @@ costs.plot <- ggplot(pred_costs, aes(x = total_cost)) +
                     axis.line=element_line(size=.5, color="black"),
                     panel.grid.major = element_blank(),
                     panel.grid.minor = element_blank()) +
-              scale_x_continuous(limits = c(3800000, 5200000), breaks=c(4000000, 4500000, 5000000),
+              scale_x_continuous(limits = c(2600000, 4250000), breaks=c(3000000, 4000000, 5000000),
                                  labels = dollar) +
               labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""), 
                    x=paste("\nTotal contract costs in ", year, sep = ""))
 ```
 
 ```{r budget_eval, include=FALSE}
-# Evaluate why we were off budget in 2019
-# Group by strata, fmp, and target, with strata-specifc totals
-trip.budget <- merge(
-  # Predicted trips days by strata, fmp, and target
-  plyr::rbind.fill(
-    sample_pops_out %>%
-      group_by(STRATA_NEW, FMP, TRIP_TARGET_CODE, pop_num, sampling_iter) %>%
-      summarise(pred_days = sum(Days)) %>%
-      group_by(STRATA_NEW, FMP, TRIP_TARGET_CODE) %>% 
-      summarise(pred_days = round(mean(pred_days))) %>%
-      arrange(STRATA_NEW, FMP, TRIP_TARGET_CODE) %>% 
-      select(STRATA = STRATA_NEW, FMP, TARGET = TRIP_TARGET_CODE, pred_days)
-    ,
-    # Predicted totals by strata
-    sample_pops_out %>%
-      group_by(STRATA_NEW, pop_num, sampling_iter) %>%
-      summarise(pred_days = sum(Days)) %>%
-      group_by(STRATA_NEW) %>% 
-      summarise(pred_days = round(mean(pred_days))) %>% 
-      arrange(STRATA_NEW) %>% 
-      select(STRATA = STRATA_NEW, pred_days)
-  ) %>% arrange(STRATA, FMP, TARGET, pred_days)
-  ,
-  # Actual trip days by strata, fmp, and target
-  plyr::rbind.fill(
-    work.data %>%
-      filter(STRATA %in% partial$STRATA) %>% 
-      filter(!(STRATA %like% "EM")) %>%
-      mutate(TRIP_TARGET_CODE=ifelse(!(TRIP_TARGET_CODE %in% c("P", "B", "C", "I", "S")), "Other", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("P", "B"), "Pollock", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("C"), "Pacific Cod", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("I"), "Halibut", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("S"), "Sablefish", TRIP_TARGET_CODE)) %>% 
-      mutate(FMP=ifelse(FMP %in% c("BS", "AI", "BSAI"), "BSAI", FMP)) %>% 
-      mutate(FMP=ifelse(TRIP_TARGET_CODE=="Sablefish", "AK", FMP)) %>% 
-      group_by(TRIP_ID, STRATA, FMP, TRIP_TARGET_CODE) %>%
-      dplyr::summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                       dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
-      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
-      group_by(STRATA, FMP, TARGET = TRIP_TARGET_CODE) %>%
-      summarise(act_days = sum(days))
-    ,
-    # Actual totals by strata
-    work.data %>%
-      filter(STRATA %in% partial$STRATA) %>%
-      filter(!(STRATA %like% "EM")) %>%
-      mutate(TRIP_TARGET_CODE=ifelse(!(TRIP_TARGET_CODE %in% c("P", "B", "C", "I", "S")), "Other", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("P", "B"), "Pollock", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("C"), "Pacific Cod", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("I"), "Halibut", TRIP_TARGET_CODE)) %>% 
-      mutate(TRIP_TARGET_CODE=ifelse(TRIP_TARGET_CODE %in% c("S"), "Sablefish", TRIP_TARGET_CODE)) %>% 
-      mutate(FMP=ifelse(FMP %in% c("BS", "AI", "BSAI"), "BSAI", FMP)) %>% 
-      mutate(FMP=ifelse(TRIP_TARGET_CODE=="Sablefish", "AK", FMP)) %>%
-      group_by(TRIP_ID, STRATA) %>%
-      dplyr::summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                       dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
-      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
-      group_by(STRATA) %>% 
-      summarise(act_days = sum(days)) %>%
-      select(STRATA, act_days)
-  ) %>% arrange(STRATA, FMP, TARGET, act_days), all = TRUE) %>% 
-  # Change NAs to 0 for predicted and actual days
-  mutate(pred_days = ifelse(is.na(pred_days), 0, pred_days),
-         act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
-  # Percent difference between predicted and actual
-  mutate(diff = act_days -  pred_days,
-         perc = (diff)/pred_days * 100) %>%
-  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>% 
-  arrange(STRATA, TARGET, FMP)
-  
-# Format strata column  
-trip.budget.table.full <- 
-  full_join(trip.budget, filter(partial, !(STRATA %like% "EM")), by="STRATA") %>%
-    mutate(Strata = ifelse(is.na(FMP) & is.na(TARGET), paste(formatted_strat, "Total"), formatted_strat)) %>% 
-    select(Strata, FMP, TARGET, pred_days, act_days, perc)
+# Isolate ADP rate predictions for the chosen design
+sample_pops_out <- adp_out$ADJ[ALLO == "min_plus_opt"]
 
-# Bind overall total to strata-specific results
-trip.budget.table.full <- 
-  plyr::rbind.fill(
-    trip.budget.table.full,
-    trip.budget.table.full %>% 
-      summarise(pred_days = sum(pred_days[!(Strata %like% "Total")]),
-                act_days = sum(act_days[!(Strata %like% "Total")])) %>% 
-      mutate(Strata = "Total", diff = act_days - pred_days) %>% 
-      mutate(perc = format((diff)/pred_days * 100, digits = 1, nsmall = 1)) %>% 
-      select(Strata, pred_days, act_days, perc)) %>% 
-    mutate(FMP = ifelse(is.na(FMP), "", FMP),
-           TARGET = ifelse(is.na(TARGET), "", TARGET),
-           diff = act_days - pred_days) %>% 
-    select(Strata,
-           FMP,
-           Target = TARGET,
-           `Predicted number of trip days in ADP` = pred_days, 
-           `Actual number of trip days` = act_days, 
-           `Difference from predicted` = diff, 
-           `% Difference from predicted` = perc)
+# Evaluate why we were off budget
+trip.budget.table <- merge(
+                     # Predicted trips days by strata
+                     sample_pops_out %>%
+                     group_by(STRATA) %>%
+                     summarise(pred_days = round(mean(STRATA_N) * mean(TRP_DUR)))
+                     ,
+                     # Actual trip days by strata
+                     work.data %>%
+                     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
+                     group_by(TRIP_ID, STRATA) %>%
+                     summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
+                     dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
+                     mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
+                     group_by(STRATA) %>% 
+                     summarise(act_days = sum(days))
+                     , all = TRUE) %>% 
+                     # Calculate total predicted days for EM strata from final  
+                     # ADP document, since their trip duration isn't in ADP output 
+                     mutate(pred_days = ifelse(STRATA == "EM HAL", round(806 * (1204/242)), pred_days),
+                            pred_days = ifelse(STRATA == "EM POT", round(113 * (159/34)), pred_days),
+                            pred_days = ifelse(STRATA == "EM TRW EFP", round(496 * (401/149)), pred_days)) %>% 
+                     # Change NAs to 0 for actual days      
+                     mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+                     # Percent difference between predicted and actual
+                     mutate(diff = act_days -  pred_days,
+                            perc = (diff)/pred_days * 100) %>%
+                     mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
 
-# Create a version without fmp and target for the report
-trip.budget.table <- trip.budget.table.full %>%
-                     select(-FMP, -Target) %>% 
-                     filter(Strata %like% "Total") %>% 
-                     mutate(Strata = ifelse(Strata %like% "HAL" | Strata %like% "POT" | Strata %like% "TRW", substr(Strata, 1, nchar(Strata) - 6), Strata))
+# Append total
+trip.budget.table <- rbind(trip.budget.table,
+                           trip.budget.table %>% 
+summarise(STRATA = "Total", pred_days = sum(pred_days), act_days = sum(act_days), diff = sum(diff), perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1)))
 ```
 
 Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
@@ -1925,9 +1875,19 @@ NMFS. 2013. 2014 Annual deployment plan for observers in the groundfish and hali
 ####`r tbl_nums('trip.budget.table', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
 ```{r trip.budget.tbl, echo=FALSE}
+# Add commas to numbers >= 1000
 trip.budget.table[2:4] <- lapply(trip.budget.table[,2:4], prettyNum, trim=TRUE, big.mark=",")
-kable(trip.budget.table)
 
+# Italicize strata
+trip.budget.table$Strata <- cell_spec(trip.budget.table$STRATA, italic = ifelse(trip.budget.table$STRATA != "Total", TRUE, FALSE))
+
+# Print table
+kbl(
+  select(trip.budget.table, Strata, pred_days, act_days, diff, perc) %>% 
+  rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
+  kable_paper() %>%
+  # Group columns 
+  add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
 ```
 
 #####
