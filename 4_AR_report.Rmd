@@ -494,6 +494,7 @@ for.p.wide <- merge(
             ),
   # Now add in the total trips for the random number only
   odds.dat %>% 
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
   filter(!is.na(random.assign)) %>% 
   group_by(STRATA) %>%
   summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
@@ -505,14 +506,14 @@ for.p.wide <- merge(
 # Need to merge in the selection rates for calculating p-values later
 for.p.wide <- merge(
   for.p.wide, 
-  odds.dat %>% 
-  select(STRATA, ODDS_SELECTION_PCT) %>% 
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>% 
-  distinct(), 
+  partial %>%
+  filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
+  distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
   all = TRUE)
 
 # Put into long format
 p.table <- gather(data = for.p.wide, key, value, -STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source)
+
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
 
@@ -527,8 +528,6 @@ for(i in 1:nrow(p.table)){
 p.table <- p.table %>% 
            mutate(ODDS_SELECTION_PCT = format(ODDS_SELECTION_PCT, nsmall=1), pct = format(pct, nsmall=1))
 
-#### *FLAG* ##### - Adding bonferroni adjusted pvalues! *Isn't running
-#p.table$`Adjusted p` <- p.adjust(p.table$`Likelihood Actual = Programmed`, method = "bonferroni")
 # Cleanup
 rm(for.p.wide)
 
@@ -537,17 +536,10 @@ p.table$key[p.table$key == "inherit.n"] <- "Expected"
 p.table$key[p.table$key == "random.n"] <- "Random Selection Only"
 p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 
-# put columns in order and through select()
-# Selection.table <- p.table %>% arrange(Source, desc(key), STRATA) %>%
-#   select(Source, "Strata" = STRATA, 'Type of trip' = key, "Total Trips" = Total.n,
-#          "Selected trips" = value, "Programmed Selection (%)" = ODDS_SELECTION_PCT,
-#          "Actual Selection (%)" = pct, "Likelihood Actual = Programmed" = p) 
-
-#*FLAG* Jane's alternative:
+# Create table
 Selection.table <- p.table %>% 
-                   filter(STRATA %in% partial$STRATA) %>% 
                    arrange( STRATA, Source, desc(key)) %>%
-                   arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender"))) %>% 
+                   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% 
                    mutate(new_trip_type = 
                           derivedFactor('Initial Random Selection, *a*'= Source=="ODDS random number",
                                         'After Cancellations, *b* (*a*-*b*)' = key=="Random Selection Only" & Source=="Valid trips only",
