@@ -557,25 +557,24 @@ Selection.table <- p.table %>%
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
 odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
-     filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>% 
+     filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
      transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format="%Y-%m-%d")) %>% 
      filter(STRATA %in% partial$STRATA) %>% 
      group_by(STRATA, Date) %>%
      summarize(n = sum(random.assign, na.rm=TRUE),
                ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])),
-               # Nra=length(na.omit(random.assign)),
-               N = length(unique(TRIP_PLAN_LOG_SEQ)),  #Same as Nra which is good
+               N = length(unique(TRIP_PLAN_LOG_SEQ)),
                TYPE="Original date: All logged trips") %>% 
      arrange(Date) %>% 
      ungroup() %>% 
      bind_rows(
-          odds.dat %>% #These are the 'valid trips' only
+          odds.dat %>% # These are the 'valid trips' only
                filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%
                transform(Date = as.Date(PLANNED_EMBARK_DATE, format="%Y-%m-%d")) %>% 
                filter(STRATA %in% partial$STRATA) %>% 
                group_by(STRATA, Date) %>%
                summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED_OBS == "Y"])),
-                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])), #Gotta put this in date format
+                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])),
                          N = length(unique(TRIP_PLAN_LOG_SEQ)),
                          TYPE = "Adjusted date: Valid trips only") %>% 
                arrange(Date) %>% 
@@ -585,20 +584,18 @@ odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
      mutate(running.n = order_by(Date, cumsum(n)),
             running.N = order_by(Date, cumsum(N)), 
             rug_ni = if_else(ni != 0, Date, as.Date(NA)),
- #           ni_pct = round((ni / N) * 100, 2),  #percent of trips in a day that are due to inherits.
             running.pct = round((running.n / running.N) * 100, 2)) %>% 
      arrange(STRATA, TYPE, Date) %>%
      right_join(
-          odds.dat %>% 
-               select(STRATA, ODDS_SELECTION_PCT) %>% 
-               filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>% 
-               filter(STRATA %in% partial$STRATA) %>% 
-               distinct(), 
-          by = "STRATA")
+          partial %>%
+          filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
+          distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
+          by = "STRATA") %>% 
+     ungroup()
 
 # reorder strata for plot
 odds.ts.daily.cuml <- transform(odds.ts.daily.cuml,
-                                STRATA = factor(STRATA, levels=c("EM HAL", "EM POT", "TRW - No Tender", "TRW - Tender", "POT - No Tender", "POT - Tender", "HAL")))
+                                STRATA = factor(STRATA, levels=c("EM HAL", "EM POT", "HAL", "POT", "TRW")))
 
 # Generate data for ribbon plots for the random data only.
 odds.ts.daily.cuml$L95 <- ifelse(
@@ -637,8 +634,10 @@ for.plot.text <- left_join(
                         label.adjusted = format(running.pct[TYPE=="Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
                  distinct(STRATA, label.original, label.adjusted)
                  ,
-                 select(partial, STRATA, label.programmed = Rate) %>% 
-                 mutate(STRATA = as.character(STRATA),
+                 partial %>% 
+                 filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>%
+                 select(STRATA, label.programmed = Rate) %>% 
+                 mutate(STRATA = as.character(STRATA), 
                         label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
                  , by="STRATA")
 
