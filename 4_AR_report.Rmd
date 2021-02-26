@@ -439,7 +439,7 @@ logged <-
   odds.dat %>% 
   # only pull in partial coverage
   filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
-  filter(STRATA %in% partial$STRATA) %>% 
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
   group_by(STRATA) %>% 
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
@@ -458,7 +458,7 @@ logged <-
             Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
             # % Reduction in Selected Trips due to Waivers
             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1)) %>% 
-  arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender")))
+  arrange(match(STRATA, c("HAL", "EM HAL", "POT ", "EM POT", "TRW")))
 
 logged.table <- rbind(logged, 
                       logged %>% 
