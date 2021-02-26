@@ -1913,7 +1913,7 @@ kable(Selection.table)
 
 #####
 
-####`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n) for each stratum in ', year, '. The expected coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
+####`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
 ```{r Coverage.Table, echo=FALSE, tab.cap=""}
 Coverage.Table[c(5:8)] <- lapply(Coverage.Table[,5:8], prettyNum, trim=TRUE, big.mark=",")
