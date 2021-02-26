@@ -711,21 +711,21 @@ The number of trips logged in the ODDS in `r year` and their dispositions is sum
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process. 
 inherit.min <- logged %>% 
-               slice(which.min(Pct.selected.from.inherit)) %>% 
+               slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 inherit.max <- logged %>% 
-               slice(which.max(Pct.selected.from.inherit)) %>% 
+               slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 
 # Waiver impact
 waiver.min <- logged %>% 
-              slice(which.min(Pct.allselected.from.waiver)) %>% 
+              slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
               select(Pct.allselected.from.waiver) %>% as.character()
 
 waiver.max <- logged %>% 
-              slice(which.max(Pct.allselected.from.waiver)) %>% 
+              slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
               select(Pct.allselected.from.waiver) %>% as.character()
 ```
 
