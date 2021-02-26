@@ -732,24 +732,19 @@ waiver.max <- logged %>%
 The flexibility offered by the ODDS means that the outcome of random selection is known to the vessel operator for up to three logged trips in advance of fishing. In the case where ODDS users disproportionately cancel selected trips, one would expect monitoring coverage to be lower than the programmed selection rates. To reduce this potential bias, the ODDS is programmed to automatically select the vessel’s next logged trip if a previously selected trip was cancelled by the user. Although these “inherited” trips preserve the *number* of selected trips in the year, they cannot prevent the *delay* of selected trips during the year. Therefore, the potential for temporal bias is still present. The percentages of selected trips from either inherits or waivers are found in `r tbl_nums('logged.table', display = "cite")`. The relative percentage of selected trips that inherited their final selected-status due to a previous cancellation ranged from 3.8% for *EM POT* to 26.7% for *POT - Tender* (`r tbl_nums('logged.table', display = "cite")`). Within the same gear-type, cancellation rates and the proportion of inherited trips were much larger for strata that used observers for at-sea monitoring than those that used EM.       
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
-#Selection table text *FLAG* might need to do some manual tweaking on the strata
-#names depending on what comes out of NORPAC each year
-# selection_txt <- p.table %>% 
-
-# FLAG - PG - STRATA rename elsewhere for 2017 AR
-#   mutate(STRATA = derivedFactor('TRW' = STRATA=="Declared Gear - Trawl",
-#                                 'POT' = STRATA=="Declared Gear - Pot gear",
-#                                 'HAL' = STRATA=="Declared Gear - Longline")) 
-
 #Text strings for reporting on the observered initial selection rates by strata
 pct_txt <- p.table %>% 
-           filter(STRATA %in% partial$STRATA & Source=="ODDS random number") %>% 
+           filter(Source=="ODDS random number") %>% 
            mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>% 
            distinct(pct_txt) 
 
 #Extract p-values associated with random selection (H0: observed=expected
 #rates). Merge to the partial look up table to ensure that things stay in order.
-random_pvals <- merge(p.table, partial) %>% 
+random_pvals <- merge(p.table
+                      , 
+                      partial %>% 
+                      filter(STRATA != "EM TRW EFP") %>% 
+                      distinct(STRATA, formatted_strat)) %>% 
                 filter(Source=="ODDS random number") %>% 
                 select(p, formatted_strat)
  
@@ -761,10 +756,13 @@ final_pct_txt <- p.table %>%
 
 #Extract p-values associated with FINAL selection (H0: final observed=expected
 #rates).
-final_pvals <- merge(p.table, partial) %>% 
+final_pvals <- merge(p.table
+                      , 
+                      partial %>% 
+                      filter(STRATA != "EM TRW EFP") %>% 
+                      distinct(STRATA, formatted_strat)) %>% 
                filter(key=="Expected") %>% 
                select(p, formatted_strat)
-
 ```
 
 The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from 1) random selection of all logged trips (initial random selection) and 2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exceptions – the initial selection rate was 33.91% (p-value = 0.011) for the *EM HAL* stratum, and 39.47% (p-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
