@@ -361,7 +361,7 @@ disposition <- # Merging two elements:
     # The first is by strata
     odds.dat %>%  
       select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
-      filter(STRATA %in% partial$STRATA) %>% 
+      filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
       group_by(STRATA, random.assign) %>%
       summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
@@ -391,7 +391,7 @@ disposition <- # Merging two elements:
      #    data.frame(), 
     odds.dat %>%  
       select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
-      filter(STRATA %in% partial$STRATA) %>% 
+      filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
       group_by(random.assign) %>%
       summarize(STRATA = "Total",
                 Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
@@ -419,7 +419,7 @@ disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 # Then rename some columns for the table
 disposition.table <- 
   disposition %>%
-  arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender", "Total"))) %>% 
+  arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
          'Random number outcomes' = random.assign, 
          'Logged (*a*)' = Trips.logged.ODDS, 
