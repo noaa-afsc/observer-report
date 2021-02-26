@@ -857,7 +857,7 @@ Coverage.Table.partial <- plyr::rbind.fill(
 )
 
 #ZERO COVERAGE 
-Coverage.Table.zero <- plyr::rbind.fill(Coverage.Table.zero <-
+Coverage.Table.zero <- # plyr::rbind.fill(Coverage.Table.zero <-
     work.data %>%
     filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% 
     mutate(STRATA=as.character(STRATA)) %>% 
@@ -873,18 +873,18 @@ Coverage.Table.zero <- plyr::rbind.fill(Coverage.Table.zero <-
            meets.expected = ifelse(as.numeric(Pct.obs)==Rate, "Yes", "No")) %>%  
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
-    ,
+    # ,
     # Totals for zero coverage category 
-    Coverage.Table.zero.total <- work.data %>%
-    filter(STRATA %in% c("ZERO", "Zero EM Research")) %>%
-    dplyr::summarize(V=length(unique(VESSEL_ID)),
-                     v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-                     N=length(unique(TRIP_ID)),
-                     n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
-    mutate(COVERAGE_TYPE = "Zero Coverage Total",
-           Pct.obs=format((n/N)*100, digits=1, nsmall=1),
-           deployment.method = "Trip-Selection")
-  )
+  #   Coverage.Table.zero.total <- work.data %>%
+  #   filter(STRATA %in% c("ZERO", "Zero EM Research")) %>%
+  #   dplyr::summarize(V=length(unique(VESSEL_ID)),
+  #                    v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
+  #                    N=length(unique(TRIP_ID)),
+  #                    n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
+  #   mutate(COVERAGE_TYPE = "Zero Coverage Total",
+  #          Pct.obs=format((n/N)*100, digits=1, nsmall=1),
+  #          deployment.method = "Trip-Selection")
+  # )
 
 # Totals with EM (number of vessels is not additive)
 Coverage.Table.TOTALS <- work.data %>%
@@ -953,10 +953,10 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
                              `Zero Coverage` = "ZERO")) %>% 
   select(`Coverage` = COVERAGE_TYPE, Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
-         `Expected coverage` = Rate,
-         `Realized coverage` = Pct.obs,
-         `95% confidence interval lower limit`= min.expected,
-         `95% confidence interval upper limit` = max.expected, 
+         `Expected` = Rate,
+         `Realized` = Pct.obs,
+         `Lower limit`= min.expected,
+         `Upper limit` = max.expected, 
          `Realized meets expected?` = meets.expected)
 
 #Create an empty factor level so that you can get rid of NAs in the table.
@@ -1918,7 +1918,14 @@ kable(Selection.table)
 ```{r Coverage.Table, echo=FALSE, tab.cap=""}
 Coverage.Table[c(5:8)] <- lapply(Coverage.Table[,5:8], prettyNum, trim=TRUE, big.mark=",")
 
-kable(Coverage.Table)
+# Italicize strata
+Coverage.Table$Strata <- cell_spec(Coverage.Table$Strata, italic = ifelse(Coverage.Table$Strata != "Total", TRUE, FALSE))
+
+# Print table
+kbl(Coverage.Table, escape = FALSE) %>% 
+  kable_paper() %>% 
+  # Group columns
+  add_header_above(c(" " = 6, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1))
 ```
 
 #####
