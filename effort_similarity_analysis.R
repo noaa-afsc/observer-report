@@ -1,30 +1,22 @@
+# For 2020 Annual Report, will only use this script to map fishing effort and monitoring over time and space.
+# Will not be used for gap analyses due to complications from COVID-19, waivers, short time period for random deployment, etc.
+
 library(data.table)
 library(ggplot2)
 library(ggpubr)             # Replaced gridExtra (allows quick combining of plots that use the same legend): https://cran.r-project.org/web/packages/ggpubr/index.html
 library(lubridate)
 library(scales)
 
-pt <- function(x){
-  start <- Sys.time()
-  message(paste("-- Started ", start))
-  x  # evaluate the input
-  end <- Sys.time()
-  message(paste("-- Finished", end))
-  if(as.numeric(end-start, units="secs") < 60){
-    message(paste("--", round(as.numeric(end-start, units="secs"),3), "seconds"))
-  }
-  else(message(paste("--", round(as.numeric(end-start, units="mins"),3), "minutes")))
-}      # process timer function (like system.time(), but declares start/stop times and better time formatting)
-
 PRED <- F  # Turn this to 'T' if you want to look at predicted fishing effort in addition to actual fishing effort
 
 #==============#
 # DATA PREP ####
 
-pt(load(file="2_AR_data.Rdata"))      # Load 2019 AR data (2019 actual fishing effort and the predicted (sampled) fishing effort used in the 2019 ADP)
+load("2_AR_data.Rdata")                  # Load source data
+load("data/effort_prediction.rdata")     # Load effort prediction for 2020 ADP
 if(PRED==T) prd_2019 <- setDT(copy(sample_pops_out))[, .(pop_num, sampling_iter, STRATA_NEW, TRIP_ID, NEW_TRIP_ID, rate_obs, ODDS_RANDOM_DRAW, SELECTED)]
 act_2019 <- unique(setDT(copy(work.data))[, .(ADP, TRIP_ID, STRATA, COVERAGE_TYPE, AGENCY_GEAR_CODE, TRIP_TARGET_DATE, LANDING_DATE, TRIP_TARGET_CODE, AREA=REPORTING_AREA_CODE, FMP, OBSERVED_FLAG)])
-rm(list=setdiff(ls(), c("pt", "act_2019", "prd_2019", "PRED")))    # remove all objects from the environment except for 2019 predicted and actual effort
+rm(list=setdiff(ls(), c("partial", "work.data", "act_2019", "prd_2019", "PRED")))    # unneeded objects
 
 if(PRED==T){
   pt(load(file="2_final_ADP_data.rdata"))                        # Source data for 2019 ADP (to get trip start/end dates of predicted fishing effort) and predicted EM/ZE effort
@@ -46,8 +38,9 @@ if(PRED==T){
 iter <- 10000    # Number of odds iterations to simulate
 set.seed(12345)  # Setting seed number here for ODDS sampling
 
+# TODO - Pull ODDS rates here instead of hard-coding. Should be available from 2_AR_data.Rdata.
 # Programmed Rates - for use with predicted fishing effort or for comparisons to realized selection rates
-pr <- data.table(STRATA = c("EM", "HAL", "POT", "TRW", "TRW_TENDER", "POT_TENDER", "ZE"), RATE =   c(0.3000, 0.1771, 0.1543, 0.2370, 0.2712, 0.1611, 0.0000), key="STRATA")   # selection rates for 2019 
+#pr <- data.table(STRATA = c("EM", "HAL", "POT", "TRW", "TRW_TENDER", "POT_TENDER", "ZE"), RATE =   c(0.3000, 0.1771, 0.1543, 0.2370, 0.2712, 0.1611, 0.0000), key="STRATA")   # selection rates for 2019 
 
 #===================#
 # PREDICTED DATA ####
@@ -108,9 +101,9 @@ actu_date <- copy(act_2019)[COVERAGE_TYPE=="PARTIAL" & STRATA != "Zero EM Resear
 setnames(actu_date, c("TRIP_TARGET_CODE", "AGENCY_GEAR_CODE"), c("TARGET", "GEAR"))
 table(actu_date$STRATA)
 actu_date[, POOL := fifelse(STRATA %like% "EM", "EM", fifelse(STRATA=="ZERO", "ZE", "OB"))]
-actu_date[POOL %in% c("EM", "ZE"), STRATA := POOL]
-actu_date[POOL=="OB" & STRATA %like% "TRW", ':=' (STRATA = fifelse(STRATA %like% "No", "TRW", "TRW_TENDER"))]
-actu_date[POOL=="OB" & STRATA %like% "POT", ':=' (STRATA = fifelse(STRATA %like% "No", "POT", "POT_TENDER"))]
+# actu_date[POOL %in% c("EM", "ZE"), STRATA := POOL]  # Keep STRATA the same 
+# actu_date[POOL=="OB" & STRATA %like% "TRW", ':=' (STRATA = fifelse(STRATA %like% "No", "TRW", "TRW_TENDER"))]   # No longer have tender strata in 2020
+# actu_date[POOL=="OB" & STRATA %like% "POT", ':=' (STRATA = fifelse(STRATA %like% "No", "POT", "POT_TENDER"))]
 actu_date[, c("START", "END") := as.list(range(as.Date(TRIP_TARGET_DATE), as.Date(LANDING_DATE))), by=TRIP_ID]
 actu_date[, GEAR := fifelse(GEAR %in% c("PTR", "NPT"), "TRW", GEAR)]
 actu_date[, c("COVERAGE_TYPE", "TRIP_TARGET_DATE", "LANDING_DATE") := NULL]
@@ -119,21 +112,33 @@ actu_date <- unique(actu_date[, .(TRIP_ID, POOL, STRATA, TARGET, FMP, AREA, GEAR
 
 # Determine realized trip selection rates. Use the realized rates (instead of programmed rates) so that differences in gap scores
 # can be assumed to be due to non-random trip selection
-rr <- unique(actu_date[, .(TRIP_ID, STRATA, SEL=OBSERVED=="Y")])[, .(N = .N, SEL=sum(SEL), RATE = sum(SEL)/.N), keyby=STRATA]
+rr <- unique(actu_date[, .(TRIP_ID, POOL, STRATA, SEL=OBSERVED=="Y")])[, .(N = .N, SEL=sum(SEL), RATE = sum(SEL)/.N), keyby=.(POOL, STRATA)]
+# TODO - For now, (2020-Feb-25) EM TRW EFP trips are not being marked as monitored correctly.
 
-# The above rates do not split EM by EM_HAL and EM_POT
-# If we were to split EM_HAL and EM_POT so they have different realized rates...
-rr2 <- unique(actu_date[, .(TRIP_ID, POOL, STRATA, GEAR, SEL=OBSERVED=="Y")])
-rr2 <- unique(rr2[POOL=="EM", STRATA := paste("EM_", GEAR, sep="")][, c("POOL", "GEAR") := NULL])[,  .(N=.N, SEL=sum(SEL), RATE=sum(SEL)/.N), keyby=STRATA]
-rr2   # EM_POT had a rate of 36.36% whereas EM_HAL had a rate of 31.77%. It's possible that vessels that fish both gear types had a tendency to fish pot gear when monitored - this should be resolved in 2020, but for these analyses, the trip selection rates for EM were not split by gear type.
+# Before waivers were listed
+unique(actu_date[START <= as.POSIXct("2020-03-25"), .(TRIP_ID, POOL, STRATA, SEL=OBSERVED=="Y")])[, .(N = .N, SEL=sum(SEL), RATE = sum(SEL)/.N), keyby=.(POOL, STRATA)]
+# Looking at rates only after waivers were lifted. OB strata were 4-5% below target of 19.6 / 15.4 / 15.2 for TRW/HAL/POT
+unique(actu_date[START >= as.POSIXct("2020-07-01"), .(TRIP_ID, POOL, STRATA, SEL=OBSERVED=="Y")])[, .(N = .N, SEL=sum(SEL), RATE = sum(SEL)/.N), keyby=.(POOL, STRATA)]
+# When we had no waivers (start and end of year)
+unique(actu_date[START <= as.POSIXct("2020-03-25") | START >= as.POSIXct("2020-07-01"), .(TRIP_ID, POOL, STRATA, SEL=OBSERVED=="Y")])[, .(N = .N, SEL=sum(SEL), RATE = sum(SEL)/.N), keyby=.(POOL, STRATA)]
 
-set.seed(12345)
-actu_odds <- unique(actu_date[, .(POOL, STRATA, TRIP_ID)])
-actu_odds[, RATE := rr[actu_odds, RATE, on=.(STRATA)]]                          # Merge in selection rates
-actu_odds <- rbindlist(rep(list(actu_odds), times=iter), idcol="ITER")
-actu_odds[, ODDS := runif(.N, min=0, max=1)]                                    # Randomly select trips
-actu_odds[, SEL := ODDS < RATE]
-actu_odds[, c("RATE", "ODDS") := NULL]
+
+# # The above rates do not split EM by EM_HAL and EM_POT
+# # If we were to split EM_HAL and EM_POT so they have different realized rates...
+# rr2 <- unique(actu_date[, .(TRIP_ID, POOL, STRATA, GEAR, SEL=OBSERVED=="Y")])
+# rr2 <- unique(rr2[POOL=="EM", STRATA := paste("EM_", GEAR, sep="")][, c("POOL", "GEAR") := NULL])[,  .(N=.N, SEL=sum(SEL), RATE=sum(SEL)/.N), keyby=STRATA]
+# rr2   # EM_POT had a rate of 36.36% whereas EM_HAL had a rate of 31.77%. It's possible that vessels that fish both gear types had a tendency to fish pot gear when monitored - this should be resolved in 2020, but for these analyses, the trip selection rates for EM were not split by gear type.
+
+# Commenting this out for now - this is used for building distributions by randomly sampling trip selction with realized rates
+# set.seed(12345)
+# actu_odds <- unique(actu_date[, .(POOL, STRATA, TRIP_ID)])
+# actu_odds[, RATE := rr[actu_odds, RATE, on=.(STRATA)]]                          # Merge in selection rates
+# actu_odds <- rbindlist(rep(list(actu_odds), times=iter), idcol="ITER")
+# actu_odds[, ODDS := runif(.N, min=0, max=1)]                                    # Randomly select trips
+# actu_odds[, SEL := ODDS < RATE]
+# actu_odds[, c("RATE", "ODDS") := NULL]
+
+# TODO - Stop here, move down to ts_obze
 
 #==================#
 # ACQUIRED ODDS ####
@@ -585,28 +590,31 @@ test[order(QUANT)]
 #work_data <- unique(work.data[COVERAGE_TYPE=="PARTIAL", .(TRIP_ID, VESSEL_ID, OBSERVED_FLAG, PORT_CODE, AGENCY_GEAR_CODE,  TENDER, FMP, AREA=REPORTING_AREA_CODE, SPECIES_CODE=AGENCY_SPECIES_CODE, SPECIES_GROUP=SPECIES_GROUP_CODE, WEIGHT_POSTED, SPECIES_COUNT, MANAGEMENT_PROGRAM_CODE, SECTOR=PROCESSING_SECTOR )])
 #save(work_data, file="work_data_DT.Rdata")
 
-pt(load(file="work_data_DT.Rdata"))   # work_data is a slightly summarized version of work.data - must faster than loading 2_ADP all over again
+# kept original work.data object, which is also already with data.table class
+# load(file="work_data_DT.Rdata")   # work_data is a slightly summarized version of work.data - must faster than loading 2_ADP all over again
 # Needed to merge vessel_ID back in so that areas with <3 distinct vessels can be obscured
+work_data <- copy(work.data)
 
 # Version that makes non-confidential version for analysts and confidential version for public
-ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5){
-  # These plots summarize OB pool coverage to OB, EM, and ZE pools by GEAR type. EM and ZE pools can be omitted optionally.
-  #   a <- actu_date[GEAR=="HAL"]; legend <- TRUE; conf <- FALSE; n_min=5
-  #   a <- actu_date[GEAR=="POT"]; legend <- TRUE; conf <- FALSE; n_min=5
-  #   a <- actu_date[GEAR=="TRW"]; legend <- TRUE; conf <- FALSE; n_min=5
+ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5, ar_year=2020, ob_extend = 0){
+  # These plots summarize OB pool coverage to OB, and ZE pools by GEAR type. 
+ 
+  # TESTING:    a <- actu_date[GEAR=="HAL"]; legend <- T; conf <- F; n_min=5; ar_year=2020; ob_extend <- 0
+  # TESTING:    a <- actu_date[GEAR=="TRW"]; legend <- T; conf <- T; n_min=5; ar_year=2020; ob_extend <- 0
   
   a <- a[POOL!="EM"]   # Remove any EM trips
   a[, AREA := as.factor(AREA)] # Convert AREA to factor
   
   # Coverts all trip date ranges to week bin counts
-  to_week <- function(x, flip=FALSE, yr=2019){
+  # TODO Make yr = adp_year
+  to_week <- function(x, flip=FALSE, yr=ar_year){
     #  x <- a[POOL=="OB" & STRATA=="HAL" & TARGET=="I" & AREA==519]; flip <- FALSE; yr <- 2019
     #  x <- copy(b)[[1]]
-    x[year(START) < yr, START := as.Date("2019-01-01")]  # If any incoming date ranges are outside of the year, truncate them to be within specified year
-    x[year(END) > yr, END := as.Date("2019-12-31")]
+    x[year(START) < yr, START := as.Date(paste0(yr, "-01-01"))]  # If any incoming date ranges are outside of the year, truncate them to be within specified year
+    x[year(END) > yr, END := as.Date(paste0(yr, "-12-31"))]
     cols <- unique(x[, c("POOL", "STRATA", "TARGET_lbl", "FMP", "AREA")])
     x <- setnames(x[, apply(.SD, MARGIN=1, function(y) seq.int(week(y[1]), week(y[2]))), by=.(TRIP_ID, AREA), .SDcols=c("START", "END")], c("TRIP_ID", "AREA", "WEEK"))
-    x <- x[, .N, keyby=WEEK][SJ(1:53)][is.na(N), N := 0][, WEEK := as.numeric(WEEK)]
+    x <- x[, .N, keyby=WEEK][SJ(1:week(as.Date(paste0(yr, "-12-31"))))][is.na(N), N := 0][, WEEK := as.numeric(WEEK)]
     x <- cbind(x, cols)  # Put identifier columns back in
     return(x)
   }
@@ -640,15 +648,18 @@ ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5){
     rect_test[, COLOR := I("red")]
     rect_o <- copy(rect_test[!is.na(P_OBSERVED) & P_OBSERVED>0])[, ':=' (Y_ADJ = -Y_ADJ, COLOR=I("blue"))]
     rect_test <- rbind(rect_test, rect_o)
-    if("ZE" %in% pools) rect_test <- rbind(rect_test, copy(rect_o)[, ':=' (POOL="ZE", P_OBSERVED = NA_real_)])
+    if("ZE" %in% pools) rect_test <- rbind(rect_test, copy(rect_o)[, ':=' (POOL="ZE", P_OBSERVED = NA_real_)]) # changed P_OBSERVED from NA_real_ to 0 to fix plotting error  
     rect_test[, POLY_ID := .GRP, keyby=.(POOL, STRATA, TARGET_lbl, FMP, AREA, COLOR)]
   }
-
-  b <- copy(a[POOL=="OB" & OBSERVED=="Y"])[, ':=' (START=START-15, END=END+15)] # Observed OB trips only - extend date ranges by 30 days to represent data coverage at AREA level
+  
+  # HERE, observed trips are copied and have the trip start/end date extended by 15 days on each side (Area level)
+  # MAde it so function default of ob_extend is 0, but if you make this 15, you can extend the range of observed trips
+  b <- copy(a[POOL=="OB" & OBSERVED=="Y"])[, ':=' (START=START-ob_extend, END=END+ob_extend)] # Observed OB trips only - extend date ranges by 30 days to represent data coverage at AREA level
+  
   a <- split(a, f=list(a$FMP, a$POOL, a$STRATA, a$TARGET, a$AREA), drop=TRUE)   # Split data by pool, post-strata, and AREA
   b <- split(b, f=list(b$FMP, b$POOL, b$STRATA, b$TARGET, b$AREA), drop=TRUE)   # Split monitored data by pool, post-strata, and AREA
-  
   a <- rbindlist(lapply(a, to_week))  # Convert to weekly bin counts
+
   b <- rbindlist(lapply(b, to_week))
   c <- rbind(a[, ':=' (GRP="Effort")], b[, ':=' (GRP="Area-Level Data")])
   c[, AREA := as.factor(AREA)]
@@ -660,13 +671,12 @@ ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5){
   c[, POOL := factor(POOL, levels=c("OB", "ZE"))]                         # Order the pools in the same way as the gap plots
   c[, GRP := factor(GRP, levels=c("Effort", "Area-Level Data"))]        # Order the effort/monitoring groups
   
-  if("ZE" %in% pools) c <- rbind(c, copy(c[GRP=="Area-Level Data"])[, POOL := "ZE"])  # Copy observer coverage to ZE pool
+  if("ZE" %in% pools) c <- rbind(c, copy(c[GRP=="Area-Level Data"])[, POOL := "ZE"])  # Copy observer coverage to ZE pool 
   
   p_lst <- vector(mode="list")
-  x_maj <- c(week(as.Date(paste("2019", seq(1,12,3), "01", sep="-"))), 54)      # Week 54 being January of next year
-  x_min <- week(as.Date(paste("2019", 1:12, "01", sep="-")))
+  x_maj <- c(week(as.Date(paste(ar_year, seq(1,12,3), "01", sep="-"))), 54)     # Week 54 being January of next year
+  x_min <- week(as.Date(paste(ar_year, 1:12, "01", sep="-")))
 
-  
   for(i in unique(c$FMP)){
     # i <- "BSAI"
     # i <- "GOA"
@@ -684,6 +694,7 @@ ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5){
     }
 
     p <- ggplot() +
+      geom_vline(xintercept=week(c("2020-03-26", "2020-07-01")), linetype=2) +
       facet_grid(POOL~FMP+STRATA+TARGET_lbl, drop=TRUE) +                       # drop=TRUE will drop targets that don't appear in both BSAI/GOA
       geom_tile(data=e[GRP=="Effort"], aes(x=WEEK, y=AREA, fill=GRP, alpha=N), height=0.5, position=position_nudge(y=1/8)) + 
       geom_tile(data=e[GRP=="Area-Level Data"], aes(x=WEEK, y=AREA, fill=GRP, alpha=N), height=0.5, position=position_nudge(y=-1/8)) + 
@@ -691,13 +702,16 @@ ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5){
       scale_y_discrete(limits=levs) + 
       scale_alpha_continuous(name="Relative Concentration", range=c(0.10,0.75), breaks=seq(0, 1, by=1/4)) +   
       scale_x_continuous(limits=c(1, 54), breaks=x_maj, labels=c("Jan", "Apr", "Jul", "Oct", "Jan"), minor_breaks = x_min) + 
-      labs(x="Month", y="Area", fill="") + 
-      theme(legend.position="bottom", strip.text=element_text(margin=margin(0.05, 0.05, 0.05, 0.05,"cm")), axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) 
-    
-    if(conf==TRUE){
+      labs(x="Month", y="Area", fill="")   
+      # TODO - ADD VERTICAL LINES TO DENOTE TIMES PERIODS -   Mar 26 when waivers first started, July 1st for when waviers lifted, 
+      # FIXME - breaks here under theme?
+      # theme(legend.position="bottom", strip.text=element_text(margin=margin(0.05, 0.05, 0.05, 0.05,"cm")), axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) 
+      
+    if(conf==TRUE & nrow(f)>0){
       p <- p + geom_polygon(data=f, aes(x=WEEK, y=as.numeric(AREA)+Y_ADJ, group=POLY_ID), fill="white", alpha=0.50) + 
         geom_path(data=f, aes(x=WEEK, y=as.numeric(AREA)+Y_ADJ, group=POLY_ID, color=COLOR), alpha=0.25, size=0.5, linejoin="mitre", lineend="square") + 
-        geom_text(data=f[!is.na(P_OBSERVED)], aes(label=formatC(P_OBSERVED, digits=2, format="f"), x=26, y=as.numeric(AREA)+3/16), size=2.5, na.rm=TRUE, check_overlap = TRUE)
+        # HERE IS WHERE IT BREAKS - happens when only zero pool (and not PB) has confidential data?
+        geom_text(data=f, aes(label=formatC(P_OBSERVED, digits=2, format="f"), x=26, y=as.numeric(AREA)+3/16), size=2.5, na.rm=TRUE, check_overlap = TRUE)
     }
     p_lst[[i]] <- p
   }
@@ -705,20 +719,22 @@ ts_obze <- function(a, legend=TRUE, conf=TRUE, n_min=5){
   if(legend==F) return( ggarrange(plotlist=p_lst, nrow=1, legend="none", widths=d$N/sum(d$N)) )
 }
 
-obze_HAL   <- ts_obze(actu_date[GEAR=="HAL"])                     # 1000 x 600
-obze_HAL_c <- ts_obze(actu_date[GEAR=="HAL"], conf=F)
-obze_POT   <- ts_obze(actu_date[GEAR=="POT"])                     # 1000 x 600
+# 'Confidential' plots will not show fishing effort for target X area combinations with < 3 vessels 
+obze_HAL   <- ts_obze(actu_date[GEAR=="HAL"])                    # 1000 x 600  
+obze_HAL_c <- ts_obze(actu_date[GEAR=="HAL"], conf=F)   
+obze_POT   <- ts_obze(actu_date[GEAR=="POT"])                    # 1000 x 600
 obze_POT_c <- ts_obze(actu_date[GEAR=="POT"], conf=F)
-obze_TRW   <- ts_obze(actu_date[GEAR=="TRW"])                     # 1000 x 400
+obze_TRW   <- ts_obze(actu_date[GEAR=="TRW"])                    # 1000 x 400
 obze_TRW_c <- ts_obze(actu_date[GEAR=="TRW"], conf=F)
 
+# TODO - Make a figures folder for the markdown to pull from?
 # Saving as PDF makes the tiles looks kind of weird because they overlap slightly and make it not look as neat - save as png isntead?
-ggsave("GapFigures/ts_png/ts_plt_obze_HAL.png", plot=obze_HAL, device="png", width=11, height=8.5, units="in")
-ggsave("GapFigures/ts_png/ts_plt_obze_HAL_conf.png", plot=obze_HAL_c, device="png", width=11, height=8.5, units="in")
-ggsave("GapFigures/ts_png/ts_plt_obze_POT.png", plot=obze_POT, device="png", width=11, height=8.5, units="in")
-ggsave("GapFigures/ts_png/ts_plt_obze_POT_conf.png", plot=obze_POT_c, device="png", width=11, height=8.5, units="in")
-ggsave("GapFigures/ts_png/ts_plt_obze_TRW.png", plot=obze_TRW, device="png", width=11, height=8.5, units="in")
-ggsave("GapFigures/ts_png/ts_plt_obze_TRW_conf.png", plot=obze_TRW_c, device="png", width=11, height=8.5, units="in")
+# ggsave("GapFigures/ts_png/ts_plt_obze_HAL_conf.png", plot=obze_HAL_c, device="png", width=11, height=8.5, units="in")
+# ggsave("GapFigures/ts_png/ts_plt_obze_HAL.png", plot=obze_HAL, device="png", width=11, height=8.5, units="in")
+# ggsave("GapFigures/ts_png/ts_plt_obze_POT_conf.png", plot=obze_POT_c, device="png", width=11, height=8.5, units="in")
+# ggsave("GapFigures/ts_png/ts_plt_obze_POT.png", plot=obze_POT, device="png", width=11, height=8.5, units="in")
+# ggsave("GapFigures/ts_png/ts_plt_obze_TRW_conf.png", plot=obze_TRW_c, device="png", width=11, height=8.5, units="in")
+# ggsave("GapFigures/ts_png/ts_plt_obze_TRW.png", plot=obze_TRW, device="png", width=11, height=8.5, units="in")
 # Can convert these to PDF without much trouble - the text isn't as crisp as if saved as PDF in the first place, but the tiles looks way better
 
 # # Save OB/ZE time/space plots to Figures folder
@@ -1146,3 +1162,15 @@ val_trp[VESSEL_ID == 3035] # 9/1-9/6 observed, so two ODDS trips (YN) rolled int
 
 odds_new[VESSEL_ID==5474 & !is.na(SEL)]  # 9/13 inherited, but 9/9-9/9 not observed and 9/17 not observed. So only 1 or 2 of 9 days actually observeed?
 val_trp[VESSEL_ID == 5474]  # 9/11 to 9/17 observed, so 3 ODDS trips (NYN) rolled into one VAL trip
+
+
+
+
+
+
+# TODO ADDING PORT
+# We don't know which port trips departed from - only where they landed!
+a <- work_data[COVERAGE_TYPE=="PARTIAL", .(WGT = sum(WEIGHT_POSTED, na.rm=T)), by=.(TRIP_ID, PORT_CODE)][order(TRIP_ID, WGT)]
+uniqueN(a$TRIP_ID); nrow(a)   # some trips have multiple ports...
+a[, .SD[WGT==max(WGT)], by=TRIP_ID]
+
