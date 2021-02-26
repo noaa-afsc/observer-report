@@ -1886,7 +1886,7 @@ kbl(
 
 ```{r disposition.table, echo=FALSE}
 disposition.table[c(3,5,6)] <- lapply(disposition.table[,c(3,5,6)], prettyNum, trim=TRUE, big.mark=",")
-disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`=="   NA"] <- " "
+disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
 disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`==" NA"] <- " "
 kable(disposition.table)
 ```
