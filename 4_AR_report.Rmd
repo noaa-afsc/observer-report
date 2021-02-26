@@ -692,18 +692,15 @@ perc.user.canc <- disposition %>%
                   transmute(perc.syst.canc = format((as.numeric(Trips.cancelled.byusers) / as.numeric(Trips.logged.ODDS)) * 100, digits=1, nsmall=1)) %>% 
                   as.character()
 
-# Lowest and highest cancellation rate/stratum for selected trips by
-# strata (remove strata that you don't want to include **FLAG** will need to
-# figure out if and how to incorporate EM in the future)
-
+# Lowest and highest cancellation rate/stratum for selected trips by strata
 sel.min.canc <- disposition %>% 
-                filter(STRATA %in% partial$STRATA & random.assign == "Selected") %>%
-                slice(which.min(Cancellation.Pct)) %>% 
+                filter(STRATA!="Total" & random.assign == "Selected") %>%
+                slice_min(as.numeric(Cancellation.Pct)) %>% 
                 select(STRATA, Cancellation.Pct)
 
 sel.max.canc <- disposition %>% 
-                filter(STRATA %in% partial$STRATA & random.assign == "Selected") %>%
-                slice(which.max(Cancellation.Pct)) %>% 
+                filter(STRATA!="Total" & random.assign == "Selected") %>%
+                slice_max(as.numeric(Cancellation.Pct)) %>% 
                 select(STRATA, Cancellation.Pct)
 ```
 
