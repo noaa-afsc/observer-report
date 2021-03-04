@@ -361,7 +361,7 @@ disposition <- # Merging two elements:
     # The first is by strata
     odds.dat %>%  
       select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
-      filter(STRATA %in% partial$STRATA) %>% 
+      filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
       group_by(STRATA, random.assign) %>%
       summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
@@ -391,7 +391,7 @@ disposition <- # Merging two elements:
      #    data.frame(), 
     odds.dat %>%  
       select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
-      filter(STRATA %in% partial$STRATA) %>% 
+      filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
       group_by(random.assign) %>%
       summarize(STRATA = "Total",
                 Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
@@ -419,7 +419,7 @@ disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 # Then rename some columns for the table
 disposition.table <- 
   disposition %>%
-  arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender", "Total"))) %>% 
+  arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
          'Random number outcomes' = random.assign, 
          'Logged (*a*)' = Trips.logged.ODDS, 
@@ -439,7 +439,7 @@ logged <-
   odds.dat %>% 
   # only pull in partial coverage
   filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
-  filter(STRATA %in% partial$STRATA) %>% 
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
   group_by(STRATA) %>% 
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
@@ -458,7 +458,7 @@ logged <-
             Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
             # % Reduction in Selected Trips due to Waivers
             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1)) %>% 
-  arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender")))
+  arrange(match(STRATA, c("HAL", "EM HAL", "POT ", "EM POT", "TRW")))
 
 logged.table <- rbind(logged, 
                       logged %>% 
@@ -494,6 +494,7 @@ for.p.wide <- merge(
             ),
   # Now add in the total trips for the random number only
   odds.dat %>% 
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
   filter(!is.na(random.assign)) %>% 
   group_by(STRATA) %>%
   summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
@@ -505,14 +506,14 @@ for.p.wide <- merge(
 # Need to merge in the selection rates for calculating p-values later
 for.p.wide <- merge(
   for.p.wide, 
-  odds.dat %>% 
-  select(STRATA, ODDS_SELECTION_PCT) %>% 
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>% 
-  distinct(), 
+  partial %>%
+  filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
+  distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
   all = TRUE)
 
 # Put into long format
 p.table <- gather(data = for.p.wide, key, value, -STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source)
+
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
 
@@ -527,8 +528,6 @@ for(i in 1:nrow(p.table)){
 p.table <- p.table %>% 
            mutate(ODDS_SELECTION_PCT = format(ODDS_SELECTION_PCT, nsmall=1), pct = format(pct, nsmall=1))
 
-#### *FLAG* ##### - Adding bonferroni adjusted pvalues! *Isn't running
-#p.table$`Adjusted p` <- p.adjust(p.table$`Likelihood Actual = Programmed`, method = "bonferroni")
 # Cleanup
 rm(for.p.wide)
 
@@ -537,17 +536,10 @@ p.table$key[p.table$key == "inherit.n"] <- "Expected"
 p.table$key[p.table$key == "random.n"] <- "Random Selection Only"
 p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 
-# put columns in order and through select()
-# Selection.table <- p.table %>% arrange(Source, desc(key), STRATA) %>%
-#   select(Source, "Strata" = STRATA, 'Type of trip' = key, "Total Trips" = Total.n,
-#          "Selected trips" = value, "Programmed Selection (%)" = ODDS_SELECTION_PCT,
-#          "Actual Selection (%)" = pct, "Likelihood Actual = Programmed" = p) 
-
-#*FLAG* Jane's alternative:
+# Create table
 Selection.table <- p.table %>% 
-                   filter(STRATA %in% partial$STRATA) %>% 
                    arrange( STRATA, Source, desc(key)) %>%
-                   arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender"))) %>% 
+                   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% 
                    mutate(new_trip_type = 
                           derivedFactor('Initial Random Selection, *a*'= Source=="ODDS random number",
                                         'After Cancellations, *b* (*a*-*b*)' = key=="Random Selection Only" & Source=="Valid trips only",
@@ -565,25 +557,24 @@ Selection.table <- p.table %>%
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
 odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
-     filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>% 
+     filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
      transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format="%Y-%m-%d")) %>% 
      filter(STRATA %in% partial$STRATA) %>% 
      group_by(STRATA, Date) %>%
      summarize(n = sum(random.assign, na.rm=TRUE),
                ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])),
-               # Nra=length(na.omit(random.assign)),
-               N = length(unique(TRIP_PLAN_LOG_SEQ)),  #Same as Nra which is good
+               N = length(unique(TRIP_PLAN_LOG_SEQ)),
                TYPE="Original date: All logged trips") %>% 
      arrange(Date) %>% 
      ungroup() %>% 
      bind_rows(
-          odds.dat %>% #These are the 'valid trips' only
+          odds.dat %>% # These are the 'valid trips' only
                filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%
                transform(Date = as.Date(PLANNED_EMBARK_DATE, format="%Y-%m-%d")) %>% 
                filter(STRATA %in% partial$STRATA) %>% 
                group_by(STRATA, Date) %>%
                summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED_OBS == "Y"])),
-                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])), #Gotta put this in date format
+                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])),
                          N = length(unique(TRIP_PLAN_LOG_SEQ)),
                          TYPE = "Adjusted date: Valid trips only") %>% 
                arrange(Date) %>% 
@@ -593,20 +584,18 @@ odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
      mutate(running.n = order_by(Date, cumsum(n)),
             running.N = order_by(Date, cumsum(N)), 
             rug_ni = if_else(ni != 0, Date, as.Date(NA)),
- #           ni_pct = round((ni / N) * 100, 2),  #percent of trips in a day that are due to inherits.
             running.pct = round((running.n / running.N) * 100, 2)) %>% 
      arrange(STRATA, TYPE, Date) %>%
      right_join(
-          odds.dat %>% 
-               select(STRATA, ODDS_SELECTION_PCT) %>% 
-               filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>% 
-               filter(STRATA %in% partial$STRATA) %>% 
-               distinct(), 
-          by = "STRATA")
+          partial %>%
+          filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
+          distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
+          by = "STRATA") %>% 
+     ungroup()
 
 # reorder strata for plot
 odds.ts.daily.cuml <- transform(odds.ts.daily.cuml,
-                                STRATA = factor(STRATA, levels=c("EM HAL", "EM POT", "TRW - No Tender", "TRW - Tender", "POT - No Tender", "POT - Tender", "HAL")))
+                                STRATA = factor(STRATA, levels=c("EM HAL", "EM POT", "HAL", "POT", "TRW")))
 
 # Generate data for ribbon plots for the random data only.
 odds.ts.daily.cuml$L95 <- ifelse(
@@ -645,8 +634,10 @@ for.plot.text <- left_join(
                         label.adjusted = format(running.pct[TYPE=="Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
                  distinct(STRATA, label.original, label.adjusted)
                  ,
-                 select(partial, STRATA, label.programmed = Rate) %>% 
-                 mutate(STRATA = as.character(STRATA),
+                 partial %>% 
+                 filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>%
+                 select(STRATA, label.programmed = Rate) %>% 
+                 mutate(STRATA = as.character(STRATA), 
                         label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
                  , by="STRATA")
 
@@ -701,18 +692,15 @@ perc.user.canc <- disposition %>%
                   transmute(perc.syst.canc = format((as.numeric(Trips.cancelled.byusers) / as.numeric(Trips.logged.ODDS)) * 100, digits=1, nsmall=1)) %>% 
                   as.character()
 
-# Lowest and highest cancellation rate/stratum for selected trips by
-# strata (remove strata that you don't want to include **FLAG** will need to
-# figure out if and how to incorporate EM in the future)
-
+# Lowest and highest cancellation rate/stratum for selected trips by strata
 sel.min.canc <- disposition %>% 
-                filter(STRATA %in% partial$STRATA & random.assign == "Selected") %>%
-                slice(which.min(Cancellation.Pct)) %>% 
+                filter(STRATA!="Total" & random.assign == "Selected") %>%
+                slice_min(as.numeric(Cancellation.Pct)) %>% 
                 select(STRATA, Cancellation.Pct)
 
 sel.max.canc <- disposition %>% 
-                filter(STRATA %in% partial$STRATA & random.assign == "Selected") %>%
-                slice(which.max(Cancellation.Pct)) %>% 
+                filter(STRATA!="Total" & random.assign == "Selected") %>%
+                slice_max(as.numeric(Cancellation.Pct)) %>% 
                 select(STRATA, Cancellation.Pct)
 ```
 
@@ -723,45 +711,40 @@ The number of trips logged in the ODDS in `r year` and their dispositions is sum
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process. 
 inherit.min <- logged %>% 
-               slice(which.min(Pct.selected.from.inherit)) %>% 
+               slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 inherit.max <- logged %>% 
-               slice(which.max(Pct.selected.from.inherit)) %>% 
+               slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 
 # Waiver impact
 waiver.min <- logged %>% 
-              slice(which.min(Pct.allselected.from.waiver)) %>% 
+              slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
               select(Pct.allselected.from.waiver) %>% as.character()
 
 waiver.max <- logged %>% 
-              slice(which.max(Pct.allselected.from.waiver)) %>% 
+              slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
               select(Pct.allselected.from.waiver) %>% as.character()
 ```
 
 The flexibility offered by the ODDS means that the outcome of random selection is known to the vessel operator for up to three logged trips in advance of fishing. In the case where ODDS users disproportionately cancel selected trips, one would expect monitoring coverage to be lower than the programmed selection rates. To reduce this potential bias, the ODDS is programmed to automatically select the vessel’s next logged trip if a previously selected trip was cancelled by the user. Although these “inherited” trips preserve the *number* of selected trips in the year, they cannot prevent the *delay* of selected trips during the year. Therefore, the potential for temporal bias is still present. The percentages of selected trips from either inherits or waivers are found in `r tbl_nums('logged.table', display = "cite")`. The relative percentage of selected trips that inherited their final selected-status due to a previous cancellation ranged from 3.8% for *EM POT* to 26.7% for *POT - Tender* (`r tbl_nums('logged.table', display = "cite")`). Within the same gear-type, cancellation rates and the proportion of inherited trips were much larger for strata that used observers for at-sea monitoring than those that used EM.       
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
-#Selection table text *FLAG* might need to do some manual tweaking on the strata
-#names depending on what comes out of NORPAC each year
-# selection_txt <- p.table %>% 
-
-# FLAG - PG - STRATA rename elsewhere for 2017 AR
-#   mutate(STRATA = derivedFactor('TRW' = STRATA=="Declared Gear - Trawl",
-#                                 'POT' = STRATA=="Declared Gear - Pot gear",
-#                                 'HAL' = STRATA=="Declared Gear - Longline")) 
-
 #Text strings for reporting on the observered initial selection rates by strata
 pct_txt <- p.table %>% 
-           filter(STRATA %in% partial$STRATA & Source=="ODDS random number") %>% 
+           filter(Source=="ODDS random number") %>% 
            mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>% 
            distinct(pct_txt) 
 
 #Extract p-values associated with random selection (H0: observed=expected
 #rates). Merge to the partial look up table to ensure that things stay in order.
-random_pvals <- merge(p.table, partial) %>% 
+random_pvals <- merge(p.table
+                      , 
+                      partial %>% 
+                      filter(STRATA != "EM TRW EFP") %>% 
+                      distinct(STRATA, formatted_strat)) %>% 
                 filter(Source=="ODDS random number") %>% 
                 select(p, formatted_strat)
  
@@ -773,10 +756,13 @@ final_pct_txt <- p.table %>%
 
 #Extract p-values associated with FINAL selection (H0: final observed=expected
 #rates).
-final_pvals <- merge(p.table, partial) %>% 
+final_pvals <- merge(p.table
+                      , 
+                      partial %>% 
+                      filter(STRATA != "EM TRW EFP") %>% 
+                      distinct(STRATA, formatted_strat)) %>% 
                filter(key=="Expected") %>% 
                select(p, formatted_strat)
-
 ```
 
 The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from 1) random selection of all logged trips (initial random selection) and 2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exceptions – the initial selection rate was 33.91% (p-value = 0.011) for the *EM HAL* stratum, and 39.47% (p-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
@@ -796,7 +782,7 @@ This section compares the coverage rate achieved against the expected coverage r
 
 
 #FULL COVERAGE
-Coverage.Table.full <- # plyr::rbind.fill(
+Coverage.Table.full <- plyr::rbind.fill(
   #Coverage rates for vessels in the full coverage category (both regulator full
   #cov or voluntary)
   work.data %>%
@@ -811,25 +797,26 @@ Coverage.Table.full <- # plyr::rbind.fill(
            Rate = 1,
            meets.expected = ifelse(as.numeric(Pct.obs)==Rate*100, "Yes", "No")) %>% 
     select(COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, meets.expected)
-  # ,
-  # # Totals for vessels in the full coverage category 
-  # work.data %>%
-  #   filter(COVERAGE_TYPE == "FULL") %>% 
-  #   summarize(V=length(unique(VESSEL_ID)),
-  #                    v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-  #                    N=length(unique(TRIP_ID)),
-  #                    n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
-  #   mutate(COVERAGE_TYPE = "Full Coverage Total",
-  #          Pct.obs=format((n/N)*100, digits=1, nsmall=1),
-  #          deployment.method = "Trip-Selection")
-# )
+           V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
+    arrange(desc(STRATA))
+    ,
+    # Totals for vessels in the full coverage category
+    work.data %>%
+      filter(COVERAGE_TYPE == "FULL") %>%
+      summarize(V=length(unique(VESSEL_ID)),
+                v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
+                N=length(unique(TRIP_ID)),
+                n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
+      mutate(COVERAGE_TYPE = "Full Coverage Total",
+             Pct.obs=format((n/N)*100, digits=1, nsmall=1),
+             deployment.method = "Trip-Selection")
+)
 
 #PARTIAL COVERAGE TRIP-SELECTION
 Coverage.Table.partial <- plyr::rbind.fill(
   #By strata for vessels in the partial coverage category (trip-selection)
   work.data %>%
-    filter(STRATA %in% partial$STRATA) %>% 
+    filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(V=length(unique(VESSEL_ID)),
                      v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
@@ -838,7 +825,10 @@ Coverage.Table.partial <- plyr::rbind.fill(
     mutate(Pct.obs = format((n/N)*100, digits=1, nsmall=1),
            deployment.method = "Trip-Selection") %>% 
     #Merge the target sampling rate from the partial look up table
-    full_join(select(partial, c(STRATA, Rate)), by = "STRATA") %>% 
+    full_join(partial %>% 
+              filter(Effective_Date == min(Effective_Date)) %>% 
+              distinct(STRATA, Rate)
+              , by = "STRATA") %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
     mutate(#Add binomial distribution upper and lower 95th percentiles to for each
       #partial coverage stratum
@@ -852,11 +842,11 @@ Coverage.Table.partial <- plyr::rbind.fill(
                               "Yes", "No")) %>% 
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
-    arrange(match(STRATA, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender")))
+    arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")))
   ,
   # Totals for partial coverage category (in 2016, "Gear-based total")
   Coverage.Table.partial.total <- work.data %>%
-    filter(STRATA %in% partial$STRATA) %>% 
+    filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>% 
     summarize(V=length(unique(VESSEL_ID)),
                      v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
                      N=length(unique(TRIP_ID)),
@@ -883,10 +873,10 @@ Coverage.Table.zero <- # plyr::rbind.fill(Coverage.Table.zero <-
            meets.expected = ifelse(as.numeric(Pct.obs)==Rate, "Yes", "No")) %>%  
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
-  #     ,
-  # Totals for zero coverage category 
-  # Coverage.Table.zero.total <- work.data %>%
-  #   filter(STRATA %in% c("ZERO", "EM POT - No Tender", "EM POT - Tender")) %>% 
+    # ,
+    # Totals for zero coverage category 
+  #   Coverage.Table.zero.total <- work.data %>%
+  #   filter(STRATA %in% c("ZERO", "Zero EM Research")) %>%
   #   dplyr::summarize(V=length(unique(VESSEL_ID)),
   #                    v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
   #                    N=length(unique(TRIP_ID)),
@@ -963,10 +953,10 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
                              `Zero Coverage` = "ZERO")) %>% 
   select(`Coverage` = COVERAGE_TYPE, Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
-         `Expected coverage` = Rate,
-         `Realized coverage` = Pct.obs,
-         `95% confidence interval lower limit`= min.expected,
-         `95% confidence interval upper limit` = max.expected, 
+         `Expected` = Rate,
+         `Realized` = Pct.obs,
+         `Lower limit`= min.expected,
+         `Upper limit` = max.expected, 
          `Realized meets expected?` = meets.expected)
 
 #Create an empty factor level so that you can get rid of NAs in the table.
@@ -1896,7 +1886,7 @@ kbl(
 
 ```{r disposition.table, echo=FALSE}
 disposition.table[c(3,5,6)] <- lapply(disposition.table[,c(3,5,6)], prettyNum, trim=TRUE, big.mark=",")
-disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`=="   NA"] <- " "
+disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
 disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`==" NA"] <- " "
 kable(disposition.table)
 ```
@@ -1923,12 +1913,19 @@ kable(Selection.table)
 
 #####
 
-####`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n) for each stratum in ', year, '. The expected coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
+####`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
 ```{r Coverage.Table, echo=FALSE, tab.cap=""}
 Coverage.Table[c(5:8)] <- lapply(Coverage.Table[,5:8], prettyNum, trim=TRUE, big.mark=",")
 
-kable(Coverage.Table)
+# Italicize strata
+Coverage.Table$Strata <- cell_spec(Coverage.Table$Strata, italic = ifelse(Coverage.Table$Strata != "Total", TRUE, FALSE))
+
+# Print table
+kbl(Coverage.Table, escape = FALSE) %>% 
+  kable_paper() %>% 
+  # Group columns
+  add_header_above(c(" " = 6, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1))
 ```
 
 #####
