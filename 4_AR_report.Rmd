@@ -1330,7 +1330,7 @@ strata.cell.dat <- strata.cell.dat %>%
                                    'Prob.Zero >= 0.20' = Hyper.P.0 >= 0.20,
                                    .ordered=TRUE))
 
-strata.cell.dat <- full_join(strata.cell.dat, partial, by="STRATA")
+strata.cell.dat <- left_join(strata.cell.dat, partial %>% filter(Effective_Date == min(Effective_Date)), by="STRATA")
 ```
                  
 ```{r cell.pot, message=FALSE, warning=FALSE, include=FALSE}
