@@ -1335,14 +1335,12 @@ strata.cell.dat <- left_join(strata.cell.dat, partial %>% filter(Effective_Date 
                  
 ```{r cell.pot, message=FALSE, warning=FALSE, include=FALSE}
 # Reorder strata for plotting
-strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
+strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
 
 #Comparison plots depicting the number of observed sample units
 #compared to the number of expected observed sample units for each partial
-#coverage stratum. Each point on a plot represents a NMFS Area. The smaller the
+#coverage stratum. Each point on a plot represents a NMFS Area. The darker the
 #point, the more unusual the result.
-#Note-  each point is a NMFS area, vessels 
-# Remove HAL - Tender stratum, since no trips were observed in 2017
 cell.plot <- ggplot(filter(strata.cell.dat), 
                     aes(x = Hyper.expect, 
                         y = obs.in.cell,#,size = P_extreme_more_cat
@@ -1353,21 +1351,13 @@ cell.plot <- ggplot(filter(strata.cell.dat),
              pch=21,size=2) +
   scale_fill_brewer(name="Probability of Monitored Sample Units\nor a More Extreme Value", 
                     palette="Reds", direction = -1, drop=FALSE) +
-  # scale_colour_manual('Probability of Observed Sample Units\nor a More Extreme Value', 
-  #                     values=c(  "black", 'grey25', 'grey50', 'grey75','grey80',  "grey90" )) +
-  # scale_fill_manual('Probability of Observed Sample Units\nor a More Extreme Value', 
-  #                   values=c(  "black", 'grey25', 'grey50', 'grey75','grey80',  "grey90" )) +
-  # scale_size_discrete('Probability of Observed Sample Units\nor a More Extreme Value',
-  #                     #range = c(1.5,8)) +
-  #                     range = c(1.5,5)) +
   labs(y = 'Number of Monitored Sample Units\n', 
        x = '\nExpected Number of Monitored Sample Units if Selection was Random') +
-  #xlim(0,10) + ylim(0,10) +
   fig.theme +
   theme(strip.text.x = element_text(size = 10))
 
+# How many NMFS Areas fell into the different p-value categories for each stratum?
 #table(strata.cell.dat$P_extreme_more_cat, strata.cell.dat$STRATA)
-#length(strata.cell.dat$P_extreme_more_cat)
 ```
 
 ```{r map_generation, message=FALSE, warning=FALSE, include=FALSE}
