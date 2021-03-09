@@ -1249,7 +1249,7 @@ Under a strictly random selection of trips and with a large enough sample size, 
 ```{r spatial_bias_analysis, message=FALSE, warning=FALSE, include=FALSE}
 trips.within.cells <- work.data %>%
   select(STRATA,TRIP_ID,VESSEL_ID,PERMIT,REPORTING_AREA_CODE,SOURCE_TABLE,OBSERVED_FLAG) %>%
-  filter(STRATA %in% partial$STRATA & SOURCE_TABLE=='Y') %>%  
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP" & SOURCE_TABLE=='Y') %>%  
   distinct() %>% 
   group_by(STRATA, REPORTING_AREA_CODE) %>% 
   summarize(obs.in.cell = length(TRIP_ID[OBSERVED_FLAG=="Y"]),
@@ -1258,7 +1258,7 @@ trips.within.cells <- work.data %>%
 
 trip.totls <- work.data %>%
   select(STRATA,TRIP_ID,VESSEL_ID,PERMIT,REPORTING_AREA_CODE,SOURCE_TABLE,OBSERVED_FLAG) %>%
-  filter(STRATA %in% partial$STRATA & SOURCE_TABLE=='Y') %>%  
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP" & SOURCE_TABLE=='Y') %>%  
   distinct() %>% 
   group_by(STRATA) %>%
   summarize(totl.obs.samp.units = length(unique(TRIP_ID[OBSERVED_FLAG=="Y"])),
