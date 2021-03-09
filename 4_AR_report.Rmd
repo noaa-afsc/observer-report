@@ -795,7 +795,7 @@ Coverage.Table.full <- plyr::rbind.fill(
     mutate(Pct.obs= format((n/N)*100, digits=1, nsmall=1),
            deployment.method = "Trip-Selection",
            Rate = 1,
-           meets.expected = ifelse(as.numeric(Pct.obs)==Rate*100, "Yes", "No")) %>% 
+           meets.expected = "") %>% 
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
     arrange(desc(STRATA))
@@ -870,7 +870,7 @@ Coverage.Table.zero <- # plyr::rbind.fill(Coverage.Table.zero <-
     mutate(Pct.obs=format((n/N)*100, digits=1, nsmall=1),
            deployment.method = "Trip-Selection",
            Rate = 0,
-           meets.expected = ifelse(as.numeric(Pct.obs)==Rate, "Yes", "No")) %>%  
+           meets.expected = "") %>%  
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
     # ,
