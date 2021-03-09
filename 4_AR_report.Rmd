@@ -1363,7 +1363,7 @@ cell.plot <- ggplot(filter(strata.cell.dat),
 ```{r map_generation, message=FALSE, warning=FALSE, include=FALSE}
 # Map generation
 # This chunk only needs to be run for initial figure generation, then use eval=FALSE
-for (i in as.character(partial$STRATA)) {
+for (i in unique(partial$STRATA[!partial$STRATA == "EM TRW EFP"])) {
 
   STRAT <- i
 
@@ -1445,7 +1445,7 @@ for (i in as.character(partial$STRATA)) {
   assign(paste0("probability_", STRAT), p)
 
   # Save plot  
-  png(paste0("probability_", STRAT, ".png"), height = 5,
+  png(paste0("figures/probability_", STRAT, ".png"), height = 5,
       width = 11, units = 'in', res=300)
   plot(p)
   dev.off()
