@@ -1275,11 +1275,11 @@ strata.cell.dat <- strata.cell.dat %>%
     # expected number of observed trips in a cell
     Hyper.expect = (totl.obs.samp.units / totl.samp.units) * totl.in.cell, # (observed trips / total trips) * total trips in cell
     # probability of observing no trips in a cell
-    Hyper.P.0 = round(1-phyper(q=0, 
+    Hyper.P.0 = round(phyper(q=0, 
                                m=totl.in.cell, #trips in a cell by stratum
                                n=totl.samp.units - totl.in.cell, #total trips by stratum - trips in a cell by stratum
                                k=totl.obs.samp.units, #total observed trips by stratum
-                               lower.tail = FALSE, log.p = FALSE),6),
+                               lower.tail = TRUE, log.p = FALSE),6),
     # probability of observing less than the observed number of trips in a cell
     Hyper.P.obs.less = phyper(q=obs.in.cell, 
                               m=totl.in.cell, #trips in a cell by stratum
