@@ -5,10 +5,7 @@ library(data.table)         # For data wrangling
 library(ggplot2)            # For plotting
 library(ggpubr)             # For combining plots that use the same legend
 library(lubridate)          # For wrangling dates
-
-# TODO WHAT DOES THIS DO? Already a part of ggplot2?
-# library(scales)             
-
+      
 GAP_ANALYSIS    <- F        # Evaluate achieved gap indices with distribution of gap indices that would be acquire under perfectly random deployment
 TIME_SPACE      <- T        # Visualize fishing effort and monitored trips in time and space. Allows within-gear comparisons between pools.
 
