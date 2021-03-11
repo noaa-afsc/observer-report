@@ -1335,7 +1335,7 @@ strata.cell.dat <- left_join(strata.cell.dat, partial %>% filter(Effective_Date 
                  
 ```{r cell.pot, message=FALSE, warning=FALSE, include=FALSE}
 # Reorder strata for plotting
-strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
+strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% arrange(STRATA)
 
 #Comparison plots depicting the number of observed sample units
 #compared to the number of expected observed sample units for each partial
@@ -1363,7 +1363,7 @@ cell.plot <- ggplot(filter(strata.cell.dat),
 ```{r map_generation, message=FALSE, warning=FALSE, include=FALSE}
 # Map generation
 # This chunk only needs to be run for initial figure generation, then use eval=FALSE
-for (i in unique(partial$STRATA[!partial$STRATA == "EM TRW EFP"])) {
+for (i in levels(strata.cell.dat$STRATA)) {
 
   STRAT <- i
 
@@ -1470,31 +1470,17 @@ results <- merge(
                    med_cov_rt = round(median(cell.rate)*100, 1)) %>% 
   mutate(probt_file = paste0("probability_", STRATA),
          perc_obs_file = paste0("perc_obs_", STRATA)),
-  partial %>% select(STRATA, Rate)
-)
+  partial %>% filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% select(STRATA, Rate, formatted_strat)
+  ) %>% 
+  arrange(STRATA)
 
-#*FLAG* Once report is stabilized, add stratum-specific interpretive text. This will change each year!
+# Once report is stabilized, add stratum-specific interpretive text. This will change each year!
 results <- cbind(results, strat_interp = c(
-  "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *EM HAL* stratum.",
-  "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *EM POT* stratum.",
-  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *HAL* stratum.",
-    "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *POT - No Tender* stratum.",
-  "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *POT - Tender* stratum.",
-  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *TRW - No Tender* stratum.",
-    "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *TRW - Tender* stratum."))
-
-# Add formatted strata column
-results <- mutate(results, formatted_strat=paste0("*", STRATA, "*"))
-
-# Rearrange results
-results <- arrange(results, match(probt_file, c("probability_EM HAL", 
-                                                "probability_EM POT", 
-                                                "probability_HAL", 
-                                                "probability_POT - No Tender", 
-                                                "probability_TRW - No Tender", 
-                                                "probability_POT - Tender", 
-                                                "probability_TRW - Tender")))
-
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *HAL* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *EM HAL* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *POT* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *EM POT* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *TRW* stratum."))
 ```
 
 ```{r strata_patterns_by_stratum_text, message=FALSE, warning=FALSE, include=FALSE}
