@@ -9,6 +9,7 @@ if(!require("devtools"))  install.packages("devtools")
 if(!require("getPass"))   install.packages("getPass")
 if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
 if(!require("kableExtra"))   install.packages("kableExtra") #markdown tables
+if(!require("knitr"))   install.packages("knitr") #markdown
 if(!require("lubridate"))  install.packages("lubridate")
 if(!require("maptools"))   install.packages("maptools")
 if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derivedVariable(), careful it masks some stats fxns like binomial.test() 
