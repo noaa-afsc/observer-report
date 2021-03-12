@@ -1683,21 +1683,16 @@ In a well-designed sampling program, the monitoring rate should be large enough 
 # higher the probability of not observing any trips in the unit. See
 # {spatial_bias_analysis} code chunk for analysis used to generate
 # strata.cell.dat.
-
-# Create a generalized subset that includes relevant data points (cells where there is a probability of not observing a trip due to low sample sizes)
-sub <- strata.cell.dat %>% 
-       filter(totl.in.cell < round(min(totl.in.cell[Hyper.P.0==0])+50, -1))
-
-#sub <- strata.cell.dat %>% filter(totl.in.cell < 200)
-prob.bynumber.plot <- ggplot(sub, aes(y=Hyper.P.0, x=totl.in.cell, group= STRATA, col = STRATA, shape= STRATA)) +
+prob.bynumber.plot <- ggplot(strata.cell.dat, aes(y=Hyper.P.0, x=totl.in.cell)) +
                       geom_point(size=3) +
-                      geom_line(size=1) +
-                      scale_color_manual("Stratum", values = gray.colors(n = length(partial$STRATA), start = 0, end = 0.8)) +
-                      scale_shape_discrete("Stratum") +
-                      ylab('Probability of No Observed Trips\n') +
+                      geom_line(size=1) + 
+                      facet_wrap(STRATA~., ncol = 2) +
                       xlab('\nNumber of Trips') +
-                      fig.theme +
-                      theme(legend.text=element_text(size=10))
+                      ylab('Probability of No Observed Trips\n') +
+                      # This will cut out points with > 90 trips in order to focus on 
+                      # areas that have some probability of getting no monitored trips
+                      xlim(0, 90) +
+                      fig.theme
                  
 prob.bynumber.plot
 
