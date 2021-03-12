@@ -2003,51 +2003,45 @@ suppressMessages(print(cell.plot))
 
 ####
 
+```{r probability_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```
+![](figures/probability_HAL.png)
+
+####`r fig_nums('probability_HAL', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+
+####
+
 ```{r probability_EM HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_EM HAL.png)
+![](figures/probability_EM HAL.png)
 
 ####`r fig_nums('probability_EM HAL', caption = paste0('Probability of monitoring the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *EM HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
 
 ####
 
+```{r probability_POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```
+![](figures/probability_POT.png)
+
+####`r fig_nums('probability_POT', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+
+####
+
 ```{r probability_EM POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_EM POT.png)
+![](figures/probability_EM POT.png)
 
 ####`r fig_nums('probability_EM POT', caption = paste0('Probability of monitoring the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *EM POT* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`  
 
 ####
 
-```{r probability_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```{r probability_TRW, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_HAL.png)
+![](figures/probability_TRW.png)
 
-####`r fig_nums('probability_HAL', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
-
-```{r probability_POT - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
-```
-![](probability_POT - No Tender.png)
-
-####`r fig_nums('probability_POT - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
-
-```{r probability_TRW - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
-```
-![](probability_TRW - No Tender.png)
-
-####`r fig_nums('probability_TRW - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####`r fig_nums('probability_TRW', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
   
-```{r probability_POT - Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, dpi=600}
-```
-![](probability_POT - Tender.png)
-
-####`r fig_nums('probability_POT - Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
-
-```{r probability_TRW - Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, dpi=600}
-```
-![](probability_TRW - Tender.png)
-
-####`r fig_nums('probability_TRW - Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####
 
 ```{r Obs.perm.plot, echo=FALSE, fig.height=11, fig.width=8, message=FALSE, warning=FALSE, dpi=600}
 suppressMessages(print(Obs.perm.plot))
