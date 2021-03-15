@@ -1,11 +1,13 @@
 ---
 title: "Deployment Performance Review of the 2019 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
-always_allow_html: true
 output:
+  html_document:
+    df_print: paged
+  pdf_document: default
   word_document:
     reference_docx: word-styles-reference-01.docx
-  pdf_document: default
+always_allow_html: yes
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
@@ -18,6 +20,8 @@ output:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
+
+partial <- partial[1:6,]  # FIXME - delete this later, but adding this to get the code to run as best as it can
 
 # Load packages and functions 
 source("3_helper.R")
@@ -196,17 +200,17 @@ The performance metrics used in this evaluation are as follows:
         
 3.  Adequacy of sample size: A well-designed sampling program will have a sample large enough to reasonably ensure that the characteristics of interest in the entire target population are represented in the data. Whether the sample size collected was adequate was determined through an examination of the probability of deploying observers at the implemented rate and having no monitoring coverage in one or more cells (e.g., defined by NMFS Reporting Area and strata).     
 
-Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated p-values. Additionally, our focus on landed catch is due to the fact that total catch is comprised of retained and discarded portions, and since discarded catch is not available from unmonitored trips, landed catch represents the only portion of the catch that is available from all trips.  
+Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated *p*-values. Additionally, our focus on landed catch is due to the fact that total catch is comprised of retained and discarded portions, and since discarded catch is not available from unmonitored trips, landed catch represents the only portion of the catch that is available from all trips.  
 
 #Changes to This Report from Last Year  
 <!-- Manually update this section -->  
-This year we made several updates to our analyses.  These include two major and several minor changes.  The first major change this year is the addition of a new analysis of data gaps (Appendix B).  Following the methods used in the gap analysis in Appendix C of the Draft 2020 Annual Deployment Plan (NMFS 2019a), Appendix B serves to evaluate the extent to which monitoring coverage within deployment strata was distributed proportionately to post-strata defined by FMP and trip target (predominant species) by evaluating the spatiotemporal proximity of monitored trips to unmonitored trips and assesses the likelihood of acquiring the achieved coverage in 2019 given the assumption of random deployment. It is the intent that elements of this Appendix be included in future Annual Reports.  The second major change is how we calculate p-values in the permutation tests that assess whether or not observed or unobserved trips were different in a given metric.  In recognition that these tests are not independent within a stratum, this year we adjust p-values to account for multiple comparisons by multiplying by the number of tests performed.  In this way we inflate each p-value in a way that reduces the chances of making a false interpretation of differences where there are none.  This is known as a Bonferroni adjustment, and is also applied to permutation test p-values in Appendix A. The result should be a more narrow focus on only large differences.  Minor changes to the tables in this chapter include the addition of a table showing the average review times for fixed gear EM video (Table 3-7), the realized cost of the partial coverage monitoring program in dollars with the expected cost of the program (Figure 3 1, bottom panel), and more information on when trips in ODDS were selected due to the cancellation of prior trips (Figure 3 2).    
+This year we made several updates to our analyses.  These include two major and several minor changes.  The first major change this year is the addition of a new analysis of data gaps (Appendix B).  Following the methods used in the gap analysis in Appendix C of the Draft 2020 Annual Deployment Plan (NMFS 2019a), Appendix B serves to evaluate the extent to which monitoring coverage within deployment strata was distributed proportionately to post-strata defined by FMP and trip target (predominant species) by evaluating the spatiotemporal proximity of monitored trips to unmonitored trips and assesses the likelihood of acquiring the achieved coverage in 2019 given the assumption of random deployment. It is the intent that elements of this Appendix be included in future Annual Reports.  The second major change is how we calculate *p*-values in the permutation tests that assess whether or not observed or unobserved trips were different in a given metric.  In recognition that these tests are not independent within a stratum, this year we adjust *p*-values to account for multiple comparisons by multiplying by the number of tests performed.  In this way we inflate each *p*-value in a way that reduces the chances of making a false interpretation of differences where there are none.  This is known as a Bonferroni adjustment, and is also applied to permutation test *p*-values in Appendix A. The result should be a more narrow focus on only large differences.  Minor changes to the tables in this chapter include the addition of a table showing the average review times for fixed gear EM video (Table 3-7), the realized cost of the partial coverage monitoring program in dollars with the expected cost of the program (Figure 3 1, bottom panel), and more information on when trips in ODDS were selected due to the cancellation of prior trips (Figure 3 2).    
 
 #Evaluation of Deployment in `r year`  
 The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
 
 ##Evaluating Effort Predictions  
-```{r outcomes.plot}
+```{r outcomes.plot, include=FALSE}
 # Isolate ADP budget predictions for the chosen design
 sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"]
 
@@ -552,7 +556,7 @@ Selection.table <- p.table %>%
                           "Total trips" = Total.n, 
                           "Actual selection (%)" = pct,
                           "Programmed selection (%)" = ODDS_SELECTION_PCT,
-                          "p-value (H0: Actual = Programmed)" = p)
+                          "*p*-value (H0: Actual = Programmed)" = p)
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
@@ -765,9 +769,9 @@ final_pvals <- merge(p.table
                select(p, formatted_strat)
 ```
 
-The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from 1) random selection of all logged trips (initial random selection) and 2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exceptions – the initial selection rate was 33.91% (p-value = 0.011) for the *EM HAL* stratum, and 39.47% (p-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
+The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from 1) random selection of all logged trips (initial random selection) and 2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exceptions – the initial selection rate was 33.91% (*p*-value = 0.011) for the *EM HAL* stratum, and 39.47% (*p*-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
 
-The final selection rate after trips were closed, cancelled, or waived were within expected bounds with the exception of the *HAL* stratum 20.47% (p-value = 0.006), the *EM HAL* stratum, 34.80% (p-value = 0.002)  and the *TRW - Tender* stratum 46.55% (p-value = 0.002; `r tbl_nums('Selection.table', display = "cite")`). Given the high initial selection rates, we can safely disregard these final selection rates with the exception of the *HAL* stratum.    
+The final selection rate after trips were closed, cancelled, or waived were within expected bounds with the exception of the *HAL* stratum 20.47% (*p*-value = 0.006), the *EM HAL* stratum, 34.80% (*p*-value = 0.002)  and the *TRW - Tender* stratum 46.55% (*p*-value = 0.002; `r tbl_nums('Selection.table', display = "cite")`). Given the high initial selection rates, we can safely disregard these final selection rates with the exception of the *HAL* stratum.    
 
 Differences in the initial selection rates of ODDS and those that result after cancellation and trip changes can also be looked at over time (`r fig_nums('odds.by.date.plot', display="cite")`). In this plot, we are mostly concerned when the lines representing the two selection rates in this plot diverge substantially.  Deviations appeared in the *HAL* stratum during January, March – April, and October – November (`r fig_nums('odds.by.date.plot', display="cite")`). This pattern can occur when cancelled trips that were originally selected for coverage are preserved through the inherit process, while cancelled trips that were not originally selected for coverage are not.       
 
@@ -1202,7 +1206,7 @@ for.binom <- merge(For.ts.temporal.plot %>%
   mutate(p = format(round(stats::binom.test(n, N, Rate)$p.value[1],3), nsmall=3),
          estimate = format(round(stats::binom.test(n, N, Rate)$estimate[1],3), digits=3, nsmall=3),
          #Results text with probability of success (estimate) & p-value
-         text = paste0("*", STRATA, "* stratum expected rate = ", round(Rate, 3), ", realized rate = ", estimate, ", p-value = ", p)) %>% ungroup()
+         text = paste0("*", STRATA, "* stratum expected rate = ", round(Rate, 3), ", realized rate = ", estimate, ", *p*-value = ", p)) %>% ungroup()
 
 #Interpretive text indicating whether the strata "were" or "were not" within
 #expectations of the binomial distribution
@@ -1230,7 +1234,7 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   #Annotate p-values
   geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
                 y = Inf, vjust = 1.25, 
-                label = paste("p = ", p, sep = "")), size = 4) +
+                label = paste("italic(p) == ", p, sep = "")), size = 4, parse=T, check_overlap = T) +
   facet_wrap(~ STRATA, ncol=2, scale="free_y") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
@@ -1238,10 +1242,9 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   xlab("\nDate")
 
 Temporal.plot
-
 ```
 
-The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in only one of the seven partial coverage strata: *POT - Tender* (expected rate = 0.161, realized rate = 0.295, p-value = 0.023; `r tbl_nums('Coverage.Table', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). Coverage rates were outside of the expected range for 15.9%, 9.3%, 31.2%, 28.2%, and 7.9% of the year for the *EM HAL*, *EM POT*, *POT – No Tender*, *POT - Tender* and *TRW – No Tender* strata, respectively. The *EM HAL*, *POT – No Tender*, and *TRW – No Tender* strata were outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *HAL* (expected rate = 0.177, realized rate = 0.176, p-value = 0.925) and *TRW - Tender* (expected rate = 0.271, realized rate = 0.357, p-value = 0.175) strata. Overall, there appeared to be less temporal bias in 2019 than in 2018, when three of six partial coverage strata had coverage rates outside of the expected range at the end of the year (AFSC and AKRO 2019).         
+The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in only one of the seven partial coverage strata: *POT - Tender* (expected rate = 0.161, realized rate = 0.295, p-value = 0.023; `r tbl_nums('Coverage.Table', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). Coverage rates were outside of the expected range for 15.9%, 9.3%, 31.2%, 28.2%, and 7.9% of the year for the *EM HAL*, *EM POT*, *POT – No Tender*, *POT - Tender* and *TRW – No Tender* strata, respectively. The *EM HAL*, *POT – No Tender*, and *TRW – No Tender* strata were outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *HAL* (expected rate = 0.177, realized rate = 0.176, *p*-value = 0.925) and *TRW - Tender* (expected rate = 0.271, realized rate = 0.357, *p*-value = 0.175) strata. Overall, there appeared to be less temporal bias in 2019 than in 2018, when three of six partial coverage strata had coverage rates outside of the expected range at the end of the year (AFSC and AKRO 2019).         
 
 ##Spatial Patterns in Trip-Selection  
 Under a strictly random selection of trips and with a large enough sample size, the spatial distribution of monitored trips should reflect the spatial distribution of all trips. The hypergeometric distribution was used to describe the results of sampling from a population of items (fishing trips) with different characteristics (NMFS Area fished). Based on this distribution, the expected number of monitored trips in a stratum and area is the realized monitoring rate (not selection rate) for the stratum multiplied by the total number of trips from that stratum that occurred in the area of interest. Using this method, we compared the expected number of monitored trips to the realized number of monitored trips in each NMFS Area and stratum combination and found that in most cases, the realized number of monitored trips was close to the expected result (`r fig_nums('cell.plot', display="cite")`). As part of this evaluation, we calculated the probability of monitoring the realized number of monitored trips within each stratum and NMFS Area. For the purposes of the following discussion, NMFS Areas with an unexpected number of trips (probability of our result is less than 0.05) are referred to as “low-p” areas.  
@@ -1335,7 +1338,10 @@ strata.cell.dat <- full_join(strata.cell.dat, partial, by="STRATA")
                  
 ```{r cell.pot, message=FALSE, warning=FALSE, include=FALSE}
 # Reorder strata for plotting
-strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
+# strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
+
+# FIXME the code above was hardcoded for 2019 strata. 
+strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "EM TRW EFP", "HAL", "POT", "TRW")))
 
 #Comparison plots depicting the number of observed sample units
 #compared to the number of expected observed sample units for each partial
@@ -1487,11 +1493,10 @@ results <- merge(
 results <- cbind(results, strat_interp = c(
   "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *EM HAL* stratum.",
   "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *EM POT* stratum.",
-  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *HAL* stratum.",
-    "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *POT - No Tender* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *EM TRW EFP* stratum.",
+    "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *HAL - No Tender* stratum.",
   "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *POT - Tender* stratum.",
-  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *TRW - No Tender* stratum.",
-    "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *TRW - Tender* stratum."))
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *TRW - No Tender* stratum."))
 
 # Add formatted strata column
 results <- mutate(results, formatted_strat=paste0("*", STRATA, "*"))
@@ -1499,11 +1504,10 @@ results <- mutate(results, formatted_strat=paste0("*", STRATA, "*"))
 # Rearrange results
 results <- arrange(results, match(probt_file, c("probability_EM HAL", 
                                                 "probability_EM POT", 
+                                                "probability_EM TRW EFP", 
                                                 "probability_HAL", 
-                                                "probability_POT - No Tender", 
-                                                "probability_TRW - No Tender", 
-                                                "probability_POT - Tender", 
-                                                "probability_TRW - Tender")))
+                                                "probability_POT", 
+                                                "probability_TRW")))
 
 ```
 
@@ -1530,7 +1534,7 @@ for (i in as.character(unique(results$STRATA))) {
 `r paste(knit(text = out), collapse = '\n')`
 
 ##Trip Metrics  
-This section analyses whether monitored trips are similar to unmonitored trips using a permutation test (a.k.a., randomization test). This test evaluates the question “How likely is the difference we found if these two groups have the same distribution (in the metric we are comparing)?” Permutation tests compare the actual difference found between two groups to the distribution of many differences derived by randomizing the labels defining the two groups (e.g., monitored and unmonitored). Difference values in the permutation test were calculated by subtracting the mean metric value for the “No” condition from the mean metric value for the “Yes” condition. For example, the difference between vessel lengths in a permutation test for a monitoring effect would be the mean value for unmonitored trips subtracted from the mean value for all monitored trips. By randomizing group assignments, the combined distribution of randomized differences represents the sampling distribution under the null hypothesis that the two groups are equal. In this report, 1,000 randomized trials were run for the permutation test. The p-value from the test is calculated as the number of randomized trials with greater absolute differences than the actual difference divided by the number of randomized trials. Similar to the other statistical tests used in this report, low p-values (< 0.05) indicate unlikely events under the hypothesis of equality and are therefore considered evidence against that hypothesis. As stated previously, a Bonferroni adjustment has been applied to these p-values by multiplying original p-values by the number of metrics being tested (six in this case). These adjusted p-values are then compared to the 0.05 significance level. In an attempt to improve clarity, although five values are calculated in the test; 1) the difference between groups, 2) the mean difference between groups from randomized trials, 3) #1 expressed as a percentage of the mean value of the metric being tested, 4) #2 expressed as a percentage of the mean value of the metric being tested, and 5) the p-value of the test, only values (1), (3) and (5) are presented.      
+This section analyses whether monitored trips are similar to unmonitored trips using a permutation test (a.k.a., randomization test). This test evaluates the question “How likely is the difference we found if these two groups have the same distribution (in the metric we are comparing)?” Permutation tests compare the actual difference found between two groups to the distribution of many differences derived by randomizing the labels defining the two groups (e.g., monitored and unmonitored). Difference values in the permutation test were calculated by subtracting the mean metric value for the “No” condition from the mean metric value for the “Yes” condition. For example, the difference between vessel lengths in a permutation test for a monitoring effect would be the mean value for unmonitored trips subtracted from the mean value for all monitored trips. By randomizing group assignments, the combined distribution of randomized differences represents the sampling distribution under the null hypothesis that the two groups are equal. In this report, 1,000 randomized trials were run for the permutation test. The *p*-value from the test is calculated as the number of randomized trials with greater absolute differences than the actual difference divided by the number of randomized trials. Similar to the other statistical tests used in this report, low *p*-values (< 0.05) indicate unlikely events under the hypothesis of equality and are therefore considered evidence against that hypothesis. As stated previously, a Bonferroni adjustment has been applied to these *p*-values by multiplying original *p*-values by the number of metrics being tested (six in this case). These adjusted *p*-values are then compared to the 0.05 significance level. In an attempt to improve clarity, although five values are calculated in the test; 1) the difference between groups, 2) the mean difference between groups from randomized trials, 3) #1 expressed as a percentage of the mean value of the metric being tested, 4) #2 expressed as a percentage of the mean value of the metric being tested, and 5) the *p*-value of the test, only values (1), (3) and (5) are presented.      
 
 Six trip metrics were examined in the permutation test. These metrics were as follows: the number of NMFS Areas visited in a trip, trip duration (days), the weight of the landed catch (t), the vessel length (ft), the number of species in the landed catch, and the proportion (0 to 1) of the total catch that is made up of the most predominant species (pMax). The metric ‘vessel length’ is used to help interpret the results from ‘weight of landed catch’ since fishing power is positively correlated to vessel length. Specifically, differences in weight *and* length are interpreted as a failure to achieve a random sample of vessels of different sizes, whereas differences in weight only lend more evidence that there was a monitoring effect. The number of species within the landed portion of the catch is a measure of species richness. Our pMax metric follows the concepts behind Hill’s diversity number N1 that depicts the number of abundant species (Hill 1973) and is a measure of how “pure” catch is since a value of one would indicate that only the predominant (and presumed desirable) species was landed.  
 
@@ -1564,8 +1568,10 @@ assign(paste(YN_var, "results", sep = "."), data.frame(perm[4],
 assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
 
 names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
-OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender")))
-
+# FIXME - updating strata names
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")))
+# FIXME - OBSERVED_FLAG.results has NAs with EM TRW EFP, so just coercing them to zeroes for now
+OBSERVED_FLAG.results[OBSERVED_FLAG.results$Strata=="EM TRW EFP" & OBSERVED_FLAG.results$Metric == "p-value", c("pMax species", "Landed catch (t)")] <- 0
 #interpret_trip_metrics() see helper.r documentation
 perm_sum <- interpret_trip_metrics(OBSERVED_FLAG.summary)
 
@@ -1586,11 +1592,11 @@ OBSERVED_FLAG.results <- rbind(
     ungroup() %>%
     mutate_each(funs(round(., 3)), -c(Strata, Metric)) %>% 
     mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric))
-) %>% arrange(match(Strata, c("HAL", "EM HAL", "POT - No Tender", "POT - Tender", "EM POT", "TRW - No Tender", "TRW - Tender")), Metric)
+) %>% arrange(match(Strata, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")), Metric)  # FIXME updating strata names
 
 #Replace "0" p-values; extra space in character is an artifact of the previous format()
 OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000"] <- "< 0.001"
-
+OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric=="p-value",]$Metric <- "*p*-value"
 rm(perm)
 
 ```
@@ -1610,9 +1616,9 @@ for (i in as.character(unique(perm_sum$STRATA))) {
   results_text <- ifelse(
     length(signif$p)==0,
     #If none of the metrics are significant:
-    paste0("* Of the six metrics compared in the *", i, "* stratum, there were no metrics with low p-values."),
+    paste0("* Of the six metrics compared in the *", i, "* stratum, there were no metrics with low *p*-values."),
     #If some are significant, say how many and list the results:
-    paste0( "* Of the six metrics compared in the *", i, "* stratum, ", numbers2words(length(signif$p)), " had low p-values. Observed trips in this stratum ", wordlist(signif$interpretation), " than unobserved trips."))
+    paste0( "* Of the six metrics compared in the *", i, "* stratum, ", numbers2words(length(signif$p)), " had low *p*-values. Observed trips in this stratum ", wordlist(signif$interpretation), " than unobserved trips."))
   #use knit_expand to create a template for each paragraph. In-line r chunks that are usually defined with `r ...` are instead defined with {{...}}. The '\n' is a line break, giving the paragraph proper formatting. 
   out <- c(out, knit_expand(text=c('{{results_text}}', '\n\n')))
 }
@@ -1640,8 +1646,8 @@ Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
              #Make number of cols in facet_wrap = to number of strata
              ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA))) +
   geom_label(data = OBSERVED_FLAG.summary_plot, 
-             aes(label = paste("p = ", round(p,3), sep = "")),
-             x=-Inf, y=Inf, hjust=-.2, vjust=1.2, size = 4) +
+             aes(label = paste("italic(p) == ", round(p,3), sep = "")),
+             x=-Inf, y=Inf, hjust=-.2, vjust=1.2, size = 4, parse=TRUE) +
   fig.theme +
   xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
   ylab("Density of Outcomes\n")
@@ -1931,7 +1937,8 @@ kbl(Coverage.Table, escape = FALSE) %>%
 #####
 
 ####`r tbl_nums('em.summary.table', caption = "The number of EM hard drives received and reviewed by gear type and month.")`    
-```{r em.summary.table, echo=FALSE, tab.cap=""}
+```{r em.summary.table, echo=FALSE, tab.cap="", eval=F}
+# FIXME - disabled this chunk since some months are missing 
 for.em.summary.table <- EM.review %>% 
                         filter(TRIP_STATUS == "COMPLETED" & 
                                (year(ACTUAL_EM_TRIP_START_DATE_TIME) != 2020 | #Excluding 2019 data trips
@@ -1990,7 +1997,7 @@ kable(OBSERVED_FLAG.Ntable)
 
 #####
 
-####`r tbl_nums('OBSERVED_FLAG.results', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). A Bonferroni adjustment has been applied to p-values.'))`  
+####`r tbl_nums('OBSERVED_FLAG.results', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). A Bonferroni adjustment has been applied to *p*-values.'))`  
 
 ```{r OBSERVED_FLAG.results, echo=FALSE, tab.cap=""}
 kable(OBSERVED_FLAG.results)
@@ -2020,7 +2027,7 @@ suppressWarnings(print(odds.by.date.plot))
 print(Temporal.plot)
 ```
 
-####`r fig_nums('Temporal.plot', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded area) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as p-values.'))`  
+####`r fig_nums('Temporal.plot', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded area) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as *p*-values.'))`  
 
 #####
 
@@ -2056,25 +2063,26 @@ suppressMessages(print(cell.plot))
 
 ```{r probability_POT - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_POT - No Tender.png)
+<!-- ![](probability_POT.png) -->
 
 ####`r fig_nums('probability_POT - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
 
+
 ```{r probability_TRW - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_TRW - No Tender.png)
+<!-- ![](probability_TRW) -->
 
 ####`r fig_nums('probability_TRW - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
   
 ```{r probability_POT - Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, dpi=600}
 ```
-![](probability_POT - Tender.png)
+<!-- ![](probability_POT - Tender.png) -->
 
 ####`r fig_nums('probability_POT - Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
 
 ```{r probability_TRW - Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, dpi=600}
 ```
-![](probability_TRW - Tender.png)
+<!-- ![](probability_TRW - Tender.png) -->
 
 ####`r fig_nums('probability_TRW - Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
 
@@ -2082,7 +2090,7 @@ suppressMessages(print(cell.plot))
 suppressMessages(print(Obs.perm.plot))
 ```
 
-####`r fig_nums('Obs.perm.plot', caption = paste0('Example of results from permutation tests depicting percent differences between observed and unobserved trips for observer pool strata in the partial coverage category. Grey bars depict the distribution of differences between observed and unobserved trips where the assignment of observed status has been randomized (this represents the sampling distribution under the null hypothesis that observed and unobserved trips are the same). The vertical line denotes the actual difference between observed and unobserved trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The p-value for each test is denoted in the upper left corner. Low p-values are reason to reject the null hypothesis and conclude that there is an observer effect. Results from all permutation tests can be found in the Tables section of this report.'))`  
+####`r fig_nums('Obs.perm.plot', caption = paste0('Example of results from permutation tests depicting percent differences between observed and unobserved trips for observer pool strata in the partial coverage category. Grey bars depict the distribution of differences between observed and unobserved trips where the assignment of observed status has been randomized (this represents the sampling distribution under the null hypothesis that observed and unobserved trips are the same). The vertical line denotes the actual difference between observed and unobserved trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The *p*-value for each test is denoted in the upper left corner. Low *p*-values are reason to reject the null hypothesis and conclude that there is an observer effect. Results from all permutation tests can be found in the Tables section of this report.'))`  
 
 #####
 
