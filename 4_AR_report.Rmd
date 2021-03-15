@@ -1338,7 +1338,7 @@ strata.cell.dat <- full_join(strata.cell.dat, partial, by="STRATA")
 # Reorder strata for plotting
 # strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
 
-# FIXME the code above was hardcoded for 2019 strata. 
+# FIXME the code above was hardcoded for 2019 strata. Hardcoding 2020 strata below.
 strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "EM TRW EFP", "HAL", "POT", "TRW")))
 
 #Comparison plots depicting the number of observed sample units
@@ -2061,14 +2061,13 @@ suppressMessages(print(cell.plot))
 
 ```{r probability_POT - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-<!-- ![](probability_POT.png) -->
+<!-- ![](probability_POT - No Tender.png) -->
 
 ####`r fig_nums('probability_POT - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
 
-
 ```{r probability_TRW - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-<!-- ![](probability_TRW) -->
+<!-- ![](probability_TRW - No Tender) -->
 
 ####`r fig_nums('probability_TRW - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
   
