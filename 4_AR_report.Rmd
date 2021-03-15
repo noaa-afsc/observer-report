@@ -1,13 +1,11 @@
 ---
 title: "Deployment Performance Review of the 2019 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
+always_allow_html: true
 output:
-  html_document:
-    df_print: paged
-  pdf_document: default
   word_document:
     reference_docx: word-styles-reference-01.docx
-always_allow_html: yes
+  pdf_document: default
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
