@@ -1250,7 +1250,7 @@ Under a strictly random selection of trips and with a large enough sample size, 
 ```{r spatial_bias_analysis, message=FALSE, warning=FALSE, include=FALSE}
 trips.within.cells <- work.data %>%
   select(STRATA,TRIP_ID,VESSEL_ID,PERMIT,REPORTING_AREA_CODE,SOURCE_TABLE,OBSERVED_FLAG) %>%
-  filter(STRATA %in% partial$STRATA & SOURCE_TABLE=='Y') %>%  
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP" & SOURCE_TABLE=='Y') %>%  
   distinct() %>% 
   group_by(STRATA, REPORTING_AREA_CODE) %>% 
   summarize(obs.in.cell = length(TRIP_ID[OBSERVED_FLAG=="Y"]),
@@ -1259,7 +1259,7 @@ trips.within.cells <- work.data %>%
 
 trip.totls <- work.data %>%
   select(STRATA,TRIP_ID,VESSEL_ID,PERMIT,REPORTING_AREA_CODE,SOURCE_TABLE,OBSERVED_FLAG) %>%
-  filter(STRATA %in% partial$STRATA & SOURCE_TABLE=='Y') %>%  
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP" & SOURCE_TABLE=='Y') %>%  
   distinct() %>% 
   group_by(STRATA) %>%
   summarize(totl.obs.samp.units = length(unique(TRIP_ID[OBSERVED_FLAG=="Y"])),
@@ -1276,11 +1276,11 @@ strata.cell.dat <- strata.cell.dat %>%
     # expected number of observed trips in a cell
     Hyper.expect = (totl.obs.samp.units / totl.samp.units) * totl.in.cell, # (observed trips / total trips) * total trips in cell
     # probability of observing no trips in a cell
-    Hyper.P.0 = round(1-phyper(q=0, 
+    Hyper.P.0 = round(phyper(q=0, 
                                m=totl.in.cell, #trips in a cell by stratum
                                n=totl.samp.units - totl.in.cell, #total trips by stratum - trips in a cell by stratum
                                k=totl.obs.samp.units, #total observed trips by stratum
-                               lower.tail = FALSE, log.p = FALSE),6),
+                               lower.tail = TRUE, log.p = FALSE),6),
     # probability of observing less than the observed number of trips in a cell
     Hyper.P.obs.less = phyper(q=obs.in.cell, 
                               m=totl.in.cell, #trips in a cell by stratum
@@ -1331,22 +1331,17 @@ strata.cell.dat <- strata.cell.dat %>%
                                    'Prob.Zero >= 0.20' = Hyper.P.0 >= 0.20,
                                    .ordered=TRUE))
 
-strata.cell.dat <- full_join(strata.cell.dat, partial, by="STRATA")
+strata.cell.dat <- left_join(strata.cell.dat, partial %>% filter(Effective_Date == min(Effective_Date)), by="STRATA")
 ```
                  
 ```{r cell.pot, message=FALSE, warning=FALSE, include=FALSE}
 # Reorder strata for plotting
-# strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
-
-# FIXME the code above was hardcoded for 2019 strata. Hardcoding 2020 strata below.
-strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "EM TRW EFP", "HAL", "POT", "TRW")))
+strata.cell.dat <- transform(strata.cell.dat, STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% arrange(STRATA)
 
 #Comparison plots depicting the number of observed sample units
 #compared to the number of expected observed sample units for each partial
-#coverage stratum. Each point on a plot represents a NMFS Area. The smaller the
+#coverage stratum. Each point on a plot represents a NMFS Area. The darker the
 #point, the more unusual the result.
-#Note-  each point is a NMFS area, vessels 
-# Remove HAL - Tender stratum, since no trips were observed in 2017
 cell.plot <- ggplot(filter(strata.cell.dat), 
                     aes(x = Hyper.expect, 
                         y = obs.in.cell,#,size = P_extreme_more_cat
@@ -1357,27 +1352,19 @@ cell.plot <- ggplot(filter(strata.cell.dat),
              pch=21,size=2) +
   scale_fill_brewer(name="Probability of Monitored Sample Units\nor a More Extreme Value", 
                     palette="Reds", direction = -1, drop=FALSE) +
-  # scale_colour_manual('Probability of Observed Sample Units\nor a More Extreme Value', 
-  #                     values=c(  "black", 'grey25', 'grey50', 'grey75','grey80',  "grey90" )) +
-  # scale_fill_manual('Probability of Observed Sample Units\nor a More Extreme Value', 
-  #                   values=c(  "black", 'grey25', 'grey50', 'grey75','grey80',  "grey90" )) +
-  # scale_size_discrete('Probability of Observed Sample Units\nor a More Extreme Value',
-  #                     #range = c(1.5,8)) +
-  #                     range = c(1.5,5)) +
   labs(y = 'Number of Monitored Sample Units\n', 
        x = '\nExpected Number of Monitored Sample Units if Selection was Random') +
-  #xlim(0,10) + ylim(0,10) +
   fig.theme +
   theme(strip.text.x = element_text(size = 10))
 
+# How many NMFS Areas fell into the different p-value categories for each stratum?
 #table(strata.cell.dat$P_extreme_more_cat, strata.cell.dat$STRATA)
-#length(strata.cell.dat$P_extreme_more_cat)
 ```
 
 ```{r map_generation, message=FALSE, warning=FALSE, include=FALSE}
 # Map generation
 # This chunk only needs to be run for initial figure generation, then use eval=FALSE
-for (i in as.character(partial$STRATA)) {
+for (i in levels(strata.cell.dat$STRATA)) {
 
   STRAT <- i
 
@@ -1459,7 +1446,7 @@ for (i in as.character(partial$STRATA)) {
   assign(paste0("probability_", STRAT), p)
 
   # Save plot  
-  png(paste0("probability_", STRAT, ".png"), height = 5,
+  png(paste0("figures/probability_", STRAT, ".png"), height = 5,
       width = 11, units = 'in', res=300)
   plot(p)
   dev.off()
@@ -1484,29 +1471,17 @@ results <- merge(
                    med_cov_rt = round(median(cell.rate)*100, 1)) %>% 
   mutate(probt_file = paste0("probability_", STRATA),
          perc_obs_file = paste0("perc_obs_", STRATA)),
-  partial %>% select(STRATA, Rate)
-)
+  partial %>% filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% select(STRATA, Rate, formatted_strat)
+  ) %>% 
+  arrange(STRATA)
 
-#*FLAG* Once report is stabilized, add stratum-specific interpretive text. This will change each year!
+# Once report is stabilized, add stratum-specific interpretive text. This will change each year!
 results <- cbind(results, strat_interp = c(
-  "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *EM HAL* stratum.",
-  "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *EM POT* stratum.",
-  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *EM TRW EFP* stratum.",
-    "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *HAL - No Tender* stratum.",
-  "These results mean that there was no clustering of observed trips among NMFS Areas that was different from expected.  No spatial bias appears to have occurred in the *POT - Tender* stratum.",
-  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected.  Some spatial bias appears to have occurred in the *TRW - No Tender* stratum."))
-
-# Add formatted strata column
-results <- mutate(results, formatted_strat=paste0("*", STRATA, "*"))
-
-# Rearrange results
-results <- arrange(results, match(probt_file, c("probability_EM HAL", 
-                                                "probability_EM POT", 
-                                                "probability_EM TRW EFP", 
-                                                "probability_HAL", 
-                                                "probability_POT", 
-                                                "probability_TRW")))
-
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *HAL* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *EM HAL* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *POT* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *EM POT* stratum.",
+  "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *TRW* stratum."))
 ```
 
 ```{r strata_patterns_by_stratum_text, message=FALSE, warning=FALSE, include=FALSE}
@@ -1711,21 +1686,16 @@ In a well-designed sampling program, the monitoring rate should be large enough 
 # higher the probability of not observing any trips in the unit. See
 # {spatial_bias_analysis} code chunk for analysis used to generate
 # strata.cell.dat.
-
-# Create a generalized subset that includes relevant data points (cells where there is a probability of not observing a trip due to low sample sizes)
-sub <- strata.cell.dat %>% 
-       filter(totl.in.cell < round(min(totl.in.cell[Hyper.P.0==0])+50, -1))
-
-#sub <- strata.cell.dat %>% filter(totl.in.cell < 200)
-prob.bynumber.plot <- ggplot(sub, aes(y=Hyper.P.0, x=totl.in.cell, group= STRATA, col = STRATA, shape= STRATA)) +
+prob.bynumber.plot <- ggplot(strata.cell.dat, aes(y=Hyper.P.0, x=totl.in.cell)) +
                       geom_point(size=3) +
-                      geom_line(size=1) +
-                      scale_color_manual("Stratum", values = gray.colors(n = length(partial$STRATA), start = 0, end = 0.8)) +
-                      scale_shape_discrete("Stratum") +
-                      ylab('Probability of No Observed Trips\n') +
+                      geom_line(size=1) + 
+                      facet_wrap(STRATA~., ncol = 2) +
                       xlab('\nNumber of Trips') +
-                      fig.theme +
-                      theme(legend.text=element_text(size=10))
+                      ylab('Probability of No Observed Trips\n') +
+                      # This will cut out points with > 90 trips in order to focus on 
+                      # areas that have some probability of getting no monitored trips
+                      xlim(0, 90) +
+                      fig.theme
                  
 prob.bynumber.plot
 
@@ -2037,51 +2007,45 @@ suppressMessages(print(cell.plot))
 
 ####
 
+```{r probability_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```
+![](figures/probability_HAL.png)
+
+####`r fig_nums('probability_HAL', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+
+####
+
 ```{r probability_EM HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_EM HAL.png)
+![](figures/probability_EM HAL.png)
 
 ####`r fig_nums('probability_EM HAL', caption = paste0('Probability of monitoring the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *EM HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
 
 ####
 
+```{r probability_POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```
+![](figures/probability_POT.png)
+
+####`r fig_nums('probability_POT', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+
+####
+
 ```{r probability_EM POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_EM POT.png)
+![](figures/probability_EM POT.png)
 
 ####`r fig_nums('probability_EM POT', caption = paste0('Probability of monitoring the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *EM POT* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`  
 
 ####
 
-```{r probability_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```{r probability_TRW, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
 ```
-![](probability_HAL.png)
+![](figures/probability_TRW.png)
 
-####`r fig_nums('probability_HAL', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
-
-```{r probability_POT - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
-```
-<!-- ![](probability_POT - No Tender.png) -->
-
-####`r fig_nums('probability_POT - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
-
-```{r probability_TRW - No Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
-```
-<!-- ![](probability_TRW - No Tender) -->
-
-####`r fig_nums('probability_TRW - No Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - No Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####`r fig_nums('probability_TRW', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
   
-```{r probability_POT - Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, dpi=600}
-```
-<!-- ![](probability_POT - Tender.png) -->
-
-####`r fig_nums('probability_POT - Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT - Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
-
-```{r probability_TRW - Tender, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=5, dpi=600}
-```
-<!-- ![](probability_TRW - Tender.png) -->
-
-####`r fig_nums('probability_TRW - Tender', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW - Tender* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####
 
 ```{r Obs.perm.plot, echo=FALSE, fig.height=11, fig.width=8, message=FALSE, warning=FALSE, dpi=600}
 suppressMessages(print(Obs.perm.plot))
