@@ -1034,8 +1034,7 @@ Pollock.landing.data <- work.data %>%
          PROCESSING_SECTOR=="S" &                  
          TRIP_TARGET_CODE %in% c("B", "P") & 
          MANAGEMENT_PROGRAM_CODE != "RPP") %>% 
-  mutate(GEAR = "TRW") %>%
-  distinct(REPORT_ID, COVERAGE_TYPE, GEAR, FMP, PORT_CODE, TENDER) %>%
+  distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
   # salmon.landings.obs is a list of REPORT_IDs for which dockside sampling for salmon occurred (all sectors)
   mutate(Observed.type = ifelse(REPORT_ID %in% salmon.landings.obs$REPORT_ID, "Observed", "Not_Observed"),
          FMP = fct_recode(factor(FMP), `Bering Sea` = "BSAI", `Gulf of Alaska` = "GOA"),
@@ -1050,31 +1049,47 @@ Pollock.landing.data <- work.data %>%
 # table(Pollock.landing.data$COVERAGE_TYPE, Pollock.landing.data$Observed.type, Pollock.landing.data$TENDER)
 
 # Summarise landings by FMP, coverage type, port, and observed status
-Pollock.observed <- rbind(
+Pollock.monitored <- rbind(
           Pollock.landing.data %>%
-          group_by(FMP, COVERAGE_TYPE, PORT_CODE) %>%
+          group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
           summarize(N.Pollock = n_distinct(REPORT_ID),
                     N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
           mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock)*100, digits=1, nsmall=1)) %>% 
-          select(FMP, COVERAGE_TYPE, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
+          select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
           ungroup(),
           Pollock.landing.data %>%
-          group_by(COVERAGE_TYPE) %>%
+          group_by(COVERAGE_TYPE, STRATA) %>%
           summarize(FMP = as.factor("Total"),
                     PORT_CODE = as.factor(""),
                     N.Pollock = n_distinct(REPORT_ID),
                     N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
           mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock)*100, digits=1, nsmall=1)) %>%
-          select(FMP, COVERAGE_TYPE, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
+          select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
           ungroup())
 
-# Reorder rows
+# Isolate observed strata
 Pollock.observed <- rbind(
-                    filter(Pollock.observed, COVERAGE_TYPE == "Full"),
-                    filter(Pollock.observed, COVERAGE_TYPE == "Partial"))
+                    filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA != "EM TRW EFP"),
+                    filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA != "EM TRW EFP"))
 
 # Rename columns and format
 Pollock.observed.table <- Pollock.observed %>% 
+  mutate(N.Pollock = as.character(N.Pollock),
+         N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
+  select(`FMP` = FMP, 
+         `Coverage category` = COVERAGE_TYPE,
+         `Port` = PORT_CODE, 
+         `Total deliveries (*N*)` = N.Pollock,
+         `Observed deliveries (*n*)` = N.Pollock.Obs,
+         `% Observed` = Pct.Obs)
+
+# Isolate EFP strata
+Pollock.efp <- rbind(
+               filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA == "EM TRW EFP"),
+               filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA == "EM TRW EFP"))
+
+# Rename columns and format
+Pollock.efp.table <- Pollock.efp %>% 
   mutate(N.Pollock = as.character(N.Pollock),
          N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
   select(`FMP` = FMP, 
