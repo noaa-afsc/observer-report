@@ -1518,28 +1518,35 @@ OBSERVED_FLAG.results[OBSERVED_FLAG.results$Strata=="EM TRW EFP" & OBSERVED_FLAG
 #interpret_trip_metrics() see helper.r documentation
 perm_sum <- interpret_trip_metrics(OBSERVED_FLAG.summary)
 
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% mutate(Metric = replace(Metric, Metric=="Observed difference", "OD"))  # Shorten metric
+OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>% 
+  merge(OBSERVED_FLAG.results, by="Strata") %>%           # Merge in trip counts of observed/unobserved
+  mutate(Observed = formatC(Observed, big.mark=","),      # Format trip counts
+         Unobserved = formatC(Unobserved, big.mark=","))
+  
 #REFORMAT RESULTS TABLE:
 OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
-    filter(Metric %in% c("Observed difference", "OD (%)")) %>% 
-    mutate_each(funs(round(., 3)), -c(Strata, Metric)) %>%
+    filter(Metric %in% c("OD", "OD (%)")) %>% 
+    mutate_each(funs(round(., 3)), -c(Strata, Metric, Observed, Unobserved)) %>%
     #Keep the zero's for sig figs
-    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric))
+    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric, Observed, Unobserved))
   ,
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("p-value")) %>% 
     #Apply Bonferroni adjustment to p-values
-    group_by(Strata) %>% 
+    group_by(Strata, Observed, Unobserved) %>% 
     mutate_if(is.numeric, function(x)(x*6)) %>% 
     mutate_if(is.numeric, function(x)(if(x>=1)(1)else(x))) %>%
     ungroup() %>%
-    mutate_each(funs(round(., 3)), -c(Strata, Metric)) %>% 
-    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric))
+    mutate_each(funs(round(., 3)), -c(Strata, Metric, Observed, Unobserved)) %>% 
+    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric, Observed, Unobserved))
 ) %>% arrange(match(Strata, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")), Metric)  # FIXME updating strata names
 
 #Replace "0" p-values; extra space in character is an artifact of the previous format()
 OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000"] <- "< 0.001"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric=="p-value",]$Metric <- "*p*-value"
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")  # Remove Trawl EFP and italicize
 rm(perm)
 
 ```
@@ -1935,20 +1942,16 @@ kable(Pollock.efp.table)
 
 #####
 
-####`r tbl_nums('OBSERVED_FLAG.Ntable', caption = paste0('Number of trips by observation status in the ', year, ' trip-selection strata.'))`
-
-```{r OBSERVED_FLAG.Ntable, echo=FALSE, tab.cap=""}
-OBSERVED_FLAG.Ntable[c(2:3)] <- lapply(OBSERVED_FLAG.Ntable[,2:3], prettyNum, trim=TRUE, big.mark=",")
-
-kable(OBSERVED_FLAG.Ntable)
-```
-
-#####
-
 ####`r tbl_nums('OBSERVED_FLAG.results', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). A Bonferroni adjustment has been applied to *p*-values.'))`  
 
 ```{r OBSERVED_FLAG.results, echo=FALSE, tab.cap=""}
-kable(OBSERVED_FLAG.results)
+
+# Italicize strata
+OBSERVED_FLAG.results$Strata <- cell_spec(OBSERVED_FLAG.results$Strata, italic = TRUE)
+
+kbl(OBSERVED_FLAG.results, escape = FALSE, align=c('l','r','r','l',rep("r",times=6)))  %>% 
+  kable_paper() %>%
+  collapse_rows(columns=1:3, valign="top")
 ```
 
 #####
