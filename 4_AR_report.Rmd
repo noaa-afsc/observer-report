@@ -1192,7 +1192,9 @@ For.ts.temporal.plot <- transform(For.ts.temporal.plot,
                                 STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
 
 # Add column for dates where coverage is outside expectation
-For.ts.temporal.plot <- mutate(For.ts.temporal.plot, Date.outside=if_else(Outside.bounds==1, Date, as.Date(NA)))
+For.ts.temporal.plot <- For.ts.temporal.plot %>%
+  mutate(Date.outside=if_else(Outside.bounds==1, Date, as.Date(NA))) %>% 
+  mutate(p = ifelse(as.numeric(p) < 0.05, paste0(p, "*"), p))
 
 # Plot
 Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
@@ -1203,7 +1205,7 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   #Annotate p-values
   geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
                 y = Inf, vjust = 1.25, 
-                label = paste("italic(p) == ", p, sep = "")), size = 4, parse=T, check_overlap = T) +
+                label = paste("italic(p) == '", p, "'", sep = "")), size = 4, parse=T, check_overlap = T) +
   facet_wrap(~ STRATA, ncol=2, scale="free_y") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
