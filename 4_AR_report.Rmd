@@ -1942,16 +1942,6 @@ kable(Pollock.efp.table)
 
 #####
 
-####`r tbl_nums('OBSERVED_FLAG.Ntable', caption = paste0('Number of trips by observation status in the ', year, ' trip-selection strata.'))`
-
-```{r OBSERVED_FLAG.Ntable, echo=FALSE, tab.cap=""}
-OBSERVED_FLAG.Ntable[c(2:3)] <- lapply(OBSERVED_FLAG.Ntable[,2:3], prettyNum, trim=TRUE, big.mark=",")
-# TODO - MOVE TRIP COUNTS TO TABLE 10 BELOW, REMOVE THIS TABLE
-kable(OBSERVED_FLAG.Ntable)
-```
-
-#####
-
 ####`r tbl_nums('OBSERVED_FLAG.results', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). A Bonferroni adjustment has been applied to *p*-values.'))`  
 
 ```{r OBSERVED_FLAG.results, echo=FALSE, tab.cap=""}
