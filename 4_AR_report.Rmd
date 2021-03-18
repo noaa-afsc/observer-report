@@ -539,7 +539,8 @@ p.table$key[p.table$key == "random.n"] <- "Random Selection Only"
 p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 
 # Create table
-Selection.table <- p.table %>% 
+Selection.table <- p.table %>%
+                   mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
                    arrange( STRATA, Source, desc(key)) %>%
                    arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% 
                    mutate(new_trip_type = 
