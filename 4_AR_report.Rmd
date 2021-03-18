@@ -1536,16 +1536,18 @@ OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("p-value")) %>% 
     #Apply Bonferroni adjustment to p-values
-    group_by(Strata, Observed, Unobserved) %>% 
+    group_by(Strata, Metric, Observed, Unobserved) %>% 
     mutate_if(is.numeric, function(x)(x*6)) %>% 
     mutate_if(is.numeric, function(x)(if(x>=1)(1)else(x))) %>%
     ungroup() %>%
     mutate_each(funs(round(., 3)), -c(Strata, Metric, Observed, Unobserved)) %>% 
-    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric, Observed, Unobserved))
+    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric, Observed, Unobserved)) %>%
+    mutate_each(funs(ifelse(as.numeric(.) < 0.05, paste0(., "*"), .)  ), -c("Strata", "Observed", "Unobserved", "Metric"))
 ) %>% arrange(match(Strata, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")), Metric)  # FIXME updating strata names
 
 #Replace "0" p-values; extra space in character is an artifact of the previous format()
-OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000"] <- "< 0.001"
+
+OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric=="p-value",]$Metric <- "*p*-value"
 OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")  # Remove Trawl EFP and italicize
 rm(perm)
