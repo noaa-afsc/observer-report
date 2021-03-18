@@ -1100,7 +1100,7 @@ Pollock.efp.table <- Pollock.efp %>%
          `% Observed` = Pct.Obs)
 ```
 
-Given the design, the level of dockside observation of walleye pollock deliveries should be 100% in the full coverage category. In 2019, 100% of full coverage walleye pollock deliveries were observed (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).   
+Given the design, the level of dockside observation of walleye pollock deliveries should be 100% in the full coverage category. In `r year`, 100% of full coverage walleye pollock deliveries were observed (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).   
 
 While expectations of the full coverage category are straightforward, evaluations of the partial coverage category are more complex. As a matter of policy, no tender deliveries are observed. While it may seem intuitive that the expected coverage rate for non-tendered deliveries within the *TRW* stratum should be equal to the programmed trip selection rate of 19.59%, this assumption is likely untrue because observers are not deployed into the pollock fishery but into the entire trawl fishery, and the relationship between the number of deliveries and trips is not expected to be constant, especially when measured across ports. Therefore, we present the dockside observation rates for non-tendered *TRW* pollock landings but make no comparison to deployment rates (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).    
 
