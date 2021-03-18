@@ -1098,11 +1098,6 @@ Pollock.efp.table <- Pollock.efp %>%
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
          `% Observed` = Pct.Obs)
-
-# Objects referenced in-text:
-perc_unobs_fullcov <- 100 - Pollock.observed.table %>% filter(FMP == "Total" & `Coverage category` == "Full") %>% select(`% Observed`) %>%  as.numeric()
-
-perc_trips_obs <- Pollock.observed.table %>% filter(FMP == "Total" & `Coverage category`== "Partial") %>% select(`% Observed`) %>% as.character() 
 ```
 
 Given the design, the level of dockside observation of walleye pollock deliveries should be 100% in the full coverage category. In 2019, 100% of full coverage walleye pollock deliveries were observed (`r tbl_nums('Pollock.observed.table', display = "cite")`).   
