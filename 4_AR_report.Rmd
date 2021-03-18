@@ -1915,12 +1915,22 @@ kable(em_times)
 
 #####
 
-####`r tbl_nums('Pollock.observed.table', caption = "The number of *TRW - No Tender* pollock deliveries by port and coverage category.")`  
+####`r tbl_nums('Pollock.observed.table', caption = "The number of *TRW* pollock deliveries by port and coverage category.")`  
 
 ```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
 Pollock.observed.table[c(4:5)] <- lapply(Pollock.observed.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
 
 kable(Pollock.observed.table)
+```
+
+#####
+
+####`r tbl_nums('Pollock.efp.table', caption = "The number of *EM TRW EFP* pollock deliveries by port and coverage category.")`  
+
+```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
+Pollock.efp.table[c(4:5)] <- lapply(Pollock.efp.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
+
+kable(Pollock.efp.table)
 ```
 
 #####
