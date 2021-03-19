@@ -539,7 +539,8 @@ p.table$key[p.table$key == "random.n"] <- "Random Selection Only"
 p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 
 # Create table
-Selection.table <- p.table %>% 
+Selection.table <- p.table %>%
+                   mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
                    arrange( STRATA, Source, desc(key)) %>%
                    arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% 
                    mutate(new_trip_type = 
@@ -1113,7 +1114,7 @@ Bycatch estimates of Chinook salmon in the GOA are estimated using methods descr
 # Changed again for 2017 annual report to include all dates (not just those for which trips exist)
 # This analysis is a bit tricky, because trips are not necessarily constrained to one landing date.  Esp. when tendering.
 Max.ts.date <- work.data %>% 
-  filter(STRATA %in% partial$STRATA) %>%
+  filter(STRATA %in% partial$STRATA &  STRATA != "EM TRW EFP") %>%
   select(TRIP_ID, TRIP_TARGET_DATE, OBSERVED_FLAG, STRATA) %>%
   distinct() %>%
   group_by(TRIP_ID, OBSERVED_FLAG, STRATA) %>%
@@ -1188,10 +1189,12 @@ For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(for.binom, STRATA, p)
 
 # Order strata for plot
 For.ts.temporal.plot <- transform(For.ts.temporal.plot,
-                                STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
+                                STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
 
 # Add column for dates where coverage is outside expectation
-For.ts.temporal.plot <- mutate(For.ts.temporal.plot, Date.outside=if_else(Outside.bounds==1, Date, as.Date(NA)))
+For.ts.temporal.plot <- For.ts.temporal.plot %>%
+  mutate(Date.outside=if_else(Outside.bounds==1, Date, as.Date(NA))) %>% 
+  mutate(p = ifelse(as.numeric(p) < 0.05, paste0(p, "*"), p))
 
 # Plot
 Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
@@ -1202,7 +1205,7 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   #Annotate p-values
   geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
                 y = Inf, vjust = 1.25, 
-                label = paste("italic(p) == ", p, sep = "")), size = 4, parse=T, check_overlap = T) +
+                label = paste("italic(p) == '", p, "'", sep = "")), size = 4, parse=T, check_overlap = T) +
   facet_wrap(~ STRATA, ncol=2, scale="free_y") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
@@ -1535,16 +1538,18 @@ OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("p-value")) %>% 
     #Apply Bonferroni adjustment to p-values
-    group_by(Strata, Observed, Unobserved) %>% 
+    group_by(Strata, Metric, Observed, Unobserved) %>% 
     mutate_if(is.numeric, function(x)(x*6)) %>% 
     mutate_if(is.numeric, function(x)(if(x>=1)(1)else(x))) %>%
     ungroup() %>%
     mutate_each(funs(round(., 3)), -c(Strata, Metric, Observed, Unobserved)) %>% 
-    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric, Observed, Unobserved))
+    mutate_each(funs(format(., nsmall=3, digits=3)), -c(Strata, Metric, Observed, Unobserved)) %>%
+    mutate_each(funs(ifelse(as.numeric(.) < 0.05, paste0(., "*"), .)  ), -c("Strata", "Observed", "Unobserved", "Metric"))
 ) %>% arrange(match(Strata, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")), Metric)  # FIXME updating strata names
 
 #Replace "0" p-values; extra space in character is an artifact of the previous format()
-OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000"] <- "< 0.001"
+
+OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric=="p-value",]$Metric <- "*p*-value"
 OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")  # Remove Trawl EFP and italicize
 rm(perm)
@@ -1584,7 +1589,11 @@ OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA=a
   filter(STRATA=="HAL" | STRATA=="POT - No Tender" | STRATA=="TRW - No Tender")
 
 OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA=as.character(STRATA)) %>% 
-  filter(STRATA=="HAL" | STRATA=="POT - No Tender" | STRATA=="TRW - No Tender")
+  filter(STRATA=="HAL" | STRATA=="POT - No Tender" | STRATA=="TRW - No Tender") %>% 
+  mutate(p = ifelse(p < 0.05, paste0(formatC(p,digits=3, format="f"), "*"), formatC(p,digits=3, format="f"))) %>%
+  mutate(p = ifelse(p == "0.000*", 
+                    paste0("italic(p) < '0.001*'"), 
+                    ifelse(p < 0.05, paste0("italic(p) == '", p, "*'"), paste0("italic(p) == '", p, "'"))))
 
 #Generate permutation plot 
 Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
@@ -1596,8 +1605,7 @@ Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
              #Make number of cols in facet_wrap = to number of strata
              ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA))) +
   geom_label(data = OBSERVED_FLAG.summary_plot, 
-             aes(label = paste("italic(p) == ", round(p,3), sep = "")),
-             x=-Inf, y=Inf, hjust=-.2, vjust=1.2, size = 4, parse=TRUE) +
+             aes(label = paste(p)), x=-Inf, y=Inf, hjust=-.2, vjust=1.2, size = 4, parse=TRUE) +
   fig.theme +
   xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
   ylab("Density of Outcomes\n")
