@@ -1114,7 +1114,7 @@ Bycatch estimates of Chinook salmon in the GOA are estimated using methods descr
 # Changed again for 2017 annual report to include all dates (not just those for which trips exist)
 # This analysis is a bit tricky, because trips are not necessarily constrained to one landing date.  Esp. when tendering.
 Max.ts.date <- work.data %>% 
-  filter(STRATA %in% partial$STRATA) %>%
+  filter(STRATA %in% partial$STRATA &  STRATA != "EM TRW EFP") %>%
   select(TRIP_ID, TRIP_TARGET_DATE, OBSERVED_FLAG, STRATA) %>%
   distinct() %>%
   group_by(TRIP_ID, OBSERVED_FLAG, STRATA) %>%
@@ -1189,7 +1189,7 @@ For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(for.binom, STRATA, p)
 
 # Order strata for plot
 For.ts.temporal.plot <- transform(For.ts.temporal.plot,
-                                STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "POT - No Tender", "POT - Tender", "TRW - No Tender", "TRW - Tender", "HAL")))
+                                STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
 
 # Add column for dates where coverage is outside expectation
 For.ts.temporal.plot <- For.ts.temporal.plot %>%
