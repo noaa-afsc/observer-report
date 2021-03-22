@@ -19,10 +19,21 @@ output:
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
-partial <- partial[1:6,]  # FIXME - delete this later, but adding this to get the code to run as best as it can
-
 # Load packages and functions 
 source("3_helper.R")
+
+# Create a version of the partial coverage programmed rate table that includes the waiver period (2020-03-26 through 2020-06-30)  
+partial_time <- rbind(
+                partial[, Effective_Date := as.Date(Effective_Date)],
+                data.table(Effective_Date = as.Date(c("2020-03-26", "2020-03-26")),
+                           STRATA = c("HAL", "POT"),
+                           Rate = c(0.0000, 0.000),
+                           descriptions = c("hook-and-line gear", "pot gear"),
+                           formatted_strat = c("*HAL*", "*POT*"),
+                           txt = c("0.00% in the *HAL* stratum", "0.00% in the *POT* stratum")))[order(Effective_Date, STRATA)]
+
+# Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
+partial <- partial[1:6,]
 
 # Avoid scientific notation
 options(scipen=10000)
