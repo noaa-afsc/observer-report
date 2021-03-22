@@ -32,6 +32,9 @@ partial_time <- rbind(
                            formatted_strat = c("*HAL*", "*POT*"),
                            txt = c("0.00% in the *HAL* stratum", "0.00% in the *POT* stratum")))[order(Effective_Date, STRATA)]
 
+# Add expiration date to programmed rates  
+partial_time <- partial_time[, .(Effective_Date, Expire_After = as.Date(c("2020-12-31", "2020-12-31", "2020-12-31", "2020-03-25", "2020-03-25", "2020-12-31", "2020-06-30", "2020-06-30", "2020-12-31", "2020-12-31")), STRATA, Rate, descriptions, formatted_strat, txt)]
+
 # Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
 partial <- partial[1:6,]
 
