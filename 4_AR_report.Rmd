@@ -19,7 +19,8 @@ output:
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
-partial <- partial[1:6,]  # FIXME - delete this later, but adding this to get the code to run as best as it can
+partial_og <- partial     # 2020-ONLY: Saving original partial object from work.data for strata will different selection rates at different time periods
+partial <- partial[1:6]   # 2020-ONLY: Keep only 1 row per stratum, otherwise later code will break. 
 
 # Load packages and functions 
 source("3_helper.R")
@@ -324,7 +325,12 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 # Trips outside of trip-selection do not have random numbers in ODDS_MONITOR (e.g. voluntary 100%)
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
+
+date_cuts <- c(unique(partial_og$Effective_Date), as.POSIXct("2020-03-25"), max(odds.dat$PLANNED_EMBARK_DATE))     # 2020-ONLY
+date_cuts <- date_cuts[order(date_cuts)] 
+
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
+            mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=T)) %>%  # 2020-ONLY: Adding period to odds.dat
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
 
@@ -362,9 +368,9 @@ disposition <- # Merging two elements:
   merge(
     # The first is by strata
     odds.dat %>%  
-      select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(STRATA, random.assign) %>%
+      group_by(STRATA, PERIOD, random.assign) %>%
       summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
                 Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
@@ -392,9 +398,9 @@ disposition <- # Merging two elements:
      #    select(-Trips.selected) %>% 
      #    data.frame(), 
     odds.dat %>%  
-      select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(random.assign) %>%
+      group_by(PERIOD, random.assign) %>%
       summarize(STRATA = "Total",
                 Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
@@ -423,6 +429,7 @@ disposition.table <-
   disposition %>%
   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
+         'Period' = PERIOD,
          'Random number outcomes' = random.assign, 
          'Logged (*a*)' = Trips.logged.ODDS, 
          'Cancelled by system (*b*)' = Trips.cancelled.bysystem,
@@ -1844,9 +1851,9 @@ kbl(
 ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
 
 ```{r disposition.table, echo=FALSE}
-disposition.table[c(3,5,6)] <- lapply(disposition.table[,c(3,5,6)], prettyNum, trim=TRUE, big.mark=",")
+disposition.table[c(4,6,7)] <- lapply(disposition.table[,c(4,6,7)], prettyNum, trim=TRUE, big.mark=",")
 disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
-disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`==" NA"] <- " "
+disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`=="NA"] <- " "
 kable(disposition.table)
 ```
 
