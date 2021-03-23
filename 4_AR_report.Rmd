@@ -326,7 +326,7 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
 
-date_cuts <- c(unique(partial_og$Effective_Date), as.POSIXct("2020-03-25"), max(odds.dat$PLANNED_EMBARK_DATE))     # 2020-ONLY
+date_cuts <- c(unique(partial_og$Effective_Date), as.POSIXct("2020-03-26"), max(odds.dat$PLANNED_EMBARK_DATE))     # 2020-ONLY
 date_cuts <- date_cuts[order(date_cuts)] 
 
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
