@@ -860,7 +860,7 @@ Coverage.Table.partial <- plyr::rbind.fill(
                               "Yes", "No")) %>% 
     select(COVERAGE_TYPE, STRATA, Effective_Date, Expire_After, deployment.method, 
            V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
-    arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "EM TRW EFP")), Effective_Date, Expire_After)
+    arrange(Effective_Date, match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "HAL", "POT", "TRW")), Expire_After)
   ,
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
@@ -1876,8 +1876,14 @@ Coverage.Table$Strata <- cell_spec(Coverage.Table$Strata, italic = ifelse(Covera
 # Print table
 kbl(Coverage.Table, escape = FALSE) %>% 
   kable_paper() %>% 
+  # Remove columns
+  remove_column(3:4) %>% 
   # Group columns
-  add_header_above(c(" " = 8, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1))
+  add_header_above(c(" " = 6, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1)) %>% 
+  # Group rows
+  pack_rows("Jan. 1 - Mar. 25", 7, 9, label_row_css = "text-align: center") %>% 
+  pack_rows("Mar. 26 - Jun. 30", 10, 12, label_row_css = "text-align: center") %>% 
+  pack_rows("Jul. 1 - Dec. 31", 13, 15, label_row_css = "text-align: center") 
 ```
 
 #####
