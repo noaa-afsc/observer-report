@@ -449,7 +449,7 @@ logged <-
   # only pull in partial coverage
   filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-  group_by(STRATA) %>% 
+  group_by(STRATA, PERIOD) %>%                    # 2020-ONLY: Added period
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
             # Number of trips that are not selected by a random number but were 
@@ -469,8 +469,9 @@ logged <-
             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1)) %>% 
   arrange(match(STRATA, c("HAL", "EM HAL", "POT ", "EM POT", "TRW")))
 
-logged.table <- rbind(logged, 
+logged.table <- bind_rows(logged, 
                       logged %>% 
+                      group_by(PERIOD) %>%          # 2020-ONLY: Added period
                       summarise(STRATA = "Total",
                                 Total.trips = sum(Total.trips),
                                 Random.selected = sum(Random.selected),
@@ -479,7 +480,7 @@ logged.table <- rbind(logged,
                                 Total.final.selected = sum(Total.final.selected)) %>% 
                       mutate(Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
                              Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))) %>% 
-                      select(`Strata`=STRATA, `Total Trips`=Total.trips,
+                      select(`Strata`=STRATA, `Period`=PERIOD, `Total Trips`=Total.trips,
                              `Random number selection (*r*)`=Random.selected, 
                              `Inherited selection** (*i*)`=Inherit.selected,
                              `Randomly selected but waived (*w*)`=Waivers.selected, 
@@ -1862,7 +1863,7 @@ kable(disposition.table)
 ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
 
 ```{r logged.table, echo=FALSE, tab.cap=""}
-logged.table[c(2:6)] <- lapply(logged.table[,2:6], prettyNum, trim=TRUE, big.mark=",")
+logged.table[c(3:7)] <- lapply(logged.table[,3:7], prettyNum, trim=TRUE, big.mark=",")
 
 kable(logged.table)
 ```
