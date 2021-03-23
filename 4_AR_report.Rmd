@@ -449,7 +449,7 @@ logged <-
   # only pull in partial coverage
   filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-  group_by(STRATA, PERIOD) %>%                    # 2020-ONLY: Added period
+  group_by(STRATA, PERIOD) %>%                                                 # 2020-ONLY: Added period to group
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
             # Number of trips that are not selected by a random number but were 
@@ -495,7 +495,7 @@ logged.table <- bind_rows(logged,
 # under various assumptions
 for.p.wide <- merge(
   logged %>% 
-  group_by(STRATA) %>% 
+  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
   summarize(random.n = Random.selected,
             inherit.n = Total.final.selected,
             inherit.butnowaiver.n = (Total.final.selected + Waivers.selected),
@@ -506,7 +506,7 @@ for.p.wide <- merge(
   odds.dat %>% 
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
   filter(!is.na(random.assign)) %>% 
-  group_by(STRATA) %>%
+  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
   summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
             Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
             Source = "ODDS random number"), 
@@ -516,16 +516,34 @@ for.p.wide <- merge(
 # Need to merge in the selection rates for calculating p-values later
 for.p.wide <- merge(
   for.p.wide, 
-  partial %>%
-  filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
-  distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
-  all = TRUE)
+  merge(partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
+        filter(STRATA != "EM TRW EFP") %>%
+        distinct(STRATA) %>%
+        crossing(data.frame(PERIOD = 1:3)),
+      partial_og %>% filter(STRATA != "EM TRW EFP") %>% 
+        distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
+        group_by(STRATA) %>%
+        mutate(PERIOD = seq_len(n())) %>%
+        mutate(PERIOD = ifelse(PERIOD==2, PERIOD+1, PERIOD)), all=T
+      )  %>% 
+  group_by(STRATA) %>%
+  mutate(ODDS_SELECTION_PCT = ifelse(PERIOD == 2, ODDS_SELECTION_PCT[PERIOD==1], 
+                                     ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[PERIOD==1], 
+                                            ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[PERIOD==1], ODDS_SELECTION_PCT)))), 
+  by=c("STRATA", "PERIOD"), all = TRUE)
 
 # Put into long format
-p.table <- gather(data = for.p.wide, key, value, -STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source)
+p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2020-ONLY: Adding period
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
+
+p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1
+  group_by(STRATA) %>%
+  mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
+                                     ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
+                                     ODDS_SELECTION_PCT)) %>%
+  ungroup()
 
 for(i in 1:nrow(p.table)){
   p.table$pct[i] = round((p.table$value[i] / p.table$Total.n[i]) * 100, 2)
@@ -558,12 +576,13 @@ Selection.table <- p.table %>%
                                         'After Waivers, *d* (*a*-*b*+*c*-*d*)' = key=="Expected",
                                         .ordered=TRUE, .method="unique")) %>% 
                    select("Strata" = STRATA, 
-                          "Trip disposition" = new_trip_type, 
-                          "Selected trips" = value,
-                          "Total trips" = Total.n, 
-                          "Actual selection (%)" = pct,
-                          "Programmed selection (%)" = ODDS_SELECTION_PCT,
-                          "*p*-value (H0: Actual = Programmed)" = p)
+                          "Period" = PERIOD,
+                          "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
+                          "n" = value,  # "Selected trips"
+                          "N" = Total.n,   # "Total trips"
+                          "Actu" = pct,   # "Actual selection (%)"
+                          "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
+                          "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
@@ -1872,10 +1891,33 @@ kable(logged.table)
 
 ####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Random Selection OnlyInitial Random Selection) and those that remained after user manipulation (Final ExpectedAfter Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, No After Waivers).'))`  
 
-```{r Selection.table, echo=FALSE, tab.cap=""}
-Selection.table[c(3:4)] <- lapply(Selection.table[,3:4], prettyNum, trim=TRUE, big.mark=",")
+```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
+Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
+# For the period when waivers were in place, remove p-values for 'After Waivers'
+Selection.table <- Selection.table %>%
+  mutate(`*p*` = ifelse(Period==2 & !(Strata %like% "EM") & `Trip disposition` %like% "After Waivers", "", `*p*`))   
+Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
 
-kable(Selection.table)
+kable(Selection.table %>% 
+        arrange(Strata, Period, `Trip disposition`),
+      col.names=c("Strata", "Period", "Trip disposition", "Selected trips", "Total trips", "Actual selection (%)", "Programmed selection (%)", "*p*-value (H0: Actual = Programmed)"), escape=F) %>%
+  kable_paper()
+
+# Option for wide version
+kable(bind_cols(Selection.table %>% 
+            filter(Period==1) %>%
+            select(-Period) ,
+          Selection.table %>%
+            filter(Period==2) %>%
+            select(-Strata, -`Trip disposition`, -Period),
+          Selection.table %>%
+            filter(Period==3) %>% 
+            select(-Strata, -`Trip disposition`, -Period)),
+    align="llrrrrrrrrrrrrrrr",
+    col.names=c("Strata", "Trip disposition", rep(c("*n*", "*N*", "Actu", "Prog", "*p*"), times=3)), escape=F) %>%
+  kable_paper() %>%
+  collapse_rows(columns=1) %>%
+  add_header_above(c(" "=2, "Jan1 - Mar24" = 5,  "Mar24 - Jun30" = 5, "July1 - Dec31" = 5))
 ```
 
 #####
