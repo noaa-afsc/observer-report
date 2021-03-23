@@ -22,21 +22,22 @@ load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 # Load packages and functions 
 source("3_helper.R")
 
-# Create a version of the partial coverage programmed rate table that includes the waiver period (2020-03-26 through 2020-06-30)  
-partial_time <- rbind(
-                partial[, Effective_Date := as.Date(Effective_Date)],
-                data.table(Effective_Date = as.Date(c("2020-03-26", "2020-03-26")),
-                           STRATA = c("HAL", "POT"),
-                           Rate = c(0.0000, 0.000),
-                           descriptions = c("hook-and-line gear", "pot gear"),
-                           formatted_strat = c("*HAL*", "*POT*"),
-                           txt = c("0.00% in the *HAL* stratum", "0.00% in the *POT* stratum")))[order(Effective_Date, STRATA)]
-
-# Add expiration date to programmed rates  
-partial_time <- partial_time[, .(Effective_Date, Expire_After = as.Date(c("2020-12-31", "2020-12-31", "2020-12-31", "2020-03-25", "2020-03-25", "2020-12-31", "2020-06-30", "2020-06-30", "2020-12-31", "2020-12-31")), STRATA, Rate, descriptions, formatted_strat, txt)]
-
 # Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
 partial <- partial[1:6,]
+
+# Create a version of the partial coverage programmed rate table that includes all time periods    
+partial_time <- partial %>% 
+                filter(Effective_Date == min(Effective_Date)) %>% 
+                mutate(Effective_Date = as.Date(Effective_Date), Expire_After = as.Date(c("2020-12-31", "2020-12-31", "2020-12-31", "2020-03-25", "2020-03-25", "2020-03-25"))) %>% 
+                select(Effective_Date, Expire_After, STRATA, Rate, descriptions, formatted_strat, txt)
+
+partial_time <- rbind(partial_time,
+                      partial_time %>% 
+                      filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
+                      mutate(Effective_Date = as.Date("2020-03-26"), Expire_After = as.Date("2020-06-30")),
+                      partial_time %>% 
+                      filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
+                      mutate(Effective_Date = as.Date("2020-07-01"), Expire_After = as.Date("2020-12-31")))
 
 # Avoid scientific notation
 options(scipen=10000)
@@ -873,9 +874,9 @@ Coverage.Table.partial <- plyr::rbind.fill(
            deployment.method = "Trip-Selection") 
 ) %>% 
 # Nullify hypothesis test for any time periods with a programmed rate of 0  
-  mutate(min.expected = ifelse(Rate == 0, NA, min.expected),
-         max.expected = ifelse(Rate == 0, NA, max.expected),
-         meets.expected = ifelse(Rate == 0, NA, meets.expected))
+  mutate(min.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, min.expected),
+         max.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, max.expected),
+         meets.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, meets.expected))
 
 #ZERO COVERAGE 
 Coverage.Table.zero <- # plyr::rbind.fill(Coverage.Table.zero <-
