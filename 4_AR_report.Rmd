@@ -1874,7 +1874,9 @@ kbl(
 disposition.table[c(4,6,7)] <- lapply(disposition.table[,c(4,6,7)], prettyNum, trim=TRUE, big.mark=",")
 disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
 disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`=="NA"] <- " "
-kable(disposition.table)
+disposition.table$Strata <- cell_spec(disposition.table$Strata, italic = ifelse(disposition.table$Strata != "Total", TRUE, FALSE))    # Italicize strata
+
+kable(disposition.table, escape=F)
 ```
 
 #####
@@ -1883,8 +1885,9 @@ kable(disposition.table)
 
 ```{r logged.table, echo=FALSE, tab.cap=""}
 logged.table[c(3:7)] <- lapply(logged.table[,3:7], prettyNum, trim=TRUE, big.mark=",")
+logged.table$Strata <- cell_spec(logged.table$Strata, italic=TRUE) # Italicize strata
 
-kable(logged.table)
+kable(logged.table, escape=F)
 ```
 
 #####
