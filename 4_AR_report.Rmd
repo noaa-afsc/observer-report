@@ -707,31 +707,35 @@ odds.by.date.plot <-
 #Total cancelled trips (both by ODDS or by users)
 totl.canc <- disposition %>% 
              filter(STRATA=="Total" & random.assign == "Selected") %>% 
-             transmute(totl.canc = as.numeric(Trips.cancelled.bysystem) + as.numeric(Trips.cancelled.byusers)) %>% 
+             summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
              as.numeric()
 
 #Percent of total trips cancelled by the ODDS system
 perc.syst.canc <- disposition %>% 
                   filter(STRATA=="Total" & random.assign == "Selected") %>% 
-                  transmute(perc.syst.canc = round((as.numeric(Trips.cancelled.bysystem) / as.numeric(Trips.logged.ODDS)) * 100, 2)) %>% 
+                  summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
                   as.numeric()
 
 #Percent of total trips cancelled by users
 perc.user.canc <- disposition %>% 
                   filter(STRATA=="Total" & random.assign == "Selected") %>% 
-                  transmute(perc.syst.canc = format((as.numeric(Trips.cancelled.byusers) / as.numeric(Trips.logged.ODDS)) * 100, digits=1, nsmall=1)) %>% 
+                  summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits=1, nsmall=1)) %>% 
                   as.character()
 
 # Lowest and highest cancellation rate/stratum for selected trips by strata
 sel.min.canc <- disposition %>% 
                 filter(STRATA!="Total" & random.assign == "Selected") %>%
+                group_by(STRATA) %>% 
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
                 slice_min(as.numeric(Cancellation.Pct)) %>% 
-                select(STRATA, Cancellation.Pct)
+                mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 
 sel.max.canc <- disposition %>% 
                 filter(STRATA!="Total" & random.assign == "Selected") %>%
+                group_by(STRATA) %>% 
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
                 slice_max(as.numeric(Cancellation.Pct)) %>% 
-                select(STRATA, Cancellation.Pct)
+                mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 ```
 
 Logged trips have different dispositions. When initially logged, trips are considered pending and can be either closed or cancelled. Whether changes can be made by the user (person logging the trip) or must be made by the monitoring provider (or the NMFS) depends on whether or not the trip is selected to be monitored, the stratum the trip belongs to, and the timing of the activity. Trips can be closed (marked as complete) by the ODDS user after the planned trip departure date by either entering the dates of the trip and the port processor of the landing, or by selecting from a list of pre-populated landing reports. For partial coverage strata monitored by observers, the observer provider is given 72 hours prior to the trip start to provide for an observer to board the vessel. While a trip may be entered into ODDS that is scheduled to start earlier than 72 hours from the time of entry, if selected for observer coverage, the observer provider can opt to delay the start of the trip up to, but not exceeding 72 hours from the time of trip entry. This helps protect the observer provider from the high cost of deploying an observer with short notice. The vessel operator is protected as well by guaranteeing the assigned observer to the vessel up to 48 hours past the planned start of the fishing trip. This rule helps ensure that an observer is available to the boat in case of unforeseen events such as weather. If, however, the trip start date and time has passed by more than 48 hours, then the observer provider can cancel the trip and release the observer from the vessel and trip, and the vessel would need to log a new trip with a new 72-hour notice in place prior to fishing. These ‘forced cancellations’ are not present in trips that are not selected for observation since the logging, closing, or cancellation of the trip is entirely under vessel control. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year+1` ADP.  
