@@ -19,11 +19,11 @@ output:
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
-partial_og <- partial     # 2020-ONLY: Saving original partial object from work.data for strata will different selection rates at different time periods
-partial <- partial[1:6]   # 2020-ONLY: Keep only 1 row per stratum, otherwise later code will break. 
-
 # Load packages and functions 
 source("3_helper.R")
+
+partial_og <- partial     # 2020-ONLY: Saving original partial object from work.data for strata will different selection rates at different time periods
+partial <- partial[1:6]   # 2020-ONLY: Keep only 1 row per stratum, otherwise later code will break. 
 
 # Avoid scientific notation
 options(scipen=10000)
