@@ -1233,6 +1233,8 @@ passfail <- ifelse(any(for.binom$p < 0.05), "were not", "were")
 # Add p-value to data.frame
 For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(for.binom, STRATA, p))
 
+# For.ts.temporal.plot[For.ts.temporal.plot$p=="0.000*", "p"] <- "< 0.001*"
+
 # Order strata for plot
 For.ts.temporal.plot <- transform(For.ts.temporal.plot,
                                 STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
@@ -1241,6 +1243,8 @@ For.ts.temporal.plot <- transform(For.ts.temporal.plot,
 For.ts.temporal.plot <- For.ts.temporal.plot %>%
   mutate(Date.outside=if_else(Outside.bounds==1, Date, as.Date(NA))) %>% 
   mutate(p = ifelse(as.numeric(p) < 0.05, paste0(p, "*"), p))
+For.ts.temporal.plot <- For.ts.temporal.plot %>%
+  mutate(p = ifelse(p=="0.000*", paste0("italic(p) < '0.001*'"), paste0("italic(p) == '", p, "'")))
 
 # Plot
 Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
@@ -1254,7 +1258,7 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   # Annotate p-values
   geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
                 y = Inf, vjust = 1.25, 
-                label = paste("italic(p) == '", p, "'", sep = "")), size = 4, parse=T, check_overlap = T) +
+                label = p), size = 4, parse=T, check_overlap = T) +
   facet_wrap(~ STRATA, ncol=2, scale="free_y") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
