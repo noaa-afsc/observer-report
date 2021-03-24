@@ -749,22 +749,38 @@ The number of trips logged in the ODDS in `r year` and their dispositions is sum
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process. 
 inherit.min <- logged %>% 
+               group_by(STRATA) %>% 
+               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+               ungroup() %>% 
                slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
+               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 inherit.max <- logged %>% 
+               group_by(STRATA) %>% 
+               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+               ungroup() %>% 
                slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
+               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 
 # Waiver impact
 waiver.min <- logged %>% 
+              group_by(STRATA) %>% 
+              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+              ungroup() %>% 
               slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
-              select(Pct.allselected.from.waiver) %>% as.character()
+              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+              select(STRATA, Pct.allselected.from.waiver)
 
 waiver.max <- logged %>% 
+              group_by(STRATA) %>% 
+              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+              ungroup() %>% 
               slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
-              select(Pct.allselected.from.waiver) %>% as.character()
+              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+              select(STRATA, Pct.allselected.from.waiver)
 ```
 
 The flexibility offered by the ODDS means that the outcome of random selection is known to the vessel operator for up to three logged trips in advance of fishing. In the case where ODDS users disproportionately cancel selected trips, one would expect monitoring coverage to be lower than the programmed selection rates. To reduce this potential bias, the ODDS is programmed to automatically select the vessel’s next logged trip if a previously selected trip was cancelled by the user. Although these “inherited” trips preserve the *number* of selected trips in the year, they cannot prevent the *delay* of selected trips during the year. Therefore, the potential for temporal bias is still present. The percentages of selected trips from either inherits or waivers are found in `r tbl_nums('logged.table', display = "cite")`. The relative percentage of selected trips that inherited their final selected-status due to a previous cancellation ranged from 3.8% for *EM POT* to 26.7% for *POT - Tender* (`r tbl_nums('logged.table', display = "cite")`). Within the same gear-type, cancellation rates and the proportion of inherited trips were much larger for strata that used observers for at-sea monitoring than those that used EM.       
