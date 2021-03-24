@@ -1949,7 +1949,8 @@ tb2 <- Selection.table %>%
   filter(!(Strata %like% "EM")) %>% arrange(Period, Strata, `Trip disposition`) 
 tb2_wide <- merge(merge(tb2 %>% filter(Period == 1) %>% select(-Period),
       tb2 %>% filter(Period == 2) %>% select(-Period), by=c("Strata", "Trip disposition")),
-      tb2 %>% filter(Period == 3) %>% select(-Period), by=c("Strata", "Trip disposition"))
+      tb2 %>% filter(Period == 3) %>% select(-Period), by=c("Strata", "Trip disposition")) %>%
+  arrange(Strata, `Trip disposition`)
 
 kable(tb1, 
       align="llrrrrr",
