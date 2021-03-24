@@ -4,7 +4,7 @@
 
 # I. Libraries ----
 if(!require("captioner"))   install.packages("captioner") #numbering, ordering, & creating captions for tables and figures
-if(!require("data.table"))   install.packages("data.table") #use for EM vessel seleciton (foverlaps fxn)
+if(!require("data.table"))   install.packages("data.table") #caution: masks between, last in dplyr and dcast, melt in reshape2
 if(!require("devtools"))  install.packages("devtools")
 if(!require("getPass"))   install.packages("getPass")
 if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
@@ -29,7 +29,6 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
 # The purpose of this function is to answer the questions, are observed trips the same as unobserved trips?
   
   suppressMessages(require(lazyeval))
-  suppressMessages(require(data.table))  #Dangerous, but masks between, last in dplyr and dcast, melt in reshape2, I dont care inside the function
   
   #Relabel the permute field as YN
   data.in <- rename_(data.in, .dots = setNames(YN_var, 'YN'))
@@ -211,7 +210,6 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
                   `Landed catch (t)`)
     
   
-  detach(package:data.table)
   detach(package:lazyeval)
   
   return(list(permutation.out, data.melt, summary, summary.table, Ntable))
