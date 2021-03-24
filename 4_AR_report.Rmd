@@ -335,6 +335,7 @@ date_cuts <- date_cuts[order(date_cuts)]
 
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
             mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=F, include.lowest = T)) %>%  # 2020-ONLY: Adding period to odds.dat
+            mutate(PERIOD := ifelse(STRATA %like% "EM",1, PERIOD)) %>% # Don't split EM strata by period; make period = 1
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
 
@@ -1910,25 +1911,36 @@ Selection.table <- Selection.table %>%
 Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
 
 kable(Selection.table %>% 
-        arrange(Strata, Period, `Trip disposition`),
-      col.names=c("Strata", "Period", "Trip disposition", "Selected trips", "Total trips", "Actual selection (%)", "Programmed selection (%)", "*p*-value (H0: Actual = Programmed)"), escape=F) %>%
-  kable_paper()
-
-# Option for wide version
-kable(bind_cols(Selection.table %>% 
-            filter(Period==1) %>%
-            select(-Period) ,
-          Selection.table %>%
-            filter(Period==2) %>%
-            select(-Strata, -`Trip disposition`, -Period),
-          Selection.table %>%
-            filter(Period==3) %>% 
-            select(-Strata, -`Trip disposition`, -Period)),
-    align="llrrrrrrrrrrrrrrr",
-    col.names=c("Strata", "Trip disposition", rep(c("*n*", "*N*", "Actu", "Prog", "*p*"), times=3)), escape=F) %>%
+        arrange(Period, Strata, `Trip disposition`) %>%
+        select(-Period), 
+      col.names=c("Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
+      escape=F, align="llrrrrr") %>%
   kable_paper() %>%
-  collapse_rows(columns=1) %>%
-  add_header_above(c(" "=2, "Jan1 - Mar24" = 5,  "Mar24 - Jun30" = 5, "July1 - Dec31" = 5))
+  pack_rows(index = c("Fixed-gear EM strata : full year"=8, 
+                      "Observer strata : Jan. 1 - Mar. 25"=12,
+                      "Observer strata : Mar. 25 - Jun. 30"=12,
+                      "Observer strata : Jul. 1 - Dec. 31"=12), indent=F) 
+
+# Alternately, have separate table for Fixed-Gear EM and then OB strata in wide-format?
+tb1 <- Selection.table %>%
+  filter(Strata %like% "EM") %>% select(-Period)
+tb2 <- Selection.table %>%
+  filter(!(Strata %like% "EM")) %>% arrange(Period, Strata, `Trip disposition`) 
+tb2_wide <- merge(merge(tb2 %>% filter(Period == 1) %>% select(-Period),
+      tb2 %>% filter(Period == 2) %>% select(-Period), by=c("Strata", "Trip disposition")),
+      tb2 %>% filter(Period == 3) %>% select(-Period), by=c("Strata", "Trip disposition"))
+
+kable(tb1, 
+      align="llrrrrr",
+      col.names=c("Strata", "Trip disposition", "*n*", "*N*", "Actu", "Prog", "*p*"), escape=F) %>% 
+      collapse_rows(1) %>%
+      kable_paper()
+kable(tb2_wide, 
+      align=c("llrrrrrrrrrrrrrr"),
+      col.names=c("Strata", "Trip disposition", rep(c("*n*", "*N*", "Actu", "Prog", "*p*"), times=3)), escape=F) %>% 
+  kable_paper() %>%
+  collapse_rows(1) %>%
+  add_header_above(c(" "=2, "Jan. 1 - Mar. 24" = 5,  "Mar. 24 - Jun. 30" = 5, "Jul. 1 - Dec. 31" = 5))
 ```
 
 #####
