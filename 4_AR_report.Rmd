@@ -745,7 +745,7 @@ sel.max.canc <- disposition %>%
 
 Logged trips have different dispositions. When initially logged, trips are considered pending and can be either closed or cancelled. Whether changes can be made by the user (person logging the trip) or must be made by the monitoring provider (or the NMFS) depends on whether or not the trip is selected to be monitored, the stratum the trip belongs to, and the timing of the activity. Trips can be closed (marked as complete) by the ODDS user after the planned trip departure date by either entering the dates of the trip and the port processor of the landing, or by selecting from a list of pre-populated landing reports. For partial coverage strata monitored by observers, the observer provider is given 72 hours prior to the trip start to provide for an observer to board the vessel. While a trip may be entered into ODDS that is scheduled to start earlier than 72 hours from the time of entry, if selected for observer coverage, the observer provider can opt to delay the start of the trip up to, but not exceeding 72 hours from the time of trip entry. This helps protect the observer provider from the high cost of deploying an observer with short notice. The vessel operator is protected as well by guaranteeing the assigned observer to the vessel up to 48 hours past the planned start of the fishing trip. This rule helps ensure that an observer is available to the boat in case of unforeseen events such as weather. If, however, the trip start date and time has passed by more than 48 hours, then the observer provider can cancel the trip and release the observer from the vessel and trip, and the vessel would need to log a new trip with a new 72-hour notice in place prior to fishing. These ‘forced cancellations’ are not present in trips that are not selected for observation since the logging, closing, or cancellation of the trip is entirely under vessel control. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year+1` ADP.  
 
-The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('disposition.table', display = "cite")`, `r tbl_nums('logged.table', display = "cite")`, and `r tbl_nums('Selection.table', display = "cite")`. The forced cancellation rate by users and by the ODDS is summarized for selected trips in each stratum (`r tbl_nums('disposition.table', display = "cite")`).  Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA=="Total"]), format="d", big.mark=",")` total trips logged, `r sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign=="Selected"])` were selected, and `r formatC(totl.canc, format="d", big.mark=",")` were cancelled: `r formatC(disposition$Trips.cancelled.bysystem[disposition$STRATA=="Total" & disposition$random.assign=="Selected"], format="d", big.mark=",")` by ODDS (`r perc.syst.canc`%) and `r formatC(disposition$Trips.cancelled.byuser[disposition$STRATA=="Total" & disposition$random.assign=="Selected"], format="d", big.mark=",")` by users (`r perc.user.canc`%).  The user cancellation rate for selected trips ranged from 1.9% for *EM POT* to 26.7% for *TRW - Tender*.          
+The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('Selection.table', display = "cite")`.  Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA=="Total"]), format="d", big.mark=",")` total trips logged, `r sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign=="Selected"])` were selected, and `r formatC(totl.canc, format="d", big.mark=",")` were cancelled: `r formatC(disposition$Trips.cancelled.bysystem[disposition$STRATA=="Total" & disposition$random.assign=="Selected"], format="d", big.mark=",")` by ODDS (`r perc.syst.canc`%) and `r formatC(disposition$Trips.cancelled.byuser[disposition$STRATA=="Total" & disposition$random.assign=="Selected"], format="d", big.mark=",")` by users (`r perc.user.canc`%).  The user cancellation rate for selected trips ranged from 1.9% for *EM POT* to 26.7% for *TRW - Tender*.          
 
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process. 
@@ -784,8 +784,6 @@ waiver.max <- logged %>%
               select(STRATA, Pct.allselected.from.waiver)
 ```
 
-The flexibility offered by the ODDS means that the outcome of random selection is known to the vessel operator for up to three logged trips in advance of fishing. In the case where ODDS users disproportionately cancel selected trips, one would expect monitoring coverage to be lower than the programmed selection rates. To reduce this potential bias, the ODDS is programmed to automatically select the vessel’s next logged trip if a previously selected trip was cancelled by the user. Although these “inherited” trips preserve the *number* of selected trips in the year, they cannot prevent the *delay* of selected trips during the year. Therefore, the potential for temporal bias is still present. The percentages of selected trips from either inherits or waivers are found in `r tbl_nums('logged.table', display = "cite")`. The relative percentage of selected trips that inherited their final selected-status due to a previous cancellation ranged from 3.8% for *EM POT* to 26.7% for *POT - Tender* (`r tbl_nums('logged.table', display = "cite")`). Within the same gear-type, cancellation rates and the proportion of inherited trips were much larger for strata that used observers for at-sea monitoring than those that used EM.       
-
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
 #Text strings for reporting on the observered initial selection rates by strata
 pct_txt <- p.table %>% 
@@ -823,8 +821,6 @@ final_pvals <- merge(p.table
 The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from 1) random selection of all logged trips (initial random selection) and 2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exceptions – the initial selection rate was 33.91% (*p*-value = 0.011) for the *EM HAL* stratum, and 39.47% (*p*-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
 
 The final selection rate after trips were closed, cancelled, or waived were within expected bounds with the exception of the *HAL* stratum 20.47% (*p*-value = 0.006), the *EM HAL* stratum, 34.80% (*p*-value = 0.002)  and the *TRW - Tender* stratum 46.55% (*p*-value = 0.002; `r tbl_nums('Selection.table', display = "cite")`). Given the high initial selection rates, we can safely disregard these final selection rates with the exception of the *HAL* stratum.    
-
-Differences in the initial selection rates of ODDS and those that result after cancellation and trip changes can also be looked at over time (`r fig_nums('odds.by.date.plot', display="cite")`). In this plot, we are mostly concerned when the lines representing the two selection rates in this plot diverge substantially.  Deviations appeared in the *HAL* stratum during January, March – April, and October – November (`r fig_nums('odds.by.date.plot', display="cite")`). This pattern can occur when cancelled trips that were originally selected for coverage are preserved through the inherit process, while cancelled trips that were not originally selected for coverage are not.       
 
 In addition to the inherit process, the lack of linkage between the ODDS and eLandings contributes to the differences between programmed selection rates in ODDS and trips that are ultimately observed. Currently, ODDS provides users with a list of Report IDs from eLandings from which to close their logged trips. However, these data are not validated, or error checked, making them unreliable in their current state. This linkage between the logged (ODDS) trip (with its selection probability) and its associated landing information is necessary to evaluate potential improvements in deployment efficiency within the partial coverage fleet.            
 
@@ -1070,7 +1066,7 @@ em_times
 
 Evaluations for the full coverage category and zero-selection pool are straightforward - either the coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved 99.9% coverage in its full coverage category (`r tbl_nums('Coverage.Table', display = "cite")`). Five trips were not monitored in the full coverage category – four of these occurred on a single catcher vessel fishing CDQ halibut with hook and line gear that retained Pacific cod above the Maximum Retainable Amount and therefore met the criteria for full coverage fishing but failed to obtain a full coverage observer. The program achieved perfect compliance with the *Zero Coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips) will contain the actual deployment rate 95% percent of the time.  If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal. Coverage rates were consistent with expected values in six of the seven partial coverage strata, but were higher than expected within the *POT - Tender* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). There are two reasons why this result is of little concern.  First, there is no clear evidence of trip manipulation in ODDS data from this stratum.  Secondly, the achieved rate was only slightly outside of the 95% range of expected outcomes (16.1% achieved vs. a lower bound of 16.8%).  Given the low number of total trips in this stratum (44), a change in a single observed trip, from 13 observed to 12 would have resulted in an expected result for this stratum since new confidence bounds would have included the expected rate.  
 
-Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. By the end of `r year`, the PSMFC had reviewed nearly all of the EM hard drives received (`r tbl_nums('em.summary.table', display = "cite")`). In `r year`, the mean time between receipt and completion of review was 58 days for *EM HAL* and 79 days for *EM POT* (`r tbl_nums('em.times.table', display = "cite")`). This is compared to an average of 8.8 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
+Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. In `r year`, the mean time between receipt and completion of review was 58 days for *EM HAL* and 79 days for *EM POT* (`r tbl_nums('em.times.table', display = "cite")`). This is compared to an average of 8.8 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
 
 In combination across all strata, coverage levels, and fishery monitoring tools, 4,497 trips (43.3%) and 510 vessels (47.0%) were successfully monitored at-sea among all fishing in Federal fisheries of Alaska in 2019 (`r tbl_nums('Coverage.Table', display = "cite")`).  
 
@@ -1537,7 +1533,7 @@ This section analyses whether monitored trips are similar to unmonitored trips u
 Six trip metrics were examined in the permutation test. These metrics were as follows: the number of NMFS Areas visited in a trip, trip duration (days), the weight of the landed catch (t), the vessel length (ft), the number of species in the landed catch, and the proportion (0 to 1) of the total catch that is made up of the most predominant species (pMax). The metric ‘vessel length’ is used to help interpret the results from ‘weight of landed catch’ since fishing power is positively correlated to vessel length. Specifically, differences in weight *and* length are interpreted as a failure to achieve a random sample of vessels of different sizes, whereas differences in weight only lend more evidence that there was a monitoring effect. The number of species within the landed portion of the catch is a measure of species richness. Our pMax metric follows the concepts behind Hill’s diversity number N1 that depicts the number of abundant species (Hill 1973) and is a measure of how “pure” catch is since a value of one would indicate that only the predominant (and presumed desirable) species was landed.  
 
 ###Were monitored trips similar to unmonitored trips?  
-The sample sizes available to the permutation test are presented in `r tbl_nums('OBSERVED_FLAG.Ntable', display = "cite")`. Results of permutation tests are presented in `r tbl_nums('OBSERVED_FLAG.results', display = "cite")`.  A visual depiction of individual results of this permutation test for the *HAL*, *POT - No Tender*, and *TRW - No Tender* strata is given in `r fig_nums('Obs.perm.plot', display="cite")` for illustration purposes.     
+The sample sizes available and the esults of permutation tests are presented in `r tbl_nums('OBSERVED_FLAG.results', display = "cite")`.  A visual depiction of individual results of this permutation test for the *HAL*, *POT - No Tender*, and *TRW - No Tender* strata is given in `r fig_nums('Obs.perm.plot', display="cite")` for illustration purposes.     
  
 ```{r observed_flag_permutation, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -1893,9 +1889,11 @@ kbl(
 
 #####
 
+
+```{r disposition.table, echo=FALSE, include=FALSE}
+# Table 2 from 2019 Annual Report
 ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
 
-```{r disposition.table, echo=FALSE}
 disposition.table[c(4,6,7)] <- lapply(disposition.table[,c(4,6,7)], prettyNum, trim=TRUE, big.mark=",")
 disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
 disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`=="NA"] <- " "
@@ -1906,9 +1904,11 @@ kable(disposition.table, escape=F)
 
 #####
 
+
+```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
+# Table 3 from 2019 Annual Report
 ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
 
-```{r logged.table, echo=FALSE, tab.cap=""}
 logged.table[c(3:7)] <- lapply(logged.table[,3:7], prettyNum, trim=TRUE, big.mark=",")
 logged.table$Strata <- cell_spec(logged.table$Strata, italic=TRUE) # Italicize strata
 
@@ -1978,8 +1978,9 @@ kbl(Coverage.Table, escape = FALSE) %>%
 
 #####
 
+```{r em.summary.table, echo=FALSE, tab.cap="", eval=F, include=F}
+# Table 6 from 2019 Annual Report
 ####`r tbl_nums('em.summary.table', caption = "The number of EM hard drives received and reviewed by gear type and month.")`    
-```{r em.summary.table, echo=FALSE, tab.cap="", eval=F}
 # FIXME - disabled this chunk since some months are missing 
 for.em.summary.table <- EM.review %>% 
                         filter(TRIP_STATUS == "COMPLETED" & 
@@ -2063,11 +2064,14 @@ print(grid.arrange(outcomes.plot, costs.plot, nrow=2))
 
 #####
 
-```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600, include=FALSE}
 suppressWarnings(print(odds.by.date.plot))   
+
+# Figure 2 in 2019 Annual Report
+####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))`  
 ```
 
-####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))`  
+
 
 #####
 
