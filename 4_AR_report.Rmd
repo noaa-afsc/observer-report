@@ -326,11 +326,15 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
 
-date_cuts <- c(unique(partial_og$Effective_Date), as.POSIXct("2020-03-26"), max(odds.dat$PLANNED_EMBARK_DATE))     # 2020-ONLY
+# Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  
+odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
+
+# 2020-ONLY: define time periods
+date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), as.Date("2020-03-26"), max(odds.dat$PLANNED_EMBARK_DATE))
 date_cuts <- date_cuts[order(date_cuts)] 
 
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
-            mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=T)) %>%  # 2020-ONLY: Adding period to odds.dat
+            mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=F, include.lowest = T)) %>%  # 2020-ONLY: Adding period to odds.dat
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
 
