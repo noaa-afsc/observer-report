@@ -647,7 +647,7 @@ odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
 
 # reorder strata for plot
 odds.ts.daily.cuml <- transform(odds.ts.daily.cuml,
-                                STRATA = factor(STRATA, levels=c("EM HAL", "EM POT", "HAL", "POT", "TRW")))
+                                STRATA = factor(STRATA, levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
 
 # Generate data for ribbon plots for the random data only.
 odds.ts.daily.cuml$L95 <- ifelse(
@@ -698,6 +698,9 @@ odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 #ODDS by date plot (Cumulative coverage percent by strata over the year)
 odds.by.date.plot <- 
   ggplot(odds.ts.daily.cuml, aes(Date, running.pct, col=TYPE)) +
+      # Add waiver period
+     geom_rect(data=filter(odds.ts.daily.cuml, STRATA %in% c("HAL", "POT", "TRW")), aes(xmin=as.Date("2020-03-26"), xmax = as.Date("2020-07-01"), ymin=0, ymax=Inf), alpha = 0.005, col = "gray") +
+     # Add lines for selection rates  
      geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty=3, size=1) +
      geom_ribbon(aes(ymin=L95 * 100, ymax=H95 * 100), alpha=0.1) +
      geom_line(size = 1.5) +
@@ -1245,11 +1248,14 @@ For.ts.temporal.plot <- For.ts.temporal.plot %>%
 
 # Plot
 Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
+  # Add waiver period
+  geom_rect(data=filter(For.ts.temporal.plot, STRATA %in% c("HAL", "POT", "TRW")), aes(xmin=as.Date("2020-03-26"), xmax = as.Date("2020-07-01"), ymin=0, ymax=Inf), alpha = 0.005, col = "gray") +
+  # Add lines for coverage rates
   geom_line(aes(y = n.cuml), col="black", size=2) +
   geom_line(aes(y = n.expected), col = "gray") +
   geom_ribbon(aes(ymin = Low95, ymax = High95), alpha=0.2) +
   geom_rug(aes(x = Date.outside), sides="b") +
-  #Annotate p-values
+  # Annotate p-values
   geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
                 y = Inf, vjust = 1.25, 
                 label = paste("italic(p) == '", p, "'", sep = "")), size = 4, parse=T, check_overlap = T) +
