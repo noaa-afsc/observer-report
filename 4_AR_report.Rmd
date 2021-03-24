@@ -1841,9 +1841,11 @@ kbl(
 
 #####
 
+
+```{r disposition.table, echo=FALSE, include=FALSE}
+# Table 2 from 2019 Annual Report
 ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
 
-```{r disposition.table, echo=FALSE}
 disposition.table[c(3,5,6)] <- lapply(disposition.table[,c(3,5,6)], prettyNum, trim=TRUE, big.mark=",")
 disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
 disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`==" NA"] <- " "
@@ -1852,9 +1854,11 @@ kable(disposition.table)
 
 #####
 
+
+```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
+# Table 3 from 2019 Annual Report
 ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
 
-```{r logged.table, echo=FALSE, tab.cap=""}
 logged.table[c(2:6)] <- lapply(logged.table[,2:6], prettyNum, trim=TRUE, big.mark=",")
 
 kable(logged.table)
@@ -1889,8 +1893,9 @@ kbl(Coverage.Table, escape = FALSE) %>%
 
 #####
 
+```{r em.summary.table, echo=FALSE, tab.cap="", eval=F, include=F}
+# Table 6 from 2019 Annual Report
 ####`r tbl_nums('em.summary.table', caption = "The number of EM hard drives received and reviewed by gear type and month.")`    
-```{r em.summary.table, echo=FALSE, tab.cap="", eval=F}
 # FIXME - disabled this chunk since some months are missing 
 for.em.summary.table <- EM.review %>% 
                         filter(TRIP_STATUS == "COMPLETED" & 
@@ -1974,11 +1979,14 @@ print(grid.arrange(outcomes.plot, costs.plot, nrow=2))
 
 #####
 
-```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600, include=FALSE}
 suppressWarnings(print(odds.by.date.plot))   
+
+# Figure 2 in 2019 Annual Report
+####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))`  
 ```
 
-####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))`  
+
 
 #####
 
