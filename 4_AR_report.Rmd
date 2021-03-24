@@ -19,10 +19,11 @@ output:
 # Load data
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
-partial <- partial[1:6,]  # FIXME - delete this later, but adding this to get the code to run as best as it can
-
 # Load packages and functions 
 source("3_helper.R")
+
+partial_og <- partial     # 2020-ONLY: Saving original partial object from work.data for strata will different selection rates at different time periods
+partial <- partial[1:6]   # 2020-ONLY: Keep only 1 row per stratum, otherwise later code will break. 
 
 # Avoid scientific notation
 options(scipen=10000)
@@ -324,7 +325,17 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 # Trips outside of trip-selection do not have random numbers in ODDS_MONITOR (e.g. voluntary 100%)
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
+
+# Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  
+odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
+
+# 2020-ONLY: define time periods
+date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), as.Date("2020-03-26"), max(odds.dat$PLANNED_EMBARK_DATE))
+date_cuts <- date_cuts[order(date_cuts)] 
+
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
+            mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=F, include.lowest = T)) %>%  # 2020-ONLY: Adding period to odds.dat
+            mutate(PERIOD := ifelse(STRATA %like% "EM",1, PERIOD)) %>% # Don't split EM strata by period; make period = 1
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
 
@@ -362,9 +373,9 @@ disposition <- # Merging two elements:
   merge(
     # The first is by strata
     odds.dat %>%  
-      select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(STRATA, random.assign) %>%
+      group_by(STRATA, PERIOD, random.assign) %>%
       summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
                 Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
@@ -392,9 +403,9 @@ disposition <- # Merging two elements:
      #    select(-Trips.selected) %>% 
      #    data.frame(), 
     odds.dat %>%  
-      select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(random.assign) %>%
+      group_by(PERIOD, random.assign) %>%
       summarize(STRATA = "Total",
                 Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
@@ -423,6 +434,7 @@ disposition.table <-
   disposition %>%
   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
+         'Period' = PERIOD,
          'Random number outcomes' = random.assign, 
          'Logged (*a*)' = Trips.logged.ODDS, 
          'Cancelled by system (*b*)' = Trips.cancelled.bysystem,
@@ -442,7 +454,7 @@ logged <-
   # only pull in partial coverage
   filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-  group_by(STRATA) %>% 
+  group_by(STRATA, PERIOD) %>%                                                 # 2020-ONLY: Added period to group
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
             # Number of trips that are not selected by a random number but were 
@@ -462,8 +474,9 @@ logged <-
             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1)) %>% 
   arrange(match(STRATA, c("HAL", "EM HAL", "POT ", "EM POT", "TRW")))
 
-logged.table <- rbind(logged, 
+logged.table <- bind_rows(logged, 
                       logged %>% 
+                      group_by(PERIOD) %>%          # 2020-ONLY: Added period
                       summarise(STRATA = "Total",
                                 Total.trips = sum(Total.trips),
                                 Random.selected = sum(Random.selected),
@@ -472,7 +485,7 @@ logged.table <- rbind(logged,
                                 Total.final.selected = sum(Total.final.selected)) %>% 
                       mutate(Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
                              Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))) %>% 
-                      select(`Strata`=STRATA, `Total Trips`=Total.trips,
+                      select(`Strata`=STRATA, `Period`=PERIOD, `Total Trips`=Total.trips,
                              `Random number selection (*r*)`=Random.selected, 
                              `Inherited selection** (*i*)`=Inherit.selected,
                              `Randomly selected but waived (*w*)`=Waivers.selected, 
@@ -487,7 +500,7 @@ logged.table <- rbind(logged,
 # under various assumptions
 for.p.wide <- merge(
   logged %>% 
-  group_by(STRATA) %>% 
+  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
   summarize(random.n = Random.selected,
             inherit.n = Total.final.selected,
             inherit.butnowaiver.n = (Total.final.selected + Waivers.selected),
@@ -498,7 +511,7 @@ for.p.wide <- merge(
   odds.dat %>% 
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
   filter(!is.na(random.assign)) %>% 
-  group_by(STRATA) %>%
+  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
   summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
             Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
             Source = "ODDS random number"), 
@@ -508,16 +521,34 @@ for.p.wide <- merge(
 # Need to merge in the selection rates for calculating p-values later
 for.p.wide <- merge(
   for.p.wide, 
-  partial %>%
-  filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
-  distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
-  all = TRUE)
+  merge(partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
+        filter(STRATA != "EM TRW EFP") %>%
+        distinct(STRATA) %>%
+        crossing(data.frame(PERIOD = 1:3)),
+      partial_og %>% filter(STRATA != "EM TRW EFP") %>% 
+        distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
+        group_by(STRATA) %>%
+        mutate(PERIOD = seq_len(n())) %>%
+        mutate(PERIOD = ifelse(PERIOD==2, PERIOD+1, PERIOD)), all=T
+      )  %>% 
+  group_by(STRATA) %>%
+  mutate(ODDS_SELECTION_PCT = ifelse(PERIOD == 2, ODDS_SELECTION_PCT[PERIOD==1], 
+                                     ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[PERIOD==1], 
+                                            ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[PERIOD==1], ODDS_SELECTION_PCT)))), 
+  by=c("STRATA", "PERIOD"), all = TRUE)
 
 # Put into long format
-p.table <- gather(data = for.p.wide, key, value, -STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source)
+p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2020-ONLY: Adding period
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
+
+p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1
+  group_by(STRATA) %>%
+  mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
+                                     ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
+                                     ODDS_SELECTION_PCT)) %>%
+  ungroup()
 
 for(i in 1:nrow(p.table)){
   p.table$pct[i] = round((p.table$value[i] / p.table$Total.n[i]) * 100, 2)
@@ -550,12 +581,13 @@ Selection.table <- p.table %>%
                                         'After Waivers, *d* (*a*-*b*+*c*-*d*)' = key=="Expected",
                                         .ordered=TRUE, .method="unique")) %>% 
                    select("Strata" = STRATA, 
-                          "Trip disposition" = new_trip_type, 
-                          "Selected trips" = value,
-                          "Total trips" = Total.n, 
-                          "Actual selection (%)" = pct,
-                          "Programmed selection (%)" = ODDS_SELECTION_PCT,
-                          "*p*-value (H0: Actual = Programmed)" = p)
+                          "Period" = PERIOD,
+                          "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
+                          "n" = value,  # "Selected trips"
+                          "N" = Total.n,   # "Total trips"
+                          "Actu" = pct,   # "Actual selection (%)"
+                          "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
+                          "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
@@ -680,31 +712,35 @@ odds.by.date.plot <-
 #Total cancelled trips (both by ODDS or by users)
 totl.canc <- disposition %>% 
              filter(STRATA=="Total" & random.assign == "Selected") %>% 
-             transmute(totl.canc = as.numeric(Trips.cancelled.bysystem) + as.numeric(Trips.cancelled.byusers)) %>% 
+             summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
              as.numeric()
 
 #Percent of total trips cancelled by the ODDS system
 perc.syst.canc <- disposition %>% 
                   filter(STRATA=="Total" & random.assign == "Selected") %>% 
-                  transmute(perc.syst.canc = round((as.numeric(Trips.cancelled.bysystem) / as.numeric(Trips.logged.ODDS)) * 100, 2)) %>% 
+                  summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
                   as.numeric()
 
 #Percent of total trips cancelled by users
 perc.user.canc <- disposition %>% 
                   filter(STRATA=="Total" & random.assign == "Selected") %>% 
-                  transmute(perc.syst.canc = format((as.numeric(Trips.cancelled.byusers) / as.numeric(Trips.logged.ODDS)) * 100, digits=1, nsmall=1)) %>% 
+                  summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits=1, nsmall=1)) %>% 
                   as.character()
 
 # Lowest and highest cancellation rate/stratum for selected trips by strata
 sel.min.canc <- disposition %>% 
                 filter(STRATA!="Total" & random.assign == "Selected") %>%
+                group_by(STRATA) %>% 
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
                 slice_min(as.numeric(Cancellation.Pct)) %>% 
-                select(STRATA, Cancellation.Pct)
+                mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 
 sel.max.canc <- disposition %>% 
                 filter(STRATA!="Total" & random.assign == "Selected") %>%
+                group_by(STRATA) %>% 
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
                 slice_max(as.numeric(Cancellation.Pct)) %>% 
-                select(STRATA, Cancellation.Pct)
+                mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 ```
 
 Logged trips have different dispositions. When initially logged, trips are considered pending and can be either closed or cancelled. Whether changes can be made by the user (person logging the trip) or must be made by the monitoring provider (or the NMFS) depends on whether or not the trip is selected to be monitored, the stratum the trip belongs to, and the timing of the activity. Trips can be closed (marked as complete) by the ODDS user after the planned trip departure date by either entering the dates of the trip and the port processor of the landing, or by selecting from a list of pre-populated landing reports. For partial coverage strata monitored by observers, the observer provider is given 72 hours prior to the trip start to provide for an observer to board the vessel. While a trip may be entered into ODDS that is scheduled to start earlier than 72 hours from the time of entry, if selected for observer coverage, the observer provider can opt to delay the start of the trip up to, but not exceeding 72 hours from the time of trip entry. This helps protect the observer provider from the high cost of deploying an observer with short notice. The vessel operator is protected as well by guaranteeing the assigned observer to the vessel up to 48 hours past the planned start of the fishing trip. This rule helps ensure that an observer is available to the boat in case of unforeseen events such as weather. If, however, the trip start date and time has passed by more than 48 hours, then the observer provider can cancel the trip and release the observer from the vessel and trip, and the vessel would need to log a new trip with a new 72-hour notice in place prior to fishing. These ‘forced cancellations’ are not present in trips that are not selected for observation since the logging, closing, or cancellation of the trip is entirely under vessel control. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year+1` ADP.  
@@ -714,22 +750,38 @@ The number of trips logged in the ODDS in `r year` and their dispositions is sum
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process. 
 inherit.min <- logged %>% 
+               group_by(STRATA) %>% 
+               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+               ungroup() %>% 
                slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
+               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 inherit.max <- logged %>% 
+               group_by(STRATA) %>% 
+               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+               ungroup() %>% 
                slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
+               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
                select(STRATA, Pct.selected.from.inherit)
 
 
 # Waiver impact
 waiver.min <- logged %>% 
+              group_by(STRATA) %>% 
+              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+              ungroup() %>% 
               slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
-              select(Pct.allselected.from.waiver) %>% as.character()
+              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+              select(STRATA, Pct.allselected.from.waiver)
 
 waiver.max <- logged %>% 
+              group_by(STRATA) %>% 
+              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+              ungroup() %>% 
               slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
-              select(Pct.allselected.from.waiver) %>% as.character()
+              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+              select(STRATA, Pct.allselected.from.waiver)
 ```
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
@@ -1842,10 +1894,12 @@ kbl(
 # Table 2 from 2019 Annual Report
 ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
 
-disposition.table[c(3,5,6)] <- lapply(disposition.table[,c(3,5,6)], prettyNum, trim=TRUE, big.mark=",")
+disposition.table[c(4,6,7)] <- lapply(disposition.table[,c(4,6,7)], prettyNum, trim=TRUE, big.mark=",")
 disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
-disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`==" NA"] <- " "
-kable(disposition.table)
+disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`=="NA"] <- " "
+disposition.table$Strata <- cell_spec(disposition.table$Strata, italic = ifelse(disposition.table$Strata != "Total", TRUE, FALSE))    # Italicize strata
+
+kable(disposition.table, escape=F)
 ```
 
 #####
@@ -1855,19 +1909,54 @@ kable(disposition.table)
 # Table 3 from 2019 Annual Report
 ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
 
-logged.table[c(2:6)] <- lapply(logged.table[,2:6], prettyNum, trim=TRUE, big.mark=",")
+logged.table[c(3:7)] <- lapply(logged.table[,3:7], prettyNum, trim=TRUE, big.mark=",")
+logged.table$Strata <- cell_spec(logged.table$Strata, italic=TRUE) # Italicize strata
 
-kable(logged.table)
+kable(logged.table, escape=F)
 ```
 
 #####
 
 ####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Random Selection OnlyInitial Random Selection) and those that remained after user manipulation (Final ExpectedAfter Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, No After Waivers).'))`  
 
-```{r Selection.table, echo=FALSE, tab.cap=""}
-Selection.table[c(3:4)] <- lapply(Selection.table[,3:4], prettyNum, trim=TRUE, big.mark=",")
+```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
+Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
+# For the period when waivers were in place, remove p-values for 'After Waivers'
+Selection.table <- Selection.table %>%
+  mutate(`*p*` = ifelse(Period==2 & !(Strata %like% "EM") & `Trip disposition` %like% "After Waivers", "", `*p*`))   
+Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
 
-kable(Selection.table)
+kable(Selection.table %>% 
+        arrange(Period, Strata, `Trip disposition`) %>%
+        select(-Period), 
+      col.names=c("Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
+      escape=F, align="llrrrrr") %>%
+  kable_paper() %>%
+  pack_rows(index = c("Fixed-gear EM strata : full year"=8, 
+                      "Observer strata : Jan. 1 - Mar. 25"=12,
+                      "Observer strata : Mar. 25 - Jun. 30"=12,
+                      "Observer strata : Jul. 1 - Dec. 31"=12), indent=F) 
+
+# Alternately, have separate table for Fixed-Gear EM and then OB strata in wide-format?
+tb1 <- Selection.table %>%
+  filter(Strata %like% "EM") %>% select(-Period)
+tb2 <- Selection.table %>%
+  filter(!(Strata %like% "EM")) %>% arrange(Period, Strata, `Trip disposition`) 
+tb2_wide <- merge(merge(tb2 %>% filter(Period == 1) %>% select(-Period),
+      tb2 %>% filter(Period == 2) %>% select(-Period), by=c("Strata", "Trip disposition")),
+      tb2 %>% filter(Period == 3) %>% select(-Period), by=c("Strata", "Trip disposition"))
+
+kable(tb1, 
+      align="llrrrrr",
+      col.names=c("Strata", "Trip disposition", "*n*", "*N*", "Actu", "Prog", "*p*"), escape=F) %>% 
+      collapse_rows(1) %>%
+      kable_paper()
+kable(tb2_wide, 
+      align=c("llrrrrrrrrrrrrrr"),
+      col.names=c("Strata", "Trip disposition", rep(c("*n*", "*N*", "Actu", "Prog", "*p*"), times=3)), escape=F) %>% 
+  kable_paper() %>%
+  collapse_rows(1) %>%
+  add_header_above(c(" "=2, "Jan. 1 - Mar. 24" = 5,  "Mar. 24 - Jun. 30" = 5, "Jul. 1 - Dec. 31" = 5))
 ```
 
 #####
