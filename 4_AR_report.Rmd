@@ -1655,7 +1655,7 @@ Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
   geom_density(fill="gray", alpha = 0.5, adjust=3) +
   geom_vline(aes(xintercept = 0), col = "black", lty = 3, size = 1) +
   geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
-  facet_wrap(variable ~ STRATA, scales = "free", 
+  facet_wrap(~ STRATA + variable, scales = "free", 
              #Make number of cols in facet_wrap = to number of strata
              ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA))) +
   geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill=factor(p %like% "\\*", levels=c(T, F))), 
