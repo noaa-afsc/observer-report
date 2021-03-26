@@ -49,9 +49,14 @@ options(scipen=10000)
 options(dplyr.summarise.inform = FALSE)
 
 # Is this the annual report or the tech memo?
-# This will control whether certain text chunks are included
+# This will control whether certain text chunks are included and formatting of table/figure captions.
 annual.report <- TRUE
 tech.memo     <- FALSE
+
+if(annual.report){
+  fig_nums <- captioner(prefix = "Figure 3-", auto_space=FALSE)  # In Annual report, deployment analyses make up Chapter 3. 
+  tbl_nums <- captioner(prefix = "Table 3-", auto_space=FALSE)
+}
 ```
 
 ```{r set-options, echo=FALSE, message=FALSE, warning=FALSE}
