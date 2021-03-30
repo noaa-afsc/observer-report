@@ -209,20 +209,28 @@ if(TIME_SPACE == TRUE){
   } # ts_fun_final END
   
   # Confidential versions for analyst use
-  ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, obscure=F)        # Exclude BSAI HAL Sablefish? (2 trips)
-  ts_fun_final(partial_effort[GEAR=="POT"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, obscure=F)        # Exclude GOA POT HAlibut? 
-  ts_fun_final(partial_effort[GEAR=="TRW"], effort=c("OB"), monitored="OB", vline=waiver_week, obscure=F)
+  plt_hal_con <- ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, obscure=F)        # Exclude BSAI HAL Sablefish? (2 trips)
+  plt_pot_con <- ts_fun_final(partial_effort[GEAR=="POT"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, obscure=F)        # Exclude GOA POT HAlibut? 
+  plt_trw_con <- ts_fun_final(partial_effort[GEAR=="TRW"], effort=c("OB"), monitored="OB", vline=waiver_week, obscure=F)
   
-  ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, obscure=F)
-  ts_fun_final(partial_effort[GEAR=="POT"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, obscure=F)
+  plt_em_hal_con <- ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, obscure=F)
+  plt_em_pot_con <- ts_fun_final(partial_effort[GEAR=="POT"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, obscure=F)
   
   # Obscured versions for public use
-  ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)      # Fig B3 in 2019 AR
-  ts_fun_final(partial_effort[GEAR=="POT"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)      # Fig B4 in 2019 AR
-  ts_fun_final(partial_effort[GEAR=="TRW"], effort=c("OB"), monitored="OB", vline=waiver_week)            # Fig B5 in 2019 AR
+  plt_hal <- ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)      # Fig B3 in 2019 AR
+  plt_pot <- ts_fun_final(partial_effort[GEAR=="POT"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)      # Fig B4 in 2019 AR
+  plt_trw <- ts_fun_final(partial_effort[GEAR=="TRW"], effort=c("OB"), monitored="OB", vline=waiver_week)            # Fig B5 in 2019 AR
   
-  ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)   # FIG B6 in 2019 AR
-  ts_fun_final(partial_effort[GEAR=="POT"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)   # Fig B7 in 2019 AR
+  plt_em_hal <- ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)   # FIG B6 in 2019 AR
+  plt_em_pot <- ts_fun_final(partial_effort[GEAR=="POT"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)   # Fig B7 in 2019 AR
+  
+  # Save plots to a single pdf
+  plot_list <- list(plt_hal_con, plt_hal, plt_pot_con, plt_pot, plt_trw_con, plt_trw, plt_em_hal_con, plt_em_hal, plt_em_pot_con, plt_em_pot)
+  pdf("figures/time_space_plots.pdf", onefile=T, width=11, height=8.5)
+  for(i in seq(length(plot_list))){
+    print(plot_list[[i]])
+    }
+  dev.off()
   
 } # TIMESPACE PLOTS END
 
