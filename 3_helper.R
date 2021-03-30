@@ -264,7 +264,7 @@ captioner <- function (prefix = "Figure", auto_space = TRUE, levels = 1,
     stop("Invalid 'type' value used.  Expecting 'n', 'c', or 'C'.")
   }
   if (auto_space) {
-    prefix <- paste(prefix, " ")
+    prefix <- paste0(prefix, " ")   # Geoff changed paste() to paste0(), otherwise two-spaces get added!
   }
   force(levels)
   force(prefix)
@@ -318,7 +318,7 @@ captioner <- function (prefix = "Figure", auto_space = TRUE, levels = 1,
     }
     #FLAG: Jane changed ": " to ". "
     else if (display == "full" || display == "f") {
-      return(paste0(prefix, obj_num, ". ", caption))
+      return(paste0(prefix, obj_num, ". \\-- ", caption))   # Geoff added double-hyphen, but requires '\\' or else it turns into em-dash.
     }
     else if (display == "cite" || display == "c") {
       return(paste0(prefix, obj_num))
