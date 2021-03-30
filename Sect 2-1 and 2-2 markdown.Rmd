@@ -52,7 +52,7 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 ```{r mailing_date, include=FALSE}
 
 #Identify when and how many Observer Fee invoices were sent:
-INVOICE_DATE<-"SELECT TRUNC (a.transaction_date) as invoice_date, 
+invoice_date <- "SELECT TRUNC (a.transaction_date) as invoice_date, 
                       TRUNC (a.transaction_date) + 1 as mail_date,
                       TO_CHAR(a.transaction_date,'Month') AS invoice_month,
                       COUNT(*) as invoice_count            
@@ -62,18 +62,15 @@ INVOICE_DATE<-"SELECT TRUNC (a.transaction_date) as invoice_date,
                   AND a.item = 'ACT'
              GROUP BY TRUNC(a.transaction_date), TO_CHAR(a.transaction_date,'Month')"
 
-#Submit SQL query to an ODBC database using the connection established above:
-#MAILING_DATE<-sqlQuery(channel,paste(INVOICE_DATE),as.is=TRUE,max=10000000)
-#MAILING_DATE$MAIL_DATE2 <- format(as.Date(MAILING_DATE$MAIL_DATE,  "%Y-%m-%d"), "%B %d, %Y")
+# Query the invoice data from database directly:
+mailing_date <- dbGetQuery(channel_cas, invoice_date) 
 
-# Read in .csv file instead of querying the database directly:
-MAILING_DATE <- read.csv("MAILING_DATE.csv")
-# Convert factor date to useable fomrat for markdown:
-MAILING_DATE$MAIL_DATE2 <- format(as.Date(as.character(MAILING_DATE$MAIL_DATE), format = "%d-%b-%y"), "%B %d, %Y")
-
+# Convert the invoice mailing date to usable format for markdown:
+mailing_date$MAIL_DATE2 <- as.character(mailing_date$MAIL_DATE, format = "%B %d, %Y")
+mailing_date$MAIL_DATE3 <- as.character(mailing_date$MAIL_DATE, format = "%B %Y")
 
 # Summarize the late notices:
-LATE_NOTICE <- "SELECT  a.item, 
+late_notice <- "SELECT  a.item, 
                         a.item_description,
                         TO_CHAR(a.transaction_date,'Month') AS notice_month,
                         COUNT(*) as notice_count            
@@ -83,10 +80,8 @@ LATE_NOTICE <- "SELECT  a.item,
                   AND a.item IN('30','60','90','120')
              GROUP BY a.item, a.item_description, TO_CHAR(a.transaction_date,'Month')"
 
-#NOTICE_DATE <- sqlQuery(channel,paste(LATE_NOTICE),as.is=TRUE,max=10000000)
-
-# Read in .csv file instead of querying the database directly:
-NOTICE_DATE <- read.csv("NOTICE_DATE.csv")
+# Query the late notices directly from the database:
+notice_date <- dbGetQuery(channel_cas, late_notice) 
 
 ```
 
@@ -216,7 +211,7 @@ FEE_TOTAL <- ddply(FEE_DETAIL, .(YEAR), summarize, FEE_TOTAL=sum(as.numeric(FEE_
 
 Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-1` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
 
-Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r MAILING_DATE$INVOICE_COUNT` processors and registered buyers in `r MAILING_DATE$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. All but `r NOTICE_DATE[NOTICE_DATE$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15.  A total of $ `r formatC(FEE_TOTAL$FEE_TOTAL, format="d", big.mark=',')` in observer fees will be collected once all bills are paid. At the time of this publication, XXX processors had not yet paid observer fees totalling $XX,XXX. In order to collect delinquent fees, `r NOTICE_DATE[NOTICE_DATE$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r NOTICE_DATE[NOTICE_DATE$ITEM=='30', "NOTICE_MONTH"]` and `r NOTICE_DATE[NOTICE_DATE$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r NOTICE_DATE[NOTICE_DATE$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`. 90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. 
+Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15.  A total of $ `r formatC(FEE_TOTAL$FEE_TOTAL, format="d", big.mark=',')` in observer fees will be collected once all bills are paid. At the time of this publication, XXX processors had not yet paid observer fees totalling $XX,XXX. In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`. 90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. 
 
 
 
