@@ -51,6 +51,18 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 ```
 
 
+```{r inputs, include = FALSE}
+# Identify some inputs for the text:
+
+# Publication date of the Federal Register notice for Standard Prices:
+std_price_notice_date <- 'December 16, 2019'
+
+# Federal Register reference for the Federal Register notice for Standard Prices:  
+std_price_cfr <- '84 FR 68409'
+
+# Note: URL needs to be updated in footnote 2 below
+
+```
 
 ```{r mailing_date, include=FALSE}
 
@@ -225,18 +237,18 @@ Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were maile
 
 
 ###2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
-Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
+Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
 
-A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on December 19, 2018 (83 FR 65146).[^2]
+A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`std_price_cfr`).[^2]
 
 Table 2-2 through Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.
 
 
 
 
-[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at 679.55(c) and shown on page 2 of an informational bulletin titled "Observer Fee Collection" on the NMFS Alaska Region website at:[link](https://www.fisheries.noaa.gov/webdam/download/83907745).
+[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at [CFR 679.55(c) Observer Fees](https://www.ecfr.gov/cgi-bin/text-idx?SID=e928699f8903a416bed34b9bcaae6903&mc=true&node=pt50.13.679&rgn=div5#se50.13.679_155) and shown on page 2 of an informational bulletin available online at:[Observer Fee Collection](https://www.fisheries.noaa.gov/webdam/download/83907745).
 
-[^2]:Available online at:[link](https://www.govinfo.gov/content/pkg/FR-2018-12-19/pdf/2018-27441.pdf). 
+[^2]:Available online at:[`r std_price_cfr'](https://www.federalregister.gov/documents/2019/12/16/2019-27064/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
 
 #Tables
 **INSERT SECTION PAGE BREAK HERE:**
@@ -249,7 +261,6 @@ Table 2-2. -- Observer fees [^3] in `r as.numeric(format(Sys.Date(), "%Y"))-1` b
 library('reshape2')
 library('knitr')
 library('htmlTable')
-library('dplyr')
 
 # Table prep work: combine PTR and NPT into a single TRAWL gear
 #fee_detail$TABLE_GEAR<-ifelse(fee_detail$GEAR_CODE %in% c('PTR', 'NPT'), 'TRAWL', 
