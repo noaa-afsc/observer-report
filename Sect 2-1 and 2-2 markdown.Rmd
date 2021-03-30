@@ -1,22 +1,21 @@
 
-output: html_document
+output: word_document
 ---
-
-```{r mailing_date, include=FALSE}
+```{r setup, include=FALSE}
 
 # --------------------------------------------------------------------------------------------------------------- #
 # Program:Sect_2-1and2-2markdown.Rmd                                                                              #
 # Project:Observer Program Annual Report                                                                          #
-# Location: S:\Observer Program Annual Report\2019_Annual_Report\Chapt2_Fees&Budget\                              #
-# Location: C:\Teleworking\Obs Annual Report\Ch 2                                                                 # 
+# Location: S:\Observer Program Annual Report\2020_Annual_Report\Chapt2_Fees&Budget\                              #
+# Location: H:\Observer Program\Annual Report Local GIT Projects\Obs Fee Summary\                                 #
 # Objective:                                                                                                      #
-#   - Summarize fee liability by area, gear, vessel length, and species for 2019 Annual Report                    #
-#   - This code was brainstormed in "2019 Fee Query - DRAFT.sql"                                                  #
+#   - Summarize fee liability by area, gear, vessel length, and species for 2020 Annual Report                    #
+#   - This code was brainstormed in "2020 Fee Query - DRAFT based on warehouse.sql"                               #
 #     1) it doesn't appear that any fee liabilities were waived by OMD                                            #
 #                                                                                                                 #
 #   Note: Do not include administrative fees or interest for late payments.                                       #
 #                                                                                                                 # 
-#   27,329 records for $2,895,377.90                                                                              #
+#   23,644 records for $2,469,241.17                                                                              #
 #                                                                                                                 #
 # Input:                                                                                                          #
 #   - akfish_crf.fee_detail_gf                                                                                    #
@@ -26,6 +25,7 @@ output: html_document
 #   - akfish_report.area and akfish.management_area                                                               #
 #   - akfish_report.vessel and akfish.v_vessel                                                                    #
 #   - akfish_report.gear                                                                                          # 
+#   - akfish.ifq_landing_transaction                                                                              #
 #   - akfish_crf.v_fee_transaction                                                                                # 
 #                                                                                                                 #
 # Output:                                                                                                         #
@@ -34,18 +34,22 @@ output: html_document
 #                                                                                                                 #
 # --------------------------------------------------------------------------------------------------------------- #
 
-setwd("C:\\Teleworking\\Obs Annual Report\\Ch 2")
+#setwd("C:\\Teleworking\\Obs Annual Report\\Ch 2")
 
-library('RODBC')
+library('ROracle')
 library('toOrdinal')
 
-#ODBC connection inputs
-dsn <- "AKR1_x64"
-user <- "ctide"
-pw <- "Winter2020"
+# ROracle connection inputs:
+channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
+                         username =paste(Sys.getenv('CASid')), 
+                         password =paste(Sys.getenv('CASpw')), 
+                         dbname = Sys.getenv("myCASConnStr"))
 
-#Establish connection to ODBC database in order to access CRF database on AKRI:
-#channel<-odbcConnect(dsn, user, pw)
+```
+
+
+
+```{r mailing_date, include=FALSE}
 
 #Identify when and how many Observer Fee invoices were sent:
 INVOICE_DATE<-"SELECT TRUNC (a.transaction_date) as invoice_date, 
