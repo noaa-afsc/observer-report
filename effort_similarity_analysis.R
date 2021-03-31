@@ -1,10 +1,10 @@
 # For 2020 Annual Report, will only use this script to map fishing effort and monitoring over time and space.
 # Will not be used for gap analyses due to complications from COVID-19, waivers, short time period for random deployment, etc.
 
-library(data.table)         # For data wrangling
-library(ggplot2)            # For plotting
-library(ggpubr)             # For combining plots that use the same legend
-library(lubridate)          # For wrangling dates
+if(!require(data.table))  install.packages(data.table)         # For data wrangling
+if(!require(ggplot2))     install.packages(ggplot2)            # For plotting
+if(!require(ggpubr))      install.packages(ggpubr)             # For combining plots that use the same legend
+if(!require(lubridate))   install.packages(lubridate)          # For wrangling dates
       
 GAP_ANALYSIS    <- F        # Evaluate achieved gap indices with distribution of gap indices that would be acquire under perfectly random deployment
 TIME_SPACE      <- T        # Visualize fishing effort and monitored trips in time and space. Allows within-gear comparisons between pools.
