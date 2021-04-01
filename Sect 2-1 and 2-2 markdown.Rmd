@@ -1,5 +1,6 @@
-
+---
 output: word_document
+title: "Annual Report Fee Summary Draft"
 ---
 ```{r setup, include=FALSE}
 
@@ -38,13 +39,11 @@ output: word_document
 
 library('ROracle')
 library('toOrdinal')
-#library(plyr)
 library(dplyr)
 library(tidyr)
 library(stringr)
 library(flextable)
 library(officer)
-#library(pander)
 
 # ROracle connection inputs:
 channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
@@ -223,14 +222,15 @@ fee_total <- fee_detail %>%
 
 ```
 
-#2  FEES AND BUDGET
+# 2  FEES AND BUDGET
  
 
-###2.1	Budget for partial coverage category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
+### 2.1	Budget for partial coverage category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
 
 Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-1` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
 
-Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15.  A total of $ `r formatC(FEE_TOTAL$FEE_TOTAL, format="d", big.mark=',')` in observer fees will be collected once all bills are paid. At the time of this publication, XXX processors had not yet paid observer fees totalling $XX,XXX. In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`. 90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. 
+Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees will be collected once all bills are paid.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX. <!-- In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. -->
+
 
 
 
@@ -240,26 +240,25 @@ Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were maile
 
 
 
-###2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
+### 2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
 Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
 
-A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`std_price_cfr`).[^2]
+A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^2]
 
 Table 2-2 through Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.
 
 
 
 
-[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at [CFR 679.55(c) Observer Fees](https://www.ecfr.gov/cgi-bin/text-idx?SID=e928699f8903a416bed34b9bcaae6903&mc=true&node=pt50.13.679&rgn=div5#se50.13.679_155) and shown on page 2 of an informational bulletin available online at:[Observer Fee Collection](https://www.fisheries.noaa.gov/webdam/download/83907745).
+[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at [CFR 679.55(c) Observer Fees](https://www.ecfr.gov/cgi-bin/text-idx?SID=e928699f8903a416bed34b9bcaae6903&mc=true&node=pt50.13.679&rgn=div5#se50.13.679_155) and shown on page 2 of an informational bulletin available online at: [Observer Fee Collection](https://www.fisheries.noaa.gov/webdam/download/83907745).
 
-[^2]:Available online at:[`r std_price_cfr'](https://www.federalregister.gov/documents/2019/12/16/2019-27064/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
+[^2]:Available online at: [`r std_price_cfr`](https://www.federalregister.gov/documents/2019/12/16/2019-27064/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
 
-#Tables
+# Tables
 **INSERT SECTION PAGE BREAK HERE:**
 
 Table 2-2. -- Observer fees [^3] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for _all areas combined_.
 
-#
 ```{r table1_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Table prep work: 
