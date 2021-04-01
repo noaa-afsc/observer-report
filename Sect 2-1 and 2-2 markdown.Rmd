@@ -1,22 +1,22 @@
-
-output: html_document
 ---
-
-```{r mailing_date, include=FALSE}
+output: word_document
+title: "Annual Report Fee Summary Draft"
+---
+```{r setup, include=FALSE}
 
 # --------------------------------------------------------------------------------------------------------------- #
 # Program:Sect_2-1and2-2markdown.Rmd                                                                              #
 # Project:Observer Program Annual Report                                                                          #
-# Location: S:\Observer Program Annual Report\2019_Annual_Report\Chapt2_Fees&Budget\                              #
-# Location: C:\Teleworking\Obs Annual Report\Ch 2                                                                 # 
+# Location: S:\Observer Program Annual Report\2020_Annual_Report\Chapt2_Fees&Budget\                              #
+# Location: H:\Observer Program\Annual Report Local GIT Projects\Obs Fee Summary\                                 #
 # Objective:                                                                                                      #
-#   - Summarize fee liability by area, gear, vessel length, and species for 2019 Annual Report                    #
-#   - This code was brainstormed in "2019 Fee Query - DRAFT.sql"                                                  #
+#   - Summarize fee liability by area, gear, vessel length, and species for 2020 Annual Report                    #
+#   - This code was brainstormed in "2020 Fee Query - DRAFT based on warehouse.sql"                               #
 #     1) it doesn't appear that any fee liabilities were waived by OMD                                            #
 #                                                                                                                 #
 #   Note: Do not include administrative fees or interest for late payments.                                       #
 #                                                                                                                 # 
-#   27,329 records for $2,895,377.90                                                                              #
+#   23,644 records for $2,469,241.17                                                                              #
 #                                                                                                                 #
 # Input:                                                                                                          #
 #   - akfish_crf.fee_detail_gf                                                                                    #
@@ -26,6 +26,7 @@ output: html_document
 #   - akfish_report.area and akfish.management_area                                                               #
 #   - akfish_report.vessel and akfish.v_vessel                                                                    #
 #   - akfish_report.gear                                                                                          # 
+#   - akfish.ifq_landing_transaction                                                                              #
 #   - akfish_crf.v_fee_transaction                                                                                # 
 #                                                                                                                 #
 # Output:                                                                                                         #
@@ -34,21 +35,42 @@ output: html_document
 #                                                                                                                 #
 # --------------------------------------------------------------------------------------------------------------- #
 
-setwd("C:\\Teleworking\\Obs Annual Report\\Ch 2")
+#setwd("C:\\Teleworking\\Obs Annual Report\\Ch 2")
 
-library('RODBC')
+library('ROracle')
 library('toOrdinal')
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(flextable)
+library(officer)
 
-#ODBC connection inputs
-dsn <- "AKR1_x64"
-user <- "ctide"
-pw <- "Winter2020"
+# ROracle connection inputs:
+channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
+                         username =paste(Sys.getenv('CASid')), 
+                         password =paste(Sys.getenv('CASpw')), 
+                         dbname = Sys.getenv("myCASConnStr"))
 
-#Establish connection to ODBC database in order to access CRF database on AKRI:
-#channel<-odbcConnect(dsn, user, pw)
+```
+
+
+```{r inputs, include = FALSE}
+# Identify some inputs for the text:
+
+# Publication date of the Federal Register notice for Standard Prices:
+std_price_notice_date <- 'December 16, 2019'
+
+# Federal Register reference for the Federal Register notice for Standard Prices:  
+std_price_cfr <- '84 FR 68409'
+
+# Note: URL needs to be updated in footnote 2 below
+
+```
+
+```{r mailing_date, include=FALSE}
 
 #Identify when and how many Observer Fee invoices were sent:
-INVOICE_DATE<-"SELECT TRUNC (a.transaction_date) as invoice_date, 
+invoice_date <- "SELECT TRUNC (a.transaction_date) as invoice_date, 
                       TRUNC (a.transaction_date) + 1 as mail_date,
                       TO_CHAR(a.transaction_date,'Month') AS invoice_month,
                       COUNT(*) as invoice_count            
@@ -58,18 +80,15 @@ INVOICE_DATE<-"SELECT TRUNC (a.transaction_date) as invoice_date,
                   AND a.item = 'ACT'
              GROUP BY TRUNC(a.transaction_date), TO_CHAR(a.transaction_date,'Month')"
 
-#Submit SQL query to an ODBC database using the connection established above:
-#MAILING_DATE<-sqlQuery(channel,paste(INVOICE_DATE),as.is=TRUE,max=10000000)
-#MAILING_DATE$MAIL_DATE2 <- format(as.Date(MAILING_DATE$MAIL_DATE,  "%Y-%m-%d"), "%B %d, %Y")
+# Query the invoice data from database directly:
+mailing_date <- dbGetQuery(channel_cas, invoice_date) 
 
-# Read in .csv file instead of querying the database directly:
-MAILING_DATE <- read.csv("MAILING_DATE.csv")
-# Convert factor date to useable fomrat for markdown:
-MAILING_DATE$MAIL_DATE2 <- format(as.Date(as.character(MAILING_DATE$MAIL_DATE), format = "%d-%b-%y"), "%B %d, %Y")
-
+# Convert the invoice mailing date to usable format for markdown:
+mailing_date$MAIL_DATE2 <- as.character(mailing_date$MAIL_DATE, format = "%B %d, %Y")
+mailing_date$MAIL_DATE3 <- as.character(mailing_date$MAIL_DATE, format = "%B %Y")
 
 # Summarize the late notices:
-LATE_NOTICE <- "SELECT  a.item, 
+late_notice <- "SELECT  a.item, 
                         a.item_description,
                         TO_CHAR(a.transaction_date,'Month') AS notice_month,
                         COUNT(*) as notice_count            
@@ -79,22 +98,16 @@ LATE_NOTICE <- "SELECT  a.item,
                   AND a.item IN('30','60','90','120')
              GROUP BY a.item, a.item_description, TO_CHAR(a.transaction_date,'Month')"
 
-#NOTICE_DATE <- sqlQuery(channel,paste(LATE_NOTICE),as.is=TRUE,max=10000000)
-
-# Read in .csv file instead of querying the database directly:
-NOTICE_DATE <- read.csv("NOTICE_DATE.csv")
+# Query the late notices directly from the database:
+notice_date <- dbGetQuery(channel_cas, late_notice) 
 
 ```
 
 ```{r fee_calculation, include=FALSE}
 
-library(plyr)
-library(pander)
-
 #Sets SQL code as object used to query the data: 
-# (S:\Observer Program Annual Report\2019_Annual_Report\Chapt2_Fees&Budget\2019 Fee Query - DRAFT.sql)
-# (C:\Teleworking\Obs Annual Report\Ch 2\2019 Fee Query - DRAFT.sql)
-LOAD_FEE_DETAIL<-"SELECT gf.year, 'GF' AS report_source, 
+# (C:\Teleworking\Obs Annual Report\Ch 2\2020 Fee Query - DRAFT based on warehouse.sql)
+load_fee_detail <- "SELECT gf.year, 'GF' AS report_source, 
        gf.category,
        gf.processor_permit_id as processor_permit,
        gf.vessel_id, gf.adfg_number, --gf.vessel_name, 
@@ -115,16 +128,15 @@ LOAD_FEE_DETAIL<-"SELECT gf.year, 'GF' AS report_source,
        gf.agency_species_name, gf.agency_species_code,
        
        -- Aggregate the species in some cases: 
-       CASE WHEN gf.agency_species_code = '110' THEN 'Pacific Cod'
+       CASE WHEN gf.agency_species_code = '110' THEN 'PacificCod'
             WHEN gf.agency_species_code = '710' THEN 'Sablefish'
             WHEN gf.agency_species_code = '270' THEN 'Pollock'
             WHEN gf.agency_species_code = '200' THEN 'Halibut'
-                                                ELSE 'All Other Species'
+                                                ELSE 'AllOtherSpecies'
        END AS species_group,
        
        gf.gear_group_id, gf.gear_group_description, 
        -- Differentiate HAL/POT/JIG as separate gear types:
-       --(SELECT MAX (agency_gear_code) FROM ellr_report z WHERE z.report_id = lp.report_id and z.current_version_flag = 'Y') as gear_code, 
        g.gear_code,       
        gf.weight_pounds, gf.price_per_pound, gf.fee_amount,  gf.fee_person_year_id
   FROM akfish_crf.fee_detail_gf gf
@@ -138,7 +150,7 @@ LOAD_FEE_DETAIL<-"SELECT gf.year, 'GF' AS report_source,
   JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
  WHERE gf.year = extract(year from sysdate) - 1             -- previous year
    and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
-   --and gf.fee_person_year_id NOT IN (3610441, 3610443, 3610451, 3610585)  -- example of 2018 fee waiver exclusions                                    
+   and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status
               
 UNION ALL 
 
@@ -170,49 +182,55 @@ SELECT ifq.year, 'IFQ' AS report_source,
        ifq.agency_species_name, ifq.agency_species_code,
        
        -- Aggregate the species in some cases: 
-       CASE WHEN ifq.agency_species_code = '110' THEN 'Pacific Cod'
+       CASE WHEN ifq.agency_species_code = '110' THEN 'PacificCod'
             WHEN ifq.agency_species_code = '710' THEN 'Sablefish'
             WHEN ifq.agency_species_code = '270' THEN 'Pollock'
             WHEN ifq.agency_species_code = '200' THEN 'Halibut'
-                                               ELSE 'All Other Species'
+                                               ELSE 'AllOtherSpecies'
        END AS species_group,
        
        ifq.gear_group_id, ifq.gear_group_description, 
        -- Note: ObsFee IFQ data contains gear information as FIXED. Use landing report data (stored in catch_report_species_fact) to distinguish types of fixed gear. 
-       --       Using MAX(g.gear_code) to identify the only gear on each landing report because catch_report_species_fact has a record for each species 
-       --       catch transaction. In the event of a manual landing there may not be a landing report.  Default to HAL in those cases.
-       (SELECT case when MAX(g.gear_code) IS NULL then 'HAL' else MAX(g.gear_code) end GEAR 
-          FROM akfish_report.catch_report_source crs
-          JOIN akfish_report.catch_report_species_fact crsf ON crs.catch_report_source_pk = crsf.catch_report_source_pk 
-          JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
-         WHERE ifq.report_id = crs.el_report_id and crs.expire_date IS NULL) as GEAR_CODE,                                               
+       --       Use MAX(g.gear_code) to identify the only gear on each landing report because catch_report_species_fact has a record for each species catch transaction. 
+       --       In the event of a manual landing and the landing report is not available, translate the IFQ gear code from akfish.ifq_landing_transaction:
+       NVL((SELECT MAX(g.gear_code) 
+              FROM akfish_report.catch_report_source crs
+              JOIN akfish_report.catch_report_species_fact crsf ON crs.catch_report_source_pk = crsf.catch_report_source_pk 
+              JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
+             WHERE ifq.report_id = crs.el_report_id and crs.expire_date IS NULL), 
+                   decode(ilt.ifq_gear_code, '61', 'HAL', '91', 'POT', '05', 'JIG', '26', 'JIG')) as GEAR_CODE,  --15 and 25?  JIG?
        ifq.weight_pounds, ifq.price_per_pound, ifq.fee_amount,  ifq.fee_person_year_id
   FROM akfish_crf.fee_detail_ifq ifq
-  JOIN akfish.management_area ma ON ifq.area = ma.id         -- join to management area to translate area IDs
-  JOIN akfish.v_vessel v ON ifq.vessel_id = v.id             -- join to the vessel file so we can summarize fees by vessel length
+  -- join to management area to translate area IDs
+  JOIN akfish.management_area ma ON ifq.area = ma.id  
+  -- join to the vessel file so we can summarize fees by vessel length
+  JOIN akfish.v_vessel v ON ifq.vessel_id = v.id     
+  -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
+  JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number
  WHERE ifq.year = extract(year from sysdate) - 1             -- previous year
-   and ifq.management_program_id = 12                        -- observer fees"   
+   and ifq.management_program_id = 12                        -- observer fees
+   and (ifq.fee_person_year_id IS NULL or ifq.fee_person_year_id != 6793230)  -- Correction: Clipper Seafoods fees were incorrectly charged and corrected ($725.84)
+                                                                              -- NOTE: There are 35 records wit null fee_person_year_id that have been invoiced ($20,388.03)"
 
-
-#FEE_DETAIL<-sqlQuery(channel,paste(LOAD_FEE_DETAIL),as.is=TRUE,max=10000000)
-
-# Read in .csv file instead of querying the database directly:
-FEE_DETAIL <- read.csv("FEE_DETAIL.csv")
+# Query the fees directly from the database:
+fee_detail <- dbGetQuery(channel_cas, load_fee_detail) 
 
 # Summarize fee totals for the year:
-FEE_TOTAL <- ddply(FEE_DETAIL, .(YEAR), summarize, FEE_TOTAL=sum(as.numeric(FEE_AMOUNT)))
-
+fee_total <- fee_detail %>% 
+  group_by(YEAR) %>% 
+  summarize(FEE_TOTAL = sum(FEE_AMOUNT), .groups = 'drop')  # .groups = 'drop'  gets rid of annoying warning
 
 ```
 
-#2  FEES AND BUDGET
+# 2  FEES AND BUDGET
  
 
-###2.1	Budget for partial coverage category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
+### 2.1	Budget for partial coverage category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
 
 Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-1` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
 
-Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r MAILING_DATE$INVOICE_COUNT` processors and registered buyers in `r MAILING_DATE$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. All but `r NOTICE_DATE[NOTICE_DATE$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15.  A total of $ `r formatC(FEE_TOTAL$FEE_TOTAL, format="d", big.mark=',')` in observer fees will be collected once all bills are paid. At the time of this publication, XXX processors had not yet paid observer fees totalling $XX,XXX. In order to collect delinquent fees, `r NOTICE_DATE[NOTICE_DATE$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r NOTICE_DATE[NOTICE_DATE$ITEM=='30', "NOTICE_MONTH"]` and `r NOTICE_DATE[NOTICE_DATE$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r NOTICE_DATE[NOTICE_DATE$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`. 90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. 
+Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees will be collected once all bills are paid.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX. <!-- In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. -->
+
 
 
 
@@ -222,165 +240,154 @@ Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were maile
 
 
 
-###2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
-Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
+### 2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
+Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
 
-A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on December 19, 2018 (83 FR 65146).[^2]
+A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^2]
 
 Table 2-2 through Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.
 
 
 
 
-[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at 679.55(c) and shown on page 2 of an informational bulletin titled "Observer Fee Collection" on the NMFS Alaska Region website at:[link](https://www.fisheries.noaa.gov/webdam/download/83907745).
+[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at [CFR 679.55(c) Observer Fees](https://www.ecfr.gov/cgi-bin/text-idx?SID=e928699f8903a416bed34b9bcaae6903&mc=true&node=pt50.13.679&rgn=div5#se50.13.679_155) and shown on page 2 of an informational bulletin available online at: [Observer Fee Collection](https://www.fisheries.noaa.gov/webdam/download/83907745).
 
-[^2]:Available online at:[link](https://www.govinfo.gov/content/pkg/FR-2018-12-19/pdf/2018-27441.pdf). 
+[^2]:Available online at: [`r std_price_cfr`](https://www.federalregister.gov/documents/2019/12/16/2019-27064/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
 
-#Tables
+# Tables
 **INSERT SECTION PAGE BREAK HERE:**
 
 Table 2-2. -- Observer fees [^3] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for _all areas combined_.
 
-#
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r table1_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
-library('reshape2')
-library('knitr')
-library('htmlTable')
-library('dplyr')
+# Table prep work: 
 
-# Table prep work: combine PTR and NPT into a single TRAWL gear
-#FEE_DETAIL$TABLE_GEAR<-ifelse(FEE_DETAIL$GEAR_CODE %in% c('PTR', 'NPT'), 'TRAWL', 
-#                              ifelse(FEE_DETAIL$GEAR_CODE == 'HAL', 'HOOK AND LINE', FEE_DETAIL$GEAR_CODE))
+# Relabel some of the fee detail information:
+fee_detail <- fee_detail %>% 
+  # Consolidate Trawl gear codes (NPT and PTR), spell out HAL, and change capitalization for JIG and POT:
+  mutate(TABLE_GEAR = as.factor(ifelse(GEAR_CODE %in% c('PTR', 'NPT'), 'Trawl',
+                                       ifelse(GEAR_CODE == 'HAL', 'Hook and Line', str_to_title(GEAR_CODE))))) %>% 
+  # Convert species_group to a factor:
+  mutate(SPECIES_GROUP = as.factor(SPECIES_GROUP)) %>% 
+  #Convert loa_group to a factor:
+  mutate(LOA_GROUP = as.factor(LOA_GROUP)) 
+  
 
-# Consolidate Trawl gear codes (NPT and PTR)
-FEE_DETAIL$TABLE_GEAR<-ifelse(FEE_DETAIL$GEAR_CODE %in% c('PTR', 'NPT'), 'TRAWL', 
-                              ifelse(FEE_DETAIL$GEAR_CODE == 'HAL', 'HOOK AND LINE', as.character(FEE_DETAIL$GEAR_CODE)))
-
-
-#Table prep work: number the species so they can dcast into the order we want
-FEE_DETAIL$SPECIES_ORDER<-ifelse(FEE_DETAIL$SPECIES_GROUP=='Halibut', 'A', 
-                                 ifelse(FEE_DETAIL$SPECIES_GROUP=='Sablefish', 'B', 
-                                        ifelse(FEE_DETAIL$SPECIES_GROUP=='Pacific Cod', 'C',
-                                               ifelse(FEE_DETAIL$SPECIES_GROUP=='Pollock', 'D', 'E'))))
-
-
-# Summarize fee totals for Table 2-2 (all areas) 
-ALL_AREAS<-ddply(FEE_DETAIL, .(YEAR, TABLE_GEAR, LOA_GROUP, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
+# Summarize fee totals by gear, vessel length, and species for Table 2-2 (all areas) 
+all_areas_summary <- fee_detail %>% 
+  group_by(YEAR, TABLE_GEAR, LOA_GROUP, SPECIES_GROUP) %>% 
+  summarize(FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Convert from long format to wide format:
+  pivot_wider(names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  # Set NAs to 0:
+  replace_na(list(AllOtherSpecies = 0, Halibut = 0, PacificCod = 0, Pollock = 0, Sablefish = 0))
 
 
-# Convert data from long forward to wide format and set NAs to 0:
-ALL_WIDE<-dcast(ALL_AREAS, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-ALL_WIDE[is.na(ALL_WIDE)]<-0
+# Calculate the 'Vessel length' subtotals:
+vessel_subtotal <- fee_detail %>% 
+  group_by(YEAR, TABLE_GEAR, SPECIES_GROUP) %>% 
+  summarize(LOA_GROUP = 'Gear Subtotal',
+            FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Convert from long format to wide format:
+  pivot_wider(id_cols = c(YEAR, TABLE_GEAR, LOA_GROUP), names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  # Set NAs to 0:
+  replace_na(list(AllOtherSpecies = 0, Halibut = 0, PacificCod = 0, Pollock = 0, Sablefish = 0))
 
 
-#Caluculate the 'Vessel length' subtotals:
-VL_SUBTOTAL<-ddply(FEE_DETAIL, .(YEAR, TABLE_GEAR, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-VL_SUBTOTAL$LOA_GROUP<-"Gear Subtotal"
-VL_SUBTOTAL_WIDE<-dcast(VL_SUBTOTAL, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-VL_SUBTOTAL_WIDE[is.na(VL_SUBTOTAL_WIDE)]<-0
+# Calculate 'All Gear' subtotals:
+gear_subtotal <- fee_detail %>% 
+  group_by(YEAR, SPECIES_GROUP) %>% 
+  summarize(TABLE_GEAR = "Total All Gear",
+            LOA_GROUP = as.factor(' '),
+            FEE = sum(FEE_AMOUNT), groups. = 'drop') %>% 
+  pivot_wider(id_cols = c(YEAR, TABLE_GEAR, LOA_GROUP), names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  data.frame()
 
 
+# Bind the vessel length subtotals, all gear subtotals and vessel length data:
+all_areas <- all_areas_summary %>% 
+  bind_rows(vessel_subtotal, gear_subtotal) %>% 
+  # Calculate 'All Species' subtotals:
+  mutate(TOTAL = Halibut + PacificCod + Pollock + Sablefish + AllOtherSpecies) %>% 
+  # Reorder the columns:
+  select(TABLE_GEAR, LOA_GROUP, Halibut, Sablefish,  PacificCod, Pollock, AllOtherSpecies, TOTAL) %>% 
+  # Set order for gear and vessel length categories in table:
+  mutate(TABLE_GEAR = as.factor(TABLE_GEAR)) %>% 
+  mutate(LOA_GROUP = as.factor(LOA_GROUP)) %>% 
+  arrange(factor(TABLE_GEAR, levels = c('Hook and Line', 'Jig', 'Pot', 'Trawl', 'Total All Gear')), 
+                 factor(LOA_GROUP, levels = c('<40', '40 - 57.5', '>57.5', 'Gear Subtotal', ' ')))
+  
+# Calculate percentage of total fees by each species:
+pct <- all_areas %>% 
+  filter(TABLE_GEAR == 'Total All Gear') %>% 
+  mutate(AOS_PCT = round((AllOtherSpecies/TOTAL)*100,0),
+         H_PCT   = round((Halibut/TOTAL)*100,0),
+         PC_PCT  = round((PacificCod/TOTAL)*100,0),
+         P_PCT   = round((Pollock/TOTAL)*100,0),
+         S_PCT   = round((Sablefish/TOTAL)*100,0),
+         T_PCT   = round((TOTAL/TOTAL)*100,0)) %>% 
+  select(H_PCT, S_PCT, PC_PCT, P_PCT, AOS_PCT, T_PCT) %>% 
+  # Rename columns so they can append to the columns in the table:
+  rename(Halibut = H_PCT,
+         Sablefish = S_PCT,
+         PacificCod = PC_PCT,
+         Pollock = P_PCT,
+         AllOtherSpecies = AOS_PCT,
+         TOTAL = T_PCT)
 
-#Bind the vessel length subtotals, all gear subtotals and vessel length data:
-WITH_SUBTOTALS<-rbind(ALL_WIDE, VL_SUBTOTAL_WIDE)
-WITH_SUBTOTALS[is.na(WITH_SUBTOTALS)]<-0
-
-
-#Table prep work: number the vessel length categories so they can sort properly in the table:
-WITH_SUBTOTALS$VESSEL_ORDER<-ifelse(WITH_SUBTOTALS$LOA_GROUP=='<40',"A",
-                                    (ifelse(WITH_SUBTOTALS$LOA_GROUP=='40 - 57.5',"B",
-                                            (ifelse(WITH_SUBTOTALS$LOA_GROUP=='>57.5',"C","D")))))
-
-# Sort the table so far by gear and vessel order:
-ORDERED<-WITH_SUBTOTALS[order(WITH_SUBTOTALS[,1],WITH_SUBTOTALS[,8]),]
-
-
-#Calculate 'All Gear' subtotals:
-GEAR_SUBTOTAL<-ddply(FEE_DETAIL, .(YEAR, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-GEAR_SUBTOTAL$TABLE_GEAR<-"Total All Gear"
-GEAR_SUBTOTAL$LOA_GROUP<-" "
-GEAR_SUBTOTAL_WIDE<-dcast(GEAR_SUBTOTAL, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-
-
-#Bind the vessel length subtotals, all gear subtotals and vessel length data:
-PRE_PRINT<-rbind(ORDERED[,c(1:7)], GEAR_SUBTOTAL_WIDE)
-PRE_PRINT[is.na(PRE_PRINT)]<-0
-
-#Calculate 'All Species' subtotals:
-PRE_PRINT$TOTAL<-PRE_PRINT[,3] + PRE_PRINT[,4] + PRE_PRINT[,5] + PRE_PRINT[,6] + PRE_PRINT[,7]
-
-# Calculate percentages:
-PCT<-PRE_PRINT[PRE_PRINT$TABLE_GEAR=='Total All Gear',]
-PCT$TABLE_GEAR<-" "
-PCT[,3:8]<-paste(round((PCT[,3:8]/PCT$TOTAL)*100,0), "%", sep="") 
-
-# Round off the decimal places:
-PRE_PRINT[,3:8]<-round(PRE_PRINT[,3:8], 0)
-
-# {htmlTable} language="en" (English) uses ',' between every 3 numbers
-PRE_PRINT[,3:8] <- txtInt(PRE_PRINT[,3:8], language="en",html=TRUE)
-
-#Add dollar signs
-PRE_PRINT$A <- paste0("$", PRE_PRINT$A)
-PRE_PRINT$B <- paste0("$", PRE_PRINT$B)
-PRE_PRINT$C <- paste0("$", PRE_PRINT$C)
-PRE_PRINT$D <- paste0("$", PRE_PRINT$D)
-PRE_PRINT$E <- paste0("$", PRE_PRINT$E)
-PRE_PRINT$TOTAL <- paste0("$", PRE_PRINT$TOTAL)
-
-#Get rid of the $0 values for readability in the final table
-PRE_PRINT[PRE_PRINT=="$0"] <- ""
-
-#Combine the tables
-PRE_PRINT2<-rbind(PRE_PRINT, PCT)
-
-
-#Rename the column headings for printing:
-#FOR_PRINT<-rename(PRE_PRINT2, c("TABLE_GEAR"="Gear", "LOA_GROUP"="Vessel Length Category","A"="Halibut", "B"="Sablefish", "C"="Pacific Cod", "D"="Pollock", "E"="All Other Groundfish", "TOTAL"="Total All Species"))
-
-FOR_PRINT <- PRE_PRINT2 %>% 
-  rename(Gear = TABLE_GEAR,
-         'Vessel Length Category' = LOA_GROUP,
-         Halibut = A,
-         Sablefish = B,
-         'Pacific Cod' = C,
-         Pollock = D,
-         'All Other Groundfish' = E,
-         'Total All Species' = TOTAL)
-
-# The HTML wrapper in htmlTable gets upset with the '>' symbol, so write it in html instead (also do '<' for consistency)
-#FOR_PRINT[FOR_PRINT==">57.5"] <- "&gt;57.5"
-#FOR_PRINT[FOR_PRINT=="<40"] <- "&lt;40"
-
-FOR_PRINT[FOR_PRINT==">57.5"] <- "GT57.5"
-#FOR_PRINT[FOR_PRINT=="<40"] <- "&lt;40"
-
-htmlTable(FOR_PRINT[,2:8],
-          tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
-          align="lrrrrrr",
-          align.header="lrrrrrr",
-          total="tspanner",
-          tspanner=c("HOOK AND LINE","JIG", "POT","TRAWL",
-                     "TOTAL ALL GEAR", "PERCENT BY SPECIES"),
-          #Number of rows under each table spanner section 
-          n.tspanner=c(4, 4, 4, 3, 1, 1),
-          padding.tspanner = c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          css.tspanner.sep = "border-top: 1px solid;",
-          #Each element in this vector corresponds to the formatting in a table spanner total row. If you wanted a line + bolding you'd say "border-top: 1px dashed; font-weight: 900;". Otherwise this formatting is a mystery, so don't change it! ;)
-          css.total = c("border-top: 1px dashed;", #This gives dashed divider lines
-                        "border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "font-weight: 900;", #this gives bold font
-                        "font-weight: 900"),
-          rnames=FALSE,
-          css.cell = "padding-left: 1em; "
-          )
+# Create labels for footer of table based on percentages: 
+pct_labels <- data.frame(
+  col_keys = c("TABLE_GEAR", "LOA_GROUP", "Halibut", "Sablefish", "PacificCod", "Pollock", "AllOtherSpecies", "TOTAL"),
+  unit = c("Percent by Species", "", paste0(pct$Halibut,'%', sep=""), paste0(pct$Sablefish,'%', sep=""), paste0(pct$PacificCod,'%', sep=""),
+           paste0(pct$Pollock,'%', sep=""), paste0(pct$AllOtherSpecies,'%', sep=""), paste0(pct$TOTAL,'%', sep="")),
+  stringsAsFactors = FALSE )
 
 ```
 
 
+
+```{r table1, echo=FALSE}
+
+# Create a table for the Fee Summaries in All Areas:
+flextable(all_areas) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(TABLE_GEAR = "Gear",
+                    LOA_GROUP = "Vessel Length Category",
+                    PacificCod = "Pacific Cod",
+                    AllOtherSpecies = "All Other Species",
+                    TOTAL = "Total All Species")  %>% 
+  # Format the currency columns:
+  colformat_num(j = c(3,4,5,6,7, 8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers, gear labels, and all gear totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 15) %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
+  merge_at(i=15, j=c(1:2)) %>% 
+  # Add dashed horizontal lines before gear subtotals:
+  border(i = c(3,6,10,13), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
+  border(i = c(4,7,11,14), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  fix_border_issues(part = "body") %>% 
+  # Add percentages as a footer hack:
+  set_footer_df(mapping = pct_labels, key = "col_keys") %>% 
+  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
+  bold(part = "footer") %>% 
+  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
+  merge_at(j=c(1:2), part = "footer") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1, part = "header",
+           value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
+  #fix_border_issues(part = "footer")
+  #hline_bottom(part = "footer", border= fp_border(color="black", width = 1))
+  #border_outer(border = fp_border(color="black", width = 1), part = "footer")
+
+
+
+```
 
 
 [^3]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payments are not included.
@@ -391,119 +398,130 @@ htmlTable(FOR_PRINT[,2:8],
 
 Table 2-3. -- Observer fees[^4] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Gulf of Alaska_.[^5]
 
-``` {r echo=FALSE, warning=FALSE} 
+```{r table2_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
-GOA<-FEE_DETAIL[FEE_DETAIL$FMP_AREA=='GOA',]
+# GOA Table prep work: 
 
-# Summarize fee totals for Table 2-3 (GOA) 
-GOA_AREA<-ddply(GOA, .(YEAR, TABLE_GEAR, LOA_GROUP, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-
-# Convert data from long forward to wide format and set NAs to 0:
-GOA_WIDE<-dcast(GOA_AREA, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-GOA_WIDE[is.na(GOA_WIDE)]<-0
-
-
-#Caluculate the 'Vessel length' subtotals:
-VL_SUBTOTAL2<-ddply(GOA, .(YEAR, TABLE_GEAR, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-VL_SUBTOTAL2$LOA_GROUP<-"Gear Subtotal"
-VL_SUBTOTAL_WIDE2<-dcast(VL_SUBTOTAL2, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-VL_SUBTOTAL_WIDE2[is.na(VL_SUBTOTAL_WIDE2)]<-0
+# Summarize fee totals by gear, vessel length, and species for Table 2-3 (GOA) 
+goa_summary <- fee_detail %>% 
+  filter(FMP_AREA == 'GOA') %>% 
+  group_by(YEAR, TABLE_GEAR, LOA_GROUP, SPECIES_GROUP) %>% 
+  summarize(FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Convert from long format to wide format:
+  pivot_wider(names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  # Set NAs to 0:
+  replace_na(list(AllOtherSpecies = 0, Halibut = 0, PacificCod = 0, Pollock = 0, Sablefish = 0))
 
 
-#Bind the vessel length subtotals, all gear subtotals and vessel lenght data:
-WITH_SUBTOTALS2<-rbind(GOA_WIDE, VL_SUBTOTAL_WIDE2)
-WITH_SUBTOTALS2[is.na(WITH_SUBTOTALS2)]<-0
+# Calculate the 'Vessel length' subtotals:
+goa_vessel_subtotal <- fee_detail %>% 
+  filter(FMP_AREA == 'GOA') %>% 
+  group_by(YEAR, TABLE_GEAR, SPECIES_GROUP) %>% 
+  summarize(LOA_GROUP = 'Gear Subtotal',
+            FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Convert from long format to wide format:
+  pivot_wider(id_cols = c(YEAR, TABLE_GEAR, LOA_GROUP), names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  # Set NAs to 0:
+  replace_na(list(AllOtherSpecies = 0, Halibut = 0, PacificCod = 0, Pollock = 0, Sablefish = 0))
 
 
-#Table prep work: number the vessel length categories so they can sort properly in the table:
-WITH_SUBTOTALS2$VESSEL_ORDER<-ifelse(WITH_SUBTOTALS2$LOA_GROUP=='<40',"A",
-                                     (ifelse(WITH_SUBTOTALS2$LOA_GROUP=='40 - 57.5',"B",
-                                             (ifelse(WITH_SUBTOTALS2$LOA_GROUP=='>57.5',"C","D")))))
-
-# Sort the table so far by gear and vessel order:
-GOA_ORDERED<-WITH_SUBTOTALS2[order(WITH_SUBTOTALS2[,1],WITH_SUBTOTALS2[,8]),]
-
-
-#Calculate 'All GOA' subtotals:
-GEAR_SUBTOTAL2<-ddply(GOA, .(YEAR, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-GEAR_SUBTOTAL2$TABLE_GEAR<-"Total All Gear"
-GEAR_SUBTOTAL2$LOA_GROUP<-" "
-GEAR_SUBTOTAL_WIDE2<-dcast(GEAR_SUBTOTAL2, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
+# Calculate 'All Gear' subtotals:
+goa_gear_subtotal <- fee_detail %>% 
+  filter(FMP_AREA == 'GOA') %>% 
+  group_by(YEAR, SPECIES_GROUP) %>% 
+  summarize(TABLE_GEAR = "Total All Gear",
+            LOA_GROUP = as.factor(' '),
+            FEE = sum(FEE_AMOUNT), groups. = 'drop') %>% 
+  pivot_wider(id_cols = c(YEAR, TABLE_GEAR, LOA_GROUP), names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  data.frame()
 
 
-#Bind the vessel length subtotals, all gear subtotals and vessel lenght data:
-GOA_PRE_PRINT<-rbind(GOA_ORDERED[,c(1:7)], GEAR_SUBTOTAL_WIDE2)
-GOA_PRE_PRINT[is.na(GOA_PRE_PRINT)]<-0
+# Bind the vessel length subtotals, all gear subtotals and vessel length data:
+goa <- goa_summary %>% 
+  bind_rows(goa_vessel_subtotal, goa_gear_subtotal) %>% 
+  # Calculate 'All Species' subtotals:
+  mutate(TOTAL = Halibut + PacificCod + Pollock + Sablefish + AllOtherSpecies) %>% 
+  # Reorder the columns:
+  select(TABLE_GEAR, LOA_GROUP, Halibut, Sablefish,  PacificCod, Pollock, AllOtherSpecies, TOTAL) %>% 
+  # Set order for gear and vessel length categories in table:
+  mutate(TABLE_GEAR = as.factor(TABLE_GEAR)) %>% 
+  mutate(LOA_GROUP = as.factor(LOA_GROUP)) %>% 
+  arrange(factor(TABLE_GEAR, levels = c('Hook and Line', 'Jig', 'Pot', 'Trawl', 'Total All Gear')), 
+                 factor(LOA_GROUP, levels = c('<40', '40 - 57.5', '>57.5', 'Gear Subtotal', ' ')))
+  
+# Calculate percentage of total fees by each species:
+goa_pct <- goa %>% 
+  filter(TABLE_GEAR == 'Total All Gear') %>% 
+  mutate(AOS_PCT = round((AllOtherSpecies/TOTAL)*100,0),
+         H_PCT   = round((Halibut/TOTAL)*100,0),
+         PC_PCT  = round((PacificCod/TOTAL)*100,0),
+         P_PCT   = round((Pollock/TOTAL)*100,0),
+         S_PCT   = round((Sablefish/TOTAL)*100,0),
+         T_PCT   = round((TOTAL/TOTAL)*100,0)) %>% 
+  select(H_PCT, S_PCT, PC_PCT, P_PCT, AOS_PCT, T_PCT) %>% 
+  # Rename columns so they can append to the columns in the table:
+  rename(Halibut = H_PCT,
+         Sablefish = S_PCT,
+         PacificCod = PC_PCT,
+         Pollock = P_PCT,
+         AllOtherSpecies = AOS_PCT,
+         TOTAL = T_PCT)
+
+# Create labels for footer of table based on percentages: 
+goa_pct_labels <- data.frame(
+  col_keys = c("TABLE_GEAR", "LOA_GROUP", "Halibut", "Sablefish", "PacificCod", "Pollock", "AllOtherSpecies", "TOTAL"),
+  unit = c("Percent by Species", "", 
+           paste0(goa_pct$Halibut,'%', sep=""), 
+           paste0(goa_pct$Sablefish,'%', sep=""), 
+           paste0(goa_pct$PacificCod,'%', sep=""),
+           paste0(goa_pct$Pollock,'%', sep=""), 
+           paste0(goa_pct$AllOtherSpecies,'%', sep=""), 
+           paste0(goa_pct$TOTAL,'%', sep="")),
+  stringsAsFactors = FALSE )
+
+```
 
 
-#Calculate 'All Species' subtotals:
-GOA_PRE_PRINT$TOTAL<-GOA_PRE_PRINT[,3] + GOA_PRE_PRINT[,4] + GOA_PRE_PRINT[,5] + GOA_PRE_PRINT[,6] + GOA_PRE_PRINT[,7]
+```{r table2, echo=FALSE}
 
-# Calculate percentages:
-GOA_PCT<-GOA_PRE_PRINT[GOA_PRE_PRINT$TABLE_GEAR=='Total All Gear',]
-GOA_PCT$TABLE_GEAR<-" "
-GOA_PCT[,3:8]<-paste(round((GOA_PCT[,3:8]/GOA_PCT$TOTAL)*100,0), "%", sep="") 
-
-# Round off the decimal places:
-GOA_PRE_PRINT[,3:8]<-round(GOA_PRE_PRINT[,3:8], 0)
-
-# {htmlTable} language="en" (English) uses ',' between every 3 numbers
-GOA_PRE_PRINT[,3:8] <- txtInt(GOA_PRE_PRINT[,3:8], language="en",html=TRUE)
-
-#Add dollar signs
-GOA_PRE_PRINT$A <- paste0("$", GOA_PRE_PRINT$A)
-GOA_PRE_PRINT$B <- paste0("$", GOA_PRE_PRINT$B)
-GOA_PRE_PRINT$C <- paste0("$", GOA_PRE_PRINT$C)
-GOA_PRE_PRINT$D <- paste0("$", GOA_PRE_PRINT$D)
-GOA_PRE_PRINT$E <- paste0("$", GOA_PRE_PRINT$E)
-GOA_PRE_PRINT$TOTAL <- paste0("$", GOA_PRE_PRINT$TOTAL)
-
-#Get rid of the $0 values for readability in the final table
-GOA_PRE_PRINT[GOA_PRE_PRINT=="$0"] <- ""
-
-#Combine the tables
-GOA_PRE_PRINT2<-rbind(GOA_PRE_PRINT, GOA_PCT)
-
-#Rename the column headings for printing:
-#GOA_FOR_PRINT<-rename(GOA_PRE_PRINT2, c("TABLE_GEAR"="Gear", "LOA_GROUP"="Vessel Length Category","A"="Halibut", "B"="Sablefish", "C"="Pacific Cod", "D"="Pollock", "E"="All Other Groundfish", "TOTAL"="Total All Species"))
-
-GOA_FOR_PRINT <- GOA_PRE_PRINT2 %>% 
-  rename(Gear = TABLE_GEAR,
-         'Vessel Length Category' = LOA_GROUP,
-         Halibut = A,
-         Sablefish = B,
-         'Pacific Cod' = C,
-         Pollock = D,
-         'All Other Groundfish' = E,
-         'Total All Species' = TOTAL)
-
-# The HTML wrapper in htmlTable gets upset with the '>' symbol, so write it in html instead (also do '<' for consistency
-#GOA_FOR_PRINT[GOA_FOR_PRINT==">57.5"] <- "&gt;57.5"
-#GOA_FOR_PRINT[GOA_FOR_PRINT=="<40"] <- "&lt;40"
-
-GOA_FOR_PRINT[GOA_FOR_PRINT==">57.5"] <- "GT57.5"
-#GOA_FOR_PRINT[GOA_FOR_PRINT=="<40"] <- "&lt;40"
+# Create a table for the Fee Summaries in GOA:
+flextable(goa) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(TABLE_GEAR = "Gear",
+                    LOA_GROUP = "Vessel Length Category",
+                    PacificCod = "Pacific Cod",
+                    AllOtherSpecies = "All Other Species",
+                    TOTAL = "Total All Species")  %>% 
+  # Format the currency columns:
+  colformat_num(j = c(3,4,5,6,7, 8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers, gear labels, and all gear totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 15) %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
+  merge_at(i=15, j=c(1:2)) %>% 
+  # Add dashed horizontal lines before gear subtotals:
+  border(i = c(3,6,10,13), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
+  border(i = c(4,7,11,14), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  fix_border_issues(part = "body") %>% 
+  # Add percentages as a footer hack:
+  set_footer_df(mapping = goa_pct_labels, key = "col_keys") %>% 
+  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
+  bold(part = "footer") %>% 
+  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
+  merge_at(j=c(1:2), part = "footer") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1, part = "header",
+           value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
+  #fix_border_issues(part = "footer")
+  #hline_bottom(part = "footer", border= fp_border(color="black", width = 1))
+  #border_outer(border = fp_border(color="black", width = 1), part = "footer")
 
 
-htmlTable(GOA_FOR_PRINT[,2:8],
-          tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
-          align="lrrrrrr",
-          align.header="lrrrrrr",
-          total="tspanner",
-          tspanner=c("HOOK AND LINE","JIG", "POT","TRAWL",
-                     "TOTAL ALL GEAR", "PERCENT BY SPECIES"),
-          n.tspanner=c(4,4,4,3,1,1),
-          padding.tspanner =c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          css.tspanner.sep = "border-top: 1px solid;",
-          css.total = c("border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "font-weight: 900;",
-                        "font-weight: 900"),
-          rnames=FALSE,
-          css.cell = "padding-left: 1em; "
-          )
+
 ```
 
 [^4]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
@@ -514,122 +532,132 @@ htmlTable(GOA_FOR_PRINT[,2:8],
 
 Table 2-4. -- Observer fees[^6] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Bering Sea/Aleutian Islands_.[^7]
 
-``` {r echo=FALSE, warning=FALSE} 
 
-BSAI<-FEE_DETAIL[FEE_DETAIL$FMP_AREA=='BSAI',]
+```{r table3_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
-# Summarize fee totals for Table 2-3 (BSAI) 
-BSAI_AREA<-ddply(BSAI, .(YEAR, TABLE_GEAR, LOA_GROUP, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
+# BSAI Table prep work: 
 
-# Convert data from long forward to wide format and set NAs to 0:
-BSAI_WIDE<-dcast(BSAI_AREA, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-BSAI_WIDE[is.na(BSAI_WIDE)]<-0
-
-
-#Caluculate the 'Vessel length' subtotals:
-VL_SUBTOTAL2<-ddply(BSAI, .(YEAR, TABLE_GEAR, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-VL_SUBTOTAL2$LOA_GROUP<-"Gear Subtotal"
-VL_SUBTOTAL_WIDE2<-dcast(VL_SUBTOTAL2, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
-VL_SUBTOTAL_WIDE2[is.na(VL_SUBTOTAL_WIDE2)]<-0
+# Summarize fee totals by gear, vessel length, and species for Table 2-4 (BSAI) 
+bsai_summary <- fee_detail %>% 
+  filter(FMP_AREA == 'BSAI') %>% 
+  group_by(YEAR, TABLE_GEAR, LOA_GROUP, SPECIES_GROUP) %>% 
+  summarize(FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Convert from long format to wide format:
+  pivot_wider(names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  # Set NAs to 0:
+  replace_na(list(AllOtherSpecies = 0, Halibut = 0, PacificCod = 0, Pollock = 0, Sablefish = 0))
 
 
-#Bind the vessel length subtotals, all gear subtotals and vessel lenght data:
-WITH_SUBTOTALS2<-rbind(BSAI_WIDE, VL_SUBTOTAL_WIDE2)
-WITH_SUBTOTALS2[is.na(WITH_SUBTOTALS2)]<-0
+# Calculate the 'Vessel length' subtotals:
+bsai_vessel_subtotal <- fee_detail %>% 
+  filter(FMP_AREA == 'BSAI') %>% 
+  group_by(YEAR, TABLE_GEAR, SPECIES_GROUP) %>% 
+  summarize(LOA_GROUP = 'Gear Subtotal',
+            FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Convert from long format to wide format:
+  pivot_wider(id_cols = c(YEAR, TABLE_GEAR, LOA_GROUP), names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  # Set NAs to 0:
+  replace_na(list(AllOtherSpecies = 0, Halibut = 0, PacificCod = 0, Pollock = 0, Sablefish = 0))
 
 
-#Table prep work: number the vessel length categories so they can sort properly in the table:
-WITH_SUBTOTALS2$VESSEL_ORDER<-ifelse(WITH_SUBTOTALS2$LOA_GROUP=='<40',"A",
-                                     (ifelse(WITH_SUBTOTALS2$LOA_GROUP=='40 - 57.5',"B",
-                                             (ifelse(WITH_SUBTOTALS2$LOA_GROUP=='>57.5',"C","D")))))
-
-# Sort the table so far by gear and vessel order:
-BSAI_ORDERED<-WITH_SUBTOTALS2[order(WITH_SUBTOTALS2[,1],WITH_SUBTOTALS2[,8]),]
-
-
-#Calculate 'All BSAI' subtotals:
-GEAR_SUBTOTAL2<-ddply(BSAI, .(YEAR, SPECIES_ORDER), summarize, FEE=sum(as.numeric(FEE_AMOUNT)))
-GEAR_SUBTOTAL2$TABLE_GEAR<-"Total All Gear"
-GEAR_SUBTOTAL2$LOA_GROUP<-" "
-GEAR_SUBTOTAL_WIDE2<-dcast(GEAR_SUBTOTAL2, TABLE_GEAR + LOA_GROUP ~ SPECIES_ORDER, value.var="FEE")
+# Calculate 'All Gear' subtotals:
+bsai_gear_subtotal <- fee_detail %>% 
+  filter(FMP_AREA == 'BSAI') %>% 
+  group_by(YEAR, SPECIES_GROUP) %>% 
+  summarize(TABLE_GEAR = "Total All Gear",
+            LOA_GROUP = as.factor(' '),
+            FEE = sum(FEE_AMOUNT), groups. = 'drop') %>% 
+  pivot_wider(id_cols = c(YEAR, TABLE_GEAR, LOA_GROUP), names_from = SPECIES_GROUP, values_from = FEE) %>% 
+  data.frame()
 
 
-#Bind the vessel length subtotals, all gear subtotals and vessel lenght data:
-BSAI_PRE_PRINT<-rbind(BSAI_ORDERED[,c(1:7)], GEAR_SUBTOTAL_WIDE2)
-BSAI_PRE_PRINT[is.na(BSAI_PRE_PRINT)]<-0
-
-
-#Calculate 'All Species' subtotals:
-BSAI_PRE_PRINT$TOTAL<-BSAI_PRE_PRINT[,3] + BSAI_PRE_PRINT[,4] + BSAI_PRE_PRINT[,5] + BSAI_PRE_PRINT[,6] + BSAI_PRE_PRINT[,7]
-
-# Calculate percentages:
-BSAI_PCT<-BSAI_PRE_PRINT[BSAI_PRE_PRINT$TABLE_GEAR=='Total All Gear',]
-BSAI_PCT$TABLE_GEAR<-" "
-BSAI_PCT[,3:8]<-paste(round((BSAI_PCT[,3:8]/BSAI_PCT$TOTAL)*100,0), "%", sep="") 
-BSAI_PCT[BSAI_PCT=="0%"] <- "&lt;1%"
+# Bind the vessel length subtotals, all gear subtotals and vessel length data:
+bsai <- bsai_summary %>% 
+  bind_rows(bsai_vessel_subtotal, bsai_gear_subtotal) %>% 
+  # Calculate 'All Species' subtotals:
+  mutate(TOTAL = Halibut + PacificCod + Pollock + Sablefish + AllOtherSpecies) %>% 
+  # Reorder the columns:
+  select(TABLE_GEAR, LOA_GROUP, Halibut, Sablefish,  PacificCod, Pollock, AllOtherSpecies, TOTAL) %>% 
+  # Set order for gear and vessel length categories in table:
+  mutate(TABLE_GEAR = as.factor(TABLE_GEAR)) %>% 
+  mutate(LOA_GROUP = as.factor(LOA_GROUP)) %>% 
+  arrange(factor(TABLE_GEAR, levels = c('Hook and Line', 'Jig', 'Pot', 'Trawl', 'Total All Gear')), 
+                 factor(LOA_GROUP, levels = c('<40', '40 - 57.5', '>57.5', 'Gear Subtotal', ' ')))
   
-# Round off the decimal places:
-BSAI_PRE_PRINT[,3:8]<-round(BSAI_PRE_PRINT[,3:8], 0)
+# Calculate percentage of total fees by each species:
+bsai_pct <- bsai %>% 
+  filter(TABLE_GEAR == 'Total All Gear') %>% 
+  mutate(AOS_PCT = round((AllOtherSpecies/TOTAL)*100,0),
+         H_PCT   = round((Halibut/TOTAL)*100,0),
+         PC_PCT  = round((PacificCod/TOTAL)*100,0),
+         P_PCT   = round((Pollock/TOTAL)*100,0),
+         S_PCT   = round((Sablefish/TOTAL)*100,0),
+         T_PCT   = round((TOTAL/TOTAL)*100,0)) %>% 
+  select(H_PCT, S_PCT, PC_PCT, P_PCT, AOS_PCT, T_PCT) %>% 
+  # Rename columns so they can append to the columns in the table:
+  rename(Halibut = H_PCT,
+         Sablefish = S_PCT,
+         PacificCod = PC_PCT,
+         Pollock = P_PCT,
+         AllOtherSpecies = AOS_PCT,
+         TOTAL = T_PCT)
 
-# {htmlTable} language="en" (English) uses ',' between every 3 numbers
-BSAI_PRE_PRINT[,3:8] <- txtInt(BSAI_PRE_PRINT[,3:8], language="en",html=TRUE)
+# Create labels for footer of table based on percentages: 
+bsai_pct_labels <- data.frame(
+  col_keys = c("TABLE_GEAR", "LOA_GROUP", "Halibut", "Sablefish", "PacificCod", "Pollock", "AllOtherSpecies", "TOTAL"),
+  unit = c("Percent by Species", "", 
+           paste0(bsai_pct$Halibut,'%', sep=""), 
+           paste0(bsai_pct$Sablefish,'%', sep=""), 
+           paste0(bsai_pct$PacificCod,'%', sep=""),
+           paste0(bsai_pct$Pollock,'%', sep=""), 
+           paste0(bsai_pct$AllOtherSpecies,'%', sep=""), 
+           paste0(bsai_pct$TOTAL,'%', sep="")),
+  stringsAsFactors = FALSE )
 
-#Add dollar signs
-BSAI_PRE_PRINT$A <- paste0("$", BSAI_PRE_PRINT$A)
-BSAI_PRE_PRINT$B <- paste0("$", BSAI_PRE_PRINT$B)
-BSAI_PRE_PRINT$C <- paste0("$", BSAI_PRE_PRINT$C)
-BSAI_PRE_PRINT$D <- paste0("$", BSAI_PRE_PRINT$D)
-BSAI_PRE_PRINT$E <- paste0("$", BSAI_PRE_PRINT$E)
-BSAI_PRE_PRINT$TOTAL <- paste0("$", BSAI_PRE_PRINT$TOTAL)
-
-#Get rid of the $0 values for readability in the final table
-BSAI_PRE_PRINT[BSAI_PRE_PRINT=="$0"] <- ""
-
-#Combine the tables
-BSAI_PRE_PRINT2<-rbind(BSAI_PRE_PRINT, BSAI_PCT)
-
-#Rename the column headings for printing:
-#BSAI_FOR_PRINT<-rename(BSAI_PRE_PRINT2, c("TABLE_GEAR"="Gear", "LOA_GROUP"="Vessel Length Category","A"="Halibut", "B"="Sablefish", "C"="Pacific Cod", "D"="Pollock", "E"="All Other Groundfish", "TOTAL"="Total All Species"))
-
-BSAI_FOR_PRINT <- BSAI_PRE_PRINT2 %>% 
-  rename(Gear = TABLE_GEAR,
-         'Vessel Length Category' = LOA_GROUP,
-         Halibut = A,
-         Sablefish = B,
-         'Pacific Cod' = C,
-         Pollock = D,
-         'All Other Groundfish' = E,
-         'Total All Species' = TOTAL)
-
-# The HTML wrapper in htmlTable gets upset with the '>' symbol, so write it in html instead (also do '<' for consistency
-#BSAI_FOR_PRINT[BSAI_FOR_PRINT==">57.5"] <- "&gt;57.5"
-#BSAI_FOR_PRINT[BSAI_FOR_PRINT=="<40"] <- "&lt;40"
-
-BSAI_FOR_PRINT[BSAI_FOR_PRINT==">57.5"] <- "GT57.5"
-#BSAI_FOR_PRINT[BSAI_FOR_PRINT=="<40"] <- "&lt;40"
-
-
-htmlTable(BSAI_FOR_PRINT[,2:8],
-          tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
-          align="lrrrrrr",
-          align.header="lrrrrrr",
-          total="tspanner",
-          tspanner=c("HOOK AND LINE","JIG", "POT","TRAWL",
-                     "TOTAL ALL GEAR", "PERCENT BY SPECIES"),
-          n.tspanner=c(4,4,3,2,1,1), #Note that BSAI has different number of rows in each gear type
-          padding.tspanner =c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          css.tspanner.sep = "border-top: 1px solid;",
-          css.total = c("border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "border-top: 1px dashed;",
-                        "font-weight: 900;",
-                        "font-weight: 900"),
-          rnames=FALSE,
-          css.cell = "padding-left: 1em; "
-          )
 ```
 
+
+```{r table3, echo=FALSE}
+
+# Create a table for the Fee Summaries in BSAI:
+flextable(bsai) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(TABLE_GEAR = "Gear",
+                    LOA_GROUP = "Vessel Length Category",
+                    PacificCod = "Pacific Cod",
+                    AllOtherSpecies = "All Other Species",
+                    TOTAL = "Total All Species")  %>% 
+  # Format the currency columns:
+  colformat_num(j = c(3,4,5,6,7,8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers, gear labels, and all gear totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 13) %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
+  merge_at(i=13, j=c(1:2)) %>% 
+  # Add dashed horizontal lines before gear subtotals:
+  border(i = c(3,5,9,11), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
+  border(i = c(4,6,10,12), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  fix_border_issues(part = "body") %>% 
+  # Add percentages as a footer hack:
+  set_footer_df(mapping = bsai_pct_labels, key = "col_keys") %>% 
+  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
+  bold(part = "footer") %>% 
+  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
+  merge_at(j=c(1:2), part = "footer") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1, part = "header",
+           value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
+  #fix_border_issues(part = "footer")
+  #hline_bottom(part = "footer", border= fp_border(color="black", width = 1))
+  #border_outer(border = fp_border(color="black", width = 1), part = "footer")
+
+
+
+```
 [^6]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
 
 [^7]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
