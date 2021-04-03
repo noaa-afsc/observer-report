@@ -48,6 +48,7 @@ if(TIME_SPACE == TRUE){
   
   # TODO TESTING
   # ar_data <- partial_effort; effort <- c("OB", "ZE"); monitored <- "OB"; legend <- T; obscure <- T; n_min <- 5; ob_extend <- 0; output_tbl <- F; vline <- waiver_week
+  # ar_data <- partial_effort; effort <- c("EM"); monitored <- c("EM", "OB"); legend <- T; obscure <- T; n_min <- 5; ob_extend <- 0; output_tbl <- F; vline <- waiver_week
   # domain <- c("TARGET")   # GEAR AND FMP/AREA will be implied
   # domain <- c()          # Domain will be empty vector
   
@@ -99,6 +100,21 @@ if(TIME_SPACE == TRUE){
     ar_data_nmin <- ar_data[, .N, keyby=domain_grp][N>=n_min]  # Filter out domains with < n_min trips (counting by trip_id x AREA, not uniqueN)
     ar_data <- ar_data[ar_data_nmin, on=domain_grp]
     plot_width <- unique(ar_data[, domain_grp, with=F, by=FMP])[, .N, by=.(GEAR, FMP)]   
+    
+    # Set colors for plots 
+    color_tbl <- data.table(POOL = rep(c("OB", "EM", "ZE"), each=2),
+                            GRP = rep(c("Effort", "Monitoring Data"), times=3),
+                            COLOR = c("dodgerblue1", "dodgerblue4", "green3", "green4", "goldenrod4", "black"))
+    color_tbl[, COLOR_lbl := paste(POOL, ifelse(GRP=="Effort", "Effort", "Data"))]
+    color_tbl_lev <- data.table(rbind(
+      cbind(POOL = effort_monitored$EFFORT, GRP = "Effort"),
+      cbind(POOL = effort_monitored$MONITORED, GRP = "Monitoring Data")
+    ))
+    color_tbl <- color_tbl[color_tbl_lev, on=.(POOL, GRP)]
+    color_tbl[, ':=' (POOL = factor(POOL, levels=pool_levels), GRP = factor(GRP, levels=c("Effort", "Monitoring Data")))]
+    setorder(color_tbl, POOL, GRP)
+    color_tbl[, COLOR := factor(COLOR, levels=color_tbl$COLOR)]
+    
     # If obscuring domain X areas with fewer than 3 vessels, separate from full dataset to be drawn will a single tile spanning year instead of week.
     if(obscure==TRUE){
       # Obscure trips here to maintain confidentiality
@@ -110,14 +126,14 @@ if(TIME_SPACE == TRUE){
       
       # Prepare tiles for confidential data
       rect_effort <- copy(ar_data_remv)
-      rect_effort[, COLOR := "red"]              # FIXME - I changed these from I("red") and I("blue") to just red and blue due to class change
+      rect_effort[, GRP := "Effort"]             
       rect_monitored <- rect_effort[POOL %in% effort_monitored$MONITORED & P_OBSERVED >0 ]
-      rect_monitored[, COLOR := "blue"]
+      rect_monitored[, GRP := "Monitoring Data"]
       
       # For domains where P_OBSERVED > 0, first check to see if POOL is in effort_monitored$MONITORED. If so, copy that tile and make it fill = "blue"
       ar_combined_rect <- data.table()
       for(l in 1:nrow(effort_monitored_tbl)){
-        for(m in unique(ar_effort$GEAR)){
+        for(m in unique(rect_effort$GEAR)){
           if(nrow(rect_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0) next()   # If there is no effort pool, skip.
           ar_combo_rect <- rbind(
             cbind(rect_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]], effort_monitored_tbl[l, .(GRP_lbl)]),
@@ -125,12 +141,12 @@ if(TIME_SPACE == TRUE){
           ar_combined_rect <- rbind(ar_combined_rect, ar_combo_rect)
         }
       }
-      
       ar_combined_rect[, split_char := nchar(sapply(strsplit(as.character(GRP_lbl), split='x'), '[[', 2))]
       ar_combined_rect[, DATA_POOL := substr(GRP_lbl, start=nchar(as.character(GRP_lbl)) - split_char+2, stop=nchar(as.character(GRP_lbl))-5)]
       ar_combined_rect[, split_char := NULL]
-      ar_combined_rect[POOL != DATA_POOL, P_OBSERVED := NA_real_]  # If the effort pool (POOL) matches DATA_POOL, then keep P_OBSERVED. Otherwise, force to NA
-      ar_combined_rect[COLOR=="blue", P_OBSERVED := NA_real_]      # For monitored trips, removed P_OBSERVED, as we'll only use P_OBSERVED from effort (red) trips if relevant
+      ar_combined_rect[DATA_POOL != substr(GRP_lbl, 1, 2), P_OBSERVED := NA_real_]
+      ar_combined_rect <- ar_combined_rect[color_tbl, on=.(POOL, GRP)]   # Merge in COLOR and COLOR_lbl
+      setorder(ar_combined_rect, COLOR)
     }
     
     # Split trips into 'effort' and 'monitored' and convert into weekly bin counts.
@@ -150,7 +166,7 @@ if(TIME_SPACE == TRUE){
     ar_combined <- data.table()
     for(l in 1:nrow(effort_monitored_tbl)){
       for(m in unique(ar_effort$GEAR)){
-        if(nrow(ar_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0) next()  # If there is no effort pool, skip.
+        if((nrow(ar_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0)) next()  # TODO - TEST TO SEE IF I NEED ADDITIONAL '& (nrow(ar_combined_rect[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0)' If there is no effort pool, skip.
         ar_combo <- rbind(
           cbind(ar_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]], effort_monitored_tbl[l, .(GRP_lbl)]),
           cbind(ar_monitored[GEAR==m & POOL==effort_monitored_tbl[l, MONITORED]], effort_monitored_tbl[l, .(GRP_lbl)]))[!is.na(POOL)]
@@ -170,6 +186,10 @@ if(TIME_SPACE == TRUE){
     x_maj <- c(week(as.Date(paste(ar_year, seq(1,12,3), "01", sep="-"))), week(as.Date(paste0(ar_year, "-12-31"))) + 1)  # Tick marks for each week, plus one week
     x_min <- week(as.Date(paste(ar_year, 1:12, "01", sep="-")))
     
+    # Apply colors
+    ar_combined <- ar_combined[color_tbl, on=.(POOL, GRP)]   # Merge in COLOR and COLOR_lbl
+    setorder(ar_combined, COLOR)
+    
     # Build plots by GEAR and FMP
     for(h in unique(ar_combined$GEAR)){
       # TEST:    h <- "HAL"      h <- "POT"     h <- "TRW"
@@ -180,46 +200,47 @@ if(TIME_SPACE == TRUE){
         # TEST:      i <- "BSAI";       i <- "GOA"
         plot_data <- plot_data_gear[FMP==i & N!=0]       # Only grab all weeks in FMP with at least one trip
         
+        # Initialize plot and facets
+        p <- ggplot(mapping = aes(x=WEEK, y=AREA, fill=I(COLOR), color=I(COLOR))) 
+        if(!is.null(vline)) p <- p + geom_vline(xintercept=vline, linetype=2)       # If specified, add vertical lines
+        if("TARGET" %in% domain) p <- p + facet_grid(GRP_lbl~GEAR+FMP+TARGET_lbl, drop=TRUE) else p <- p + facet_grid(GRP_lbl~GEAR+FMP, drop=TRUE)
+        
         if(obscure==FALSE){
           levs <- unique(plot_data$AREA); levs <- levs[order(levs)]    # Exclude unused levels for AREA factor
           plot_data[, AREA := factor(AREA, levels=levs)]
-          rect_dat <- data.table()
+          plot_clr_lev <- unique(plot_data[, .(COLOR, COLOR_lbl)])
         } else {
           rect_dat <- ar_combined_rect[GEAR==h & FMP==i]
           levs <- union(unique(plot_data$AREA), unique(rect_dat$AREA)); levs <- levs[order(levs)]    # Use this to ensure the order of AREAS on y-axis is correct and no areas are dropped
           plot_data[, AREA := factor(AREA, levels=levs)]
           rect_dat[, AREA := factor(AREA, levels=levs)]
-          rect_dat[, Y_NUDGE := ifelse(COLOR=="red", 1/8, -1/8)]
+          rect_dat[, Y_NUDGE := ifelse(GRP=="Effort", 1/8, -1/8)]
+          plot_clr_lev <- setorder(funion(rect_dat[, .(COLOR, COLOR_lbl)], plot_data[, .(COLOR, COLOR_lbl)]), COLOR)
+          if(nrow(rect_dat) >0 ){
+            p <- p + 
+              geom_tile(data=rect_dat, aes(x=mean(c(1,54)), y=as.numeric(AREA)+Y_NUDGE, color=I(COLOR)), width=52, height=0.5, alpha=0.5, fill="white", size=0.25) +
+              geom_text(data=rect_dat, aes(x=mean(c(1,54)), y=AREA, label=ifelse(is.na(P_OBSERVED), "", formatC(P_OBSERVED, digits=2, format="f"))), position=position_nudge(y=3/16), size=2.5, color="black") 
+          }
         }
         
-        # Create plot
-        p <- ggplot() 
-        if(!is.null(vline)) p <- p + geom_vline(xintercept=vline, linetype=2)       # If specified, add vertical lines
-        if("TARGET" %in% domain) p <- p + facet_grid(GRP_lbl~GEAR+FMP+TARGET_lbl, drop=TRUE) else p <- p + facet_grid(GRP_lbl~GEAR+FMP, drop=TRUE)
         p <- p + 
-          geom_tile(data=plot_data[GRP=="Effort"], aes(x=WEEK, y=AREA, fill=GRP, alpha=N), height=0.5, position=position_nudge(y=1/8)) + 
-          geom_tile(data=plot_data[GRP=="Monitoring Data"], aes(x=WEEK, y=AREA, fill=GRP, alpha=N), height=0.5, position=position_nudge(y=-1/8)) + 
-          scale_fill_manual(values=c("red", "blue")) +
+          geom_tile(data=plot_data[GRP=="Effort"], aes(alpha=N), height=0.5, size=0.25, position=position_nudge(y=1/8)) + 
+          geom_tile(data=plot_data[GRP=="Monitoring Data"], aes(alpha=N), height=0.5, size=0.25, position=position_nudge(y=-1/8)) + 
           scale_y_discrete(limits=levs) + 
-          scale_alpha_continuous(name="Relative Concentration", range=c(0.15,0.75), breaks=seq(0.25, 1, 0.25), limits=c(0,1)) +  
+          scale_alpha_continuous(name="Relative Concentration", range=c(0.15,0.95), breaks=seq(0.25, 1, 0.25), limits=c(0,1)) +  
           scale_x_continuous(limits=c(1, 54), breaks=x_maj, labels=c("Jan", "Apr", "Jul", "Oct", "Jan"), minor_breaks = x_min) + 
-          labs(x="Month", y="Area", fill="") + 
-          theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5), strip.text=element_text(margin=ggplot2::margin(0.05, 0.05, 0.05, 0.05,"cm")), legend.position="bottom") 
-          
-        # If there are obscured tiles, add them on now
-        if(obscure==TRUE & nrow(rect_dat) >0 ){
-          p <- p + 
-            geom_tile(data=rect_dat, aes(x=mean(c(1,54)), y=as.numeric(AREA)+Y_NUDGE, color=I(COLOR)), width=52, height=0.5, alpha=0.5, fill="white") +
-            geom_text(data=rect_dat, aes(x=mean(c(1,54)), y=AREA, label=ifelse(is.na(P_OBSERVED), "", formatC(P_OBSERVED, digits=2, format="f"))), position=position_nudge(y=3/16), size=2.5) 
-        }
+          labs(x="Month", y="Area") + 
+          theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5), strip.text=element_text(margin=ggplot2::margin(0.05, 0.05, 0.05, 0.05,"cm")), legend.position="bottom") +
+          scale_fill_identity(guide="legend", breaks=unique(plot_clr_lev$COLOR), labels=unique(plot_clr_lev$COLOR_lbl))  +   # The order is also not idea...
+          guides(fill=guide_legend(order=1, title=element_blank(), label.position="top"), alpha=guide_legend(order=2, title.position="top")) 
         p_lst[[i]] <- p
       }
       
       # Combine FMPs for each GEAR plot object
       if(legend==T) {
-        gear_plt[[h]] <- ggarrange(plotlist=p_lst, nrow=1, common.legend = T, legend="bottom", widths=plot_width$N/sum(plot_width$N))
+        gear_plt[[h]] <- ggarrange(plotlist=p_lst, nrow=1, common.legend = T, legend="bottom", widths=plot_width[GEAR==h, N]/plot_width[GEAR==h, sum(N)])
       } else {
-        gear_plt[[h]] <- ggarrange(plotlist=p_lst, nrow=1, legend="none", widths=plot_width$N/sum(plot_width$N))
+        gear_plt[[h]] <- ggarrange(plotlist=p_lst, nrow=1, legend="none", widths=plot_width[GEAR==h, N]/plot_width[GEAR==h, sum(N)])
       }
     }
     
@@ -232,36 +253,54 @@ if(TIME_SPACE == TRUE){
   } # ts_fun_final END
   
   # Effort/Monitoring plots by Gear, Pool, and FMP. Minimal obscuring is required for these plots (Areas with < 3 vessels)
-  obze_ts <- ts_fun_final(partial_effort, effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)
-  obem_ts <- ts_fun_final(partial_effort[GEAR != "TRW"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)
+  ts_obze <- ts_fun_final(partial_effort, effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)
+  ts_emob <- ts_fun_final(partial_effort[GEAR != "TRW"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)
   
-  obze_ts$HAL
-  obze_ts$POT
-  obze_ts$TRW
-  obem_ts$HAL
-  obem_ts$POT
+  # Confidential versions (no obscuring)
+  ts_obze_c <- ts_fun_final(partial_effort, effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, obscure=F)
+  ts_emob_c <- ts_fun_final(partial_effort[GEAR != "TRW"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, obscure=F)
+
+  # With Target (Targets with < 5 trips excluded)
+  ts_obze_t <- ts_fun_final(partial_effort, effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, domain="TARGET")                    # Figs B3-B4 in 2019 AR
+  ts_emob_t <- ts_fun_final(partial_effort[GEAR != "TRW"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, domain="TARGET")  # Figs B6-B7 in 2019 AR
+
+  # With Target (confidential versions, for potential use by stock assessors)
+  ts_obze_tc <- ts_fun_final(partial_effort, effort=c("OB", "ZE"), monitored="OB", vline=waiver_week, domain="TARGET", obscure=F)
+  ts_emob_tc <- ts_fun_final(partial_effort[GEAR != "TRW"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week, domain="TARGET", obscure=F)
   
-  # TODO - Could also maybe color each pool separately, and have a brighter version of the color represent monitored?
+  #=======================#
+  # Save Time Space Plots #
   
-  # EM POT in BSAI has few vessel in each area
-  partial_effort[POOL=="EM" & GEAR=="POT", uniqueN(PERMIT)]
-  partial_effort[POOL=="EM" & GEAR=="POT", uniqueN(PERMIT), keyby=AREA]
-  
-  
-  # Obscured versions for public use
-  plt_hal <- ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)      # Fig B3 in 2019 AR
-  plt_pot <- ts_fun_final(partial_effort[GEAR=="POT"], effort=c("OB", "ZE"), monitored="OB", vline=waiver_week)      # Fig B4 in 2019 AR
-  plt_trw <- ts_fun_final(partial_effort[GEAR=="TRW"], effort=c("OB"), monitored="OB", vline=waiver_week)            # Fig B5 in 2019 AR
-  
-  plt_em_hal <- ts_fun_final(partial_effort[GEAR=="HAL"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)   # FIG B6 in 2019 AR
-  plt_em_pot <- ts_fun_final(partial_effort[GEAR=="POT"], effort=c("EM"), monitored=c("EM", "OB"), vline=waiver_week)   # Fig B7 in 2019 AR
-  
-  # Save plots to a single pdf
-  plot_list <- list(plt_hal_con, plt_hal, plt_pot_con, plt_pot, plt_trw_con, plt_trw, plt_em_hal_con, plt_em_hal, plt_em_pot_con, plt_em_pot)
-  pdf("figures/time_space_plots.pdf", onefile=T, width=11, height=8.5)
-  for(i in seq(length(plot_list))){
+  # Save png versions for AR Report
+  plot_list <- c(ts_obze, ts_emob)
+  plot_fn <- c(paste0("figures/ts_obze_", names(ts_obze), ".png"), paste0("figures/ts_emob_", names(ts_emob), ".png"))
+  plot_dim <- list(height = ifelse(plot_fn %like% "TRW", 5, 9),
+                   width = rep(7.5, times=length(plot_fn)))
+  for(i in 1:length(plot_list)){
+    png(plot_fn[i], width=plot_dim$width[i], height=plot_dim$height[i], units="in", res=320)
     print(plot_list[[i]])
-    }
+    dev.off()
+  }
+  
+  #===================#
+  # Save pdf versions #
+  # Alternate obscured and unobscured versions
+  
+  plot_list <- c(c(rbind(ts_obze, ts_obze_c)), c(rbind(ts_emob, ts_emob_c)))
+  plot_fn <- c(c(rbind(names(ts_obze), names(ts_obze_c))), c(rbind(names(ts_emob), names(ts_emob_c))))
+  pdf("figures/ts_all.pdf", onefile=T, width=8.5, height=11)
+  for(i in 1:length(plot_list)){
+    print(plot_list[[i]])
+  } 
+  dev.off()
+  
+  # Same thing, but including target
+  plot_list <- c(c(rbind(ts_obze_t, ts_obze_tc)), c(rbind(ts_emob_t, ts_emob_tc)))
+  plot_fn <- c(c(rbind(names(ts_obze_t), names(ts_obze_tc))), c(rbind(names(ts_emob_t), names(ts_emob_tc))))
+  pdf("figures/ts_all_target.pdf", onefile=T, width=11, height=8.5)
+  for(i in 1:length(plot_list)){
+    print(plot_list[[i]])
+  } 
   dev.off()
   
 } # TIMESPACE PLOTS END
