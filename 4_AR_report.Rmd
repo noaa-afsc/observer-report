@@ -4,7 +4,7 @@ author: "Fishery Monitoring Science Committee"
 always_allow_html: true
 output:
   word_document:
-    reference_docx: word-styles-reference-01.docx
+    reference_docx: docs/word-styles-reference-01.docx
   pdf_document: default
 ---
 
