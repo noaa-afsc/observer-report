@@ -1,5 +1,5 @@
 ---
-title: "Deployment Performance Review of the 2019 North Pacific Observer Program"
+title: "Deployment Performance Review of the 2020 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
 always_allow_html: true
 output:
