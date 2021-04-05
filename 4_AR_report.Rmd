@@ -2047,7 +2047,7 @@ kable(em_times)
 
 #####
 
-####`r tbl_nums('Pollock.observed.table', caption = "The number of *TRW* pollock deliveries by port and coverage category.")`  
+####`r tbl_nums('Pollock.observed.table', caption = "The number of pollock deliveries made by vessels in the *TRW* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
 Pollock.observed.table[c(4:5)] <- lapply(Pollock.observed.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
@@ -2057,7 +2057,7 @@ kable(Pollock.observed.table)
 
 #####
 
-####`r tbl_nums('Pollock.efp.table', caption = "The number of *EM TRW EFP* pollock deliveries by port and coverage category.")`  
+####`r tbl_nums('Pollock.efp.table', caption = "The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.efp.table, echo=FALSE, tab.cap=""}
 Pollock.efp.table[c(4:5)] <- lapply(Pollock.efp.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
