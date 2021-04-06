@@ -1,0 +1,737 @@
+
+output:
+  html_document: default
+  word_document: default
+---
+```{r background_info, include=FALSE}
+
+# -------------------------------------------------------------------------------------------------------------- #
+
+# Program:AR_descriptive_2019_additional_tables.Rmd                                         
+# Project:Observer Program Annual Report Descriptive Chapter                                      
+# Location: S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info 
+#      or: C:\Teleworking\Obs Annual Report\Ch 4
+#
+# Objectives:                                                                  
+# - Summarize observed and total catch by FMP area, sector, RPP, gear, SPECIES GROUP, and retained flag.  
+#   These are supplementary tables to Chapter 4. A version similar to these was included in previous Annual Reports. 
+#   Note: the GOA RPP CVs are NOT distinguished from non-RPP CVs (despite full coverage vs. partial coverage) just as in the
+#         2016 Obs Program Annual Report. 
+# 
+# - Summarize a time series of catch under the restructured observer program (2013-current year) by FMP area, 
+#   sector, year, DISPOSITION, and gear. These are supplementary tables to Chapter 4. A version similar to these was 
+#   included in previous Annual Reports.  
+#
+# Inputs:     
+# Normal locations:  
+#  - S:\Observer Program Annual Report\Descriptive_Chapter\AR_descriptive_helper.r 
+#      - fig.theme  (libraries, ggplot themes, etc.)
+#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_data.Rdata 
+#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website 
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2018) (NOT USED in this script)
+#     - VALHALLA - the original Valhalla data (NOT USED in this script)
+#     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
+#                        (NOT USED in this script)
+#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC (NOT USED in this script)
+#
+# Coronavirus telework locations:
+#  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_helper.r
+#      - fig.theme  (libraries, ggplot themes, etc.)
+#  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_data.Rdata
+#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website 
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2018) (NOT USED in this script)
+#     - VALHALLA - the original Valhalla data (NOT USED in this script)
+#     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
+#                        (NOT USED in this script)
+#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC (NOT USED in this script)
+#
+# Output:  
+# Normal locations:  
+#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_additional_tables.Rdata 
+#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website 
+#     - full.prep - a timeseries summary of observed and total catch (incl. percent observed) for retained and discarded catch by
+#                   year, FMP area, gear, sector, and disposition (retained/discarded).  Includes formatting.
+#     - species.wide2 - a summary of 2019 observed and total catch (incl. percent observed) for retained and discarded catch by
+#                       FMP area, sector, and species group. 
+#     - with.totals - summary of 2019 total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#
+# Coronavirus telework locations:
+#  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_additional_tables.Rdata
+#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website 
+#     - full.prep - a timeseries summary of observed and total catch (incl. percent observed) for retained and discarded catch by
+#                   year, FMP area, gear, sector, and disposition (retained/discarded).  Includes formatting.
+#     - species.wide2 - a summary of 2019 observed and total catch (incl. percent observed) for retained and discarded catch by 
+#                       FMP area, sector, and species group. 
+#     - with.totals - summary of 2019 total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+# --------------------------------------------------------------------------------------------------------- #
+
+
+```
+
+# 4 Supplemental Tables for Descriptive Information
+
+```{r data_inputs, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+# LOAD DATA 
+
+YEAR <- 2019
+
+#source("S:/Observer Program Annual Report/Descriptive_Chapter/AR_descriptive_helper.r")
+source("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_helper.r")
+
+# Typical way to load the data:
+#load(paste0("S:/Observer Program Annual Report/", 
+#            YEAR, 
+#            "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
+#            YEAR, "_data.RData"))
+
+# For 2019 because of teleworking:
+load(paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_data.RData"))
+
+#Clean up workspace (Remove everything EXCEPT the objects listed)
+rm(list= ls()[!(ls() %in% c('YEAR', 'with.totals', 'catch.tables', 'fig.theme'))])
+
+```
+
+
+
+```{r summarize.species, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+# Summarize catch by FMP area, sector, gear, species, and retained flag:
+species.summary <- with.totals %>% 
+  # Define sector using the RPP flag or the processing sector:
+  group_by(FMP, PROCESSING_SECTOR, SPECIES_GROUP, OBS_FOR_EST, AGENCY_GEAR_CODE, RETAINED) %>% 
+  summarize(WEIGHT = sum(TONS))
+
+# Convert the catch summaries to a wide format:
+species.wide <- species.summary %>% 
+  pivot_wider(id_cols = c(FMP, PROCESSING_SECTOR, SPECIES_GROUP, AGENCY_GEAR_CODE, RETAINED),
+              names_from = OBS_FOR_EST,
+              values_from = WEIGHT)
+
+species.wide[is.na(species.wide)] <- 0
+
+#Calculate the percent observed:
+species.wide <- species.wide %>% 
+  group_by(FMP, PROCESSING_SECTOR, SPECIES_GROUP, AGENCY_GEAR_CODE, RETAINED, Observed, Total) %>% 
+  # Summarize AND format with percentage signs:
+  summarize(PERCENT_OBSERVED = paste(round((Observed/Total),2)*100, "%", sep=""))
+    
+
+#Do some rounding and formatting:
+# {htmlTable} language="en" (English) uses ',' between every 3 numbers
+species.wide$Observed <- ifelse((species.wide$Observed > 0 & species.wide$Observed < 0.5), "<1", 
+                        txtInt(round(species.wide$Observed, 0), language="en",html=TRUE))
+species.wide$Total <- ifelse((species.wide$Total > 0 & species.wide$Total < 0.5), "<1", 
+                        txtInt(round(species.wide$Total, 0), language="en",html=TRUE))
+
+
+### Interactive versions
+species.wide2 <- as.data.frame(species.wide)
+
+species.wide2 <- species.wide2 %>%
+  mutate(FMP= factor(FMP),
+         PROCESSING_SECTOR = revalue(factor(PROCESSING_SECTOR), 
+                                     c("CP"="Catcher/Processor", 
+                                       "M"="Mothership", 
+                                       "S" = "Catcher Vessel")),
+         SPECIES_GROUP = revalue(factor(SPECIES_GROUP), 
+                                 c("AMCK"="Atka Mackerel",
+                                    "FLAT"="Flatfish (BSAI)",
+                                    "HLBT"="Pacific Halibut",
+                                    "PCOD"="Pacific Cod",
+                                    "PLCK"="Walleye Pollock",
+                                    "ROCK"="Rockfish",
+                                    "SABL"="Sablefish (Black Cod)",
+                                    "TURB"="Turbot",
+                                    "USKT"="Skates",
+                                    "USRK"="Sharks",
+                                    "OTHR"="Other Groundfish",
+                                    "SFL1"="Shallow-water Flatfish (GOA)",
+                                    "DFL4"="Deepwater Flatfish (GOA)")),
+         AGENCY_GEAR_CODE = revalue(factor(AGENCY_GEAR_CODE), 
+                                    c("PTR"="Pelagic trawl",
+                                      "NPT"="Non-pelagic trawl",
+                                      "HAL"="Hook and line",
+                                      "JIG"="Jig",
+                                      "POT"="Pot")),
+         RETAINED = revalue(factor(RETAINED), 
+                            c("D"="Discarded",
+                              "R"="Retained"))
+         ) %>%
+  plyr::rename(replace=c(FMP = "FMP Area", PROCESSING_SECTOR="Sector", SPECIES_GROUP="Species Group", 
+                 AGENCY_GEAR_CODE="Gear", RETAINED="Retained/Discarded", Observed="Observed Catch", 
+                 Total="Total Catch",PERCENT_OBSERVED="Percent Observed"))
+# colnames(WIDE2) <- c("FMP Area", "Sector", "Gear", "Retained/Discarded","Observed Catch", "Total Catch","OMIT","Percent Observed")
+
+#If you want Discarded/Retained in bold then add this argument to mutate():
+# `Retained/Discarded` = fct_recode(`Retained/Discarded`, `<span style='font-weight: 900;'>Discarded` = "Discarded", `<span style='font-weight: 900;'>Retained` = "Retained")
+
+for.tables <- species.wide2 %>% 
+  mutate(`Percent Observed` = paste0("<span style='font-weight: 900;'>",`Percent Observed`)) %>% 
+  data.table::setDT() %>% 
+  data.table::dcast(`FMP Area` + `Sector` + `Species Group` + `Retained/Discarded` ~ `Gear`,
+                    value.var=c("Observed Catch", "Total Catch", "Percent Observed"),
+                    drop = FALSE) %>% data.frame() %>% 
+  select(FMP.Area, Sector, Species.Group, Retained.Discarded, 
+         Observed.Catch_Hook.and.line, Total.Catch_Hook.and.line, Percent.Observed_Hook.and.line,
+         Observed.Catch_Jig, Total.Catch_Jig, Percent.Observed_Jig,
+         Observed.Catch_Non.pelagic.trawl, Total.Catch_Non.pelagic.trawl, Percent.Observed_Non.pelagic.trawl,
+         Observed.Catch_Pot, Total.Catch_Pot, Percent.Observed_Pot,
+         Observed.Catch_Pelagic.trawl, Total.Catch_Pelagic.trawl, Percent.Observed_Pelagic.trawl)
+
+```
+
+
+### Additional Tables 
+
+Table 4-5. Monitored catch (metric tons), total catch, and percent monitored (%) of groundfish species and halibut retained and discarded in `r as.numeric(format(Sys.Date(), "%Y"))-1` by catcher/processors in the Gulf of Alaska. Empty cells indicate that no catch occurred. See Appendix B for species grouping definitions.
+
+```{r GOA_CP_TABLE, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+  
+# Refine to just GOA catcher/processors:
+goa.cp <- for.tables %>% 
+  filter(FMP.Area %in% "GOA",
+         Sector %in% "Catcher/Processor") %>% 
+  select(-c(FMP.Area, Sector)) %>%
+  arrange(Species.Group,desc(Retained.Discarded))
+
+
+htmlTable(goa.cp[,2:17],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          header=c("","Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%"),
+          align="lrrrrrrrrrrrrrrr", #individual column alignment
+          align.header="lrrrrrrrrrrrrrrr",
+          total="tspanner",
+          tspanner= levels(goa.cp$Species.Group),
+          n.tspanner=c(2,2,2,2,2,2,2,2,2,2,2,2,2), #number of species groups
+          css.tspanner.sep = "border-top: 1px solid;",
+          css.total = ";",
+          #Number of hierarchical column spanners you will have
+          cspan.rgroup = 2,
+          #In order to rbind() the vectors must have equal number of elements. "NA" will serve as a placeholder but no column will be created. cgroup and n.cgroup work together to define the column spanners. In this example, the "5" means the highest column spanner spreads over 5 of the lower column spanner headers (the 5 gear types). The "1" defines the blank/null headers which is "" in cgroup
+          n.cgroup=rbind(c(1, 5, NA, NA, NA, NA),
+                         c(1, 3, 3, 3, 3, 3)),
+          #The number of labels must match up to n.cgroup in each of the vectors (rows)
+          cgroup= rbind(c("", "GULF OF ALASKA CATCHER/PROCESSORS", 
+                          NA, NA, NA, NA),
+                        c("","HOOK AND LINE", "JIG" ,
+                          "NON-PELAGIC TRAWL", "POT", 
+                          "PELAGIC TRAWL")),
+
+          
+          css.cgroup = "font-size: 15px;",
+          rnames=FALSE,
+          css.cell = "padding-left: 1.5em; "
+          )
+
+```
+
+**INSERT PAGE BREAK** 
+
+Table 4-6. Monitored catch (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` by catcher vessels in the Gulf of Alaska. Empty cells indicate that no catch occurred. See Appendix B for species grouping definitions.
+
+```{r GOA_CV_TABLE, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+  
+goa.cv <- for.tables %>% 
+  filter(FMP.Area %in% "GOA",
+         Sector %in% "Catcher Vessel") %>% 
+  select(-c(FMP.Area, Sector)) %>%
+  arrange(Species.Group,desc(Retained.Discarded))
+
+htmlTable(goa.cv[,2:17],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          header=c("","Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%"),
+          align="lrrrrrrrrrrrrrrr", #individual column alignment
+          align.header="lrrrrrrrrrrrrrrr",
+          total="tspanner",
+          tspanner= levels(goa.cv$Species.Group),
+          n.tspanner=c(2,2,2,2,2,2,2,2,2,2,2,2,2), #number of species groups
+          css.tspanner.sep = "border-top: 1px solid;",
+          css.total = ";",
+          cspan.rgroup = 2,
+          cgroup= rbind(c("", "GULF OF ALASKA CATCHER VESSELS", NA, NA, NA, NA),
+                        c("","HOOK AND LINE", "JIG" ,
+                          "NON-PELAGIC TRAWL", "POT", 
+                          "PELAGIC TRAWL")),
+          n.cgroup=rbind(c(1, 5, NA, NA, NA, NA), #First column spanner 
+                         c(1, 3, 3, 3, 3, 3)), #Second column spanner
+          css.cgroup = "font-size: 15px;",
+          rnames=FALSE,
+          css.cell = "padding-left: 1.5em; "
+          )
+
+```
+
+**INSERT PAGE BREAK** 
+
+Table 4-7. Monitored catch (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` by catcher/processors in the Bering Sea/Aleutian Islands. Empty cells indicate that no catch occurred.  
+
+```{r BSAI_CP_TABLE, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+  
+bsai.cp <- for.tables %>% 
+  filter(FMP.Area %in% "BSAI",
+         Sector %in% "Catcher/Processor") %>% 
+  select(-c(FMP.Area, Sector)) %>%
+  arrange(Species.Group,desc(Retained.Discarded))
+
+htmlTable(bsai.cp[,2:17],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          header=c("","Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%"),
+          align="lrrrrrrrrrrrrrrr", #individual column alignment
+          align.header="lrrrrrrrrrrrrrrr",
+          total="tspanner",
+          tspanner= levels(bsai.cp$Species.Group),
+          n.tspanner=c(2,2,2,2,2,2,2,2,2,2,2,2,2), #number of species groups
+          css.tspanner.sep = "border-top: 1px solid;",
+          css.total = ";",
+          cspan.rgroup = 2,
+          cgroup= rbind(c("", "BERING SEA/ALEUTIAN ISLANDS CATCHER/PROCESSORS", NA, NA, NA, NA),
+                        c("","HOOK AND LINE", "JIG" ,
+                          "NON-PELAGIC TRAWL", "POT", 
+                          "PELAGIC TRAWL")),
+          n.cgroup=rbind(c(1, 5, NA, NA, NA, NA), #First column spanner 
+                         c(1, 3, 3, 3, 3, 3)), #Second column spanner
+          css.cgroup = "font-size: 15px;",
+          rnames=FALSE,
+          css.cell = "padding-left: 1.5em; "
+          )
+
+```
+
+**INSERT PAGE BREAK** 
+
+Table 4-8. Monitored catch (metric tons), total catch, and percent monitored (%) of groundfish and halbiut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` by catcher vessels delivering to motherships in the Bering Sea/Aleutian Islands. Empty cells indicate that no catch occurred. 
+
+```{r BSAI_M_TABLE, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+  
+bsai.m <- for.tables %>% 
+  filter(FMP.Area %in% "BSAI",
+         Sector %in% "Mothership") %>% 
+  select(-c(FMP.Area, Sector)) %>%
+  arrange(Species.Group,desc(Retained.Discarded))
+
+htmlTable(bsai.m[,2:17],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          header=c("","Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%"),
+          align="lrrrrrrrrrrrrrrr", #individual column alignment
+          align.header="lrrrrrrrrrrrrrrr",
+          total="tspanner",
+          tspanner= levels(bsai.m$Species.Group),
+          n.tspanner=c(2,2,2,2,2,2,2,2,2,2,2,2,2), #number of species groups
+          css.tspanner.sep = "border-top: 1px solid;",
+          css.total = ";",
+          cspan.rgroup = 2,
+          cgroup= rbind(c("", "BERING SEA/ALEUTIAN ISLANDS CATCHER VESSELS DELIVERING TO MOTHERSHIPS", NA, NA, NA, NA),
+                        c("","HOOK AND LINE", "JIG" ,
+                          "NON-PELAGIC TRAWL", "POT", 
+                          "PELAGIC TRAWL")),
+          n.cgroup=rbind(c(1, 5, NA, NA, NA, NA), #First column spanner 
+                         c(1, 3, 3, 3, 3, 3)), #Second column spanner
+          css.cgroup = "font-size: 15px;",
+          rnames=FALSE,
+          css.cell = "padding-left: 1.5em; "
+          )
+
+```
+
+**INSERT PAGE BREAK**
+
+Table 4-9. Monitored catch (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` by catcher vessels delivering shoreside in the Bering Sea/Aleutian Islands. Empty cells indicate that no catch occurred. 
+
+```{r BSAI_CV_TABLE, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+  
+bsai.cv <- for.tables %>% 
+  filter(FMP.Area %in% "BSAI",
+         Sector %in% "Catcher Vessel") %>% 
+  select(-c(FMP.Area, Sector)) %>%
+  arrange(Species.Group,desc(Retained.Discarded))
+
+htmlTable(bsai.cv[,2:17],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          header=c("","Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%","Monitored","Total","%",
+                   "Monitored","Total","%"),
+          # header=c("","Observed","Total","Observed","Total",
+          #          "Observed","Total","Observed","Total",
+          #          "Observed","Total"),
+          align="lrrrrrrrrrrrrrrr", #individual column alignment
+          align.header="lrrrrrrrrrrrrrrr",
+          total="tspanner",
+          tspanner= levels(bsai.cv$Species.Group),
+          n.tspanner=c(2,2,2,2,2,2,2,2,2,2,2,2,2), #number of species groups
+          css.tspanner.sep = "border-top: 1px solid;",
+          css.total = ";",
+          cspan.rgroup = 2,
+          cgroup= rbind(c("", "BERING SEA/ALEUTIAN ISLANDS CATCHER VESSELS DELIVERING SHORESIDE", NA, NA, NA, NA),
+                        c("","HOOK AND LINE", "JIG" ,
+                          "NON-PELAGIC TRAWL", "POT", 
+                          "PELAGIC TRAWL")),
+          n.cgroup=rbind(c(1, 5, NA, NA, NA, NA), #First column spanner
+                         c(1, 3, 3, 3, 3, 3)), #Second column spanner
+          # n.cgroup=rbind(c(1, 5, NA, NA, NA, NA), #First column spanner 
+          #                c(1, 2, 2, 2, 2, 2)), #Second column spanner
+          css.cgroup = "font-size: 15px;",
+          rnames=FALSE,
+          css.cell = "padding-left: 1.5em; "
+          )
+
+```
+
+
+
+```{r prep_BY_allyears_allspecies, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+
+# Create a new SECTOR field by translating PROCESSING_SECTOR and RPP:
+#table(catch.tables$PROCESSING_SECTOR, catch.tables$RPP)
+
+catch.tables <- catch.tables %>%
+  mutate(SECTOR = droplevels(derivedFactor(PROCESSING_SECTOR,
+                                "RPP" = PROCESSING_SECTOR=="S" & RPP=="RPP",
+                                "CP" = PROCESSING_SECTOR=="CP",
+                                "M" = PROCESSING_SECTOR=="M",
+                                "CV" = PROCESSING_SECTOR=="S" & RPP!="RPP")))
+
+
+spp <- catch.tables %>%
+#group_by(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED, OBS_FOR_EST) %>%
+group_by(YEAR, FMP, SECTOR, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED, OBS_FOR_EST) %>%
+  dplyr::summarize(TONS = sum(TONS)) %>%  ungroup() %>% 
+  #*FLAG* complete() from {tidyr} pads rows with NA when levels are empty. Might
+  #not want this for online version, but need it for proper htmlTable() wrapper
+  #and also for plotting
+  complete(YEAR, FMP, SECTOR, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED, OBS_FOR_EST) %>%
+  spread(key=OBS_FOR_EST, value=TONS) %>%
+  ungroup() %>% 
+  mutate(SPECIES_GROUP=fct_expand(SPECIES_GROUP,
+                                  "ALL_SPP_COMBINED")) %>% 
+  data.frame()
+
+
+gear <- catch.tables %>%
+  #group_by(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, RETAINED, OBS_FOR_EST) %>%
+  group_by(YEAR, FMP, SECTOR, AGENCY_GEAR_CODE, RETAINED, OBS_FOR_EST) %>%
+  dplyr::summarize(TONS = sum(TONS, na.rm = FALSE)) %>% 
+  #Because, dplyr
+  ungroup() %>% 
+  #*FLAG* complete() from {tidyr} pads rows with NA when levels are empty. Might
+  #not want this for online version, but need it for proper htmlTable() wrapper
+  #and also for plotting
+  complete(YEAR, FMP, SECTOR, AGENCY_GEAR_CODE, RETAINED, OBS_FOR_EST) %>%
+  spread(key=OBS_FOR_EST, value=TONS, fill=FALSE) %>%
+  mutate(SPECIES_GROUP=factor("ALL_SPP_COMBINED")) %>% data.frame()
+
+full <- rbind(spp,gear)
+full <- full %>%
+  mutate(SPECIES_GROUP= as.factor(SPECIES_GROUP),
+         Observed= round(Observed,1),
+         Total= round(Total,1),
+         PERC_OBS = paste(round((Observed/Total) * 100,1), "%"),
+         Not_Observed = Total-Observed)
+
+
+full.tbl <- full %>%
+  select(-Not_Observed) %>%
+  mutate(FMP = factor(FMP),
+         #PROCESSING_SECTOR = revalue(factor(PROCESSING_SECTOR), 
+         SECTOR = revalue(factor(SECTOR), 
+                          c("CP"="Catcher/Processor", 
+                            "M"="Mothership", 
+                            "CV" = "Catcher Vessel",
+                            "RPP"="Catcher Vessel: Rockfish Program")),
+         SPECIES_GROUP = revalue(factor(SPECIES_GROUP), 
+                                 c("AMCK"="Atka Mackerel",
+                                   "FLAT"="Flatfish (BSAI)",
+                                   "HLBT"="Pacific Halibut",
+                                   "PCOD"="Pacific Cod",
+                                   "PLCK"="Walleye Pollock",
+                                   "ROCK"="Rockfish",
+                                   "SABL"="Sablefish (Black Cod)",
+                                   "TURB"="Turbot",
+                                   "USKT"="Skates",
+                                   "USRK"="Sharks",
+                                   "OTHR"="Other Groundfish",
+                                   "SFL1"="Shallow-water Flatfish (GOA)",
+                                   "DFL4"="Deepwater Flatfish (GOA)",
+                                   "ALL_SPP_COMBINED"="ALL SPECIES COMBINED")),
+         AGENCY_GEAR_CODE = revalue(factor(AGENCY_GEAR_CODE), 
+                        c("PTR"="Pelagic trawl",
+                          "NPT"="Non-pelagic trawl",
+                          "HAL"="Hook and line",
+                          "JIG"="Jig",
+                          "POT"="Pot")),
+         RETAINED = revalue(factor(RETAINED), c("D"="Discarded",
+                                                          "R"="Retained"))
+  ) %>%
+  plyr::rename(replace=c(YEAR = "Year",FMP = "FMP Area", PROCESSING_SECTOR="Sector", SPECIES_GROUP="Species Group", 
+                   AGENCY_GEAR_CODE="Gear", RETAINED="Retained/Discarded", Observed="Observed Catch (tons)", 
+                   Total="Total Catch (tons)",PERC_OBS="Percent Observed"))
+
+```
+
+```{r prep_print_allyears_allspecies, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+full[is.na(full)] <- 0
+
+full.prep <- full %>% 
+  filter(SPECIES_GROUP %in% "ALL_SPP_COMBINED") %>% 
+  select(-c(Not_Observed, SPECIES_GROUP)) %>% 
+  mutate(PERC_OBS = paste0("<span style='font-weight: 900;'>",
+                              paste(round((Observed/Total),2)*100, "%", sep="")),
+         YEAR = paste0("<span style='font-weight: 900;'>",YEAR),
+         #Do some rounding and formatting:
+         # {htmlTable} language="en" (English) uses ',' between every 3 numbers
+         Observed = ifelse(Observed > 0 & Observed < 0.5, "<1",
+                           txtInt(round(Observed, 0), language="en",html=TRUE)),
+         Total = ifelse(Total > 0 & Total < 0.5, "<1",
+                           txtInt(round(Total, 0), language="en",html=TRUE)),
+         #Keep NaN%s from showing up
+         PERC_OBS = ifelse(PERC_OBS == "<span style='font-weight: 900;'>NaN%", " ", PERC_OBS))
+
+full.prep <- data.table::dcast(data.table::setDT(full.prep), 
+                    #factor(FMP) + factor(AGENCY_GEAR_CODE) + factor(RETAINED) + factor(YEAR) ~ PROCESSING_SECTOR, 
+                    factor(FMP) + factor(AGENCY_GEAR_CODE) + factor(RETAINED) + factor(YEAR) ~ SECTOR, 
+                    value.var=c("Observed", "Total", "PERC_OBS")) %>% 
+  dplyr::arrange(FMP, AGENCY_GEAR_CODE, RETAINED, YEAR) 
+
+bsai <- full.prep %>% 
+  filter(FMP %in% "BSAI") %>% 
+  select(-c(FMP, Observed_RPP, Total_RPP, PERC_OBS_RPP)) %>% 
+  #select(-c(FMP)) %>% 
+  select(AGENCY_GEAR_CODE, RETAINED, YEAR, 
+         Observed_CP, Total_CP, PERC_OBS_CP,
+         Observed_M, Total_M, PERC_OBS_M,
+         Observed_CV, Total_CV, PERC_OBS_CV)
+
+bsai.r <- bsai %>% 
+  filter(RETAINED %in% "R") %>% 
+  select(-RETAINED)
+
+
+bsai.d <- bsai %>% 
+  filter(RETAINED %in% "D") %>% 
+  select(-RETAINED)
+
+goa <- full.prep %>% 
+  filter(FMP %in% "GOA") %>% 
+  select(-c(FMP, Observed_M, Total_M, PERC_OBS_M)) %>% 
+  select(AGENCY_GEAR_CODE, RETAINED, YEAR, 
+         Observed_CP, Total_CP, PERC_OBS_CP,
+         Observed_CV, Total_CV, PERC_OBS_CV,
+         Observed_RPP, Total_RPP, PERC_OBS_RPP)
+
+goa.r <- goa %>% 
+  filter(RETAINED %in% "R") %>% 
+  select(-RETAINED)
+
+
+goa.d <- goa %>% 
+  filter(RETAINED %in% "D") %>% 
+  select(-RETAINED)
+
+```
+
+
+**INSERT PAGE BREAK**
+
+Table 4-10. Monitored catch (metric tons), total catch, and percent monitored (%) of retained groundfish and halibut in the groundfish and halibut fisheries in the Gulf of Alaska from 2013-`r as.numeric(format(Sys.Date(), "%Y"))-1`.
+
+
+```{r print_goa.r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+htmlTable(goa.r[,2:11],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          #individual column headers repeated n times where n=number of sectors
+          header=c("", rep(c("Monitored", "Total", "%"), 3)),
+          #FLAG figure out paste
+          #align = paste0("l", rep("r", 9))
+          align="lrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (gear types)
+          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
+          #Number of rows within each table spanner
+          #Increase this number each year to account for an additional year of data
+          n.tspanner = rep(7, length(unique(goa.r$AGENCY_GEAR_CODE))),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Number of hierarchical column spanners you will have
+          cspan.rgroup = 2,
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup= rbind(c("", "GULF OF ALASKA RETAINED CATCH", NA, NA),
+                        c("","CATCHER/PROCESSOR","CATCHER VESSEL", "CATCHER VESSEL:ROCKFISH PROGRAM")),
+          #Number of internal columns each header column spans
+          n.cgroup= rbind(c(1, 3, NA, NA),
+                          c(1,3,3,3)),
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+```
+
+**INSERT PAGE BREAK**
+
+```{r print_goa.d, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+htmlTable(goa.d[,2:11],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          #individual column headers repeated n times where n=number of sectors
+          header=c("", rep(c("Monitored", "Total", "%"), 3)),
+          #FLAG figure out paste
+          #align = paste0("l", rep("r", 9))
+          align="lrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (gear types)
+          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
+          #Number of rows within each table spanner
+          #Increase this number each year to account for an additional year of data
+          n.tspanner = rep(7, length(unique(goa.r$AGENCY_GEAR_CODE))),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Number of hierarchical column spanners you will have
+          cspan.rgroup = 2,
+          align.cgroup = c("ccc","ccc"),
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup= rbind(c("", "GULF OF ALASKA DISCARDED CATCH", NA, NA),
+                        c("","CATCHER/PROCESSOR","CATCHER VESSEL", "CATCHER VESSEL:ROCKFISH PROGRAM")),
+          #Number of internal columns each header column spans
+          n.cgroup= rbind(c(1, 3, NA, NA),
+                          c(1,3,3,3)),
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+```
+
+**INSERT PAGE BREAK**
+
+Table 4-11. Monitored catch (metric tons), total catch, and percent monitored (%) of retained groundfish and halibut in the groundfish and halibut fisheries in the Bering Sea/Aleutian Islands from 2013-`r as.numeric(format(Sys.Date(), "%Y"))-1`.
+
+
+```{r print_bsai.r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+htmlTable(bsai.r[,2:11],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          #individual column headers repeated n times where n=number of sectors
+          header=c("", rep(c("Monitored", "Total", "%"), 3)),
+          #FLAG figure out paste
+          #align = paste0("l", rep("r", 9))
+          align="lrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (gear types)
+          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
+          #Number of rows within each table spanner
+          #Increase this number each year to account for an additional year of data
+          n.tspanner = rep(7, length(unique(bsai.r$AGENCY_GEAR_CODE))),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Number of hierarchical column spanners you will have
+          cspan.rgroup = 2,
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup= rbind(c("", "BERING SEA/ALEUTIAN ISLANDS RETAINED CATCH", NA, NA),
+                        c("","CATCHER/PROCESSOR","MOTHERSHIP", "CATCHER VESSEL")),
+          #Number of internal columns each header column spans
+          n.cgroup= rbind(c(1, 3, NA, NA),
+                          c(1,3,3,3)),
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+```
+
+```{r print_bsai.d, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+htmlTable(bsai.d[,2:11],
+          #tfoot= "Rounding error sometimes results in slight differences in row and column totals.",
+          #individual column headers repeated n times where n=number of sectors
+          header=c("", rep(c("Monitored", "Total", "%"), 3)),
+          #FLAG figure out paste
+          #align = paste0("l", rep("r", 9))
+          align="lrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (gear types)
+          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
+          #Number of rows within each table spanner
+          #Increase this number each year to account for an additional year of data
+          n.tspanner = rep(7, length(unique(bsai.r$AGENCY_GEAR_CODE))),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Number of hierarchical column spanners you will have
+          cspan.rgroup = 2,
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup= rbind(c("", "BERING SEA/ALEUTIAN ISLANDS DISCARDED CATCH", NA, NA),
+                        c("","CATCHER/PROCESSOR","MOTHERSHIP", "CATCHER VESSEL")),
+          #Number of internal columns each header column spans
+          n.cgroup= rbind(c(1, 3, NA, NA),
+                          c(1,3,3,3)),
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+```
+
+
+
+
+```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+# Clean up workspace (removes everything EXCEPT the objects listed) and save RData
+rm(list= ls()[!(ls() %in% c('YEAR', 'catch.tables', 'species.wide2', 'full.prep', 'with.totals'))])
+
+
+# For 2019:
+#save('YEAR', 'catch.tables', 'species.wide2', 'full.prep', 'with.totals',
+#     file = paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_additional_tables.RData"))
+
+```
+
+
+

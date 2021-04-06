@@ -1,0 +1,526 @@
+
+output:
+  html_document: default
+  word_document: default
+---
+```{r background_info, include=FALSE}
+
+# -------------------------------------------------------------------------------------------------------------------- #
+#
+# Program:AR_descriptive_2019_tables.Rmd                                         
+# Project:Observer Program Annual Report Descriptive Chapter                                      
+# Location: S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info 
+#      or: C:\Teleworking\Obs Annual Report\Ch 4
+#
+# Objectives:                                                                  
+# - Summarize vessels, trips, and % observed by vessel length, strata, gear, and FMP area for Chapter 4 (Table 4-1 and 4-2).    
+# - Summarize observed and total catch by FMP area, sector, gear, and retained flag for Chapter 4 (Tables 4-3 and 4-4).
+#
+# Inputs:      
+# Normal locations:                                                                   
+#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_data.Rdata
+#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website (NOT USED in this script)
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2018) (NOT USED in this script)
+#     - VALHALLA - the original Valhalla data (NOT USED in this script)
+#     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
+#                        (NOT USED in this script)
+#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#
+# Coronavirus telework locations:
+#  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_data.Rdata
+#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website (NOT USED in this script)
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2018) (NOT USED in this script)
+#     - VALHALLA - the original Valhalla data (NOT USED in this script)
+#     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
+#                        (NOT USED in this script)
+#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+
+# Output:  
+# Normal locations:  
+#   - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_tables.html
+#     - catch.wide - summary of catch by FMP area, sector, gear, and retained flag with subtotals. Includes percent observed.
+#     - counts.wide - monitored and total trip counts.  Includes percent monitored.
+#     - table4.3 - GOA table of monitored catch.
+#     - table4.4 - BSAI table of monitored catch.
+#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+# Coronavirus telework locations:
+#   - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_tables.Rdata
+#     - catch.wide - summary of monitored and total catch by FMP area, sector, gear, and retained flag with subtotals. 
+#                    Includes percent monitored.
+#     - counts.wide - monitored and total trip counts.  Includes percent monitored.
+#     - table4.3 - GOA table of monitored catch.
+#     - table4.4 - BSAI table of monitored catch.
+#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#
+# --------------------------------------------------------------------------------------------------------- #
+
+```
+
+# 4 Descriptive Information
+
+###4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
+
+In Chapter 3, Table 3-5 provides trip and vessel counts based on coverage type and strata. However, the Council has previously requested a summary of trip and vessel counts based on criteria which are not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel length). Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP area, strata, gear type, and vessel length category within the full and partial coverage categories. Trips are summarized as the number of monitored trips and the total number of trips.  Monitored trips reflect either trips with an observer or EM fixed gear trips if at least some video was reviewed .  The rationale for defining monitored trips this way for EM fixed gear trips is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Table 3-6 presents detailed information about the number of hard drives received and reviewed by EM gear type.
+
+Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes more than one gear type on a trip or within the year. The table rows titled "BSAI Subtotal", "GOA Subtotal", and "Total Unique" include the number of unique vessels and unique trips in each vessel length category where each vessel or trip is counted only once, in each of the FMP areas or overall, respectively.
+ 
+
+
+```{r data_inputs, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+# LOAD DATA 
+
+YEAR <- 2019
+
+#source("S:/Observer Program Annual Report/Descriptive_Chapter/AR_descriptive_helper.r")
+source("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_helper.r")
+
+#load(paste0("S:/Observer Program Annual Report/", 
+#            YEAR, 
+#            "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
+#            YEAR, "_data.RData"))
+
+load(paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_data.RData"))
+
+#Clean up workspace (Remove everything EXCEPT the objects listed)
+rm(list= ls()[!(ls() %in% c('YEAR', 'work.data', 'with.totals', 'fig.theme'))])
+
+```
+
+
+```{r all_trips, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+# Summarize ALL trip and vessel counts for three different levels of aggregation:
+total.counts <- work.data %>% 
+  # Detail summaries for strata, FMP area, gear, and vessel length category:
+  group_by(STRATA, FMP, AGENCY_GEAR_CODE, VESSEL_LENGTH_CATEGORY) %>% 
+  summarize(TRIP_COUNT = n_distinct(TRIP_ID),
+            VESSEL_COUNT = n_distinct(VESSEL_ID)) %>%
+  # FMP Area summaries for vessel length category:
+  bind_rows(work.data %>% group_by(FMP, VESSEL_LENGTH_CATEGORY) %>% 
+              summarize(AGENCY_GEAR_CODE = " ",
+                        STRATA           = "FMP AREA Subtotal",
+                        TRIP_COUNT = n_distinct(TRIP_ID),
+                        VESSEL_COUNT = n_distinct(VESSEL_ID))) %>% 
+  # Overall summaries for vessel length category:
+  bind_rows(work.data %>% group_by(VESSEL_LENGTH_CATEGORY) %>% 
+              summarize(AGENCY_GEAR_CODE = " ",
+                        STRATA           = " ",
+                        FMP              = "Total Unique",
+                        TRIP_COUNT = n_distinct(TRIP_ID),
+                        VESSEL_COUNT = n_distinct(VESSEL_ID))) %>% 
+  data.frame()
+ 
+
+# Convert the trip and vessel counts to a wide format:
+total.counts.wide <- total.counts %>% 
+  pivot_wider(id_cols = c(STRATA, FMP, AGENCY_GEAR_CODE),
+              names_from = VESSEL_LENGTH_CATEGORY,
+              values_from = c(TRIP_COUNT, VESSEL_COUNT))
+
+```
+
+
+```{r observed_trips, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+
+# Summarize OBSERVED trip and vessel counts for three different levels of aggregation:
+obs.counts <- work.data %>% 
+  filter(OBSERVED_FLAG == 'Y') %>% 
+  # Detail summaries for strata, FMP area, gear, and vessel length category:
+  group_by(STRATA, FMP, AGENCY_GEAR_CODE, VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
+  summarize(TRIP_COUNT_OBS = n_distinct(TRIP_ID),
+            VESSEL_COUNT_OBS = n_distinct(VESSEL_ID)) %>%
+  # FMP Area summaries for vessel length category:
+  bind_rows(work.data %>% 
+              filter(OBSERVED_FLAG == 'Y') %>% 
+              group_by(FMP, VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
+              summarize(AGENCY_GEAR_CODE = " ",
+                        STRATA           = "FMP AREA Subtotal",
+                        TRIP_COUNT_OBS = n_distinct(TRIP_ID),
+                        VESSEL_COUNT_OBS = n_distinct(VESSEL_ID))) %>% 
+  # Overall summaries for vessel length category:
+  bind_rows(work.data %>% 
+              group_by(VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
+              filter(OBSERVED_FLAG == 'Y') %>% 
+              summarize(AGENCY_GEAR_CODE = " ",
+                        STRATA           = " ",
+                        FMP              = "Total Unique",
+                        TRIP_COUNT_OBS = n_distinct(TRIP_ID),
+                        VESSEL_COUNT_OBS = n_distinct(VESSEL_ID))) %>% 
+  data.frame()
+ 
+
+# Convert the trip and vessel counts to a wide format:
+obs.counts.wide <- obs.counts %>% 
+  pivot_wider(id_cols = c(STRATA, FMP, AGENCY_GEAR_CODE, OBSERVED_FLAG),
+              names_from = VESSEL_LENGTH_CATEGORY,
+              values_from = c(TRIP_COUNT_OBS, VESSEL_COUNT_OBS))
+
+```
+
+
+```{r pct.trips.obs, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+# Combine the datasets with total trip counts (total.counts.wide) and observed trip counts (obs.counts.wide)
+# and calculate the percent observed:
+
+counts.wide <- total.counts.wide %>%   
+  # Combined the trip count and the observed trip count summaries
+  left_join(obs.counts.wide, by = c("FMP", "STRATA", "AGENCY_GEAR_CODE")) %>% 
+  # Calculate the percent observed:
+  mutate(TRIP_COUNT_OBS_LT40 = as.numeric(NA),
+         LT40_pct    = as.numeric(NA),
+         BT40_57_pct = round((TRIP_COUNT_OBS_BT40_57/TRIP_COUNT_BT40_57)*100,1),
+         GT58_pct    = round((TRIP_COUNT_OBS_GT58/TRIP_COUNT_GT58)*100,1)) %>% 
+  # Reorder the columns:
+  select(FMP, STRATA, AGENCY_GEAR_CODE, VESSEL_COUNT_LT40, TRIP_COUNT_LT40, TRIP_COUNT_OBS_LT40, LT40_pct,
+         VESSEL_COUNT_BT40_57, TRIP_COUNT_BT40_57, TRIP_COUNT_OBS_BT40_57, BT40_57_pct,
+         VESSEL_COUNT_GT58, TRIP_COUNT_GT58, TRIP_COUNT_OBS_GT58, GT58_pct) %>% 
+  # Assign a particular sorting order to the strata:
+  mutate(STRATA_ORDER = ifelse(STRATA == 'FULL', 1,
+                           ifelse(STRATA == 'HAL', 2,
+                              ifelse(STRATA== 'EM_HAL', 3,
+                                 ifelse(STRATA == 'POT', 4,
+                                    ifelse(STRATA=='TenP', 5,
+                                       ifelse(STRATA=='EM_POT', 6,
+                                          ifelse(STRATA=='TRW', 7,
+                                             ifelse(STRATA=='TenTR', 8,
+                                                ifelse(STRATA=='ZERO', 9,
+                                                   ifelse(STRATA=='ZERO_EM_RESEARCH', 10,
+                                                      ifelse(STRATA=='FMP AREA Subtotal', 11, 12)))))))))))) %>% 
+  # Sort the data:
+  arrange(FMP, STRATA_ORDER, AGENCY_GEAR_CODE) %>% 
+  data.frame()
+
+
+```
+
+Table 4-1. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
+
+
+```{r TABLE4_1, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+#Do some formatting:
+# {htmlTable} language="en" (English) uses ',' between every 3 numbers
+#  note: this doesn't currently work because there are null values in each of these columns
+#counts.wide$TRIP_COUNT_LT40    <- txtInt(counts.wide$TRIP_COUNT_OBS_LT40,language="en",html=TRUE)
+#counts.wide$TRIP_COUNT_BT40_57 <- txtInt(counts.wide$TRIP_COUNT_40_57, language="en",html=TRUE)
+#counts.wide$TRIP_COUNT_GT58    <- txtInt(counts.wide$TRIP_COUNT_GT58, language="en",html=TRUE)
+
+
+htmlTable(counts.wide[counts.wide$FMP=='BSAI',2:15],
+          tfoot= "1 Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.\n2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3. \n3 EM POT trips include trips that delivered to tenders and trips that delivered shoreside.",
+          #individual column headers repeated n times where n=number of vessel length categories
+          header=c("Strata","Gear", rep(c("V", "N", "n", "%"), 3)),
+          #FLAG figure out paste
+          #align = paste("l", rep("r", 9), collapse="", sep="")
+          align="llrrrrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (FMP area)
+          tspanner=c("BSAI"),
+          #Number of rows within each table spanner
+          #n.tspanner = rep(2, length(unique(TABLE4_2$AGENCY_GEAR_CODE))),
+          n.tspanner=c(15),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup = rbind(c("", "", "Vessel Length Category", NA, NA), c("", "", "<40'","40-57.4'",">=57.5'")), 
+          #Number of internal columns each header column spans
+          n.cgroup = rbind(c(1,1,12,NA,NA), c(1,1,4,4,4)), 
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+```
+
+
+Table 4-2. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
+
+
+```{r TABLE4_2, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+
+#Do some formatting:
+# {htmlTable} language="en" (English) uses ',' between every 3 numbers
+#  note: this doesn't currently work because there are null values in each of these columns
+#newestTABLE4_1$LT40_TRIP <- txtInt(newestTABLE4_1$LT40_TRIP, language="en",html=TRUE)
+#newestTABLE4_1$BT40_57_TRIP <- txtInt(newestTABLE4_1$BT40_57_TRIP, language="en",html=TRUE)
+#newestTABLE4_1$GT58_TRIP <- txtInt(newestTABLE4_1$GT58_TRIP, language="en",html=TRUE)
+
+
+htmlTable(counts.wide[counts.wide$FMP %in% c('GOA', 'Total Unique'),2:15],
+          tfoot= "1 Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.\n2 Full coverage in this table includes vessels in Regulatory Full Coverage in the GOA described in Ch. 3.\n3 On trips where more than one gear type is fished, the predominate gear type that will be used is selected in ODDS and determines the strata for the trip.\n4 EM POT trips include trips that delivered to tenders and trips that delivered shoreside.",
+          #individual column headers repeated n times where n=number of vessel length categories
+          header=c("Strata","Gear", rep(c("V", "N", "n", "%"), 3)),
+          #FLAG figure out paste
+          #align = paste("l", rep("r", 9), collapse="", sep="")
+          align="llrrrrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (FMP area)
+          tspanner=c("GOA","TOTAL UNIQUE"),
+          #Number of rows within each table spanner
+          #n.tspanner = rep(2, length(unique(TABLE4_2$AGENCY_GEAR_CODE))),
+          n.tspanner=c(18,1),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup = rbind(c("", "", "Vessel Length Category", NA, NA), c("", "", "<40'","40-57.4'",">=57.5'")), 
+          #Number of internal columns each header column spans
+          n.cgroup = rbind(c(1,1,12,NA,NA), c(1,1,4,4,4)), 
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+#Clean up workspace (Remove everything EXCEPT the objects listed)
+#rm(list= ls()[!(ls() %in% c('work.data', 'with.totals', 'catch.tables', 'dat', 'fig.theme', 'counts.wide' ))])
+
+```
+
+
+
+###4.2  Total Catch and Discards and Amount of Catch Observed
+The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS CAS in Table 4-3 and Table 4-4 for  `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. 2014. 
+
+It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not a priori be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum[^1^].  
+
+In Table 4-3 and Table 4-4, the table columns titled "Monitored" indicate catch that occurred on trips where an observer was present or on EM fixed gear trips for which some video was reviewed. Catch on vessels on EM pot trips are included in the monitored column in these tables for the first time. Beginning with 2019, EM data from pot gear were integrated into the catch estimation process. The columns titled "Total" represents estimates of all catch from all trips regardless of whether it was monitored. The rows title "Retained" indicate catch that was offloaded (minus dockside discard). The rows titled "Discard" are estimated at-sea discard.
+
+All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction. 
+
+Additional retained and discard catch information, broken down by species for the Gulf of Alaska (GOA) and Bering Sea/Aleutian Islands (BSAI), are available online for 2019 as well as prior years[^2^]. Caution should be exercised when interpreting the results for halibut in the halibut IFQ fishery in these tables, however.  For longline catch, the estimated weight of each species caught is the product of the estimated number of fish, the mean weight per fish, and the proportion of the catch that is discarded. While *these methods provide unbiased estimates of total catch*, the estimate of at-sea discards relies on the assumption that the proportion of the number of discarded is equal to the proportion of the weight discarded. The Pacific halibut fishery is the only federally managed groundfish fishery with a regulatory minimum size limit (32 cm). Because the minimum size limit requires smaller fish to be discarded, this assumption is not valid in the directed halibut fishery.
+
+Starting in 2016, selection sampling methods for halibut were changed so that halibut selection was randomized within sampled hauls, making these data collections consistent with methods used in other fisheries and providing data that was used to assess the magnitude of bias associated with estimates of at-sea halibut discards in the directed fishery. These data were used to develop a model in late 2019 to convert the percent numbers discarded to percent weight discarded, and resolving the potential bias. These results were presented at the 2019 American Fisheries Society Meeting, and they suggest that the weight of halibut discarded on sampled hauls in the directed halibut fishery is overestimated by approximately 35%. This conversion method will be documented in a forthcoming NOAA Tech Memo and incorporated into the estimation process as soon as possible (expected in 2021).
+
+***
+ 
+[^1]: More trips monitored in one subpopulation (fishery) equates to fewer monitored trips in the other subpopulations since all the trips across the different subpopulations must add to the total number of trips selected.
+
+[^2]: Available online at [link]https://www.fisheries.noaa.gov/alaska/fisheries-observers/observed-catch-tables-north-pacific-observer-program 
+
+***
+
+
+```{r summarize.catch, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+# Summarize catch by two different aggregations:
+catch.detail <- with.totals %>%
+  # Define sector using the RPP flag or the processing sector:
+  mutate(SECTOR = ifelse(RPP=="RPP", "RPP", PROCESSING_SECTOR)) %>% 
+  # Summarize by FMP area, sector, gear, and retained flag:
+  group_by(FMP, SECTOR, OBS_FOR_EST, AGENCY_GEAR_CODE, RETAINED) %>% 
+  summarise(WEIGHT = sum(as.numeric(TONS))) %>%
+  # Summarize by FMP area, gear, and retained flag:
+  bind_rows(with.totals %>% group_by(FMP, OBS_FOR_EST, AGENCY_GEAR_CODE, RETAINED) %>% 
+             summarize(SECTOR = 'Total',
+                       WEIGHT = sum(as.numeric(TONS)))) %>% 
+  data.frame()
+
+
+# Convert the catch summaries to a wide format:
+catch.detail.wide <- catch.detail %>% 
+  pivot_wider(id_cols = c(FMP, SECTOR, AGENCY_GEAR_CODE, RETAINED),
+              names_from = OBS_FOR_EST,
+              values_from = WEIGHT)
+
+# Replace any NA values with zero:
+catch.detail.wide[is.na(catch.detail.wide)] <- 0
+
+
+```
+
+
+
+```{r format.catch, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+#Calculate the percent observed by 'groupcolumns' and add formatting:
+groupcolumns = c("FMP","SECTOR", "AGENCY_GEAR_CODE", "RETAINED","Observed","Total")
+catch.detail.wide <- ddply(catch.detail.wide, groupcolumns, summarise,
+            # BOLD THE PERCENTAGES in CSS/html:
+              PCT_OBS= paste0("<span style='font-weight: 900;'>",
+                              paste(round((Observed/Total),2)*100, "%", sep="")),
+            # FORMAT WITH PERCENTAGES: 
+              PERCENT_OBSERVED=paste(round((Observed/Total),2)*100, "%", sep=""))
+
+
+#Do some rounding and formatting:
+# {htmlTable} language="en" (English) uses ',' between every 3 numbers
+catch.detail.wide$Observed <- ifelse((catch.detail.wide$Observed > 0 & catch.detail.wide$Observed < 0.5), "<1", 
+                        txtInt(round(catch.detail.wide$Observed, 0), language="en",html=TRUE))
+catch.detail.wide$Total <- ifelse((catch.detail.wide$Total > 0 & catch.detail.wide$Total < 0.5), "<1", 
+                        txtInt(round(catch.detail.wide$Total, 0), language="en",html=TRUE))
+
+
+#Cast the the dataframe into an even wider format using {data.table} & remove NAs
+catch.wide <- dcast(setDT(catch.detail.wide), 
+             FMP + AGENCY_GEAR_CODE + RETAINED ~ factor(SECTOR), 
+             value.var=c( "Observed","Total","PCT_OBS"))
+
+
+#Add new rows because JIG doesn't have a discard row and assign the same column names used in catch.wide
+jig.rows <- data.frame(cbind(c("GOA", "BSAI"), c("JIG", "JIG"), c("D", "D")))  
+col.names <- names(catch.wide[,1:3])
+names(jig.rows) <- col.names  
+
+# The columns in jig.rows need to be character values rather than factors for later formatting:
+jig.rows <- jig.rows %>% 
+  mutate_all(as.character)
+
+# Append the additional columnss:
+catch.wide <- rbind(catch.wide, jig.rows, fill=TRUE) 
+
+
+#Final cleanup
+catch.wide[is.na(catch.wide)] <- ' ' 
+catch.wide <- as.data.frame(catch.wide)
+
+# Translate the values and add some CSS formatting to the Retained/Discard values:
+catch.wide[catch.wide=="D"] <- "<span style='font-weight: 900;'>Discard"
+catch.wide[catch.wide=="R"] <- "<span style='font-weight: 900;'>Retained"
+
+
+#Resource for CSS formatting in html http://www.w3schools.com/css/css_intro.asp
+
+```
+
+
+**INSERT PAGE BREAK** 
+
+Table 4-3. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
+
+```{r Table_4_3, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+# Refine to just the GOA data and rearrange the column order:
+table4.3 <- catch.wide[catch.wide$FMP=='GOA',c(1:3,
+                                            4,9,14, #Catcher/Processors
+                                            7,12,17, #Catcher Vessels (PROCESSING_SECTOR=='S')
+                                            6,11,16, #Catcher Vessels: Rockfish Program (GOA only)
+                                            #5,10,15, #Mothership (BSAI only)
+                                            8,13,18  # Gear Totals
+                                            )]
+
+
+# Sort
+table4.3 <- arrange(table4.3, FMP, AGENCY_GEAR_CODE, desc(RETAINED))
+
+# Create table:
+htmlTable(table4.3[,3:15],
+          tfoot= "1 Monitored catch is from trips with an observer or EM fixed gear trips for which some video was reviewed.",
+          #individual column headers repeated n times where n=number of sectors
+          header=c("", rep(c("Monitored", "Total", "%"), 4)),
+          #FLAG figure out paste
+          #align = paste("l", rep("r", 9), collapse="", sep="")
+          align="lrrrrrrrrrrrr",
+          #column header alignment
+          align.header="lrrrrrrrrrrrr",
+          #FLAG
+          total="tspanner",
+          #Headers for each table spanner (gear types)
+          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
+          #Number of rows within each table spanner
+          #n.tspanner = rep(2, length(unique(TABLE4_2$AGENCY_GEAR_CODE))),
+          n.tspanner=c(2, 2, 2, 2, 2),
+          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
+          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          #Formating for table spanner borders (lines separating table spanners)
+          css.tspanner.sep = "border-top: 1px solid;",
+          #Option for getting table spanner totals which we don't want in this table.
+          css.total = ";",
+          #Option for coloring columns
+          # col.columns = c("none", "none", "none", "none",
+          #                 "#F1F0FA","#F1F0FA","#F1F0FA",
+          #                 "none", "none", "none"),
+          #Cgroups are the spanned column headers. The first column is left blank with ""
+          cgroup= c("","CATCHER/PROCESSOR","CATCHER VESSEL","CATCHER VESSEL: ROCKFISH PROGRAM", "GEAR TOTAL"),
+          #Number of internal columns each header column spans
+          n.cgroup=c(1,3,3,3,3),
+          #CSS formatting for the spanned column headers
+          css.cgroup = "font-size: 15px;",
+          #prevents unwanted meaningless rownames
+          rnames=FALSE,
+          #auto-alignment providing padding between columns or cells
+          css.cell = "padding-left: 1.5em; ")
+
+
+```
+
+**INSERT PAGE BREAK** 
+
+Table 4-4. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
+
+```{r print_BSAI_SectorGear, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+# Refine to just the BSAI data and rearrange the column order:
+table4.4 <- catch.wide[catch.wide$FMP=='BSAI',c(1:3, 
+                                              4,9,14, #Catcher/Processors
+                                              5,10,15, #Mothership (BSAI only)
+                                              7,12,17, #Catcher Vessels (PROCESSING_SECTOR=='S')
+                                              # 6,10,14 #Catcher Vessels: Rockfish Program (GOA only)
+                                              8,13,18
+                                              )]
+
+#Sort:
+table4.4 <- arrange(table4.4, FMP, AGENCY_GEAR_CODE, desc(RETAINED))
+
+htmlTable(table4.4[,3:15],
+          tfoot= "1 Monitored catch is from trips with an observer or EM fixed gear trips for which some video was reviewed.",
+          header=c("","Monitored","Total","%","Monitored","Total","%","Monitored","Total","%","Monitored","Total","%"),
+          align="lrrrrrrrrrrrr",
+          align.header="lrrrrrrrrrrrr",
+          total="tspanner",
+          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
+          n.tspanner=c(2,2,2,2,2),
+          # padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
+          css.tspanner.sep = "border-top: 1px solid;",
+          css.total = ";",
+          cgroup= c("","CATCHER/PROCESSOR", "MOTHERSHIP" ,"CATCHER VESSEL", "GEAR TOTAL"),
+          css.cgroup = "font-size: 15px;",
+          n.cgroup=c(1,3,3,3,3),
+          rnames=FALSE,
+          css.cell = "padding-left: 1.5em; "
+          )
+```
+
+
+```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+# Clean up workspace (removes everything EXCEPT the objects listed) and save RData
+rm(list= ls()[!(ls() %in% c('YEAR','work.data', 'with.totals', 'counts.wide', 'catch.wide', 'table4.3', 'table4.4'))])
+
+# For 2018:
+#save(YEAR, work.data, catch.tables, newestTABLE4_1, TABLE4_1, TABLE4_2,
+#     file = paste0("S:/Observer Program Annual Report/", YEAR, "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
+#                   YEAR, "_tables.RData"))
+
+# For 2019:
+#save('YEAR', 'work.data', 'with.totals', 'counts.wide', 'catch.wide', 'table4.3', 'table4.4',
+#     file = paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_tables.RData"))
+
+```
+
+
+
