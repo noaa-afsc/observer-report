@@ -461,7 +461,7 @@ partial[, STRATA := ifelse(           # Define strata based on sample plan and g
   SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
     SAMPLE_PLAN %like% "EM EFP" & GEAR == "TRW", "EM TRW EFP", ifelse(
       SAMPLE_PLAN %like% "Gear Type", GEAR, NA)))]
-partial <- unique(partial[, .(Effective_Date = EFFECTIVE_DATE, STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
+partial <- unique(partial[, .(Effective_Date = as.Date(EFFECTIVE_DATE), STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
 partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    # Merge descriptions in 
 partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
 partial[, txt := paste0(formatC(round(Rate * 100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
