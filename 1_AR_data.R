@@ -21,7 +21,6 @@ channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in
 # To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
 # effort_prediction.rdata (created in the most recent final ADP project)
 # fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
-# 2021-01-25CAS_VALHALLA.RData (temporary version of Valhalla created by AKRO)
 # These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
 
 # * ADP inputs ----
@@ -45,13 +44,9 @@ adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 # * Valhalla ----
 # Pull in this report year's Valhalla
 # The code that creates Valhalla is maintained separately from this project
-load("data/2021-03-10CAS_VALHALLA.RData")
+script <- paste0("select * from loki.akr_valhalla_scratch_v")
 
-# Rename VALHALLA, which is the only object in the above file
-work.data <- VALHALLA
-
-# Remove the VALHALLA object
-rm(VALHALLA)
+work.data <- dbGetQuery(channel_afsc, script)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
