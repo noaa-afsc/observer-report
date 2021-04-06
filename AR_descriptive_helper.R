@@ -7,6 +7,7 @@
 #############
 
 if(!require("RODBC"))   install.packages("RODBC")
+if(!require("ROracle"))   install.packages("ROracle")
 if(!require("ggplot2"))   install.packages("ggplot2")
 if(!require("RColorBrewer"))   install.packages("RColorBrewer")
 if(!require("plyr"))   install.packages("plyr")
@@ -19,6 +20,7 @@ if(!require("data.table"))   install.packages("data.table")
 if(!require("htmlwidgets"))   install.packages("htmlwidgets")
 if(!require("knitr"))   install.packages("knitr")
 if(!require("htmlTable"))   install.packages("htmlTable")
+if(!require("flextable"))   install.packages("flextable")
 if(!require("toOrdinal"))   install.packages("toOrdinal")
 if(!require("pander"))   install.packages("pander")
 
@@ -37,5 +39,3 @@ fig.theme <-
         axis.line = element_line(size = 0.5, color = "black"),
         legend.position = "bottom") 
 
-#############
-# QUERIES  ##
