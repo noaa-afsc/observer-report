@@ -1176,7 +1176,8 @@ Max.ts.date <- work.data %>%
   mutate(MAX_TARGET_DATE = max(TRIP_TARGET_DATE)) %>%
   select(TRIP_ID, MAX_TARGET_DATE, OBSERVED_FLAG, STRATA) 
 
-Max.ts.date <- merge(Max.ts.date, select(partial, c(STRATA, Rate)))
+Max.ts.date <- merge(Max.ts.date, select(partial_time, c(STRATA, Rate, Effective_Date, Expire_After))) %>%
+               filter(MAX_TARGET_DATE >= Effective_Date & MAX_TARGET_DATE <= Expire_After)
 
 For.ts.temporal.plot <- Max.ts.date  %>%
   group_by(STRATA, Date=MAX_TARGET_DATE) %>%
