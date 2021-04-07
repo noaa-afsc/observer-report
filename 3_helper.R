@@ -121,7 +121,7 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
     summarize(Ytrips=length(unique(TRIP_ID[YN=='Y'])),
               Ntrips=length(unique(TRIP_ID[YN=='N'])),              
               obs.diff = mean(value[YN=="Y"], na.rm=TRUE) - mean(value[YN=="N"], na.rm=TRUE),
-              MEAN = mean(value, na.rm=TRUE)
+              Nmean = mean(value[YN=="N"], na.rm=TRUE)
     )
 
   Ntable <- actuals.out %>% ungroup() %>% select(STRATA, Ytrips, Ntrips) %>%  distinct() %>% data.frame()
@@ -162,8 +162,8 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   permutation.out <- merge(permutation.out, actuals.out)
   permutation.out$test.stat <- ifelse(abs(permutation.out$perm_result) >= abs(permutation.out$obs.diff), 1, 0)                                
   #Now make use of our percents to convert the results to relative terms
-  permutation.out$perm_result_pct <- round((permutation.out$perm_result / permutation.out$MEAN)*100, 3)
-  permutation.out$obs.diff_pct <-round((permutation.out$obs.diff / permutation.out$MEAN)*100, 3)
+  permutation.out$perm_result_pct <- round((permutation.out$perm_result / permutation.out$Nmean)*100, 3)
+  permutation.out$obs.diff_pct <-round((permutation.out$obs.diff / permutation.out$Nmean)*100, 3)
   
   #relabel for outputs
   permutation.out$variable <- 
