@@ -1176,22 +1176,29 @@ Max.ts.date <- work.data %>%
   mutate(MAX_TARGET_DATE = max(TRIP_TARGET_DATE)) %>%
   select(TRIP_ID, MAX_TARGET_DATE, OBSERVED_FLAG, STRATA) 
 
-Max.ts.date <- merge(Max.ts.date, select(partial_time, c(STRATA, Rate, Effective_Date, Expire_After))) %>%
-               filter(MAX_TARGET_DATE >= Effective_Date & MAX_TARGET_DATE <= Expire_After)
-
 For.ts.temporal.plot <- Max.ts.date  %>%
-  group_by(STRATA, Date=MAX_TARGET_DATE) %>%
-  summarize(N=length(unique(TRIP_ID)),
-                   n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"])),
-                   Rate = unique(Rate)) %>%
-  mutate(N.cuml = cumsum(N),
-         n.cuml = cumsum(n),
-         n.expected = round(N.cuml * Rate, 0),
-         Low95 = qbinom(0.025, N.cuml, Rate),
-         High95 = qbinom(0.975,N.cuml, Rate),
-         Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 
-                                 1, 0),
-         Observed.days = ifelse(n > 0, 1, NA)) %>% data.frame()
+                        group_by(STRATA, Date=MAX_TARGET_DATE) %>%
+                        summarise(N=length(unique(TRIP_ID)),
+                                  n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>% 
+                        ungroup()
+
+For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(partial_time, c(STRATA, Rate, Effective_Date, Expire_After))) %>%
+                        filter(Date >= Effective_Date & Date <= Expire_After) %>% 
+                        group_by(STRATA) %>%
+                        mutate(N= ifelse(Effective_Date == as.Date("2020-03-26"), 0, N),
+                               N.cuml = cumsum(N),
+                               n.cuml = cumsum(n),
+                               n.waiver.period = sum(n[Effective_Date == as.Date("2020-03-26")]),
+                               n.waiver.period = ifelse(Effective_Date > as.Date("2020-03-26"), n.waiver.period, 0)) %>% 
+                        ungroup()
+
+For.ts.temporal.plot <- For.ts.temporal.plot %>% 
+                        mutate(n.expected = round((N.cuml * Rate) + n.waiver.period, 0),
+                               Low95 = qbinom(0.025, N.cuml, Rate) + n.waiver.period,
+                               High95 = qbinom(0.975,N.cuml, Rate) + n.waiver.period,
+                        Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
+                        Observed.days = ifelse(n > 0, 1, NA)) %>% 
+                        data.frame()
 
 # Fill in missing dates using tidyr::complete()
 For.ts.temporal.plot <- For.ts.temporal.plot %>% 
@@ -1264,11 +1271,11 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   geom_line(aes(y = n.cuml), col="black", size=2) +
   geom_line(aes(y = n.expected), col = "gray") +
   geom_ribbon(aes(ymin = Low95, ymax = High95), alpha=0.2) +
-  geom_rug(aes(x = Date.outside), sides="b") +
+  # geom_rug(aes(x = Date.outside), sides="b") +
   # Annotate p-values
-  geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
-                y = Inf, vjust = 1.25, 
-                label = p), size = 4, parse=T, check_overlap = T) +
+  # geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
+  #               y = Inf, vjust = 1.25, 
+  #               label = p), size = 4, parse=T, check_overlap = T) +
   facet_wrap(~ STRATA, ncol=2, scale="free_y") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
