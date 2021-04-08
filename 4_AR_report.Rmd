@@ -1184,18 +1184,18 @@ For.ts.temporal.plot <- Max.ts.date  %>%
 
 For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(partial_time, c(STRATA, Rate, Effective_Date, Expire_After))) %>%
                         filter(Date >= Effective_Date & Date <= Expire_After) %>% 
-                        group_by(STRATA) %>%
-                        mutate(N= ifelse(Effective_Date == as.Date("2020-03-26"), 0, N),
-                               N.cuml = cumsum(N),
-                               n.cuml = cumsum(n),
-                               n.waiver.period = sum(n[Effective_Date == as.Date("2020-03-26")]),
-                               n.waiver.period = ifelse(Effective_Date > as.Date("2020-03-26"), n.waiver.period, 0)) %>% 
+                        group_by(STRATA, Effective_Date, Expire_After) %>%
+                        mutate(N.cuml = cumsum(N)) %>% 
+                        group_by(STRATA) %>% 
+                        mutate(n.cuml = cumsum(n), 
+                               n.after.waivers = sum(n[Date < as.Date("2020-07-01")]),
+                               n.after.waivers = ifelse(Effective_Date == as.Date("2020-07-01"), n.after.waivers, 0)) %>% 
                         ungroup()
 
 For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-                        mutate(n.expected = round((N.cuml * Rate) + n.waiver.period, 0),
-                               Low95 = qbinom(0.025, N.cuml, Rate) + n.waiver.period,
-                               High95 = qbinom(0.975,N.cuml, Rate) + n.waiver.period,
+                        mutate(n.expected = round((N.cuml * Rate) + n.after.waivers, 0),
+                               Low95 = qbinom(0.025, N.cuml, Rate) + n.after.waivers,
+                               High95 = qbinom(0.975,N.cuml, Rate) + n.after.waivers,
                         Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
                         Observed.days = ifelse(n > 0, 1, NA)) %>% 
                         data.frame()
