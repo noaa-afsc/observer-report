@@ -1829,25 +1829,16 @@ The Fisheries Monitoring Science Committee (formerly the Observer Science Commit
 
 The Fishery Monitoring Science Committee’s Recommendations to improve the `r year+1` ADP were as follows:  
 
-* The ODDS trip logging and cancellation rules be re-evaluated and communicated to the Council and industry as soon as possible.   
-*No formal public action has been taken by the NMFS.*  
+**1. The ADP fully integrate EM and observer deployment into one fishery monitoring program.**  This recommendation echoes the SSC recommendation made at their June 2019 meeting, and is based on the recognition that EM and observers are two tools at the disposal of the NMFS to monitor fisheries and each has its advantages and disadvantages. Issues due to incomplete integration of fishery monitoring tools occurred in 2019 when only EM trips were monitored in the pot gear Pacific cod Central Gulf (Area 630) fishery, introducing a data gap for the GOA Pacific cod stock assessment. In 2020, observer coverage has been reduced further as a result of COVID-19 precautions.
+*NMFS plans to pause on incremental changes and instead draft a more comprehensive ADP sampling plan to address this issue in future years*.
 
-* The draft 2020 ADP stratification designs include a re-examination of tendering strata.  
-*The distinction between tendered and non-tendered strata was eliminated in the 2020 ADP.*  
-
-* Do not stratify by type of trawl gear (i.e., NPT and PTR strata).   
-*These gear types were not separated in the 2020 ADP. The rationale for not creating separate NPT and PTR strata is included in Appendix A.*  
-
-* Continue the baseline + optimization approach for determining coverage levels among strata.   
-*The 15% baseline + optimization approach for determining coverage levels among strata for observer coverage was used in the 2020 ADP.*  
-
-* We recommend that EM review rates be set to ensure that the entire year is sampled and review is timely enough so that data from EM can be used for catch accounting and fisheries monitoring as envisioned by the Council.   
-*EM review included the entire year for 2019, which was an improvement over 2018.  There was about a two-month lag between data collection and data availability in 2019.  Whether this is timely enough for catch accounting and fishery monitoring is not clear to the FMSC.*  
+**2. We continue to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council.** The analyses contained in the Annual Report attempt to identify fishing trips, which is the unit of measurement for deployment.  However, there are some instances when realized deployments do not match intended deployments. In some cases, it may be that there were no differences, but the accounting of trips between ODDS and eLandings data are incongruent.
+*No progress was made on this issue*
 
 ##Recommendations to Improve Data Quality and Guide the `r year+2` ADP    
-**1. We recommend that the ADP fully integrate EM and observer deployment into one fishery monitoring program.**  This recommendation echoes the SSC recommendation made at their June 2019 meeting, and is based on the recognition that EM and observers are two tools at the disposal of the NMFS to monitor fisheries and each has its advantages and disadvantages. Issues due to incomplete integration of fishery monitoring tools occurred in 2019 when only EM trips were monitored in the pot gear Pacific cod Central Gulf (Area 630) fishery, introducing a data gap for the GOA Pacific cod stock assessment. In 2020, observer coverage has been reduced further as a result of COVID-19 precautions.  
+**1. For the 8th consecutive year, we continue to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council.**  Lack of action on this activity has now resulted in the inabilty for NMFS to statistically evaluate whether bias occurred in the observer deployments in the last part of 2020 and this will also be the case for most, if not all of 2021.  This is especially troubling given that it is a 2021 NMFS National Priority to Increase the use of electronic reporting, electronic monitoring, and artificial intelligence technology for commercial and recreational fisheries.  Leveraging existing systems, such as ODDS and *e*Landings should be an achievable goal.
 
-**2. We continue to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council.** The analyses contained in the Annual Report attempt to identify fishing trips, which is the unit of measurement for deployment.  However, there are some instances when realized deployments do not match intended deployments. In some cases, it may be that there were no differences, but the accounting of trips between ODDS and eLandings data are incongruent. We note that the temporal bias issue identified (Figure 3) in the observed *POT - Tender* stratum and differences between the observed and unobserved landed weight (Table 10) in this stratum was potentially an artifact of the analysis. This artifact could have been caused by the difficulty in identifying observed and unobserved trips, especially for tendered strata.  
+**2. The sampling design for the next ADP should use trip as the primary sampling unit and should not be constrained by port of departure or landing unless doing so jeapordizes health and safety.  We support a rollover of the final 2020 ADP as originally proposed for 2022.** 
 
 #####
 
