@@ -1223,10 +1223,22 @@ For.ts.temporal.plot <- mutate(For.ts.temporal.plot,
                                High95=na.locf(High95),
                                Outside.bounds=na.locf(Outside.bounds))
 
+# Remove values that aren't applicable for the waiver period
+For.ts.temporal.plot <- mutate(For.ts.temporal.plot,
+                               n.expected = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, n.expected),
+                               Low95 = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, Low95),
+                               High95 = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, High95),
+                               Outside.bounds = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, Outside.bounds))
+
 # Summarise days and portion of the year outside of expected
 For.ts.temporal.summary <- For.ts.temporal.plot %>% 
                            group_by(STRATA) %>% 
-                           summarise(N.outside=sum(Outside.bounds), Days=n(), `% Outside`=round(100*N.outside/Days, 1))
+                           summarise(N.outside = sum(Outside.bounds, na.rm = TRUE), 
+                                     Days = ifelse(STRATA %in% c("EM HAL", "EM POT"), 
+                                            sum(Date >= as.Date("2020-01-01")), 
+                                            sum(Date < as.Date("2020-03-26") | Date >= as.Date("2020-07-01")))) %>% 
+                           distinct() %>% 
+                           mutate(`% Outside` = round(100*N.outside/Days, 1))
 
 #Calculate and store the p.value from a binomial
 for.binom <- merge(For.ts.temporal.plot %>% 
@@ -1254,7 +1266,7 @@ For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(for.binom, STRATA, p)
 
 # Order strata for plot
 For.ts.temporal.plot <- transform(For.ts.temporal.plot,
-                                STRATA=factor(STRATA,levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
+                                STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "HAL", "POT", "TRW")))
 
 # Add column for dates where coverage is outside expectation
 For.ts.temporal.plot <- For.ts.temporal.plot %>%
@@ -1276,7 +1288,7 @@ Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
   # geom_text(aes(x=as.Date(paste0(year, "-04-01"), format = "%Y-%m-%d"),
   #               y = Inf, vjust = 1.25, 
   #               label = p), size = 4, parse=T, check_overlap = T) +
-  facet_wrap(~ STRATA, ncol=2, scale="free_y") +
+  facet_wrap(~ STRATA, ncol=1, scale="free_y") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
   ylab("Cumulative Trips in Trip-selection Strata\n") +
