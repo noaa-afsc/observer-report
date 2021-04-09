@@ -21,7 +21,6 @@ channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in
 # To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
 # effort_prediction.rdata (created in the most recent final ADP project)
 # fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
-# 2021-01-25CAS_VALHALLA.RData (temporary version of Valhalla created by AKRO)
 # These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
 
 # * ADP inputs ----
@@ -45,7 +44,7 @@ adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 # * Valhalla ----
 # Pull in this report year's Valhalla
 # The code that creates Valhalla is maintained separately from this project
-load("data/2021-03-10CAS_VALHALLA.RData")
+load("data/2021-04-02CAS_VALHALLA.RData")
 
 # Rename VALHALLA, which is the only object in the above file
 work.data <- VALHALLA
@@ -466,7 +465,8 @@ partial[, STRATA := ifelse(           # Define strata based on sample plan and g
   SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
     SAMPLE_PLAN %like% "EM EFP" & GEAR == "TRW", "EM TRW EFP", ifelse(
       SAMPLE_PLAN %like% "Gear Type", GEAR, NA)))]
-partial <- unique(partial[, .(Effective_Date = EFFECTIVE_DATE, STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
+partial <- unique(partial[, .(Effective_Date = as.Date(EFFECTIVE_DATE), STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
+partial[STRATA == "EM TRW EFP", Rate := 0.3000]   # Make the expected rate for partial coverage EM TRW EFP equal to the shoreside monitoring rate (not in ODDS)  
 partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    # Merge descriptions in 
 partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
 partial[, txt := paste0(formatC(round(Rate * 100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
