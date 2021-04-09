@@ -1665,6 +1665,10 @@ rm(perm_sum)
 ```{r observed_permutation_plot, message=FALSE, warning=FALSE, include=FALSE}
 OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA=as.character(STRATA)) 
 OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA=as.character(STRATA)) %>% 
+  # Apply Bonferroni adjustment to p-values  
+  mutate(p = p * length(unique(OBSERVED_FLAG.summary$variable))) %>% 
+  mutate(p = ifelse(p > 1, 1, p)) %>% 
+  # Format significant p-values  
   mutate(p = ifelse(p < 0.05, paste0(formatC(p,digits=3, format="f"), "*"), formatC(p,digits=3, format="f"))) %>%
   mutate(p = ifelse(p == "0.000*", 
                     paste0("italic(p) < '0.001*'"), 
