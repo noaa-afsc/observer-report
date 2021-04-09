@@ -2092,7 +2092,7 @@ suppressWarnings(print(odds.by.date.plot))
 print(Temporal.plot)
 ```
 
-####`r fig_nums('Temporal.plot', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded area) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as *p*-values.'))`  
+####`r fig_nums('Temporal.plot', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as *p*-values. Dashed verical lines and shaded rectangles denote the period when waivers were being issued for observer coverage due to COVID-19. During the waiver period, there was no expected number of observed trips. The EM strata were not affected by the waiver period, and so the expected numbers of monitored trips in those strata are uninterrupted.'))`  
 
 #####
 
