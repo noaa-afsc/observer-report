@@ -663,3 +663,14 @@ flextable(bsai) %>%
 [^7]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
 
 
+```{r export}
+
+# Clean up workspace (removes everything EXCEPT the objects listed) and save RData file
+rm(list= ls()[!(ls() %in% c('fee_detail','fee_total', 'all_areas', 'goa', 'bsai'))])
+
+# Export data file so it can be used for figure development:
+#save(fee_detail, fee_total, all_areas, goa, bsai,
+#     file = paste0("Observer_Fee_Data_", as.numeric(format(Sys.Date(), "%Y"))-1,".RData"))
+
+```
+
