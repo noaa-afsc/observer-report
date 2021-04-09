@@ -21,6 +21,7 @@ if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requi
 if(!require("scales"))  install.packages("scales")
 if(!require("sf"))  install.packages("sf")
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
+if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
 
 # II. Functions ----

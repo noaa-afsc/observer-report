@@ -1746,21 +1746,14 @@ One of the analyses done by the permutation test is to compare trip lengths (in 
 In a well-designed sampling program, the monitoring rate should be large enough to reasonably ensure that the range of fishing activities and characteristics are represented in the sample data. The Catch Accounting System post-stratifies data into groups of fishing activities with similar trip characteristics such as gear, trip targets, and NMFS Area (Cahalan et al. 2014). At low numbers of trips and low sampling rates, the probability of no monitoring data within a particular post-stratum is increased and may result in expansions of bycatch rates from one type of fishing activity against landings for a different type of fishing activity. This will result in biased estimates of bycatch. For this reason, it is important to have a large enough sample (monitored trips and vessels) to have reasonable expectation of monitoring all types of fishing.           
 
 ``` {r prob.bynumber.plot, message=FALSE, warning=FALSE, include=FALSE}
-# Scatterplot of probability of having *no* observed sample units (fishing
-# trips) against total number of sample units by stratum. This is a decaying
-# relationship, where the fewer the number of fishing trips in a cell, the
-# higher the probability of not observing any trips in the unit. See
-# {spatial_bias_analysis} code chunk for analysis used to generate
-# strata.cell.dat.
-prob.bynumber.plot <- ggplot(strata.cell.dat, aes(y=Hyper.P.0, x=totl.in.cell)) +
-                      geom_point(size=3) +
-                      geom_line(size=1) + 
-                      facet_wrap(STRATA~., ncol = 2) +
-                      xlab('\nNumber of Trips') +
-                      ylab('Probability of No Observed Trips\n') +
-                      # This will cut out points with > 90 trips in order to focus on 
-                      # areas that have some probability of getting no monitored trips
-                      xlim(0, 90) +
+# Histogram of the probability of having *no* observed sample units 
+# in a NMFS Area, by stratum. See {spatial_bias_analysis} code chunk 
+# for analysis used to generate strata.cell.dat.  
+prob.bynumber.plot <- ggplot(mutate(strata.cell.dat, STRATA = factor(STRATA, levels = c("EM HAL", "EM POT", "HAL", "POT", "TRW"))), aes(x = Hyper.P.0, fill = STRATA)) +
+                      geom_histogram(binwidth = 0.05) +
+                      scale_fill_viridis(discrete = TRUE) + 
+                      scale_y_continuous(limits = c(0,37), expand = c(0,0)) +
+                      labs(x = "Probability of No Monitored Trips", y = "Number of NMFS Areas", fill = "Strata") +
                       fig.theme
                  
 prob.bynumber.plot
@@ -2171,7 +2164,7 @@ suppressMessages(print(freq_geartender))
 suppressMessages(print(prob.bynumber.plot))
 ```
 
-####`r fig_nums('prob.bynumber.plot', caption = paste0('Probability of monitoring no trips in a NMFS Area and stratum given fishing effort and sampling rate. The x-axis has been truncated to increase resolution at low levels of fishing effort. The likelihood of having no monitoring data decreases with increasing total fishing effort and selection rate. The selection rate is ', wordlist(partial$txt), '.'))`  
+####`r fig_nums('prob.bynumber.plot', caption = paste0('The number of NMFS Areas within each stratum that have a given probability of having no monitored trips.'))`    
 
 #####
 
