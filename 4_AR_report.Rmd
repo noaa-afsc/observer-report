@@ -2168,6 +2168,44 @@ suppressMessages(print(prob.bynumber.plot))
 
 #####
 
+```{r effort_monitored_obze_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8.5, fig.height=10, dpi=600}
+```
+![](figures/ts_obze_HAL.png)
+
+####`r fig_nums('effort_monitored_obze_HAL', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *HAL* stratum (blue) and zero-selection pool trips that used hook-and-line gear (goldenrod). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored'))`
+  
+#####
+
+```{r effort_monitored_obze_POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8.5, fig.height=10, dpi=600}
+```
+![](figures/ts_obze_POT.png)
+
+####`r fig_nums('effort_monitored_obze_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *POT* stratum (blue) and zero-selection pool trips that used pot gear (goldenrod). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored'))`
+
+```{r effort_monitored_obze_TRW, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8.5, fig.height=5, dpi=600}
+```
+![](figures/ts_obze_TRW.png)
+
+####`r fig_nums('effort_monitored_obze_TRW', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *TRW* stratum. Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored'))`
+
+#####
+
+```{r effort_monitored_emob_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8.5, fig.height=10, dpi=600}
+```
+![](figures/ts_emob_HAL.png)
+
+####`r fig_nums('effort_monitored_emob_HAL', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM HAL* stratum (green) and observer *HAL* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored'))`
+
+#####
+
+```{r effort_monitored_emob_POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8.5, fig.height=10, dpi=600}
+```
+![](figures/ts_emob_POT.png)
+
+####`r fig_nums('effort_monitored_emob_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM POT* stratum (green) and observer *POT* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored'))`
+
+#####
+
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 save.image(file="4_AR_report.Rdata")
 ```
