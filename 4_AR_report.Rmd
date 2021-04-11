@@ -1916,7 +1916,7 @@ kable(logged.table, escape=F)
 
 #####
 
-####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Random Selection OnlyInitial Random Selection) and those that remained after user manipulation (Final ExpectedAfter Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, No After Waivers).'))`  
+####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Random Selection OnlyInitial Random Selection) and those that remained after user manipulation (Final ExpectedAfter Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, No After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
 
 ```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
 Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
@@ -1935,28 +1935,6 @@ kable(Selection.table %>%
                       "Observer strata : Jan. 1 - Mar. 25"=12,
                       "Observer strata : Mar. 25 - Jun. 30"=12,
                       "Observer strata : Jul. 1 - Dec. 31"=12), indent=F) 
-
-# Alternately, have separate table for Fixed-Gear EM and then OB strata in wide-format?
-tb1 <- Selection.table %>%
-  filter(Strata %like% "EM") %>% select(-Period)
-tb2 <- Selection.table %>%
-  filter(!(Strata %like% "EM")) %>% arrange(Period, Strata, `Trip disposition`) 
-tb2_wide <- merge(merge(tb2 %>% filter(Period == 1) %>% select(-Period),
-      tb2 %>% filter(Period == 2) %>% select(-Period), by=c("Strata", "Trip disposition")),
-      tb2 %>% filter(Period == 3) %>% select(-Period), by=c("Strata", "Trip disposition")) %>%
-  arrange(Strata, `Trip disposition`)
-
-kable(tb1, 
-      align="llrrrrr",
-      col.names=c("Strata", "Trip disposition", "*n*", "*N*", "Actu", "Prog", "*p*"), escape=F) %>% 
-      collapse_rows(1) %>%
-      kable_paper()
-kable(tb2_wide, 
-      align=c("llrrrrrrrrrrrrrr"),
-      col.names=c("Strata", "Trip disposition", rep(c("*n*", "*N*", "Actu", "Prog", "*p*"), times=3)), escape=F) %>% 
-  kable_paper() %>%
-  collapse_rows(1) %>%
-  add_header_above(c(" "=2, "Jan. 1 - Mar. 24" = 5,  "Mar. 24 - Jun. 30" = 5, "Jul. 1 - Dec. 31" = 5))
 ```
 
 #####
