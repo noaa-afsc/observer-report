@@ -1312,7 +1312,7 @@ Temporal.plot
 The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in only one of the seven partial coverage strata: *POT - Tender* (expected rate = 0.161, realized rate = 0.295, p-value = 0.023; `r tbl_nums('Coverage.Table', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). Coverage rates were outside of the expected range for 15.9%, 9.3%, 31.2%, 28.2%, and 7.9% of the year for the *EM HAL*, *EM POT*, *POT – No Tender*, *POT - Tender* and *TRW – No Tender* strata, respectively. The *EM HAL*, *POT – No Tender*, and *TRW – No Tender* strata were outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *HAL* (expected rate = 0.177, realized rate = 0.176, *p*-value = 0.925) and *TRW - Tender* (expected rate = 0.271, realized rate = 0.357, *p*-value = 0.175) strata. Overall, there appeared to be less temporal bias in 2019 than in 2018, when three of six partial coverage strata had coverage rates outside of the expected range at the end of the year (AFSC and AKRO 2019).         
 
 ##Spatial Patterns in Trip-Selection  
-Under a strictly random selection of trips and with a large enough sample size, the spatial distribution of monitored trips should reflect the spatial distribution of all trips. The hypergeometric distribution was used to describe the results of sampling from a population of items (fishing trips) with different characteristics (NMFS Area fished). Based on this distribution, the expected number of monitored trips in a stratum and area is the realized monitoring rate (not selection rate) for the stratum multiplied by the total number of trips from that stratum that occurred in the area of interest. Using this method, we compared the expected number of monitored trips to the realized number of monitored trips in each NMFS Area and stratum combination and found that in most cases, the realized number of monitored trips was close to the expected result (`r fig_nums('cell.plot', display="cite")`). As part of this evaluation, we calculated the probability of monitoring the realized number of monitored trips within each stratum and NMFS Area. For the purposes of the following discussion, NMFS Areas with an unexpected number of trips (probability of our result is less than 0.05) are referred to as “low-p” areas.  
+Under a strictly random selection of trips and with a large enough sample size, the spatial distribution of monitored trips should reflect the spatial distribution of all trips. The hypergeometric distribution was used to describe the results of sampling from a population of items (fishing trips) with different characteristics (NMFS Area fished). Based on this distribution, the expected number of monitored trips in a stratum and area is the realized monitoring rate (not selection rate) for the stratum multiplied by the total number of trips from that stratum that occurred in the area of interest. Using this method, we compared the expected number of monitored trips to the realized number of monitored trips in each NMFS Area and stratum combination and found that in most cases, the realized number of monitored trips was close to the expected result. As part of this evaluation, we calculated the probability of monitoring the realized number of monitored trips within each stratum and NMFS Area. For the purposes of the following discussion, NMFS Areas with an unexpected number of trips (probability of our result is less than 0.05) are referred to as “low-p” areas.  
 
 ```{r spatial_bias_analysis, message=FALSE, warning=FALSE, include=FALSE}
 trips.within.cells <- work.data %>%
@@ -1551,7 +1551,7 @@ results <- cbind(results, strat_interp = c(
   "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *TRW* stratum."))
 ```
 
-```{r strata_patterns_by_stratum_text, message=FALSE, warning=FALSE, include=FALSE}
+```{r strata_patterns_by_stratum_text, message=FALSE, warning=FALSE, eval=FALSE}
 
 #This for loop creates the sections of markdown text for the stratum-specific spatial bias summary...  knit_expand() is the work-horse here.
 out <- NULL #create empty object
@@ -1570,8 +1570,12 @@ for (i in as.character(unique(results$STRATA))) {
 
 ```
 
-<!-- Now knit and paste 'out' to create the paragraphs of text. -->
-`r paste(knit(text = out), collapse = '\n')`
+<!-- Now knit and paste 'out' to create the paragraphs of text. For 2020: substitute tile plots. -->
+`r fig_nums('effort_monitored_obze_HAL', display="cite")`
+`r fig_nums('effort_monitored_obze_POT', display="cite")`
+`r fig_nums('effort_monitored_obze_TRW', display="cite")`
+`r fig_nums('effort_monitored_emob_HAL', display="cite")`
+`r fig_nums('effort_monitored_emob_POT', display="cite")`
 
 ##Trip Metrics  
 This section analyses whether monitored trips are similar to unmonitored trips using a permutation test (a.k.a., randomization test). This test evaluates the question “How likely is the difference we found if these two groups have the same distribution (in the metric we are comparing)?” Permutation tests compare the actual difference found between two groups to the distribution of many differences derived by randomizing the labels defining the two groups (e.g., monitored and unmonitored). Difference values in the permutation test were calculated by subtracting the mean metric value for the “No” condition from the mean metric value for the “Yes” condition. For example, the difference between vessel lengths in a permutation test for a monitoring effect would be the mean value for unmonitored trips subtracted from the mean value for all monitored trips. By randomizing group assignments, the combined distribution of randomized differences represents the sampling distribution under the null hypothesis that the two groups are equal. In this report, 1,000 randomized trials were run for the permutation test. The *p*-value from the test is calculated as the number of randomized trials with greater absolute differences than the actual difference divided by the number of randomized trials. Similar to the other statistical tests used in this report, low *p*-values (< 0.05) indicate unlikely events under the hypothesis of equality and are therefore considered evidence against that hypothesis. As stated previously, a Bonferroni adjustment has been applied to these *p*-values by multiplying original *p*-values by the number of metrics being tested (six in this case). These adjusted *p*-values are then compared to the 0.05 significance level. In an attempt to improve clarity, although five values are calculated in the test; 1) the difference between groups, 2) the mean difference between groups from randomized trials, 3) #1 expressed as a percentage of the mean value of the metric being tested, 4) #2 expressed as a percentage of the mean value of the metric being tested, and 5) the *p*-value of the test, only values (1), (3) and (5) are presented.      
@@ -2077,6 +2081,14 @@ suppressWarnings(print(odds.by.date.plot))
 
 #####
 
+```{r em.times.figure, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 6, dpi = 600}
+suppressMessages(print(em.times.figure))
+```
+
+####`r fig_nums('em.times.figure', caption = "Histogram of days taken for fixed gear EM data review by gear type. Columns are not additive, and instead represent two different ways of measuring review time, starting from either the end of the trip or from the date at which the hard drive was received.")`  
+
+#####
+
 ```{r Temporal.plot, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
 print(Temporal.plot)
 ```
@@ -2146,14 +2158,6 @@ suppressMessages(print(prob.bynumber.plot))
 ```
 
 ####`r fig_nums('prob.bynumber.plot', caption = paste0('The number of NMFS Areas within each stratum that have a given probability of having no monitored trips.'))`    
-
-#####
-
-```{r em.times.figure, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 6, dpi = 600}
-suppressMessages(print(em.times.figure))
-```
-
-####`r fig_nums('em.times.figure', caption = "Histogram of days taken for fixed gear EM data review by gear type. Columns are not additive, and instead represent two different ways of measuring review time, starting from either the end of the trip or from the date at which the hard drive was received.")`  
 
 #####
 
