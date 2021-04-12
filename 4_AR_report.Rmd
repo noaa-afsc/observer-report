@@ -615,7 +615,7 @@ Selection.table <- p.table %>%
                           "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
 ```
 
-```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
+```{r odds.ts.daily.cuml.fig, warning=FALSE, eval=FALSE}
 odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
      filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
      transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format="%Y-%m-%d")) %>% 
@@ -1088,7 +1088,7 @@ em.times.figure <- ggplot(em_times, aes(x=value)) +
 
 Evaluations for the full coverage category and zero-selection pool are straightforward - either the coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved 99.9% coverage in its full coverage category (`r tbl_nums('Coverage.Table', display = "cite")`). Five trips were not monitored in the full coverage category – four of these occurred on a single catcher vessel fishing CDQ halibut with hook and line gear that retained Pacific cod above the Maximum Retainable Amount and therefore met the criteria for full coverage fishing but failed to obtain a full coverage observer. The program achieved perfect compliance with the *Zero Coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips) will contain the actual deployment rate 95% percent of the time.  If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal. Coverage rates were consistent with expected values in six of the seven partial coverage strata, but were higher than expected within the *POT - Tender* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). There are two reasons why this result is of little concern.  First, there is no clear evidence of trip manipulation in ODDS data from this stratum.  Secondly, the achieved rate was only slightly outside of the 95% range of expected outcomes (16.1% achieved vs. a lower bound of 16.8%).  Given the low number of total trips in this stratum (44), a change in a single observed trip, from 13 observed to 12 would have resulted in an expected result for this stratum since new confidence bounds would have included the expected rate.  
 
-Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. In `r year`, the median time between receipt and completion of review was 24 days for *EM HAL* and 60 days for *EM POT* (`r tbl_nums('em.times.figure', display = "cite")`). This is compared to a median of 7 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
+Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. In `r year`, the median time between receipt and completion of review was 24 days for *EM HAL* and 60 days for *EM POT* (`r fig_nums('em.times.figure', display = "cite")`). This is compared to a median of 7 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
 
 In combination across all strata, coverage levels, and fishery monitoring tools, 4,497 trips (43.3%) and 510 vessels (47.0%) were successfully monitored at-sea among all fishing in Federal fisheries of Alaska in 2019 (`r tbl_nums('Coverage.Table', display = "cite")`).  
 
@@ -2068,7 +2068,7 @@ print(grid.arrange(outcomes.plot, costs.plot, nrow=2))
 
 #####
 
-```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600, include=FALSE}
+```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600, eval=FALSE}
 suppressWarnings(print(odds.by.date.plot))   
 
 # Figure 2 in 2019 Annual Report
