@@ -1936,7 +1936,7 @@ kable(logged.table, escape=F)
 
 #####
 
-####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Random Selection OnlyInitial Random Selection) and those that remained after user manipulation (Final ExpectedAfter Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, No After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
+####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Initial Random Selection) and those that remained after user manipulation (After Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
 
 ```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
 Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
