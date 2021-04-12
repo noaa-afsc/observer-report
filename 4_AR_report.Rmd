@@ -1058,21 +1058,37 @@ em_times <- EM.review %>%
                      DATE_EXPORTED_TO_AFSC = as.Date(DATE_EXPORTED_TO_AFSC)) %>% 
             mutate(REVIEW_TIME_FROM_LANDING = as.numeric(DATE_EXPORTED_TO_AFSC - ACTUAL_EM_TRIP_END_DATE_TIME),
                    REVIEW_TIME_FROM_HD_RECEIVED = as.numeric(DATE_EXPORTED_TO_AFSC - DATE_HD_RECEIVED_BY_PSMFC)) %>% 
-            group_by(GEAR_TYPE_LOGGED) %>% 
-            summarise(MEAN_REVIEW_TIME_FROM_LANDING = round(mean(REVIEW_TIME_FROM_LANDING)), 
-                      MEAN_REVIEW_TIME_FROM_HD_RECEIVED = round(mean(REVIEW_TIME_FROM_HD_RECEIVED))) %>% 
             mutate(GEAR_TYPE_LOGGED = ifelse(GEAR_TYPE_LOGGED=="LONGLINE", "EM HAL", GEAR_TYPE_LOGGED)) %>% 
             mutate(GEAR_TYPE_LOGGED = ifelse(GEAR_TYPE_LOGGED=="POT", "EM POT", GEAR_TYPE_LOGGED)) %>% 
             rename(Strata = GEAR_TYPE_LOGGED,
-                   `Mean number of days between end of trip and data exported to NMFS` = MEAN_REVIEW_TIME_FROM_LANDING,
-                   `Mean number of days between hard drive received and data exported to NMFS` = MEAN_REVIEW_TIME_FROM_HD_RECEIVED)
+                   `End of trip and data exported to NMFS` = REVIEW_TIME_FROM_LANDING,
+                   `Hard drive received and data exported to NMFS` = REVIEW_TIME_FROM_HD_RECEIVED) %>%
+            melt(id.vars=c("Strata"), 
+                 measure.vars = c("End of trip and data exported to NMFS", "Hard drive received and data exported to NMFS"), 
+                 variable.name="metric")
 
-em_times
+em_times_smry <- em_times %>% 
+  group_by(Strata, metric) %>% 
+  summarise('25th percentile' = round(as.vector(quantile(value, 0.25))),
+            median = round(as.vector(quantile(value, 0.50))), 
+            '75th percentile' = round(as.vector(quantile(value, 0.75))),
+            mean = round(mean(value))) %>%
+  ungroup() %>%
+  melt(id.vars=c("Strata", "metric"), measure.vars=c("25th percentile", "median", "75th percentile", "mean")) %>%
+  mutate(label = formatC(value, width=max(nchar(value))))
+
+em.times.figure <- ggplot(em_times, aes(x=value)) + 
+  facet_grid(Strata ~ metric, scales="free_y") + 
+  geom_histogram(bins=20, fill="gray70") + 
+  geom_vline(data=em_times_smry, aes(xintercept=value), linetype=2) + 
+  geom_text(data=em_times_smry, aes(x=value, y=Inf, label=paste0(variable, ": ", label, "  ")), angle=90, hjust=1, vjust=-.25) +
+  labs(x="Days", y="Count") +
+  theme_bw() 
 ```
 
 Evaluations for the full coverage category and zero-selection pool are straightforward - either the coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved 99.9% coverage in its full coverage category (`r tbl_nums('Coverage.Table', display = "cite")`). Five trips were not monitored in the full coverage category – four of these occurred on a single catcher vessel fishing CDQ halibut with hook and line gear that retained Pacific cod above the Maximum Retainable Amount and therefore met the criteria for full coverage fishing but failed to obtain a full coverage observer. The program achieved perfect compliance with the *Zero Coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips) will contain the actual deployment rate 95% percent of the time.  If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal. Coverage rates were consistent with expected values in six of the seven partial coverage strata, but were higher than expected within the *POT - Tender* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). There are two reasons why this result is of little concern.  First, there is no clear evidence of trip manipulation in ODDS data from this stratum.  Secondly, the achieved rate was only slightly outside of the 95% range of expected outcomes (16.1% achieved vs. a lower bound of 16.8%).  Given the low number of total trips in this stratum (44), a change in a single observed trip, from 13 observed to 12 would have resulted in an expected result for this stratum since new confidence bounds would have included the expected rate.  
 
-Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. In `r year`, the mean time between receipt and completion of review was 58 days for *EM HAL* and 79 days for *EM POT* (`r tbl_nums('em.times.table', display = "cite")`). This is compared to an average of 8.8 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
+Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. In `r year`, the median time between receipt and completion of review was 24 days for *EM HAL* and 60 days for *EM POT* (`r tbl_nums('em.times.figure', display = "cite")`). This is compared to a median of 7 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
 
 In combination across all strata, coverage levels, and fishery monitoring tools, 4,497 trips (43.3%) and 510 vessels (47.0%) were successfully monitored at-sea among all fishing in Federal fisheries of Alaska in 2019 (`r tbl_nums('Coverage.Table', display = "cite")`).  
 
@@ -1665,6 +1681,10 @@ rm(perm_sum)
 ```{r observed_permutation_plot, message=FALSE, warning=FALSE, include=FALSE}
 OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA=as.character(STRATA)) 
 OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA=as.character(STRATA)) %>% 
+  # Apply Bonferroni adjustment to p-values  
+  mutate(p = p * length(unique(OBSERVED_FLAG.summary$variable))) %>% 
+  mutate(p = ifelse(p > 1, 1, p)) %>% 
+  # Format significant p-values  
   mutate(p = ifelse(p < 0.05, paste0(formatC(p,digits=3, format="f"), "*"), formatC(p,digits=3, format="f"))) %>%
   mutate(p = ifelse(p == "0.000*", 
                     paste0("italic(p) < '0.001*'"), 
@@ -2026,13 +2046,6 @@ kable(em.summary.table)
 
 #####
 
-####`r tbl_nums('em.times.table', caption = "The mean number of days taken for fixed gear EM data review by gear type. Columns are not additive, and instead represent two different ways of measuring review time, starting from either the end of the trip or from the date at which the hard drive was received.")`  
-```{r em.times.table, echo=FALSE, tab.cap=""}
-kable(em_times)
-```
-
-#####
-
 ####`r tbl_nums('Pollock.observed.table', caption = "The number of pollock deliveries made by vessels in the *TRW* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
@@ -2203,6 +2216,12 @@ suppressMessages(print(prob.bynumber.plot))
 ![](figures/ts_emob_POT.png)
 
 ####`r fig_nums('effort_monitored_emob_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM POT* stratum (green) and observer *POT* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
+
+```{r em.times.figure, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 6, dpi = 600}
+suppressMessages(print(em.times.figure))
+```
+
+####`r fig_nums('em.times.figure', caption = "Histogram of days taken for fixed gear EM data review by gear type. Columns are not additive, and instead represent two different ways of measuring review time, starting from either the end of the trip or from the date at which the hard drive was received.")`  
 
 #####
 
