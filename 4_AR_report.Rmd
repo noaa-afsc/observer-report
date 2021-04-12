@@ -1428,7 +1428,7 @@ cell.plot <- ggplot(filter(strata.cell.dat),
 #table(strata.cell.dat$P_extreme_more_cat, strata.cell.dat$STRATA)
 ```
 
-```{r map_generation, message=FALSE, warning=FALSE, include=FALSE}
+```{r map_generation, message=FALSE, warning=FALSE, eval=FALSE}
 # Map generation
 # This chunk only needs to be run for initial figure generation, then use eval=FALSE
 for (i in levels(strata.cell.dat$STRATA)) {
@@ -2097,8 +2097,6 @@ suppressWarnings(print(odds.by.date.plot))
 ####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))`  
 ```
 
-
-
 #####
 
 ```{r Temporal.plot, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
@@ -2109,51 +2107,43 @@ print(Temporal.plot)
 
 #####
 
-```{r cell.plot, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600} 
-suppressMessages(print(cell.plot))
+```{r effort_monitored_obze_HAL, echo=FALSE, message=FALSE, warning=FALSE, dpi=600}
 ```
+![](figures/ts_obze_HAL.png)
 
-####`r fig_nums('cell.plot', caption = paste0('Comparison plots depicting the number of monitored sample units compared to the number of expected monitored sample units for each partial coverage stratum. Each point on a plot represents a NMFS Area. The darker the point, the more unusual the result.'))`  
+####`r fig_nums('effort_monitored_obze_HAL', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *HAL* stratum (blue) and *Zero Coverage* stratum trips that used hook-and-line gear (goldenrod). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
+  
+#####
 
-####
-
-```{r probability_HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```{r effort_monitored_obze_POT, echo=FALSE, message=FALSE, warning=FALSE}
 ```
-![](figures/probability_HAL.png)
+![](figures/ts_obze_POT.png)
 
-####`r fig_nums('probability_HAL', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####`r fig_nums('effort_monitored_obze_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *POT* stratum (blue) and *Zero Coverage* stratum trips that used pot gear (goldenrod). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
 
-####
+#####
 
-```{r probability_EM HAL, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```{r effort_monitored_obze_TRW, echo=FALSE, message=FALSE, warning=FALSE}
 ```
-![](figures/probability_EM HAL.png)
+![](figures/ts_obze_TRW.png)
 
-####`r fig_nums('probability_EM HAL', caption = paste0('Probability of monitoring the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *EM HAL* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####`r fig_nums('effort_monitored_obze_TRW', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *TRW* stratum. Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
 
-####
+#####
 
-```{r probability_POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```{r effort_monitored_emob_HAL, echo=FALSE, message=FALSE, warning=FALSE}
 ```
-![](figures/probability_POT.png)
+![](figures/ts_emob_HAL.png)
 
-####`r fig_nums('probability_POT', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *POT* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####`r fig_nums('effort_monitored_emob_HAL', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM HAL* stratum (green) and observer *HAL* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
 
-####
+#####
 
-```{r probability_EM POT, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
+```{r effort_monitored_emob_POT, echo=FALSE, message=FALSE, warning=FALSE}
 ```
-![](figures/probability_EM POT.png)
+![](figures/ts_emob_POT.png)
 
-####`r fig_nums('probability_EM POT', caption = paste0('Probability of monitoring the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *EM POT* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`  
-
-####
-
-```{r probability_TRW, echo=FALSE, message=FALSE, warning=FALSE, fig.width=9, fig.height=10, dpi=600}
-```
-![](figures/probability_TRW.png)
-
-####`r fig_nums('probability_TRW', caption = paste0('Probability of observing the realized or more extreme outcome (coverage rate) in a NMFS Reporting Area in the *TRW* stratum. Reporting Areas where unlikely outcomes occurred are shaded in darker colors.'))`
+####`r fig_nums('effort_monitored_emob_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM POT* stratum (green) and observer *POT* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
   
 ####
 
