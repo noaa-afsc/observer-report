@@ -2107,14 +2107,6 @@ print(Temporal.plot)
 
 #####
 
-```{r cell.plot, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600} 
-suppressMessages(print(cell.plot))
-```
-
-####`r fig_nums('cell.plot', caption = paste0('Comparison plots depicting the number of monitored sample units compared to the number of expected monitored sample units for each partial coverage stratum. Each point on a plot represents a NMFS Area. The darker the point, the more unusual the result.'))`  
-
-####
-
 ```{r effort_monitored_obze_HAL, echo=FALSE, message=FALSE, warning=FALSE, dpi=600}
 ```
 ![](figures/ts_obze_HAL.png)
