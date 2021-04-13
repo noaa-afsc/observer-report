@@ -21,6 +21,7 @@ if(!require("htmlwidgets"))   install.packages("htmlwidgets")
 if(!require("knitr"))   install.packages("knitr")
 if(!require("htmlTable"))   install.packages("htmlTable")
 if(!require("flextable"))   install.packages("flextable")
+if(!require("officer"))   install.packages("officer")
 if(!require("toOrdinal"))   install.packages("toOrdinal")
 if(!require("pander"))   install.packages("pander")
 
