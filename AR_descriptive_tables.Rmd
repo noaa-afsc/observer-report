@@ -7,9 +7,9 @@ output:
 
 # -------------------------------------------------------------------------------------------------------------------- #
 #
-# Program:AR_descriptive_2019_tables.Rmd                                         
+# Program:AR_descriptive_tables.Rmd                                         
 # Project:Observer Program Annual Report Descriptive Chapter                                      
-# Location: S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info 
+# Location: S:\Observer Program Annual Report\YEAR_Annual_Report\Chap4_Descriptive_Info 
 #      or: C:\Teleworking\Obs Annual Report\Ch 4
 #
 # Objectives:                                                                  
@@ -24,8 +24,8 @@ output:
 #     - VALHALLA - the original Valhalla data (NOT USED in this script)
 #     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #                        (NOT USED in this script)
-#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
-#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#     - with_totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
 #
 # Coronavirus telework locations:
 #  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_data.Rdata
@@ -34,27 +34,27 @@ output:
 #     - VALHALLA - the original Valhalla data (NOT USED in this script)
 #     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #                        (NOT USED in this script)
-#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
-#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#     - with_totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
 
 # Output:  
 # Normal locations:  
 #   - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_tables.html
 #     - catch.wide - summary of catch by FMP area, sector, gear, and retained flag with subtotals. Includes percent observed.
-#     - counts.wide - monitored and total trip counts.  Includes percent monitored.
+#     - counts_wide - monitored and total trip counts.  Includes percent monitored.
 #     - table4.3 - GOA table of monitored catch.
 #     - table4.4 - BSAI table of monitored catch.
-#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
-#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#     - with_totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
 # Coronavirus telework locations:
 #   - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_tables.Rdata
 #     - catch.wide - summary of monitored and total catch by FMP area, sector, gear, and retained flag with subtotals. 
 #                    Includes percent monitored.
-#     - counts.wide - monitored and total trip counts.  Includes percent monitored.
+#     - counts_wide - monitored and total trip counts.  Includes percent monitored.
 #     - table4.3 - GOA table of monitored catch.
 #     - table4.4 - BSAI table of monitored catch.
-#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
-#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#     - with_totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
 #
 # --------------------------------------------------------------------------------------------------------- #
 
@@ -74,20 +74,16 @@ Vessels and trips may be counted more than once in a vessel length category in T
 
 # LOAD DATA 
 
-YEAR <- 2019
+YEAR <- 2020
 
-#source("S:/Observer Program Annual Report/Descriptive_Chapter/AR_descriptive_helper.r")
-source("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_helper.r")
+#Source helper file (libraries, ggplot themes, etc.)
+source("AR_descriptive_helper.r")
 
-#load(paste0("S:/Observer Program Annual Report/", 
-#            YEAR, 
-#            "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
-#            YEAR, "_data.RData"))
-
-load(paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_data.RData"))
+# Load Ch 4 dataset:
+load(paste0("AR_descriptive_", YEAR, "_data.RData"))
 
 #Clean up workspace (Remove everything EXCEPT the objects listed)
-rm(list= ls()[!(ls() %in% c('YEAR', 'work.data', 'with.totals', 'fig.theme'))])
+rm(list= ls()[!(ls() %in% c('YEAR', 'work_data', 'with_totals', 'fig.theme'))])
 
 ```
 
@@ -95,19 +91,19 @@ rm(list= ls()[!(ls() %in% c('YEAR', 'work.data', 'with.totals', 'fig.theme'))])
 ```{r all_trips, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Summarize ALL trip and vessel counts for three different levels of aggregation:
-total.counts <- work.data %>% 
+total_counts <- work_data %>% 
   # Detail summaries for strata, FMP area, gear, and vessel length category:
   group_by(STRATA, FMP, AGENCY_GEAR_CODE, VESSEL_LENGTH_CATEGORY) %>% 
   summarize(TRIP_COUNT = n_distinct(TRIP_ID),
             VESSEL_COUNT = n_distinct(VESSEL_ID)) %>%
   # FMP Area summaries for vessel length category:
-  bind_rows(work.data %>% group_by(FMP, VESSEL_LENGTH_CATEGORY) %>% 
+  bind_rows(work_data %>% group_by(FMP, VESSEL_LENGTH_CATEGORY) %>% 
               summarize(AGENCY_GEAR_CODE = " ",
                         STRATA           = "FMP AREA Subtotal",
                         TRIP_COUNT = n_distinct(TRIP_ID),
                         VESSEL_COUNT = n_distinct(VESSEL_ID))) %>% 
   # Overall summaries for vessel length category:
-  bind_rows(work.data %>% group_by(VESSEL_LENGTH_CATEGORY) %>% 
+  bind_rows(work_data %>% group_by(VESSEL_LENGTH_CATEGORY) %>% 
               summarize(AGENCY_GEAR_CODE = " ",
                         STRATA           = " ",
                         FMP              = "Total Unique",
@@ -117,7 +113,7 @@ total.counts <- work.data %>%
  
 
 # Convert the trip and vessel counts to a wide format:
-total.counts.wide <- total.counts %>% 
+total_counts_wide <- total_counts %>% 
   pivot_wider(id_cols = c(STRATA, FMP, AGENCY_GEAR_CODE),
               names_from = VESSEL_LENGTH_CATEGORY,
               values_from = c(TRIP_COUNT, VESSEL_COUNT))
@@ -129,14 +125,14 @@ total.counts.wide <- total.counts %>%
 
 
 # Summarize OBSERVED trip and vessel counts for three different levels of aggregation:
-obs.counts <- work.data %>% 
+obs_counts <- work_data %>% 
   filter(OBSERVED_FLAG == 'Y') %>% 
   # Detail summaries for strata, FMP area, gear, and vessel length category:
   group_by(STRATA, FMP, AGENCY_GEAR_CODE, VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
   summarize(TRIP_COUNT_OBS = n_distinct(TRIP_ID),
             VESSEL_COUNT_OBS = n_distinct(VESSEL_ID)) %>%
   # FMP Area summaries for vessel length category:
-  bind_rows(work.data %>% 
+  bind_rows(work_data %>% 
               filter(OBSERVED_FLAG == 'Y') %>% 
               group_by(FMP, VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
               summarize(AGENCY_GEAR_CODE = " ",
@@ -144,7 +140,7 @@ obs.counts <- work.data %>%
                         TRIP_COUNT_OBS = n_distinct(TRIP_ID),
                         VESSEL_COUNT_OBS = n_distinct(VESSEL_ID))) %>% 
   # Overall summaries for vessel length category:
-  bind_rows(work.data %>% 
+  bind_rows(work_data %>% 
               group_by(VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
               filter(OBSERVED_FLAG == 'Y') %>% 
               summarize(AGENCY_GEAR_CODE = " ",
@@ -156,7 +152,7 @@ obs.counts <- work.data %>%
  
 
 # Convert the trip and vessel counts to a wide format:
-obs.counts.wide <- obs.counts %>% 
+obs_counts_wide <- obs_counts %>% 
   pivot_wider(id_cols = c(STRATA, FMP, AGENCY_GEAR_CODE, OBSERVED_FLAG),
               names_from = VESSEL_LENGTH_CATEGORY,
               values_from = c(TRIP_COUNT_OBS, VESSEL_COUNT_OBS))
@@ -166,12 +162,12 @@ obs.counts.wide <- obs.counts %>%
 
 ```{r pct.trips.obs, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
 
-# Combine the datasets with total trip counts (total.counts.wide) and observed trip counts (obs.counts.wide)
+# Combine the datasets with total trip counts (total_counts_wide) and observed trip counts (obs_counts_wide)
 # and calculate the percent observed:
 
-counts.wide <- total.counts.wide %>%   
+counts_wide <- total_counts_wide %>%   
   # Combined the trip count and the observed trip count summaries
-  left_join(obs.counts.wide, by = c("FMP", "STRATA", "AGENCY_GEAR_CODE")) %>% 
+  left_join(obs_counts_wide, by = c("FMP", "STRATA", "AGENCY_GEAR_CODE")) %>% 
   # Calculate the percent observed:
   mutate(TRIP_COUNT_OBS_LT40 = as.numeric(NA),
          LT40_pct    = as.numeric(NA),
@@ -190,9 +186,10 @@ counts.wide <- total.counts.wide %>%
                                        ifelse(STRATA=='EM_POT', 6,
                                           ifelse(STRATA=='TRW', 7,
                                              ifelse(STRATA=='TenTR', 8,
-                                                ifelse(STRATA=='ZERO', 9,
-                                                   ifelse(STRATA=='ZERO_EM_RESEARCH', 10,
-                                                      ifelse(STRATA=='FMP AREA Subtotal', 11, 12)))))))))))) %>% 
+                                                ifelse(STRATA=='EM_TRW_EFP', 9,    
+                                                   ifelse(STRATA=='ZERO', 10,
+                                                      ifelse(STRATA=='ZERO_EM_RESEARCH', 11,
+                                                         ifelse(STRATA=='FMP AREA Subtotal', 12, 13))))))))))))) %>% 
   # Sort the data:
   arrange(FMP, STRATA_ORDER, AGENCY_GEAR_CODE) %>% 
   data.frame()
@@ -208,12 +205,12 @@ Table 4-1. Number of vessels (V), total trips (N), monitored trips (n), and perc
 #Do some formatting:
 # {htmlTable} language="en" (English) uses ',' between every 3 numbers
 #  note: this doesn't currently work because there are null values in each of these columns
-#counts.wide$TRIP_COUNT_LT40    <- txtInt(counts.wide$TRIP_COUNT_OBS_LT40,language="en",html=TRUE)
-#counts.wide$TRIP_COUNT_BT40_57 <- txtInt(counts.wide$TRIP_COUNT_40_57, language="en",html=TRUE)
-#counts.wide$TRIP_COUNT_GT58    <- txtInt(counts.wide$TRIP_COUNT_GT58, language="en",html=TRUE)
+#counts_wide$TRIP_COUNT_LT40    <- txtInt(counts_wide$TRIP_COUNT_OBS_LT40,language="en",html=TRUE)
+#counts_wide$TRIP_COUNT_BT40_57 <- txtInt(counts_wide$TRIP_COUNT_40_57, language="en",html=TRUE)
+#counts_wide$TRIP_COUNT_GT58    <- txtInt(counts_wide$TRIP_COUNT_GT58, language="en",html=TRUE)
 
 
-htmlTable(counts.wide[counts.wide$FMP=='BSAI',2:15],
+htmlTable(counts_wide[counts_wide$FMP=='BSAI',2:15],
           tfoot= "1 Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.\n2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3. \n3 EM POT trips include trips that delivered to tenders and trips that delivered shoreside.",
           #individual column headers repeated n times where n=number of vessel length categories
           header=c("Strata","Gear", rep(c("V", "N", "n", "%"), 3)),
@@ -263,7 +260,7 @@ Table 4-2. Number of vessels (V), total trips (N), monitored trips (n), and perc
 #newestTABLE4_1$GT58_TRIP <- txtInt(newestTABLE4_1$GT58_TRIP, language="en",html=TRUE)
 
 
-htmlTable(counts.wide[counts.wide$FMP %in% c('GOA', 'Total Unique'),2:15],
+htmlTable(counts_wide[counts_wide$FMP %in% c('GOA', 'Total Unique'),2:15],
           tfoot= "1 Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.\n2 Full coverage in this table includes vessels in Regulatory Full Coverage in the GOA described in Ch. 3.\n3 On trips where more than one gear type is fished, the predominate gear type that will be used is selected in ODDS and determines the strata for the trip.\n4 EM POT trips include trips that delivered to tenders and trips that delivered shoreside.",
           #individual column headers repeated n times where n=number of vessel length categories
           header=c("Strata","Gear", rep(c("V", "N", "n", "%"), 3)),
@@ -297,7 +294,7 @@ htmlTable(counts.wide[counts.wide$FMP %in% c('GOA', 'Total Unique'),2:15],
           css.cell = "padding-left: 1.5em; ")
 
 #Clean up workspace (Remove everything EXCEPT the objects listed)
-#rm(list= ls()[!(ls() %in% c('work.data', 'with.totals', 'catch.tables', 'dat', 'fig.theme', 'counts.wide' ))])
+#rm(list= ls()[!(ls() %in% c('work_data', 'with_totals', 'catch.tables', 'dat', 'fig.theme', 'counts_wide' ))])
 
 ```
 
@@ -328,27 +325,27 @@ Starting in 2016, selection sampling methods for halibut were changed so that ha
 ```{r summarize.catch, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Summarize catch by two different aggregations:
-catch.detail <- with.totals %>%
+catch_detail <- addl_catch_table %>%
   # Define sector using the RPP flag or the processing sector:
   mutate(SECTOR = ifelse(RPP=="RPP", "RPP", PROCESSING_SECTOR)) %>% 
   # Summarize by FMP area, sector, gear, and retained flag:
   group_by(FMP, SECTOR, OBS_FOR_EST, AGENCY_GEAR_CODE, RETAINED) %>% 
   summarise(WEIGHT = sum(as.numeric(TONS))) %>%
   # Summarize by FMP area, gear, and retained flag:
-  bind_rows(with.totals %>% group_by(FMP, OBS_FOR_EST, AGENCY_GEAR_CODE, RETAINED) %>% 
+  bind_rows(addl_catch_table %>% group_by(FMP, OBS_FOR_EST, AGENCY_GEAR_CODE, RETAINED) %>% 
              summarize(SECTOR = 'Total',
                        WEIGHT = sum(as.numeric(TONS)))) %>% 
   data.frame()
 
 
 # Convert the catch summaries to a wide format:
-catch.detail.wide <- catch.detail %>% 
+catch_detail_wide <- catch_detail %>% 
   pivot_wider(id_cols = c(FMP, SECTOR, AGENCY_GEAR_CODE, RETAINED),
               names_from = OBS_FOR_EST,
               values_from = WEIGHT)
 
 # Replace any NA values with zero:
-catch.detail.wide[is.na(catch.detail.wide)] <- 0
+catch_detail_wide[is.na(catch_detail_wide)] <- 0
 
 
 ```
@@ -359,7 +356,7 @@ catch.detail.wide[is.na(catch.detail.wide)] <- 0
 
 #Calculate the percent observed by 'groupcolumns' and add formatting:
 groupcolumns = c("FMP","SECTOR", "AGENCY_GEAR_CODE", "RETAINED","Observed","Total")
-catch.detail.wide <- ddply(catch.detail.wide, groupcolumns, summarise,
+catch_detail_wide <- ddply(catch_detail_wide, groupcolumns, summarise,
             # BOLD THE PERCENTAGES in CSS/html:
               PCT_OBS= paste0("<span style='font-weight: 900;'>",
                               paste(round((Observed/Total),2)*100, "%", sep="")),
@@ -369,14 +366,14 @@ catch.detail.wide <- ddply(catch.detail.wide, groupcolumns, summarise,
 
 #Do some rounding and formatting:
 # {htmlTable} language="en" (English) uses ',' between every 3 numbers
-catch.detail.wide$Observed <- ifelse((catch.detail.wide$Observed > 0 & catch.detail.wide$Observed < 0.5), "<1", 
-                        txtInt(round(catch.detail.wide$Observed, 0), language="en",html=TRUE))
-catch.detail.wide$Total <- ifelse((catch.detail.wide$Total > 0 & catch.detail.wide$Total < 0.5), "<1", 
-                        txtInt(round(catch.detail.wide$Total, 0), language="en",html=TRUE))
+catch_detail_wide$Observed <- ifelse((catch_detail_wide$Observed > 0 & catch_detail_wide$Observed < 0.5), "<1", 
+                        txtInt(round(catch_detail_wide$Observed, 0), language="en",html=TRUE))
+catch_detail_wide$Total <- ifelse((catch_detail_wide$Total > 0 & catch_detail_wide$Total < 0.5), "<1", 
+                        txtInt(round(catch_detail_wide$Total, 0), language="en",html=TRUE))
 
 
 #Cast the the dataframe into an even wider format using {data.table} & remove NAs
-catch.wide <- dcast(setDT(catch.detail.wide), 
+catch.wide <- dcast(setDT(catch_detail_wide), 
              FMP + AGENCY_GEAR_CODE + RETAINED ~ factor(SECTOR), 
              value.var=c( "Observed","Total","PCT_OBS"))
 
@@ -509,15 +506,15 @@ htmlTable(table4.4[,3:15],
 ```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR','work.data', 'with.totals', 'counts.wide', 'catch.wide', 'table4.3', 'table4.4'))])
+rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'with_totals', 'counts_wide', 'catch.wide', 'table4.3', 'table4.4'))])
 
 # For 2018:
-#save(YEAR, work.data, catch.tables, newestTABLE4_1, TABLE4_1, TABLE4_2,
+#save(YEAR, work_data, catch.tables, newestTABLE4_1, TABLE4_1, TABLE4_2,
 #     file = paste0("S:/Observer Program Annual Report/", YEAR, "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
 #                   YEAR, "_tables.RData"))
 
 # For 2019:
-#save('YEAR', 'work.data', 'with.totals', 'counts.wide', 'catch.wide', 'table4.3', 'table4.4',
+#save('YEAR', 'work_data', 'with_totals', 'counts_wide', 'catch.wide', 'table4.3', 'table4.4',
 #     file = paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_tables.RData"))
 
 ```
