@@ -1,6 +1,5 @@
 
 output:
-  html_document: default
   word_document: default
 ---
 ```{r background_info, include=FALSE}
@@ -40,7 +39,7 @@ output:
 # Output:  
 # Normal locations:  
 #   - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_tables.html
-#     - catch.wide - summary of catch by FMP area, sector, gear, and retained flag with subtotals. Includes percent observed.
+#     - catch_wide - summary of catch by FMP area, sector, gear, and retained flag with subtotals. Includes percent observed.
 #     - counts_wide - monitored and total trip counts.  Includes percent monitored.
 #     - table4.3 - GOA table of monitored catch.
 #     - table4.4 - BSAI table of monitored catch.
@@ -48,7 +47,7 @@ output:
 #     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
 # Coronavirus telework locations:
 #   - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_tables.Rdata
-#     - catch.wide - summary of monitored and total catch by FMP area, sector, gear, and retained flag with subtotals. 
+#     - catch_wide - summary of monitored and total catch by FMP area, sector, gear, and retained flag with subtotals. 
 #                    Includes percent monitored.
 #     - counts_wide - monitored and total trip counts.  Includes percent monitored.
 #     - table4.3 - GOA table of monitored catch.
@@ -62,9 +61,9 @@ output:
 
 # 4 Descriptive Information
 
-###4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
+### 4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
 
-In Chapter 3, Table 3-5 provides trip and vessel counts based on coverage type and strata. However, the Council has previously requested a summary of trip and vessel counts based on criteria which are not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel length). Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP area, strata, gear type, and vessel length category within the full and partial coverage categories. Trips are summarized as the number of monitored trips and the total number of trips.  Monitored trips reflect either trips with an observer or EM fixed gear trips if at least some video was reviewed .  The rationale for defining monitored trips this way for EM fixed gear trips is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Table 3-6 presents detailed information about the number of hard drives received and reviewed by EM gear type.
+In Chapter 3, Table 3-3 provides trip and vessel counts based on coverage type and strata. However, the Council has previously requested a summary of trip and vessel counts based on criteria which are not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel length). Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP area, strata, gear type, and vessel length category within the full and partial coverage categories. Trips are summarized as the number of monitored trips and the total number of trips.  Monitored trips reflect either trips with an observer or EM fixed gear trips if at least some video was reviewed .  The rationale for defining monitored trips this way for EM fixed gear trips is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Table 3-6 presents detailed information about the number of hard drives received and reviewed by EM gear type.
 
 Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes more than one gear type on a trip or within the year. The table rows titled "BSAI Subtotal", "GOA Subtotal", and "Total Unique" include the number of unique vessels and unique trips in each vessel length category where each vessel or trip is counted only once, in each of the FMP areas or overall, respectively.
  
@@ -83,7 +82,7 @@ source("AR_descriptive_helper.r")
 load(paste0("AR_descriptive_", YEAR, "_data.RData"))
 
 #Clean up workspace (Remove everything EXCEPT the objects listed)
-rm(list= ls()[!(ls() %in% c('YEAR', 'work_data', 'with_totals', 'fig.theme'))])
+rm(list= ls()[!(ls() %in% c('YEAR', 'work_data', 'addl_catch_table', 'fig.theme'))])
 
 ```
 
@@ -179,17 +178,16 @@ counts_wide <- total_counts_wide %>%
          VESSEL_COUNT_GT58, TRIP_COUNT_GT58, TRIP_COUNT_OBS_GT58, GT58_pct) %>% 
   # Assign a particular sorting order to the strata:
   mutate(STRATA_ORDER = ifelse(STRATA == 'FULL', 1,
-                           ifelse(STRATA == 'HAL', 2,
+                           ifelse(STRATA=='EM_TRW_EFP_FULL', 2,
                               ifelse(STRATA== 'EM_HAL', 3,
-                                 ifelse(STRATA == 'POT', 4,
-                                    ifelse(STRATA=='TenP', 5,
-                                       ifelse(STRATA=='EM_POT', 6,
-                                          ifelse(STRATA=='TRW', 7,
-                                             ifelse(STRATA=='TenTR', 8,
-                                                ifelse(STRATA=='EM_TRW_EFP', 9,    
-                                                   ifelse(STRATA=='ZERO', 10,
-                                                      ifelse(STRATA=='ZERO_EM_RESEARCH', 11,
-                                                         ifelse(STRATA=='FMP AREA Subtotal', 12, 13))))))))))))) %>% 
+                                ifelse(STRATA=='EM_POT', 4,
+                                   ifelse(STRATA=='EM_TRW_EFP_PART', 5,
+                                      ifelse(STRATA == 'HAL', 6,
+                                         ifelse(STRATA == 'POT', 7,
+                                            ifelse(STRATA=='TRW', 8,
+                                               ifelse(STRATA=='ZERO', 9,
+                                                      ifelse(STRATA=='ZERO_EM_RESEARCH', 10,
+                                                         ifelse(STRATA=='FMP AREA Subtotal', 11, 12)))))))))))) %>% 
   # Sort the data:
   arrange(FMP, STRATA_ORDER, AGENCY_GEAR_CODE) %>% 
   data.frame()
@@ -200,107 +198,154 @@ counts_wide <- total_counts_wide %>%
 Table 4-1. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
 
 
-```{r TABLE4_1, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+```{r flextable_TABLE4_1}
 
-#Do some formatting:
-# {htmlTable} language="en" (English) uses ',' between every 3 numbers
-#  note: this doesn't currently work because there are null values in each of these columns
-#counts_wide$TRIP_COUNT_LT40    <- txtInt(counts_wide$TRIP_COUNT_OBS_LT40,language="en",html=TRUE)
-#counts_wide$TRIP_COUNT_BT40_57 <- txtInt(counts_wide$TRIP_COUNT_40_57, language="en",html=TRUE)
-#counts_wide$TRIP_COUNT_GT58    <- txtInt(counts_wide$TRIP_COUNT_GT58, language="en",html=TRUE)
+# Clean up the strata descriptions:
+bsai <- counts_wide %>% 
+  filter(FMP == 'BSAI') %>% 
+  select(1:15) %>% 
+  mutate(STRATA = ifelse(STRATA == 'FULL', "Full", STRATA)) %>% 
+  mutate(STRATA = ifelse(STRATA == 'EM_HAL', "EM HAL", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'EM_POT', "EM POT", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'EM_TRW_EFP_FULL', "EM TRW EFP (Full)", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'ZERO', "Zero", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'ZERO_EM_RESEARCH', "Zero EM Research", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'FMP AREA Subtotal', "BSAI Subtotal", STRATA)) 
+  
+
+# Create a table for the Fee Summaries in All Areas:
+flextable(bsai) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(FMP = "Area", 
+                    STRATA = "Strata",
+                    AGENCY_GEAR_CODE = "Gear",
+                    VESSEL_COUNT_LT40 = "V",
+                    TRIP_COUNT_LT40 = "N",
+                    TRIP_COUNT_OBS_LT40 = "n",
+                    LT40_pct = "%",
+                    VESSEL_COUNT_BT40_57 = "V",
+                    TRIP_COUNT_BT40_57 = "N",
+                    TRIP_COUNT_OBS_BT40_57 = "n",
+                    BT40_57_pct = "%",
+                    VESSEL_COUNT_GT58 = "V",
+                    TRIP_COUNT_GT58 = "N",
+                    TRIP_COUNT_OBS_GT58 = "n",
+                    GT58_pct = "%")  %>% 
+  # Add lower header row:
+  add_header_row(values = c("", "", "", "<40'", "40-57.4'", ">=57.5'"),
+                 colwidths = c(1,1,1,4,4,4)) %>% 
+  align(align = "center", part = "header") %>% 
+  # Add border between length categories and header row:
+  hline_top(j = c(4:15), border = fp_border(color="black", width = 2), part = "header") %>% 
+  # Add top header row:
+  add_header_row(values = c("", "", "", "Vessel length category"),
+                 colwidths = c(1,1,1,12)) %>% 
+  align(align = "center", part = "header") %>% 
+  # Add top table border above header:
+  hline_top(j = c(1:15), border = fp_border(color="black", width = 2), part = "header") %>% 
+  # Format the header rows:
+  bold(bold = TRUE, part = "header") %>% 
+  align(i = 3, j = c(1:3), align = "left", part = "header") %>% 
+  align(i = 3, j = c(4:15), align = "right", part = "header") %>% 
+  # Format the columns:
+  colformat_num(j = c(4,5,6,8,9,10,12,13,14), big.mark = ",", digits = 0) %>% 
+  colformat_num(j = c(7,11,15), big.mark = ",", digits = 1) %>% 
+  # Merge the area labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
+  merge_at(i=16, j=c(2:3)) %>% 
+  # Add dashed horizontal lines before area subtotals:
+  border(i = 15, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add "fix" needed because of cell merges:
+  fix_border_issues(part = "body") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1:2, part = "header",
+           value = as_paragraph(c("Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3.")))
 
 
-htmlTable(counts_wide[counts_wide$FMP=='BSAI',2:15],
-          tfoot= "1 Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.\n2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3. \n3 EM POT trips include trips that delivered to tenders and trips that delivered shoreside.",
-          #individual column headers repeated n times where n=number of vessel length categories
-          header=c("Strata","Gear", rep(c("V", "N", "n", "%"), 3)),
-          #FLAG figure out paste
-          #align = paste("l", rep("r", 9), collapse="", sep="")
-          align="llrrrrrrrrrrrr",
-          #column header alignment
-          align.header="lrrrrrrrrrrrrr",
-          #FLAG
-          total="tspanner",
-          #Headers for each table spanner (FMP area)
-          tspanner=c("BSAI"),
-          #Number of rows within each table spanner
-          #n.tspanner = rep(2, length(unique(TABLE4_2$AGENCY_GEAR_CODE))),
-          n.tspanner=c(15),
-          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
-          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          #Formating for table spanner borders (lines separating table spanners)
-          css.tspanner.sep = "border-top: 1px solid;",
-          #Option for getting table spanner totals which we don't want in this table.
-          css.total = ";",
-          #Cgroups are the spanned column headers. The first column is left blank with ""
-          cgroup = rbind(c("", "", "Vessel Length Category", NA, NA), c("", "", "<40'","40-57.4'",">=57.5'")), 
-          #Number of internal columns each header column spans
-          n.cgroup = rbind(c(1,1,12,NA,NA), c(1,1,4,4,4)), 
-          #CSS formatting for the spanned column headers
-          css.cgroup = "font-size: 15px;",
-          #prevents unwanted meaningless rownames
-          rnames=FALSE,
-          #auto-alignment providing padding between columns or cells
-          css.cell = "padding-left: 1.5em; ")
 
 ```
+
+
 
 
 Table 4-2. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
 
 
-```{r TABLE4_2, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+```{r flextable_TABLE4_1}
+
+# Clean up the strata descriptions:
+goa <- counts_wide %>% 
+  filter(FMP %in% c('GOA', 'Total Unique')) %>% 
+  select(1:15) %>% 
+  mutate(STRATA = ifelse(STRATA == 'FULL', "Full", STRATA)) %>% 
+  mutate(STRATA = ifelse(STRATA == 'EM_HAL', "EM HAL", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'EM_POT', "EM POT", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'EM_TRW_EFP_PART', "EM TRW EFP (Partial)", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'ZERO', "Zero", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'ZERO_EM_RESEARCH', "Zero EM Research", STRATA)) %>%
+  mutate(STRATA = ifelse(STRATA == 'FMP AREA Subtotal', "GOA Subtotal", STRATA)) 
+  
+
+# Create a table for the Fee Summaries in All Areas:
+flextable(goa) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(FMP = "Area", 
+                    STRATA = "Strata",
+                    AGENCY_GEAR_CODE = "Gear",
+                    VESSEL_COUNT_LT40 = "V",
+                    TRIP_COUNT_LT40 = "N",
+                    TRIP_COUNT_OBS_LT40 = "n",
+                    LT40_pct = "%",
+                    VESSEL_COUNT_BT40_57 = "V",
+                    TRIP_COUNT_BT40_57 = "N",
+                    TRIP_COUNT_OBS_BT40_57 = "n",
+                    BT40_57_pct = "%",
+                    VESSEL_COUNT_GT58 = "V",
+                    TRIP_COUNT_GT58 = "N",
+                    TRIP_COUNT_OBS_GT58 = "n",
+                    GT58_pct = "%")  %>% 
+  # Add lower header row:
+  add_header_row(values = c("", "", "", "<40'", "40-57.4'", ">=57.5'"),
+                 colwidths = c(1,1,1,4,4,4)) %>% 
+  align(align = "center", part = "header") %>% 
+  # Add border between length categories and header row:
+  hline_top(j = c(4:15), border = fp_border(color="black", width = 2), part = "header") %>% 
+  # Add top header row:
+  add_header_row(values = c("", "", "", "Vessel length category"),
+                 colwidths = c(1,1,1,12)) %>% 
+  align(align = "center", part = "header") %>% 
+  # Add top table border above header:
+  hline_top(j = c(1:15), border = fp_border(color="black", width = 2), part = "header") %>% 
+  # Format the header rows:
+  bold(bold = TRUE, part = "header") %>% 
+  align(i = 3, j = c(1:3), align = "left", part = "header") %>% 
+  align(i = 3, j = c(4:15), align = "right", part = "header") %>% 
+  # Format the columns:
+  colformat_num(j = c(4,5,6,8,9,10,12,13,14), big.mark = ",", digits = 0) %>% 
+  colformat_num(j = c(7,11,15), big.mark = ",", digits = 1) %>% 
+  # Merge the area labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
+  merge_at(i=21, j=c(2:3)) %>% 
+  # Merge 'Total Unique' label across 2 cells (area and strata):
+  merge_at(i=22, j=c(1:2)) %>% 
+  # Add dashed horizontal line before area subtotals:
+  border(i = 20, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal line before unique totals:
+  border(i = 21, part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  # Add "fix" needed because of cell merges:
+  fix_border_issues(part = "body") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1:2, part = "header",
+           value = as_paragraph(c("Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3.")))
 
 
-#Do some formatting:
-# {htmlTable} language="en" (English) uses ',' between every 3 numbers
-#  note: this doesn't currently work because there are null values in each of these columns
-#newestTABLE4_1$LT40_TRIP <- txtInt(newestTABLE4_1$LT40_TRIP, language="en",html=TRUE)
-#newestTABLE4_1$BT40_57_TRIP <- txtInt(newestTABLE4_1$BT40_57_TRIP, language="en",html=TRUE)
-#newestTABLE4_1$GT58_TRIP <- txtInt(newestTABLE4_1$GT58_TRIP, language="en",html=TRUE)
-
-
-htmlTable(counts_wide[counts_wide$FMP %in% c('GOA', 'Total Unique'),2:15],
-          tfoot= "1 Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.\n2 Full coverage in this table includes vessels in Regulatory Full Coverage in the GOA described in Ch. 3.\n3 On trips where more than one gear type is fished, the predominate gear type that will be used is selected in ODDS and determines the strata for the trip.\n4 EM POT trips include trips that delivered to tenders and trips that delivered shoreside.",
-          #individual column headers repeated n times where n=number of vessel length categories
-          header=c("Strata","Gear", rep(c("V", "N", "n", "%"), 3)),
-          #FLAG figure out paste
-          #align = paste("l", rep("r", 9), collapse="", sep="")
-          align="llrrrrrrrrrrrr",
-          #column header alignment
-          align.header="lrrrrrrrrrrrrr",
-          #FLAG
-          total="tspanner",
-          #Headers for each table spanner (FMP area)
-          tspanner=c("GOA","TOTAL UNIQUE"),
-          #Number of rows within each table spanner
-          #n.tspanner = rep(2, length(unique(TABLE4_2$AGENCY_GEAR_CODE))),
-          n.tspanner=c(18,1),
-          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
-          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          #Formating for table spanner borders (lines separating table spanners)
-          css.tspanner.sep = "border-top: 1px solid;",
-          #Option for getting table spanner totals which we don't want in this table.
-          css.total = ";",
-          #Cgroups are the spanned column headers. The first column is left blank with ""
-          cgroup = rbind(c("", "", "Vessel Length Category", NA, NA), c("", "", "<40'","40-57.4'",">=57.5'")), 
-          #Number of internal columns each header column spans
-          n.cgroup = rbind(c(1,1,12,NA,NA), c(1,1,4,4,4)), 
-          #CSS formatting for the spanned column headers
-          css.cgroup = "font-size: 15px;",
-          #prevents unwanted meaningless rownames
-          rnames=FALSE,
-          #auto-alignment providing padding between columns or cells
-          css.cell = "padding-left: 1.5em; ")
-
-#Clean up workspace (Remove everything EXCEPT the objects listed)
-#rm(list= ls()[!(ls() %in% c('work_data', 'with_totals', 'catch.tables', 'dat', 'fig.theme', 'counts_wide' ))])
 
 ```
 
 
-
-###4.2  Total Catch and Discards and Amount of Catch Observed
+### 4.2  Total Catch and Discards and Amount of Catch Observed
 The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS CAS in Table 4-3 and Table 4-4 for  `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. 2014. 
 
 It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not a priori be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum[^1^].  
@@ -373,14 +418,14 @@ catch_detail_wide$Total <- ifelse((catch_detail_wide$Total > 0 & catch_detail_wi
 
 
 #Cast the the dataframe into an even wider format using {data.table} & remove NAs
-catch.wide <- dcast(setDT(catch_detail_wide), 
+catch_wide <- dcast(setDT(catch_detail_wide), 
              FMP + AGENCY_GEAR_CODE + RETAINED ~ factor(SECTOR), 
              value.var=c( "Observed","Total","PCT_OBS"))
 
 
-#Add new rows because JIG doesn't have a discard row and assign the same column names used in catch.wide
+#Add new rows because JIG doesn't have a discard row and assign the same column names used in catch_wide
 jig.rows <- data.frame(cbind(c("GOA", "BSAI"), c("JIG", "JIG"), c("D", "D")))  
-col.names <- names(catch.wide[,1:3])
+col.names <- names(catch_wide[,1:3])
 names(jig.rows) <- col.names  
 
 # The columns in jig.rows need to be character values rather than factors for later formatting:
@@ -388,16 +433,16 @@ jig.rows <- jig.rows %>%
   mutate_all(as.character)
 
 # Append the additional columnss:
-catch.wide <- rbind(catch.wide, jig.rows, fill=TRUE) 
+catch_wide <- rbind(catch_wide, jig.rows, fill=TRUE) 
 
 
 #Final cleanup
-catch.wide[is.na(catch.wide)] <- ' ' 
-catch.wide <- as.data.frame(catch.wide)
+catch_wide[is.na(catch_wide)] <- ' ' 
+catch_wide <- as.data.frame(catch_wide)
 
 # Translate the values and add some CSS formatting to the Retained/Discard values:
-catch.wide[catch.wide=="D"] <- "<span style='font-weight: 900;'>Discard"
-catch.wide[catch.wide=="R"] <- "<span style='font-weight: 900;'>Retained"
+catch_wide[catch_wide=="D"] <- "<span style='font-weight: 900;'>Discard"
+catch_wide[catch_wide=="R"] <- "<span style='font-weight: 900;'>Retained"
 
 
 #Resource for CSS formatting in html http://www.w3schools.com/css/css_intro.asp
@@ -412,7 +457,7 @@ Table 4-3. Monitored catch^1^ (metric tons), total catch, and percent monitored 
 ```{r Table_4_3, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the GOA data and rearrange the column order:
-table4.3 <- catch.wide[catch.wide$FMP=='GOA',c(1:3,
+table4.3 <- catch_wide[catch_wide$FMP=='GOA',c(1:3,
                                             4,9,14, #Catcher/Processors
                                             7,12,17, #Catcher Vessels (PROCESSING_SECTOR=='S')
                                             6,11,16, #Catcher Vessels: Rockfish Program (GOA only)
@@ -472,7 +517,7 @@ Table 4-4. Monitored catch^1^ (metric tons), total catch, and percent monitored 
 ```{r print_BSAI_SectorGear, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the BSAI data and rearrange the column order:
-table4.4 <- catch.wide[catch.wide$FMP=='BSAI',c(1:3, 
+table4.4 <- catch_wide[catch_wide$FMP=='BSAI',c(1:3, 
                                               4,9,14, #Catcher/Processors
                                               5,10,15, #Mothership (BSAI only)
                                               7,12,17, #Catcher Vessels (PROCESSING_SECTOR=='S')
@@ -506,7 +551,7 @@ htmlTable(table4.4[,3:15],
 ```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'with_totals', 'counts_wide', 'catch.wide', 'table4.3', 'table4.4'))])
+rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'with_totals', 'counts_wide', 'catch_wide', 'table4.3', 'table4.4'))])
 
 # For 2018:
 #save(YEAR, work_data, catch.tables, newestTABLE4_1, TABLE4_1, TABLE4_2,
@@ -514,7 +559,7 @@ rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'with_totals', 'counts_wide', 'c
 #                   YEAR, "_tables.RData"))
 
 # For 2019:
-#save('YEAR', 'work_data', 'with_totals', 'counts_wide', 'catch.wide', 'table4.3', 'table4.4',
+#save('YEAR', 'work_data', 'with_totals', 'counts_wide', 'catch_wide', 'table4.3', 'table4.4',
 #     file = paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_tables.RData"))
 
 ```
