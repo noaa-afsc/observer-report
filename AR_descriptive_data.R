@@ -93,7 +93,7 @@ prep_data <- valhalla_data %>%
 
 
 
-# EM innovation corrections to strata ---------------------------------------------------------------------------- 
+# Corrections to strata ---------------------------------------------------------------------------- 
 
 # Hardcode the following STRATA changes here:
 #  1. The Appendix D of the 2020 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) 
@@ -101,6 +101,7 @@ prep_data <- valhalla_data %>%
 #     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  HOWEVER, AFSC
 #     data show that the Kariel did NOT participate in EM research, so only hardcode the 3. Since I don't have access to the AFSC
 #     data that this is based on, Check with Phil each year.
+#  2. Refer to the EM TRW EFP strata in the BSAI as FULL COVERAGE and the EM TRW EFP strata in the GOA as PARTIAL COVERAGE
 
 
 table(prep_data$STRATA)
@@ -113,24 +114,26 @@ table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # The Predator didn't fis
 table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
 
 
-# Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool:
+# Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
 # 2020 version:
 prep_data <- prep_data %>% 
-    rename(ORIGINAL_STRATA = STRATA) %>% 
-    mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','2844', '1472'), 'ZERO_EM_RESEARCH', ORIGINAL_STRATA))
+  rename(ORIGINAL_STRATA = STRATA) %>% 
+  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','2844', '1472'), 'ZERO_EM_RESEARCH', 
+                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
+                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA))))
 
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-#           EM_HAL EM_POT EM_TRW_EFP   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
-#EM_HAL      25095      0          0      0      0      0      0      0                0
-#EM_POT          0   3660          0      0      0      0      0      0                0
-#EM_TRW_EFP      0      0      23645      0      0      0      0      0                0
-#FULL            0      0          0 653192      0      0      0      0                0
-#HAL             0      0          0      0  56541      0      0      0              636
-#POT             0      0          0      0      0  10430      0      0              138
-#TRW             0      0          0      0      0      0  25248      0                0
-#ZERO            0      0          0      0      0      0      0  28465                0
- 
+#            EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
+# EM_HAL      25095      0               0               0      0      0      0      0      0                0
+# EM_POT          0   3660               0               0      0      0      0      0      0                0
+# EM_TRW_EFP      0      0           15655            7990      0      0      0      0      0                0
+# FULL            0      0               0               0 653192      0      0      0      0                0
+# HAL             0      0               0               0      0  56541      0      0      0              636
+# POT             0      0               0               0      0      0  10430      0      0              138
+# TRW             0      0               0               0      0      0      0  25248      0                0
+# ZERO            0      0               0               0      0      0      0      0  28465                0
+  
 
 
 # Back calculate halibut PSC estimates using mortality rates -------------------------------------------------------------
