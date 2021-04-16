@@ -41,7 +41,7 @@ output:
 #   - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_tables.html
 #     - catch_wide - summary of catch by FMP area, sector, gear, and retained flag with subtotals. Includes percent observed.
 #     - counts_wide - monitored and total trip counts.  Includes percent monitored.
-#     - table4.3 - GOA table of monitored catch.
+#     - table4_3 - GOA table of monitored catch.
 #     - table4.4 - BSAI table of monitored catch.
 #     - with_totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
 #     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
@@ -50,7 +50,7 @@ output:
 #     - catch_wide - summary of monitored and total catch by FMP area, sector, gear, and retained flag with subtotals. 
 #                    Includes percent monitored.
 #     - counts_wide - monitored and total trip counts.  Includes percent monitored.
-#     - table4.3 - GOA table of monitored catch.
+#     - table4_3 - GOA table of monitored catch.
 #     - table4.4 - BSAI table of monitored catch.
 #     - with_totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
 #     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
@@ -387,65 +387,51 @@ catch_detail <- addl_catch_table %>%
 catch_detail_wide <- catch_detail %>% 
   pivot_wider(id_cols = c(FMP, SECTOR, AGENCY_GEAR_CODE, RETAINED),
               names_from = OBS_FOR_EST,
-              values_from = WEIGHT)
-
-# Replace any NA values with zero:
-catch_detail_wide[is.na(catch_detail_wide)] <- 0
+              values_from = WEIGHT) %>% 
+  # Calculate the percent observed
+  mutate(PCT_OBS = round((Observed/Total),2)*100) %>% 
+  # Replace nas with 0:
+  replace_na(list('Observed'= 0, 'PCT_OBS' = 0)) %>% 
+  # String out EVEN WIDER:
+  pivot_wider(id_cols = c(FMP, AGENCY_GEAR_CODE, RETAINED),
+              names_from = SECTOR,
+              values_from = c("Observed","Total","PCT_OBS")) %>% 
+   # Translate the gear and Retained/Discard values:
+  mutate(AGENCY_GEAR_CODE = recode(AGENCY_GEAR_CODE,
+                                   'HAL'='Hook and Line',
+                                   'JIG'='Jig',
+                                   'NPT'='Non-Pelagic Trawl',
+                                   'POT'='Pot',
+                                   'PTR'='Pelagic Trawl')) %>% 
+  mutate(RETAINED = recode(RETAINED, 'R'='Retained', 'D'='Discard'))
 
 
 ```
 
 
 
-```{r format.catch, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
-
-#Calculate the percent observed by 'groupcolumns' and add formatting:
-groupcolumns = c("FMP","SECTOR", "AGENCY_GEAR_CODE", "RETAINED","Observed","Total")
-catch_detail_wide <- ddply(catch_detail_wide, groupcolumns, summarise,
-            # BOLD THE PERCENTAGES in CSS/html:
-              PCT_OBS= paste0("<span style='font-weight: 900;'>",
-                              paste(round((Observed/Total),2)*100, "%", sep="")),
-            # FORMAT WITH PERCENTAGES: 
-              PERCENT_OBSERVED=paste(round((Observed/Total),2)*100, "%", sep=""))
-
-
-#Do some rounding and formatting:
-# {htmlTable} language="en" (English) uses ',' between every 3 numbers
-catch_detail_wide$Observed <- ifelse((catch_detail_wide$Observed > 0 & catch_detail_wide$Observed < 0.5), "<1", 
-                        txtInt(round(catch_detail_wide$Observed, 0), language="en",html=TRUE))
-catch_detail_wide$Total <- ifelse((catch_detail_wide$Total > 0 & catch_detail_wide$Total < 0.5), "<1", 
-                        txtInt(round(catch_detail_wide$Total, 0), language="en",html=TRUE))
-
-
-#Cast the the dataframe into an even wider format using {data.table} & remove NAs
-catch_wide <- dcast(setDT(catch_detail_wide), 
-             FMP + AGENCY_GEAR_CODE + RETAINED ~ factor(SECTOR), 
-             value.var=c( "Observed","Total","PCT_OBS"))
-
+```{r add_jig, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 #Add new rows because JIG doesn't have a discard row and assign the same column names used in catch_wide
-jig.rows <- data.frame(cbind(c("GOA", "BSAI"), c("JIG", "JIG"), c("D", "D")))  
-col.names <- names(catch_wide[,1:3])
-names(jig.rows) <- col.names  
+jig_rows <- data.frame(cbind(c("GOA", "BSAI"), c("Jig", "Jig"), c("Discard", "Discard")))  
+col_names <- names(catch_wide[,1:3])
+names(jig_rows) <- col_names  
 
-# The columns in jig.rows need to be character values rather than factors for later formatting:
-jig.rows <- jig.rows %>% 
+# The columns in jig_rows need to be character values rather than factors for later formatting:
+jig_rows <- jig_rows %>% 
   mutate_all(as.character)
 
-# Append the additional columnss:
-catch_wide <- rbind(catch_wide, jig.rows, fill=TRUE) 
+# Append the additional columns:
+catch_wide <- rbind.fill(catch_detail_wide, jig_rows)
 
+# Provide a gear order:
+catch_wide <- catch_wide %>% 
+  mutate(GEARORDER = ifelse(AGENCY_GEAR_CODE == 'Hook and Line', 1,
+                            ifelse(AGENCY_GEAR_CODE == 'Jig', 2,
+                                   ifelse(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl', 3,
+                                          ifelse(AGENCY_GEAR_CODE == 'Pot', 4, 5)))))  %>% 
+  arrange(FMP, GEARORDER, desc(RETAINED))
 
-#Final cleanup
-catch_wide[is.na(catch_wide)] <- ' ' 
-catch_wide <- as.data.frame(catch_wide)
-
-# Translate the values and add some CSS formatting to the Retained/Discard values:
-catch_wide[catch_wide=="D"] <- "<span style='font-weight: 900;'>Discard"
-catch_wide[catch_wide=="R"] <- "<span style='font-weight: 900;'>Retained"
-
-
-#Resource for CSS formatting in html http://www.w3schools.com/css/css_intro.asp
 
 ```
 
@@ -454,113 +440,138 @@ catch_wide[catch_wide=="R"] <- "<span style='font-weight: 900;'>Retained"
 
 Table 4-3. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
 
-```{r Table_4_3, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+```{r Table4_3_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the GOA data and rearrange the column order:
-table4.3 <- catch_wide[catch_wide$FMP=='GOA',c(1:3,
-                                            4,9,14, #Catcher/Processors
-                                            7,12,17, #Catcher Vessels (PROCESSING_SECTOR=='S')
-                                            6,11,16, #Catcher Vessels: Rockfish Program (GOA only)
-                                            #5,10,15, #Mothership (BSAI only)
-                                            8,13,18  # Gear Totals
-                                            )]
+table4_3 <- catch_wide %>% 
+  filter(FMP=='GOA') %>% 
+  select(c(2:3,
+           4,9,14, #Catcher/Processors
+           6,11,16, #Catcher Vessels (PROCESSING_SECTOR=='S')
+           7,12,17, #Catcher Vessels: Rockfish Program (GOA only)
+           #5,10,15, #Mothership (BSAI only)
+           8,13,18  # Gear Totals
+           )) 
 
 
-# Sort
-table4.3 <- arrange(table4.3, FMP, AGENCY_GEAR_CODE, desc(RETAINED))
+# Create a table for the Fee Summaries in All Areas:
+flextable(table4_3) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(AGENCY_GEAR_CODE = "Gear",
+                    RETAINED = "Catch",
+                    Observed_CP = "Monitored",
+                    Total_CP = "Total",
+                    PCT_OBS_CP = "%",
+                    Observed_S = "Monitored",
+                    Total_S = "Total",
+                    PCT_OBS_S = "%",
+                    Observed_RPP = "Monitored",
+                    Total_RPP = "Total",
+                    PCT_OBS_RPP = "%",
+                    Observed_Total = "Monitored",
+                    Total_Total = "Total",
+                    PCT_OBS_Total = "%")  %>% 
+  # Add lower header row:
+  add_header_row(values = c("", "", "Catcher/Processor", "Catcher vessel", "Catcher vessel: Rockfish program", "Gear total"),
+                 colwidths = c(1,1,3,3,3,3)) %>% 
+  align(align = "center", part = "header") %>% 
+  # Add border between length categories and header row:
+  hline_top(j = c(3:14), border = fp_border(color="black", width = 2), part = "header") %>% 
+  # Format the header rows:
+  bold(bold = TRUE, part = "header") %>% 
+  align(i = 2, j = c(1:2), align = "left", part = "header") %>% 
+  align(i = 2, j = c(3:14), align = "right", part = "header") %>% 
+  # Format the columns:
+  colformat_num(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
+  colformat_num(j = c(5,8,11,14), big.mark = ",", digits = 0, suffix = "%" ) %>% 
+  bold(j=c(1,2,5,8,11,14), part = "body") %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Add solid horizontal line after each gear:
+  border(i = c(2,4,6,8), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  # Add "fix" needed because of cell merges:
+  fix_border_issues(part = "body") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1, part = "header",
+           value = as_paragraph("Monitored catch is from trips with an observer or EM trips for which some video was reviewed."))
 
-# Create table:
-htmlTable(table4.3[,3:15],
-          tfoot= "1 Monitored catch is from trips with an observer or EM fixed gear trips for which some video was reviewed.",
-          #individual column headers repeated n times where n=number of sectors
-          header=c("", rep(c("Monitored", "Total", "%"), 4)),
-          #FLAG figure out paste
-          #align = paste("l", rep("r", 9), collapse="", sep="")
-          align="lrrrrrrrrrrrr",
-          #column header alignment
-          align.header="lrrrrrrrrrrrr",
-          #FLAG
-          total="tspanner",
-          #Headers for each table spanner (gear types)
-          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
-          #Number of rows within each table spanner
-          #n.tspanner = rep(2, length(unique(TABLE4_2$AGENCY_GEAR_CODE))),
-          n.tspanner=c(2, 2, 2, 2, 2),
-          #nbsp=nonbreakable space, this allows you to indent each row beneath each table spanner heading
-          padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          #Formating for table spanner borders (lines separating table spanners)
-          css.tspanner.sep = "border-top: 1px solid;",
-          #Option for getting table spanner totals which we don't want in this table.
-          css.total = ";",
-          #Option for coloring columns
-          # col.columns = c("none", "none", "none", "none",
-          #                 "#F1F0FA","#F1F0FA","#F1F0FA",
-          #                 "none", "none", "none"),
-          #Cgroups are the spanned column headers. The first column is left blank with ""
-          cgroup= c("","CATCHER/PROCESSOR","CATCHER VESSEL","CATCHER VESSEL: ROCKFISH PROGRAM", "GEAR TOTAL"),
-          #Number of internal columns each header column spans
-          n.cgroup=c(1,3,3,3,3),
-          #CSS formatting for the spanned column headers
-          css.cgroup = "font-size: 15px;",
-          #prevents unwanted meaningless rownames
-          rnames=FALSE,
-          #auto-alignment providing padding between columns or cells
-          css.cell = "padding-left: 1.5em; ")
 
 
-```
+``` 
+
 
 **INSERT PAGE BREAK** 
 
 Table 4-4. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
 
-```{r print_BSAI_SectorGear, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
-# Refine to just the BSAI data and rearrange the column order:
-table4.4 <- catch_wide[catch_wide$FMP=='BSAI',c(1:3, 
-                                              4,9,14, #Catcher/Processors
-                                              5,10,15, #Mothership (BSAI only)
-                                              7,12,17, #Catcher Vessels (PROCESSING_SECTOR=='S')
-                                              # 6,10,14 #Catcher Vessels: Rockfish Program (GOA only)
-                                              8,13,18
-                                              )]
+```{r Table4_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
-#Sort:
-table4.4 <- arrange(table4.4, FMP, AGENCY_GEAR_CODE, desc(RETAINED))
+# Refine to just the GOA data and rearrange the column order:
+table4_4 <- catch_wide %>% 
+  filter(FMP=='BSAI') %>% 
+  select(c(2:3,
+           4,9,14, #Catcher/Processors
+           5,10,15, #Mothership (BSAI only)
+           6,11,16, #Catcher Vessels (PROCESSING_SECTOR=='S')
+           #7,12,17, #Catcher Vessels: Rockfish Program (GOA only)
+           8,13,18  # Gear Totals
+           )) 
 
-htmlTable(table4.4[,3:15],
-          tfoot= "1 Monitored catch is from trips with an observer or EM fixed gear trips for which some video was reviewed.",
-          header=c("","Monitored","Total","%","Monitored","Total","%","Monitored","Total","%","Monitored","Total","%"),
-          align="lrrrrrrrrrrrr",
-          align.header="lrrrrrrrrrrrr",
-          total="tspanner",
-          tspanner=c("HOOK AND LINE","JIG", "NON-PELAGIC TRAWL ","POT","PELAGIC TRAWL"),
-          n.tspanner=c(2,2,2,2,2),
-          # padding.tspanner=c("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"),
-          css.tspanner.sep = "border-top: 1px solid;",
-          css.total = ";",
-          cgroup= c("","CATCHER/PROCESSOR", "MOTHERSHIP" ,"CATCHER VESSEL", "GEAR TOTAL"),
-          css.cgroup = "font-size: 15px;",
-          n.cgroup=c(1,3,3,3,3),
-          rnames=FALSE,
-          css.cell = "padding-left: 1.5em; "
-          )
+
+# Create a table for the Fee Summaries in All Areas:
+flextable(table4_4) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(AGENCY_GEAR_CODE = "Gear",
+                    RETAINED = "Catch",
+                    Observed_CP = "Monitored",
+                    Total_CP = "Total",
+                    PCT_OBS_CP = "%",
+                    Observed_S = "Monitored",
+                    Total_S = "Total",
+                    PCT_OBS_S = "%",
+                    Observed_RPP = "Monitored",
+                    Total_RPP = "Total",
+                    PCT_OBS_RPP = "%",
+                    Observed_Total = "Monitored",
+                    Total_Total = "Total",
+                    PCT_OBS_Total = "%")  %>% 
+  # Add lower header row:
+  add_header_row(values = c("", "", "Catcher/Processor", "Mothership", "Catcher vessel", "Gear total"),
+                 colwidths = c(1,1,3,3,3,3)) %>% 
+  align(align = "center", part = "header") %>% 
+  # Add border between length categories and header row:
+  hline_top(j = c(3:14), border = fp_border(color="black", width = 2), part = "header") %>% 
+  # Format the header rows:
+  bold(bold = TRUE, part = "header") %>% 
+  align(i = 2, j = c(1:2), align = "left", part = "header") %>% 
+  align(i = 2, j = c(3:14), align = "right", part = "header") %>% 
+  # Format the columns:
+  colformat_num(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
+  colformat_num(j = c(5,8,11,14), big.mark = ",", digits = 0, suffix = "%" ) %>% 
+  bold(j=c(1,2,5,8,11,14), part = "body") %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Add solid horizontal line after each gear:
+  border(i = c(2,4,6,8), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  # Add "fix" needed because of cell merges:
+  fix_border_issues(part = "body") %>% 
+  # Add footer:
+  footnote(i = 1, j = 1, part = "header",
+           value = as_paragraph("Monitored catch is from trips with an observer or EM trips for which some video was reviewed."))
+
 ```
 
 
 ```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'with_totals', 'counts_wide', 'catch_wide', 'table4.3', 'table4.4'))])
+rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'with_totals', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table4_3', 'table4_4'))])
 
-# For 2018:
-#save(YEAR, work_data, catch.tables, newestTABLE4_1, TABLE4_1, TABLE4_2,
-#     file = paste0("S:/Observer Program Annual Report/", YEAR, "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
-#                   YEAR, "_tables.RData"))
 
-# For 2019:
-#save('YEAR', 'work_data', 'with_totals', 'counts_wide', 'catch_wide', 'table4.3', 'table4.4',
-#     file = paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_tables.RData"))
+#save('YEAR', 'work_data', 'with_totals', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table4_3', 'table4_4',
+#     file = paste0("AR_descriptive_", YEAR, "_tables.RData"))
 
 ```
 
