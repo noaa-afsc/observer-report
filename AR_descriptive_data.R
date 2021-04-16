@@ -98,15 +98,17 @@ prep_data <- valhalla_data %>%
 # Hardcode the following STRATA changes here:
 #  1. The Appendix D of the 2020 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) 
 #     to participate in the EM innovation and research zero selection pool. The Defender (1472) is using the deployment of 
-#     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  
-#     Check to see if they got picked up in CAS.
+#     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  HOWEVER, AFSC
+#     data show that the Kariel did NOT participate in EM research, so only hardcode the 3. Since I don't have access to the AFSC
+#     data that this is based on, Check with Phil each year.
+
 
 table(prep_data$STRATA)
 #EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
 #25095       3660      23645     653192      57177      10568      25248      28465 
 
 table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
-table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
+#table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
 table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # The Predator didn't fish in 2020?
 table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
 
@@ -115,13 +117,13 @@ table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
 # 2020 version:
 prep_data <- prep_data %>% 
     rename(ORIGINAL_STRATA = STRATA) %>% 
-    mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','3759','2844', '1472'), 'ZERO_EM_RESEARCH', ORIGINAL_STRATA))
+    mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','2844', '1472'), 'ZERO_EM_RESEARCH', ORIGINAL_STRATA))
 
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-            #EM_HALEM_POT EM_TRW_EFP   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
-#EM_HAL      24702      0          0      0      0      0      0      0              393
-#EM_POT          0   3499          0      0      0      0      0      0              161
+#           EM_HAL EM_POT EM_TRW_EFP   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
+#EM_HAL      25095      0          0      0      0      0      0      0                0
+#EM_POT          0   3660          0      0      0      0      0      0                0
 #EM_TRW_EFP      0      0      23645      0      0      0      0      0                0
 #FULL            0      0          0 653192      0      0      0      0                0
 #HAL             0      0          0      0  56541      0      0      0              636
@@ -129,8 +131,6 @@ table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 #TRW             0      0          0      0      0      0  25248      0                0
 #ZERO            0      0          0      0      0      0      0  28465                0
  
-
-
 
 
 # Back calculate halibut PSC estimates using mortality rates -------------------------------------------------------------
@@ -294,7 +294,7 @@ addl_catch_table <- with_totals %>%
 catch_tables <- rbind(previous_catch_table, addl_catch_table)
 
 # Export new 2013-YEAR catch tables as a csv:
-write.csv(catch_tables,paste0("2013_", YEAR, "_catchtables.csv"), row.names = FALSE)
+#write.csv(catch_tables,paste0("2013_", YEAR, "_catchtables.csv"), row.names = FALSE)
 
 
 
@@ -302,7 +302,7 @@ write.csv(catch_tables,paste0("2013_", YEAR, "_catchtables.csv"), row.names = FA
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
+#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
 
 #save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
 #     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
