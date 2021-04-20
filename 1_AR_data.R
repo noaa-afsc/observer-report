@@ -44,13 +44,10 @@ adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
 # * Valhalla ----
 # Pull in this report year's Valhalla
 # The code that creates Valhalla is maintained separately from this project
-load("data/2021-04-02CAS_VALHALLA.RData")
+script <- paste0("select * 
+                  from loki.akr_valhalla_scratch_v")
 
-# Rename VALHALLA, which is the only object in the above file
-work.data <- VALHALLA
-
-# Remove the VALHALLA object
-rm(VALHALLA)
+work.data <- dbGetQuery(channel_afsc, script)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
