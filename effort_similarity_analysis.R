@@ -47,7 +47,7 @@ if(TIME_SPACE == TRUE){
   waiver_week <-  week(c("2020-03-26", "2020-07-01"))
   
   # TODO TESTING
-  # ar_data <- partial_effort; effort <- c("OB", "ZE"); monitored <- "OB"; legend <- T; obscure <- T; n_min <- 5; ob_extend <- 0; output_tbl <- F; vline <- waiver_week
+  # ar_data <- partial_effort; effort <- c("OB", "ZE"); monitored <- "OB"; legend <- T; obscure <- T; n_min <- 5; ob_extend <- 0; output_tbl <- F; vline <- waiver_week; 
   # ar_data <- partial_effort; effort <- c("EM"); monitored <- c("EM", "OB"); legend <- T; obscure <- T; n_min <- 5; ob_extend <- 0; output_tbl <- F; vline <- waiver_week
   # domain <- c("TARGET")   # GEAR AND FMP/AREA will be implied
   # domain <- c()          # Domain will be empty vector
@@ -134,7 +134,7 @@ if(TIME_SPACE == TRUE){
       ar_combined_rect <- data.table()
       for(l in 1:nrow(effort_monitored_tbl)){
         for(m in unique(rect_effort$GEAR)){
-          if(nrow(rect_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0) next()   # If there is no effort pool, skip.
+          if((nrow(rect_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0)) next()   # If there is no effort pool, skip.
           ar_combo_rect <- rbind(
             cbind(rect_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]], effort_monitored_tbl[l, .(GRP_lbl)]),
             cbind(rect_monitored[GEAR==m & POOL==effort_monitored_tbl[l, MONITORED]], effort_monitored_tbl[l, .(GRP_lbl)]))[!is.na(POOL)]
@@ -166,7 +166,7 @@ if(TIME_SPACE == TRUE){
     ar_combined <- data.table()
     for(l in 1:nrow(effort_monitored_tbl)){
       for(m in unique(ar_effort$GEAR)){
-        if((nrow(ar_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0)) next()  # TODO - TEST TO SEE IF I NEED ADDITIONAL '& (nrow(ar_combined_rect[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0)' If there is no effort pool, skip.
+        if((nrow(ar_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0) & ifelse(obscure==T, (nrow(ar_combined_rect[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]]) == 0), T)) next()  
         ar_combo <- rbind(
           cbind(ar_effort[GEAR==m & POOL==effort_monitored_tbl[l, EFFORT]], effort_monitored_tbl[l, .(GRP_lbl)]),
           cbind(ar_monitored[GEAR==m & POOL==effort_monitored_tbl[l, MONITORED]], effort_monitored_tbl[l, .(GRP_lbl)]))[!is.na(POOL)]
