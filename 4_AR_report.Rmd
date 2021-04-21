@@ -1727,7 +1727,7 @@ Based on these results, differences between monitored and unmonitored trips were
 library(mosaic)
 geartender <-
   work.data %>%
-  filter(STRATA %in% partial$STRATA) %>% 
+  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
   #*FLAG* 3/25/19: A couple of AGENCY_GEAR_CODE == "JIG" trips have
   # STRATA == "HAL". Drop these.
   filter(AGENCY_GEAR_CODE!="JIG") %>% 
@@ -1755,11 +1755,11 @@ freq_geartender <-
   ggplot(geartender, aes(x = days.fished, fill = factor(OBSERVED_FLAG))) +
   geom_histogram(aes(y = ..density..), position = "identity", alpha = 0.5, col = "black", binwidth = 1) +
   #Drop STRAT (makes sense since 2016 and beyond strata are by gear)
-  facet_grid(AGENCY_GEAR_CODE ~ Tender) +
+  facet_grid(STRATA ~ Tender) +
   fig.theme + 
   theme(strip.text.y = element_text(angle = 360, size = 12, face = "bold")) +
   theme(strip.text.x = element_text(angle = 360, size = 12, face = "bold")) +
-  scale_fill_manual(values = c("black", "white"), name = "Observed?") +
+  scale_fill_manual(values = c("black", "white"), name = "Monitored ?") +
   labs(x = "\nTrip duration (Days)", y = "Relative Frequency (Density)\n")
 ```
 
