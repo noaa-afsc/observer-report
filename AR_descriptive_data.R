@@ -75,14 +75,14 @@ prep_data <- valhalla_data %>%
   # Aggregate the NPT and PTR trawl gears:
   mutate(COMBINED_GEAR = ifelse(AGENCY_GEAR_CODE %in% c('NPT', 'PTR'), 'TRW', AGENCY_GEAR_CODE)) %>% 
   # Aggregate species groups the way the Observer Program Annual Report has in the past:
-  mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('REXS', 'FSOL', 'ARTH', 'DFL4'),'DFL4', NA)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('REXS', 'FSOL', 'ARTH', 'DFL4'),'DFL4', SPECIES_GROUP_CODE)) %>% 
   mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('SQID', 'OCTP', 'SCLP', 'AMCK'), 'OTHR', SPECIES_GROUP)) %>% 
   mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('DUSK', 'REYE', 'THDS', 'POPA', 'DEM1', 'NORK', 'SRKR'), 'ROCK', SPECIES_GROUP)) %>% 
   mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('BSKT', 'USKT', 'LSKT'), 'USKT', SPECIES_GROUP)) %>% 
   mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('AKPL', 'FLO5', 'YSOL', 'RSOL', 'FSOL'), 'FLAT', SPECIES_GROUP)) %>% 
   mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('SQID', 'OCTP', 'SCLP'), 'OTHR', SPECIES_GROUP)) %>% 
   mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('SRKR', 'POPA', 'NORK', 'REYE'), 'ROCK', SPECIES_GROUP)) %>% 
-  mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('KMKA', 'ARTH', 'GTRB'), 'TURB', SPECIES_GROUP_CODE)) %>%
+  mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('KMKA', 'ARTH', 'GTRB'), 'TURB', SPECIES_GROUP)) %>%
   # Add a vessel length category for Ch.4 Table 4-1:
   mutate(VESSEL_LENGTH_CATEGORY = ifelse(as.numeric(LENGTH_OVERALL) <40, 'LT40', NA)) %>% 
   mutate(VESSEL_LENGTH_CATEGORY = ifelse((as.numeric(LENGTH_OVERALL) >= 40 & as.numeric(LENGTH_OVERALL) <57.5), 'BT40_57', VESSEL_LENGTH_CATEGORY)) %>% 
@@ -158,7 +158,7 @@ table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 
 # Identify the Valhalla run date - so its CAS run can be identified and halibut mortality rates obtained:
 valhalla_run_date <- valhalla_data %>% 
-  mutate(RUNDATE = format(date(RUN_DATE), '%d-%b-%Y')) %>% 
+  mutate(RUNDATE = format(RUN_DATE, '%d-%b-%Y')) %>% 
   distinct(RUNDATE)
 
 #valhalla_run_date$RUNDATE <- '03-APR-2021'
