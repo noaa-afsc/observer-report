@@ -24,6 +24,7 @@ if(!require("flextable"))   install.packages("flextable")
 if(!require("officer"))   install.packages("officer")
 if(!require("toOrdinal"))   install.packages("toOrdinal")
 if(!require("pander"))   install.packages("pander")
+if(!require("stringr"))   install.packages("stringr")
 
 #################
 # Figure themes #
