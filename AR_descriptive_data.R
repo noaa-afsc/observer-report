@@ -296,8 +296,47 @@ addl_catch_table <- with_totals %>%
 # Combine the previous catch table with the new year's catch table:
 catch_tables <- rbind(previous_catch_table, addl_catch_table)
 
-# Export new 2013-YEAR catch tables as a csv:
+
+# Format new catch table time series for web -------------------------------------------------
+
+export_format <- catch_tables %>% 
+  # Provide some 'pretty' translations:
+  mutate(SECTOR = ifelse(RPP == 'RPP' & PROCESSING_SECTOR == 'S', 'Catcher Vessel: Rockfish Program', NA)) %>% 
+  mutate(SECTOR = ifelse(RPP != 'RPP' & PROCESSING_SECTOR == 'S', 'Catcher Vessel', SECTOR)) %>% 
+  mutate(SECTOR = ifelse(PROCESSING_SECTOR == 'CP', 'Catcher/Processor', SECTOR)) %>% 
+  mutate(SECTOR = ifelse(PROCESSING_SECTOR == 'M', 'Mothership', SECTOR)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'HAL', 'Hook and Line', NA)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'NPT', 'Nonpelagic Trawl', GEAR)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'PTR', 'Pelagic Trawl', GEAR)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE %in% c('JIG', 'POT'), str_to_sentence(AGENCY_GEAR_CODE), GEAR)) %>% 
+  mutate(DISPOSITION = ifelse(RETAINED == 'R', 'Retained', NA)) %>% 
+  mutate(DISPOSITION = ifelse(RETAINED == 'D', 'Discarded', DISPOSITION)) %>% 
+  mutate(MONITORED_OR_TOTAL = ifelse(YEAR > 2017 & OBS_FOR_EST == 'Observed', 'Monitored', OBS_FOR_EST)) %>%
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'AMCK', 'Atka Mackerel', NA)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'DFL4', 'Deep-water Flatfish (GOA)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'FLAT', 'Flatfish (BSAI)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'HLBT', 'Pacific Halibut', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'OTHR', 'Other Groundfish', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'PCOD', 'Pacific Cod', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'PLCK', 'Walleye Pollock', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'ROCK', 'Rockfish', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'SABL', 'Sablefish (Black Cod)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'SFL1', 'Shallow-water Flatfish (GOA)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'TURB', 'Turbot', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'USKT', 'Skates', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'USRK', 'Sharks', SPECIES_GROUP_NAME)) %>% 
+  # Aggregate across the new translations:
+  group_by(YEAR, FMP, SECTOR, GEAR, SPECIES_GROUP_NAME, DISPOSITION, MONITORED_OR_TOTAL) %>% 
+  summarize(METRIC_TONS = sum(TONS), .groups = 'drop') %>%
+  # Sort:
+  arrange(YEAR, FMP, SECTOR, GEAR, SPECIES_GROUP_NAME, DISPOSITION, MONITORED_OR_TOTAL)
+
+
+# Export new 2013-YEAR catch tables as a raw csv:
 #write.csv(catch_tables,paste0("2013_", YEAR, "_catchtables.csv"), row.names = FALSE)
+
+# Export new formatted 2013-YEAR catch tables as csv:
+#write.csv(export_format,paste0("2013_", YEAR, "_catchtables_formatted.csv"), row.names = FALSE)
 
 
 
