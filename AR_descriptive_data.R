@@ -1,10 +1,10 @@
 
 # -------------------------------------------------------------------------------------------------------------------- #
 #
-# Program:AR_descriptive_2019_data.Rmd                                         
+# Program:AR_descriptive_data.Rmd                                         
 # Project:Observer Program Annual Report Descriptive Chapter                                      
 # Location: S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info 
-#      or: C:\Teleworking\Obs Annual Report\Ch 4
+#      or: H:\Observer Program\Annual Report Local GIT Project\Descriptive Info
 #
 # Objectives:                                                                  
 # - Query and perform some data clean-up for the descriptive chapter (Ch.4) of the Observer Program Annual Report
@@ -24,214 +24,119 @@
 #      - akfish_report.species_group 
 #      - akfish_report.flag 
 #      - akfish_report.mortality_rate 
-#  - S:\Observer Program Annual Report\2018_Annual_Report\Chap4_Descriptive_Info\2013_2018_catchtables.csv 
-#
-# Coronavirus telework locations:
-#  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_helper.r
-#      - fig.theme  (libraries, ggplot themes, etc.)
-#  - C:\Teleworking\Obs Annual Report\Ch 4\2020-04-03CAS_VALHALLA.RData
-#      - VALHALLA data.frame
-#  - C:\Teleworking\Obs Annual Report\Ch 4\warehouse_data.csv
-#  - C:\Teleworking\Obs Annual Report\Ch 4\2013_2018_catchtables.csv
+#  - S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info\2013_2019_catchtables.csv 
 #
 # Output:    
 # Normal locations:
-#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_data.Rdata
-#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website
-#     - previous.catch.tables - previous year's version of the catch tables (2013-2018)
+#  - S:\Observer Program Annual Report\YEAR_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_YEAR_data.Rdata
+#     - catch_tables - 2013-YEAR catch tables for posting to the AKRO website
+#     - previous_catch_tables - previous year's version of the catch tables (2013-(YEAR-1))
 #     - VALHALLA - the original Valhalla data
-#     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
-#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
-#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
+#     - warehouse_data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
+#     - addl_catch_table - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
+#     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
 #  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\2013_2019_catchtables.csv
-#
-# Coronavirus telework locations:
-#  - C:\Teleworking\Obs Annual Report\Ch 4\AR_descriptive_2019_data.Rdata
-#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website
-#     - previous.catch.tables - previous year's version of the catch tables (2013-2018)
-#     - VALHALLA - the original Valhalla data 
-#     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
-#     - with.totals - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
-#     - work.data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
-#  - C:\Teleworking\Obs Annual Report\Ch 4\2013_2019_catchtables.csv
 #
 # -------------------------------------------------------------------------------------------------------------------- #
 
 
-###############
-# USER INPUTS #
-###############
+## User Inputs -----------------------------------------------------------------------------------------------------
 
-#Source your helper file (libraries, ggplot themes, etc.)
-
-# Normally in:
-#source("S:/Observer Program Annual Report/Descriptive_Chapter/AR_descriptive_helper.r")
-# During Coronavirus teleworking:
-source("C:\\Teleworking\\Obs Annual Report\\Ch 4\\AR_descriptive_helper.r")
+#Source helper file (libraries, ggplot themes, etc.)
+source("AR_descriptive_helper.r")
 
 #Create a generalized YEAR object that corresponds to the Annual Report year
-YEAR <- 2019
+YEAR <- 2020
 
-#Source connection inputs (con, user, pw)
-#source("C:\\Teleworking\\R_RODBC_helper_file.r")
-
-
-# ------------#
-# - QUERIES - #
-# ----------- #
-
-# As of 4/15/19, a CAS run has been deleted from the warehouse that is needed. Load a snapshot of it from an older run instead:
-#load("S:\\Observer Program Annual Report\\2018_Annual_Report\\Chap4_Descriptive_Info\\Outdated\\AR_descriptive_dat_2018.RData")
-rm(list= ls()[!(ls() %in% c('warehouse.data', 'YEAR', 'con', 'user', 'pw'))])
+# Set up ROracle connection for database calling information from R environment:
+channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
+                         username =paste(Sys.getenv('CASid')), 
+                         password =paste(Sys.getenv('CASpw')), 
+                         dbname = Sys.getenv("myCASConnStr"))
 
 
-#Clean up workspace (Remove everything EXCEPT the objects listed)
-#rm(list= ls()[!(ls() %in% c('work.data', 'YEAR', 'con', 'user',  'pw'))])
+## Load Valhalla Data ---------------------------------------------------------------------------------------------
 
-# Establish connection to ODBC database in order to access database on AKRI:
-#channel <- odbcConnect(con, user, pw)
-
-# Query Valhalla data directly from the database for the 2019 Annual Report:
-#valhalla.query <- "select * from akfish_sf.valhalla_scratch where adp = 2019"
-#valhalla.data <- sqlQuery(channel,paste(valhalla.query),as.is=TRUE,max=10000000)
-
-# Instead, load 2019 Valhalla data I got directly from Phil instead of querying it from database:
-load("C:\\Teleworking\\Obs Annual Report\\Ch 4\\2020-04-03CAS_VALHALLA.RData")
+# Query Valhalla data directly from the database for the Annual Report:
+valhalla_query <- paste0("select * from akfish_sf.valhalla_scratch where adp = ", YEAR)
+valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
 
 
-#work.data <-data.frame(VALHALLA)
-#prep.data <- valhalla.data
-prep.data <- data.frame(VALHALLA)
+## Valhalla data transformations  ----------------------------------------------------------------------------------- 
 
 
-# ----------------------------------------------------------------- #
-# ---               Transform some of the data                  --- #
-# ----------------------------------------------------------------- #
-
-# Consolidate FMP for BS and AI:
-#prep.data$FMP_AREA<-ifelse(prep.data$FMP %in% c('BS', 'AI'), 'BSAI', 'GOA')
-
-# Create an RPP management program flag for the CVs:
-# (as they are in full coverage as opposed to other CVs that are in partial coverage)
-prep.data$RPP<-ifelse(prep.data$MANAGEMENT_PROGRAM_CODE=='RPP' & prep.data$PROCESSING_SECTOR=='S', 'RPP', ' ')
-
-# Identify the retained catch (source table = 'Y') as R and discards (source table = 'N') as D:
-prep.data$RETAINED<-ifelse(prep.data$SOURCE_TABLE == 'Y', 'R', 'D')
-
-# Aggregate the NPT and PTR trawl gears:
-prep.data$COMBINED_GEAR <- ifelse(prep.data$AGENCY_GEAR_CODE %in% c('NPT', 'PTR'), 'TRW', prep.data$AGENCY_GEAR_CODE)
-
-# Aggregate species groups the way the Observer Program Annual Report has in the past:
-prep.data$SPECIES_GROUP <- ifelse(
-  prep.data$FMP=='GOA' & prep.data$SPECIES_GROUP_CODE %in% 
-    c('REXS', 'FSOL', 'ARTH', 'DFL4'),'DFL4', 
-  (ifelse(prep.data$FMP=='GOA' & prep.data$SPECIES_GROUP_CODE %in% 
-            c('SQID', 'OCTP', 'SCLP', 'AMCK'), 'OTHR', 
-          (ifelse(prep.data$FMP=='GOA' & prep.data$SPECIES_GROUP_CODE %in% 
-                    c('DUSK', 'REYE', 'THDS', 'POPA', 'DEM1', 'NORK', 'SRKR'), 'ROCK',
-                  (ifelse(prep.data$FMP=='GOA' & prep.data$SPECIES_GROUP_CODE %in% 
-                            c('BSKT', 'USKT', 'LSKT'), 'USKT', 
-                          ifelse(prep.data$FMP=='BSAI' & prep.data$SPECIES_GROUP_CODE %in% 
-                                   c('AKPL', 'FLO5', 'YSOL', 'RSOL', 'FSOL'), 'FLAT',
-                                 (ifelse(prep.data$FMP=='BSAI' & prep.data$SPECIES_GROUP_CODE %in% 
-                                           c('SQID', 'OCTP', 'SCLP'), 'OTHR', 
-                                         (ifelse(prep.data$FMP=='BSAI' & prep.data$SPECIES_GROUP_CODE %in% 
-                                                   c('SRKR', 'POPA', 'NORK', 'REYE'), 'ROCK', 
-                                                 (ifelse(prep.data$FMP=='BSAI' & prep.data$SPECIES_GROUP_CODE %in% 
-                                                           c('KMKA', 'ARTH', 'GTRB'), 'TURB', 
-                                                         prep.data$SPECIES_GROUP_CODE))))))))))))))
+# Perform some data transformations:
+prep_data <- valhalla_data %>% 
+  # Create an RPP management program flag for the CVs:
+  # (as they are in full coverage as opposed to other CVs that are in partial coverage)
+  mutate(RPP = ifelse(MANAGEMENT_PROGRAM_CODE=='RPP' & PROCESSING_SECTOR=='S', 'RPP', ' ')) %>% 
+  # Identify the retained catch (source table = 'Y') as R and discards (source table = 'N') as D:
+  mutate(RETAINED = ifelse(SOURCE_TABLE == 'Y', 'R', 'D')) %>% 
+  # Aggregate the NPT and PTR trawl gears:
+  mutate(COMBINED_GEAR = ifelse(AGENCY_GEAR_CODE %in% c('NPT', 'PTR'), 'TRW', AGENCY_GEAR_CODE)) %>% 
+  # Aggregate species groups the way the Observer Program Annual Report has in the past:
+  mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('REXS', 'FSOL', 'ARTH', 'DFL4'),'DFL4', SPECIES_GROUP_CODE)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('SQID', 'OCTP', 'SCLP', 'AMCK'), 'OTHR', SPECIES_GROUP)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('DUSK', 'REYE', 'THDS', 'POPA', 'DEM1', 'NORK', 'SRKR'), 'ROCK', SPECIES_GROUP)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='GOA' & SPECIES_GROUP_CODE %in% c('BSKT', 'USKT', 'LSKT'), 'USKT', SPECIES_GROUP)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('AKPL', 'FLO5', 'YSOL', 'RSOL', 'FSOL'), 'FLAT', SPECIES_GROUP)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('SQID', 'OCTP', 'SCLP'), 'OTHR', SPECIES_GROUP)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('SRKR', 'POPA', 'NORK', 'REYE'), 'ROCK', SPECIES_GROUP)) %>% 
+  mutate(SPECIES_GROUP = ifelse(FMP=='BSAI' & SPECIES_GROUP_CODE %in% c('KMKA', 'ARTH', 'GTRB'), 'TURB', SPECIES_GROUP)) %>%
+  # Add a vessel length category for Ch.4 Table 4-1:
+  mutate(VESSEL_LENGTH_CATEGORY = ifelse(as.numeric(LENGTH_OVERALL) <40, 'LT40', NA)) %>% 
+  mutate(VESSEL_LENGTH_CATEGORY = ifelse((as.numeric(LENGTH_OVERALL) >= 40 & as.numeric(LENGTH_OVERALL) <57.5), 'BT40_57', VESSEL_LENGTH_CATEGORY)) %>% 
+  mutate(VESSEL_LENGTH_CATEGORY = ifelse(as.numeric(LENGTH_OVERALL) >= 57.5, 'GT58', VESSEL_LENGTH_CATEGORY)) %>% 
+  # Add a flag indicating if the observed data are used in CAS for estimation or not:
+  #    (In the past, this flag would have distinguished the EM_POT data from other observed trips)
+  mutate(OBS_FOR_EST = ifelse(OBSERVED_FLAG == 'Y', 'Observed', 'Not Observed'))
 
 
-# -------------------------------------------------------------- #
-# - Some data corrections to strata for the 2019 Annual Report - #
-# -------------------------------------------------------------- #
+
+# Corrections to strata ---------------------------------------------------------------------------- 
 
 # Hardcode the following STRATA changes here:
-#  1. The 2019 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) to participate in the 
-#     EM innovation and research zero selection pool. The Defender (1472) is using the deployment of an EM Lite 
-#     system (no cameras), so is also part of the EM innovation and research zero selection pool.  
-#     Check to see if they got picked up in CAS.
-#  2. There are trips in the EM_POT strata that used a tender and are called EM_TenP. For the annual
-#     report, consolidate these all into the EM_POT stratum.
-
-table(prep.data$STRATA)
-#EM_HAL  EM_POT EM_TenP    FULL     HAL     POT    TenP   TenTR     TRW    ZERO 
-#39347    2037     336  802507   80825    7380    1346    2644   40851   45924 
-
-table(prep.data[prep.data$VESSEL_ID == 5029,]$STRATA)
-table(prep.data[prep.data$VESSEL_ID == 3759,]$STRATA)
-table(prep.data[prep.data$VESSEL_ID == 2844,]$STRATA)
-table(prep.data[prep.data$VESSEL_ID == 1472,]$STRATA)
+#  1. The Appendix D of the 2020 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) 
+#     to participate in the EM innovation and research zero selection pool. The Defender (1472) is using the deployment of 
+#     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  HOWEVER, AFSC
+#     data show that the Kariel did NOT participate in EM research, so only hardcode the 3. Since I don't have access to the AFSC
+#     data that this is based on, Check with Phil each year.
+#  2. Refer to the EM TRW EFP strata in the BSAI as FULL COVERAGE and the EM TRW EFP strata in the GOA as PARTIAL COVERAGE
 
 
-# Create an ORIGINAL.STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM Pot stratum:
-# 2019 version:
-prep.data <- prep.data %>% 
-    rename(ORIGINAL.STRATA = STRATA) %>% 
-    mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','3759','2844', '1472'), 'ZERO_EM_RESEARCH', 
-                           # Consolidate the EM Tender Pot strata with the EM Pot strata:
-                           ifelse(ORIGINAL.STRATA == 'EM_TenP', 'EM_POT', ORIGINAL.STRATA)))
+table(prep_data$STRATA)
+#EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
+#25095       3660      23645     653192      57177      10568      25248      28465 
+
+table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
+#table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
+table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # The Predator didn't fish in 2020?
+table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
 
 
-table(prep.data$ORIGINAL.STRATA, prep.data$STRATA)
-#        EM_HAL EM_POT   FULL    HAL    POT   TenP  TenTR    TRW   ZERO ZERO_EM_RESEARCH
-#EM_HAL   39302      0      0      0      0      0      0      0      0               45
-#EM_POT       0   2037      0      0      0      0      0      0      0                0
-#EM_TenP      0    336      0      0      0      0      0      0      0                0
-#FULL         0      0 802507      0      0      0      0      0      0                0
-#HAL          0      0      0  79540      0      0      0      0      0             1285
-#POT          0      0      0      0   7380      0      0      0      0                0
-#TenP         0      0      0      0      0   1346      0      0      0                0
-#TenTR        0      0      0      0      0      0   2644      0      0                0
-#TRW          0      0      0      0      0      0      0  40851      0                0
-#ZERO         0      0      0      0      0      0      0      0  45924                0
- 
-
-# The following 3 fields were commented out (for now?) for 2018 Annual Report ------------------------------------------------#
-# Simplify some of the Strata:
-#prep.data$SIMPLIFIED_STRATA <- ifelse(prep.data$STRATA == 'EM', 'EM Voluntary',
-#                                      ifelse(prep.data$STRATA == 'ZERO_EM_RESEARCH', 'ZERO', prep.data$STRATA))
-
-# Distinguish human observed from EM observed from not observed:
-# (NOTE: Not able to do this with 2017 Valhalla)
-#prep.data$HUMAN_OBSERVED <- ifelse(prep.data$OBSERVED_FLAG == 'Y' & !(prep.data$SIMPLIFIED_STRATA == 'EM Voluntary'), 
-#                                   'Observed', 'Not Observed')
-
-#prep.data$HUMAN_EM_OBSERVED <- ifelse(prep.data$OBSERVED_FLAG == 'Y', 'Observed', 'Not Observed') 
-
-# ----------------------------------------------------------------------------------------------------------------------------#
-
-# Not needed for 2019?:
-# Note: some EM_POT and TenEM_POT data are flagged as observed, however, CAS does not use that for estimation in 2018.
-#       As a result, that catch is NOT included in Tables 4-3 or 4-4 as observed so create a flag to distinguish it 
-#table(prep.data$OBSERVED_FLAG, prep.data$STRATA)
+# Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
+# 2020 version:
+prep_data <- prep_data %>% 
+  rename(ORIGINAL_STRATA = STRATA) %>% 
+  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','2844', '1472'), 'ZERO_EM_RESEARCH', 
+                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
+                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA))))
 
 
-# Add a flag indicating if the trip was in a strata where the observed trip would be used in CAS for catch estimation
-#    or not (EM_POT, TenEM_POT, ZERO_EM_RESEARCH, and ZERO):
-#prep.data$USED_IN_EST <- ifelse(prep.data$STRATA %in% c('EM_POT','TenEM_POT', 'ZERO_EM_RESEARCH', 'ZERO'), 'N', 'Y') 
+table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
+#            EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
+# EM_HAL      25095      0               0               0      0      0      0      0      0                0
+# EM_POT          0   3660               0               0      0      0      0      0      0                0
+# EM_TRW_EFP      0      0           15655            7990      0      0      0      0      0                0
+# FULL            0      0               0               0 653192      0      0      0      0                0
+# HAL             0      0               0               0      0  56541      0      0      0              636
+# POT             0      0               0               0      0      0  10430      0      0              138
+# TRW             0      0               0               0      0      0      0  25248      0                0
+# ZERO            0      0               0               0      0      0      0      0  28465                0
+  
 
 
-# Add a flag indicating if the observed data are used in CAS for estimation or not:
-#    (This is the flag distinguishes the EM_POT data from other observed trips)
-#prep.data$OBS_FOR_EST <- ifelse(prep.data$OBSERVED_FLAG == 'Y' & (prep.data$USED_IN_EST == 'Y'), 'Observed', 'Not Observed')
-prep.data$OBS_FOR_EST <- ifelse(prep.data$OBSERVED_FLAG == 'Y', 'Observed', 'Not Observed')
-
-#table(prep.data$OBSERVED_FLAG, prep.data$OBS_FOR_EST)
-
-
-# Add a vessel length category for proposed Ch.4 Table 4-1:
-prep.data$VESSEL_LENGTH_CATEGORY <- ifelse(as.numeric(prep.data$LENGTH_OVERALL) <40, 'LT40', 
-                                           (ifelse((as.numeric(prep.data$LENGTH_OVERALL) >= 40 & 
-                                                      as.numeric(prep.data$LENGTH_OVERALL) <57.5), 'BT40_57', 
-                                                   (ifelse(as.numeric(prep.data$LENGTH_OVERALL) >= 57.5, 'GT58', 'Error')))))
-
-table(prep.data$VESSEL_LENGTH_CATEGORY)
-
-
-# ------------------------------------------------------------------------------------- #
-# ---                Catch table weights and Halibut PSC estimates                  --- #
-# ------------------------------------------------------------------------------------- #
+# Back calculate halibut PSC estimates using mortality rates -------------------------------------------------------------
 
 # From the annual report:
 #       "DMRs are not applied to raw observer data prior to expansion to the entire fishery. Therefore, in order
@@ -246,26 +151,34 @@ table(prep.data$VESSEL_LENGTH_CATEGORY)
 # In order to remain consistent with previous versions of the annual report, the Ch. 4 catch tables need to include
 # halibut PSC estimates rather than halibut mortality: 
 #     - For 2017 PSC estimates were added to a version of Valhalla from v_cas_psc_estimate (in Cathy_valhalla_3_14_17.RData).  
-#     - For 2018 and 2019, the mortality rates from the warehouse are needed to back calculate the estimates from the mortality
+#     - For 2018, 2019, and 2020 the mortality rates from the warehouse are needed to back calculate the estimates from the mortality
 #       (NOTE: you cannot simply use the DMRs in akfish.core_halibut_mortality_rate because some discards occur through deck sorting
 #              and have their own haul or vessel specific DMR applied)
 
 
-# Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation (cas_run_id 10395)
+# Identify the Valhalla run date - so its CAS run can be identified and halibut mortality rates obtained:
+valhalla_run_date <- valhalla_data %>% 
+  mutate(RUNDATE = format(RUN_DATE, '%d-%b-%Y')) %>% 
+  distinct(RUNDATE)
+
+#valhalla_run_date$RUNDATE <- '03-APR-2021'
+  
+  
+# Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
 # and get the mortality rates that were applied to the PSC:
-warehouse.query <- "WITH cas_run AS
+warehouse_query <- paste0("WITH cas_run AS
 (-- Identify the CAS run that was likely used to create Valhalla (a.k.a. the last successful CAS run before the Valhalla run date)
 SELECT * FROM 
-(-- Get all the CAS runs for 2019 that happened before the creation of Valhalla:
+(-- Get all the CAS runs for the year that happened before the creation of Valhalla:
 SELECT *
 FROM akfish_report.transaction_fact_log a
-WHERE a.year = 2019 
-AND a.status = 'SUCCESS'
-AND a.end_time < '03-Apr-2020' 
-ORDER BY a.end_time desc
+WHERE a.year = ", YEAR, 
+" AND a.status = 'SUCCESS'
+AND a.end_time < '", valhalla_run_date$RUNDATE, 
+"' ORDER BY a.end_time desc
 )
 WHERE rownum = 1 
-) 
+)
 
 SELECT distinct crs.catch_report_source_pk, -- identified as ca_reference_key in 2019 Valhalla dataset
 cr.data_source_type_code,
@@ -282,32 +195,31 @@ JOIN akfish_report.catch_report_source crs ON cr.catch_report_source_pk = crs.ca
 JOIN akfish_report.species_group sg ON txn.species_group_pk = sg.species_group_pk 
 JOIN akfish_report.flag r ON txn.retained_flag_pk = r.flag_pk 
 JOIN akfish_report.mortality_rate mr ON txn.mortality_rate_pk = mr.mortality_rate_pk 
-WHERE tfl.year = 2019
-AND sg.species_group_code = 'HLBT'
-AND r.value = 'N' -- discarded"
+WHERE tfl.year = ", YEAR,
+" AND sg.species_group_code = 'HLBT'
+AND r.value = 'N' -- discarded")
 
-#warehouse.data <- sqlQuery(channel,paste(warehouse.query),as.is=TRUE,max=10000000)
-# Read in a snapshot instead:
-warehouse.data <- read.csv("C:\\Teleworking\\Obs Annual Report\\Ch 4\\warehouse_data.csv")
+warehouse_data <- dbGetQuery(channel_cas, warehouse_query) 
+
 
 # The Valhalla data have the old primary key column name for catch reports (ca_reference_key) and the data warehouse data
-# have the new primary key (catch_report_source_pk). Rename it, for compatability sake:
+# have the new primary key (catch_report_source_pk). Rename it, for compatibility sake:
 
-warehouse.data <- warehouse.data %>% 
+warehouse_data <- warehouse_data %>% 
   rename(CA_REFERENCE_KEY = CATCH_REPORT_SOURCE_PK)
 
 
 # Merge the datasets so the DMR can be used to back calculate the estimate:
-apply.dmr <- prep.data %>% 
-  left_join(warehouse.data, 
+apply_dmr <- prep_data %>% 
+  left_join(warehouse_data, 
             by = c("CA_REFERENCE_KEY", "SPECIES_GROUP_CODE", "SOURCE_TABLE", "DATA_SOURCE_TYPE_CODE", "CATCH_REPORT_TYPE_CODE")) %>% 
   # Calculate the estimate from the DMR and the mortality for PSC:
   mutate(HALIBUT_WEIGHT_NOMORT = ifelse(!is.na(MORTALITY_RATE), as.numeric(WEIGHT_POSTED)/as.numeric(MORTALITY_RATE), NA))
 
 
 
-# ---- Review halibut data and the new halibut_weight_mort field just to make sure I understand which to use for the Ch4 catch tables:
-        halibut <- apply.dmr[prep.data$SPECIES_GROUP == 'HLBT',]
+# ---- Review halibut data and the new halibut_weight_nomort field just to make sure I understand which to use for the Ch4 catch tables:
+        halibut <- apply_dmr[apply_dmr$SPECIES_GROUP == 'HLBT',]
 
         # Halibut records without a HALIBUT_WEIGHT_NOMORT value are SUPPOSED TO BE retained catch:   Use weight_posted for these records.
         retained.halibut <- halibut[is.na(halibut$HALIBUT_WEIGHT_NOMORT),]
@@ -322,33 +234,30 @@ apply.dmr <- prep.data %>%
 
         # Verify that when discarded halibut is wastage, there is no difference between the weight posted and the weight 
         # with no DMRs applied:
-        table(discarded.halibut[discarded.halibut$GROUNDFISH_FLAG=='Y',]$difference)
-# ----------------------------------------------------------------------------------------------------------------------------
+        #table(discarded.halibut[discarded.halibut$GROUNDFISH_FLAG=='Y',]$difference)
+# ---------------------------------------------------------------------------------------------------------------------------- #
 
+        
 # Specify that retained halibut (and all other species groups) should use weight_posted whereas discarded halibut (PSC and wastage)
 # should use the halibut_weight_nomort field for the Ch.4 catch tables:
-apply.dmr <- apply.dmr %>% 
+apply_dmr <- apply_dmr %>% 
    mutate(catch_table_weight = ifelse((SPECIES_GROUP == 'HLBT' & RETAINED == 'D'), 
                                       HALIBUT_WEIGHT_NOMORT, as.numeric(WEIGHT_POSTED)))
- 
-        
-# Fix the "problem" record mentioned above by replacing the 1 NA record with 0:
-#apply.dmr$catch_table_weight[is.na(apply.dmr$catch_table_weight)] <- 0
 
 # Identify the working dataset:        
-work.data <- apply.dmr         
+work_data <- apply_dmr         
 
 
-# ----------------------------------------------------------------- #
-# ---                     Summarize Catch                       --- #
-# ----------------------------------------------------------------- #
+
+# Summarize Catch for Catch Tables --------------------------------------------------------------------------------
+
 
 # ------- Summarize Total Catch of Groundfish, Directed Halibut, and PSC halibut (observed + not observed): --------- #
-calc.total <- work.data %>% 
+calc_total <- work_data %>% 
   # refine to groundfish (which includes directed halibut) OR psc halibut:
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
   group_by(FMP, PROCESSING_SECTOR, RPP, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
-  summarise(TONS = sum(catch_table_weight)) %>% 
+  summarise(TONS = sum(catch_table_weight), .groups = 'drop') %>% 
   # add 'Total' as a filler value in the used for estimation flag:
   mutate(OBS_FOR_EST = 'Total') %>% 
   #mutate(OBSERVED_FLAG = 'Total') %>% 
@@ -356,64 +265,86 @@ calc.total <- work.data %>%
 
 # ------- Summarize Catch of Groundfish, Directed Halibut, and PSC halibut as observed or not observed --------- #
 #           in the context of whether or not the observer data would be used for catch estimation                #
-observed <- work.data %>% 
+observed <- work_data %>% 
   # refine to groundfish (which includes directed halibut) OR psc halibut:
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
   group_by(FMP, PROCESSING_SECTOR, RPP, OBS_FOR_EST, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
   #group_by(FMP, PROCESSING_SECTOR, RPP, OBSERVED_FLAG, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
-  summarise(TONS = sum(catch_table_weight)) %>% 
+  summarise(TONS = sum(catch_table_weight), .groups = 'drop') %>% 
   data.frame()
 
 
 # Combine the observed catch and total catch summaries:
-with.totals <- rbind(observed, calc.total[,c(1,2,3,5,6,7,8,4)])
+with_totals <- rbind(observed, calc_total[,c(1,2,3,5,6,7,8,4)])
 
 
-# -------------------------------------------------------------------------- #
-# ---                 Create 2013 - YEAR Catch Tables                    --- #
-# -------------------------------------------------------------------------- #
+# Create a new catch table time series -------------------------------------------------------------------------- 
 
-# For 2018:
-#previous.catch.table <- read.csv(paste0("S://Observer Program Annual Report//", 
-#                       YEAR - 1, 
-#                       "_Annual_Report//Chap4_Descriptive_Info//2013_", 
-#                       YEAR - 1, "_catchtables.csv"))
+# Read in previous catch table:
+previous_catch_table <- read.csv(paste0("2013_", YEAR-1, "_catchtables.csv"))
 
-# For 2019:
-previous.catch.table <- read.csv("C:\\Teleworking\\Obs Annual Report\\Ch 4\\2013_2018_catchtables.csv")
-
-
-#previous.catch.table <- plyr::rename(previous.catch.table, c("GEAR" = "AGENCY_GEAR_CODE", "SECTOR" = "PROCESSING_SECTOR", 
-#                           "Observed_FLAG" = "HUMAN_OBSERVED", "RETAINED_FLAG" = "RETAINED"))
-#previous.catch.table <- plyr::rename(previous.catch.table, c("HUMAN_OBSERVED" =  "OBS_FOR_EST"))
+# Format the new year's catch table data:
+addl_catch_table <- with_totals %>% 
+  # Remove unobserved catch:
+  filter(OBS_FOR_EST %in% c('Observed', 'Total')) %>% 
+  # Add a year column:
+  mutate(YEAR = YEAR) %>%
+  # Arrange the columns so it matches previous catch tables:
+  select(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, RPP, SPECIES_GROUP, RETAINED, OBS_FOR_EST, TONS)
 
 
-### CODE FOR WRITING THE CATCH TABLE CSV ###
-# **FLAG** This needs to be formatted so it will fit in with the full catch table
-with.totals <- with.totals[with.totals$OBS_FOR_EST %in% c('Observed', 'Total'),]
-with.totals$YEAR <- YEAR
-with.totals <- with.totals[,c(9,1,2,5,3,6,7,4,8)]
+# Combine the previous catch table with the new year's catch table:
+catch_tables <- rbind(previous_catch_table, addl_catch_table)
 
-catch.tables <- rbind(previous.catch.table, with.totals)
 
-#write.csv(catch.tables,paste0("S:/Observer Program Annual Report/",
-#                             YEAR,
-#                             "_Annual_Report/Chap4_Descriptive_Info/2013_",
-#                             YEAR,
-#                             "_catchtables.csv"), row.names = FALSE)
+# Format new catch table time series for web -------------------------------------------------
 
-#write.csv(catch.tables,paste0("C:/Teleworking/Obs Annual Report/Ch 4","/2013_", YEAR, "_catchtables.csv"), row.names = FALSE)
+export_format <- catch_tables %>% 
+  # Provide some 'pretty' translations:
+  mutate(SECTOR = ifelse(RPP == 'RPP' & PROCESSING_SECTOR == 'S', 'Catcher Vessel: Rockfish Program', NA)) %>% 
+  mutate(SECTOR = ifelse(RPP != 'RPP' & PROCESSING_SECTOR == 'S', 'Catcher Vessel', SECTOR)) %>% 
+  mutate(SECTOR = ifelse(PROCESSING_SECTOR == 'CP', 'Catcher/Processor', SECTOR)) %>% 
+  mutate(SECTOR = ifelse(PROCESSING_SECTOR == 'M', 'Mothership', SECTOR)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'HAL', 'Hook and Line', NA)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'NPT', 'Nonpelagic Trawl', GEAR)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'PTR', 'Pelagic Trawl', GEAR)) %>% 
+  mutate(GEAR = ifelse(AGENCY_GEAR_CODE %in% c('JIG', 'POT'), str_to_sentence(AGENCY_GEAR_CODE), GEAR)) %>% 
+  mutate(DISPOSITION = ifelse(RETAINED == 'R', 'Retained', NA)) %>% 
+  mutate(DISPOSITION = ifelse(RETAINED == 'D', 'Discarded', DISPOSITION)) %>% 
+  mutate(MONITORED_OR_TOTAL = ifelse(YEAR > 2017 & OBS_FOR_EST == 'Observed', 'Monitored', OBS_FOR_EST)) %>%
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'AMCK', 'Atka Mackerel', NA)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'DFL4', 'Deep-water Flatfish (GOA)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'FLAT', 'Flatfish (BSAI)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'HLBT', 'Pacific Halibut', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'OTHR', 'Other Groundfish', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'PCOD', 'Pacific Cod', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'PLCK', 'Walleye Pollock', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'ROCK', 'Rockfish', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'SABL', 'Sablefish (Black Cod)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'SFL1', 'Shallow-water Flatfish (GOA)', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'TURB', 'Turbot', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'USKT', 'Skates', SPECIES_GROUP_NAME)) %>% 
+  mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'USRK', 'Sharks', SPECIES_GROUP_NAME)) %>% 
+  # Aggregate across the new translations:
+  group_by(YEAR, FMP, SECTOR, GEAR, SPECIES_GROUP_NAME, DISPOSITION, MONITORED_OR_TOTAL) %>% 
+  summarize(METRIC_TONS = sum(TONS), .groups = 'drop') %>%
+  # Sort:
+  arrange(YEAR, FMP, SECTOR, GEAR, SPECIES_GROUP_NAME, DISPOSITION, MONITORED_OR_TOTAL)
+
+
+# Export new 2013-YEAR catch tables as a raw csv:
+#write.csv(catch_tables,paste0("2013_", YEAR, "_catchtables.csv"), row.names = FALSE)
+
+# Export new formatted 2013-YEAR catch tables as csv:
+#write.csv(export_format,paste0("2013_", YEAR, "_catchtables_formatted.csv"), row.names = FALSE)
+
+
+
+# Clean up workspace and save RData file --------------------------------------------------------------
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR', 'previous.catch.table','work.data', "with.totals", "catch.tables",'VALHALLA', 'warehouse.data'))])
+#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
 
-# For 2018:
-#save(YEAR, dat, work.data, with.totals, catch.tables, warehouse.data,
-#     file = paste0("S:/Observer Program Annual Report/", YEAR, "_Annual_Report/Chap4_Descriptive_Info/AR_descriptive_", 
-#                   YEAR, "_data.RData"))
-
-# For 2019:
-#save(YEAR, previous.catch.table, work.data, with.totals, catch.tables, VALHALLA, warehouse.data,
-#     file = paste0("C:/Teleworking/Obs Annual Report/Ch 4/AR_descriptive_", YEAR, "_data.RData"))
-
+#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
+#     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
