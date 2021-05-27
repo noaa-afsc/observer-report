@@ -43,7 +43,7 @@ title: "Annual Report Descriptive Data Draft"
 
 ### 4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
 
-In Chapter 3, Table 3-3 provides trip and vessel counts based on coverage type and strata. However, the Council has previously requested a summary of trip and vessel counts based on criteria which are not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel length).  Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP area, strata, gear type, and vessel length category within the full and partial coverage categories. Trips are summarized as the number of monitored trips and the total number of trips.  Monitored trips reflect either trips with an observer, EM fixed gear trips if at least some video was reviewed, or EM trawl trips where salmon were observed for shoreside.  The rationale for defining monitored trips for EM fixed gear or EM trawl trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
+In Chapter 3, Table 3-3 provides trip and vessel counts based on coverage type and strata. However, the Council has previously requested a summary of trip and vessel counts based on criteria which are not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel length).  Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP area, strata, gear type, and vessel length category within the full and partial coverage categories. Trips are summarized as the number of monitored trips and the total number of trips.  Monitored trips reflect either trips with an observer, EM fixed gear trips if at least some video was reviewed, or EM trawl trips where salmon and Pacific halibut were observed for at the shoreside plant.  The rationale for defining monitored trips for EM fixed gear or EM trawl trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
 
 Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes more than one gear type on a trip or within the year. The table rows titled “BSAI Subtotal”, “GOA Subtotal”, and “Total Unique” include the number of unique vessels and unique trips in each vessel length category where each vessel or trip is counted only once, in each of the FMP areas or overall, respectively.
 
@@ -54,13 +54,13 @@ The ADP does not assign observers or EM coverage by fisheries (because the fishe
 
 It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not _a priori_ be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum[^1].  
 
-In Table 4-3 and Table 4-4, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where salmon were observed for shoreside.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
+In Table 4-3 and Table 4-4, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where salmon or Pacific halibut were observed for at the shoreside plant.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
 
 All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction.  Additional retained and discard catch information, broken down by species for the Gulf of Alaska (GOA) and Bering Sea/Aleutian Islands (BSAI), are available online for `r as.numeric(format(Sys.Date(), "%Y"))-1` as well as prior years.[^2] 
 
 #### Discarded Pacific halibut in the IFQ fishery ####
 
-Caution should be exercised when interpreting the results for halibut in the halibut IFQ fishery in Table 4-3 and Table 4-4. For longline catch, the estimated weight of each species caught is the product of the estimated number of fish, the mean weight per fish, and the proportion of the catch that is discarded. While these methods provide unbiased estimates of total catch, the estimate of at-sea discards relies on the assumption that the proportion of the number of discarded is equal to the proportion of the weight discarded. The Pacific halibut fishery is the only federally managed groundfish fishery with a regulatory minimum size limit (32 in) and this creates a unique data collection issue for observers who collect data from the unsorted (retained and discarded) catch without inferring which fish would be discarded by the vessel. As a result, the mean weight per fish that is calculated from the observer’s sample of combined discarded and retained fish over-estimates the mean weight of discarded fish and underestimates the weight of retained fish. Hence the proportion of the number of halibut retained (reported in observer data) does not equal the proportion of halibut weight retained, resulting in over-estimates of halibut discard within the directed fishery. 
+Caution should be exercised when interpreting the results for halibut in the halibut IFQ fishery in Table 4-3 and Table 4-4. For hook-and-line catch, the estimated weight of each species caught is the product of the estimated number of fish, the mean weight per fish, and the proportion of the catch that is discarded. While these methods provide unbiased estimates of total catch, the estimate of at-sea discards relies on the assumption that the proportion of the number of discarded is equal to the proportion of the weight discarded. The Pacific halibut fishery is the only federally managed fishery with a regulatory minimum size limit (32 in) and this creates a unique data collection issue for observers who collect data from the unsorted (retained and discarded) catch without inferring which fish would be discarded by the vessel. As a result, the mean weight per fish that is calculated from the observer’s sample of combined discarded and retained fish over-estimates the mean weight of discarded fish and underestimates the weight of retained fish. Hence the proportion of the number of halibut retained (reported in observer data) does not equal the proportion of halibut weight retained, resulting in over-estimates of halibut discard within the directed fishery. 
 
 To correct for this bias, NMFS is developing an analytic (modeled) method to adjust for this bias by adjusting the percentage of halibut retained to reflect the differences in mean weight for retained (and discarded) halibut.  A NOAA Technical Memorandum describing the change is currently going through final review.  This solution has been implemented for 2021, and future years, and the same correction is being implemented for previous years, back to 2013. The change was not available in time to incorporate into the CAS and be reflected in the tables for this report, however.  Corrections for the bias will be included in Tables 4-1 and 4-2 for the 2021 Annual Report.
 
@@ -264,7 +264,7 @@ flextable(bsai) %>%
   fix_border_issues(part = "body") %>% 
   # Add footer:
   footnote(i = 1, j = 1:2, part = "header",
-           value = as_paragraph(c("Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3.")))
+           value = as_paragraph(c("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3.")))
 
 
 
@@ -342,7 +342,7 @@ flextable(goa) %>%
   fix_border_issues(part = "body") %>% 
   # Add footer:
   footnote(i = 1, j = 1:2, part = "header",
-           value = as_paragraph(c("Monitored trips reflect either trips with an observer or EM fixed gear trips for which some video was reviewed.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3.")))
+           value = as_paragraph(c("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Chapter 3.")))
 
 
 
@@ -479,7 +479,7 @@ flextable(table4_3) %>%
   fix_border_issues(part = "body") %>% 
   # Add footer:
   footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Monitored catch is from trips with an observer or EM trips for which some video was reviewed."))
+           value = as_paragraph("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside."))
 
 
 
@@ -544,7 +544,7 @@ flextable(table4_4) %>%
   fix_border_issues(part = "body") %>% 
   # Add footer:
   footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Monitored catch is from trips with an observer or EM trips for which some video was reviewed."))
+           value = as_paragraph("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside."))
 
 ```
 
