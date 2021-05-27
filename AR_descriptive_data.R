@@ -135,6 +135,27 @@ table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 # ZERO            0      0               0               0      0      0      0      0  28465                0
   
 
+# Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
+
+table(prep_data$OBSERVED_FLAG)
+#     N      Y 
+#138560 688490 
+
+# Hardcode the following changes to 3 trips here:
+prep_data <- prep_data %>% 
+  rename(ORIGINAL_OBSERVED_FLAG = OBSERVED_FLAG) %>% 
+  mutate(OBSERVED_FLAG = ifelse(TRIP_ID %in% c('28207362.0', '28207273.0', '28207833.0') & ORIGINAL_OBSERVED_FLAG == 'N', 'Y', ORIGINAL_OBSERVED_FLAG))
+
+table(prep_data$OBSERVED_FLAG)
+#     N      Y 
+#137783 689267
+
+table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
+#       N      Y
+#N 137783    777
+#Y      0 688490
+
+
 
 # Back calculate halibut PSC estimates using mortality rates -------------------------------------------------------------
 
