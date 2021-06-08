@@ -222,6 +222,124 @@ fee_total <- fee_detail %>%
 
 ```
 
+
+```{r load_additional_data}
+
+load_previous_fees <- "SELECT gf.year, 'GF' AS report_source, 
+       gf.category,
+       gf.processor_permit_id as processor_permit,
+       gf.vessel_id, gf.adfg_number, --gf.vessel_name, 
+       v.length_overall, 
+       
+       -- summarize the vessels by vessel length category:
+       CASE WHEN v.length_overall < 40                              THEN '<40'
+            WHEN (v.length_overall >= 40 and v.length_overall < 58) THEN '40 - 57.5'  
+                                                                    ELSE '>57.5'
+       END AS LOA_GROUP,
+     
+       gf.report_id, NULL AS confirmation_number, NULL AS ifq_permit_number, 
+       NULL as area, fmp.area_code as area_code,
+       fmp.area_code AS fmp_area,
+       gf.fish_ticket_number, gf.catch_activity_date, 
+       gf.catch_report_source_pk, gf.catch_report_species_fact_pk,
+       gf.agency_species_id, gf.species_group_id,
+       gf.agency_species_name, gf.agency_species_code,
+       
+       -- Aggregate the species in some cases: 
+       CASE WHEN gf.agency_species_code = '110' THEN 'PacificCod'
+            WHEN gf.agency_species_code = '710' THEN 'Sablefish'
+            WHEN gf.agency_species_code = '270' THEN 'Pollock'
+            WHEN gf.agency_species_code = '200' THEN 'Halibut'
+                                                ELSE 'AllOtherSpecies'
+       END AS species_group,
+       
+       gf.gear_group_id, gf.gear_group_description, 
+       -- Differentiate HAL/POT/JIG as separate gear types:
+       g.gear_code,       
+       gf.weight_pounds, gf.price_per_pound, gf.fee_amount,  gf.fee_person_year_id
+  FROM akfish_crf.fee_detail_gf gf
+  -- Join to the catch_report_species_fact tables in order to pull FMP area and gear information from the ELLR and ELPR:
+  JOIN akfish_report.catch_report_species_fact crsf ON gf.catch_report_species_fact_pk = crsf.catch_report_species_fact_pk
+  -- Join to the area table to pick up FMP area:
+  JOIN akfish_report.area fmp ON crsf.fmp_area_pk = fmp.area_pk 
+  -- Join to the vessel table in the warehouse from the ELLR/ELPR (catch_report_species_fact table) instead of from v_obsfee_gf_fee: 
+  JOIN akfish_report.vessel v ON crsf.catcher_vessel_pk = v.vessel_pk  
+  -- Join to the gear table in the warehouse from the ELLR/ELPR (catch_report_species_fact table):
+  JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
+ WHERE gf.year between 2013 and 2019                        -- previous years
+   and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
+   and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status
+              
+UNION ALL 
+
+-- IFQ landings, area information obtained from IFQ account data:
+SELECT ifq.year, 'IFQ' AS report_source, 
+       ifq.category,
+       ifq.registered_buyer_number as processor_permit, 
+       ifq.vessel_id, ifq.adfg_number, --ifq.vessel_name, 
+       v.length_overall, 
+       
+       -- summarize the vessels by vessel length category:
+       CASE WHEN v.length_overall < 40                              THEN '<40'
+            WHEN (v.length_overall >= 40 and v.length_overall < 58) THEN '40 - 57.5' 
+                                                                    ELSE '>57.5'
+       END AS LOA_GROUP,
+      
+       ifq.report_id, ifq.confirmation_number, ifq.ifq_permit_number, 
+       ifq.area, ma.code, 
+       
+       -- Aggregate area as BSAI or GOA:
+       CASE WHEN ma.code in ('4A', '4B', '4C', '4D', '4E', 'AI', 'BS') THEN 'BSAI'        
+            WHEN ma.code IN ('2C', '3A', '3B', 'CG', 'SE', 'WG', 'WY') THEN 'GOA'
+                                                                       ELSE 'UHOH'
+       END AS FMP_AREA,  
+        
+       ifq.fish_ticket_number, ifq.catch_activity_date, 
+       NULL AS catch_report_source_pk, NULL AS catch_report_species_fact_pk, 
+       ifq.agency_species_id, NULL AS species_group_id,
+       ifq.agency_species_name, ifq.agency_species_code,
+       
+       -- Aggregate the species in some cases: 
+       CASE WHEN ifq.agency_species_code = '110' THEN 'PacificCod'
+            WHEN ifq.agency_species_code = '710' THEN 'Sablefish'
+            WHEN ifq.agency_species_code = '270' THEN 'Pollock'
+            WHEN ifq.agency_species_code = '200' THEN 'Halibut'
+                                               ELSE 'AllOtherSpecies'
+       END AS species_group,
+       
+       ifq.gear_group_id, ifq.gear_group_description, 
+       -- Note: ObsFee IFQ data contains gear information as FIXED. Use landing report data (stored in catch_report_species_fact) to distinguish types of fixed gear. 
+       --       Use MAX(g.gear_code) to identify the only gear on each landing report because catch_report_species_fact has a record for each species catch transaction. 
+       --       In the event of a manual landing and the landing report is not available, translate the IFQ gear code from akfish.ifq_landing_transaction:
+       NVL((SELECT MAX(g.gear_code) 
+              FROM akfish_report.catch_report_source crs
+              JOIN akfish_report.catch_report_species_fact crsf ON crs.catch_report_source_pk = crsf.catch_report_source_pk 
+              JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
+             WHERE ifq.report_id = crs.el_report_id and crs.expire_date IS NULL), 
+                   decode(ilt.ifq_gear_code, '61', 'HAL', '91', 'POT', '05', 'JIG', '26', 'JIG')) as GEAR_CODE,  --15 and 25?  JIG?
+       ifq.weight_pounds, ifq.price_per_pound, ifq.fee_amount,  ifq.fee_person_year_id
+  FROM akfish_crf.fee_detail_ifq ifq
+  -- join to management area to translate area IDs
+  JOIN akfish.management_area ma ON ifq.area = ma.id  
+  -- join to the vessel file so we can summarize fees by vessel length
+  JOIN akfish.v_vessel v ON ifq.vessel_id = v.id     
+  -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
+  JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number
+ WHERE ifq.year between 2013 and 2019                        -- previous years
+   and ifq.management_program_id = 12                        -- observer fees
+   and ifq.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status
+   and extract(year from ifq.catch_activity_date) > 2012     -- exclude 1 bizarre 2012 record"
+
+# Query the fees directly from the database:
+previous_fee_detail <- dbGetQuery(channel_cas, load_previous_fees) 
+
+
+# Read in Anchorage CPI information from: https://live.laborstats.alaska.gov/cpi/index.cfm
+cpi <- read.csv("anchorage_cpi_2013_2020.csv")
+
+
+```
+
 # 2  FEES AND BUDGET
  
 
@@ -229,7 +347,7 @@ fee_total <- fee_detail %>%
 
 Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-1` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
 
-Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees will be collected once all bills are paid.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX. <!-- In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed. Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. -->
+Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees will be collected once all bills are paid.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX.  In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` <!--and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed.--> Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. 
 
 
 
@@ -663,7 +781,7 @@ flextable(bsai) %>%
 [^7]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
 
 
-```{r export}
+```{r export, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData file
 rm(list= ls()[!(ls() %in% c('fee_detail','fee_total', 'all_areas', 'goa', 'bsai'))])
