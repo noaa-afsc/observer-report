@@ -934,8 +934,22 @@ prop_differences <- all_year_fee_summary %>%
   # Calculate the differences between the two proportions:
   mutate(DIFFERENCE = AVG_CUM_PROP - CUM_PROP)
   
-max(prop_differences$DIFFERENCE)
-min(prop_differences$DIFFERENCE)
+#max(prop_differences$DIFFERENCE)
+#min(prop_differences$DIFFERENCE)
+
+
+# Identify some label locations just in case:
+label_location <- all_year_fee_summary %>% 
+  filter(YEAR == 2020) %>% 
+  group_by(YEAR) %>% 
+  summarize(LABEL_Y_LOCATION = max(ADJ_CUM_FEE),
+            LABEL_X_LOCATION = max(DOY), .groups = 'drop')
+
+avg_label_location <- avg_doy_summaries %>% 
+  summarize(LABEL_Y_LOCATION = max(AVG_CUM_FEE),
+            LABEL_ADJY_LOCATION = max(AVG_ADJ_CUM_FEE),
+            LABEL_X_LOCATION = max(DOY), .groups = 'drop')
+
 
 ```
 
@@ -1027,7 +1041,7 @@ diff <- ggplot(data = prop_differences, aes(x = DOY, y = DIFFERENCE)) +
 
 # Use cowplot to arrange compound figure:
 fee_panels3 <- plot_grid(infl, prop, diff, ncol=3, label_x = 0.15, rel_widths = c(1,1.1,1.1)) 
-fee_panels3
+#fee_panels3
 
 # Add space to the bottom for axis label:
 fee_pad_bottom3 <- plot_grid(fee_panels3, NULL, ncol = 1, rel_heights = c(9,1))  #Add space to bottom of plot for axis labels
