@@ -1041,6 +1041,120 @@ ggdraw(fee_pad_bottom3) +
 ```
 
 
+```{r spcsprop_heat_maps}
+
+for_propheatmap <- allyrs_spcs_fee_summary %>% 
+  mutate(YEAR = factor(YEAR, levels = c("2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013")))
+
+prop_limits <- allyrs_spcs_fee_summary %>% 
+  group_by(SPECIES_GROUP) %>% 
+  summarize(minp = min(FEE_PROP),
+            maxp = max(FEE_PROP), .groups = "drop")
+
+
+hmHLBTp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "Halibut"), 
+                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
+  geom_tile() +
+  labs(x = NULL, 
+       y = NULL,
+       fill = "Proportion of\nobserver fees ") +
+  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) +
+  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
+  scale_fill_viridis(limits = c(0,0.02), breaks = c(0, 0.01, 0.02), labels = c("0%", "1%", "2%")) +
+  theme_classic(base_size = 14) +
+  theme(legend.position = "bottom",
+        legend.title = element_text(family = "serif", size = 10),
+        legend.text = element_text(family = "serif", size = 9),
+        legend.key.size = unit(0.4,"cm"),
+        legend.margin=margin(0,0,10,0),
+        legend.box.margin = margin(-10,-10,-10,0)) +
+  theme(axis.text = element_text(family = "serif"))
+ 
+ 
+hmSABLp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "Sablefish"), 
+                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
+  geom_tile() +
+  labs(x = NULL, 
+       y = NULL,
+       fill = "Proportion of\nobserver fees ") +
+  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) + 
+  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
+  scale_fill_viridis(limits = c(0,0.03), breaks = c(0, 0.015, 0.03), labels = c("0%", "1.5%", "3%")) +
+  theme_classic(base_size = 14) +
+  theme(legend.position = "bottom",
+        legend.title = element_text(family = "serif", size = 10),
+        legend.text = element_text(family = "serif", size = 9),
+        legend.key.size = unit(0.4,"cm"),
+        legend.margin=margin(0,0,10,0),
+        legend.box.margin = margin(-10,-10,-10,0)) +
+  theme(axis.text = element_text(family = "serif"))
+ 
+
+hmPCODp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "PacificCod"), 
+                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
+  geom_tile() +
+  labs(x = NULL, 
+       y = NULL,
+       fill = "Proportion of\nobserver fees ") +
+  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) +
+  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
+  scale_fill_viridis(limits = c(0,0.05), breaks = c(0,0.025, 0.05), labels = c("0%", "2.5%", "5%")) +
+  theme_classic(base_size = 14) +
+  theme(legend.position = "bottom",
+        legend.title = element_text(family = "serif", size = 10),
+        legend.text = element_text(family = "serif", size = 9),
+        legend.key.size = unit(0.4,"cm"),
+        legend.margin=margin(0,0,10,0),
+        legend.box.margin = margin(-10,-10,-10,0)) +
+  theme(axis.text = element_text(family = "serif"))
+ 
+
+hmPLCKp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "Pollock"), 
+                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
+  geom_tile() +
+  labs(x = NULL, 
+       y = NULL,
+       fill = "Proportion of\nobserver fees ") +
+  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) + 
+  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
+  scale_fill_viridis(limits = c(0,0.04), breaks = c(0,0.02, 0.04), labels = c("0%", "2%", "4%")) +
+  theme_classic(base_size = 14) +
+  theme(legend.position = "bottom",
+        legend.title = element_text(family = "serif", size = 10),
+        legend.text = element_text(family = "serif", size = 9),
+        legend.key.size = unit(0.4,"cm"),
+        legend.margin=margin(0,0,10,0),
+        legend.box.margin = margin(-10,-10,-10,0)) +
+  theme(axis.text = element_text(family = "serif"))
+ 
+
+# Use cowplot to arrange compound figure:
+spcsprop_heatmaps <- plot_grid(hmHLBTp, hmPCODp, hmSABLp, hmPLCKp, ncol=2,
+                           labels = c("Halibut", "Pacific Cod", "Sablefish", "Pollock"),
+                           label_size = 11,
+                           label_fontfamily = "serif",
+                           rel_heights = c(1,1,1,1),
+                           label_x = 0,
+                           hjust = 0,
+                           vjust = 0.5)
+
+
+# Add space to the left and bottom for axis labels:
+hmp_pad_side <- plot_grid(NULL, spcsprop_heatmaps, ncol = 2, rel_widths = c(0.35, 6)) 
+hmp_pad_bottom <- plot_grid(NULL, hmp_pad_side, NULL, ncol = 1, rel_heights = c(0.5,9,0.5))  
+
+# Add axis labels:
+ggdraw(hmp_pad_bottom) + 
+  draw_label("Month", fontfamily = "serif", x = 0.55, y = 0.03, size = 15) +
+  draw_label("Year", fontfamily = "serif", angle = 90, x = 0.02, y = 0.57, size = 15) 
+
+# Save the plot as a tiff:
+#dev.new(width = 5.62, height = 4.22, unit = "in", noRStudioGD = TRUE); last_plot()
+#ggsave("ProportionDailyFees.tiff", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
+#ggsave("ProportionDailyFees.jpeg", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
+
+```
+
 
 ```{r export, echo=FALSE, message=FALSE, warning=FALSE}
 
