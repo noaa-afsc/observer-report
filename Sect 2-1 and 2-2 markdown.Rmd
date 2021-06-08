@@ -44,6 +44,11 @@ library(tidyr)
 library(stringr)
 library(flextable)
 library(officer)
+library(scales)
+library(ggplot2)
+library(viridis)
+library(lubridate)
+library(cowplot)
 
 # ROracle connection inputs:
 channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
