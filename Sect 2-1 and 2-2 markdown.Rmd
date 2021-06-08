@@ -348,11 +348,11 @@ cpi <- read.csv("anchorage_cpi_2013_2020.csv")
 # 2  FEES AND BUDGET
  
 
-### 2.1	Budget for partial coverage category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
+### 2.1	Budget for Partial Coverage Category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
 
 Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-1` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
 
-Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees will be collected once all bills are paid.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX.  In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` <!--and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed.--> Processors submitting late fee payments were charged an administrative fee of $25 plus interest on the observer fees with each notice. 
+Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees were billed.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX.  In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` <!--and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed.--> Additional notices will be mailed as needed.  Processors submitting late fee payments were charged a one time administrative fee of $25 plus interest on the observer fees with each notice. 
 
 
 
@@ -364,11 +364,10 @@ Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were maile
 
 
 ### 2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
+
 Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
 
-A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^2]
-
-Table 2-2 through Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.
+A fee equal to 1.25% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^2]  Table 2-2, Table 2-3, and Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.
 
 
 
@@ -377,7 +376,17 @@ Table 2-2 through Table 2-4 summarize the observer fees that accrued for `r as.n
 
 [^2]:Available online at: [`r std_price_cfr`](https://www.federalregister.gov/documents/2019/12/16/2019-27064/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
 
-# Tables
+
+## 2.2.1 Fee Collection Compared to Previous Years
+
+In 2020, nearly every aspect of life felt the impact of the COVID pandemic; fishing effort was no exception. One of the ways this impact can be seen on fishing effort is in the lag in observer fee assessment. The overall amount of observer fees assessed in 2020 was the lowest annual amount since the Observer Program restructure. Throughout the year, the cumulative amount of fees assessed in 2020 were below the mean amount assessed in previous years (Figure 2-1, left panel). Factors such as quotas and standard prices contribute to the magnitude of fees in a year and these are established prior to the onset fishing. In an attempt to minimize the influence of quota size and standard price variability on fee comparisons across years, cumulative fees were compared as proportions of their overall annual fees (Figure 2-1, middle panel). The fees in 2020
+appear to lag behind earlier years. The amount of lag each day in 2020 is indicated as the difference between the proportions (Figure 2-1, right panel). The 2020 fees started out similarly in 2020 compared to previous years, but began to lag following January and appear to lag throughout most of the year. The 2020 lag increased until the middle of May where it reached a
+maximum of 14%. The lag then decreased, but the proportion of 2020 fees did not “catch up” to previous years until the middle of November. In previous years, half of the fees were assessed by approximately June 1st, on average, but in 2020 that milestone was not reached until late July.
+
+The overall observer fees within a year are comprised of fees on different species. Figure 2-2 indicates the proportion of each species’ overall annual fee total by day for the four predominant species, throughout the year. Some evidence of the lag discussed above can be seen for individual species. The halibut heatmap shows days with larger proportions of the annual halibut fee total in 2020 occurring in the summer rather than spring and more days in the fall with larger
+proportions. The sablefish heatmap shows fewer days in 2020 in the spring and summer comprising higher percentages of the overall total compared to earlier years but more in the fall. 
+
+
 **INSERT SECTION PAGE BREAK HERE:**
 
 Table 2-2. -- Observer fees [^3] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for _all areas combined_.
@@ -954,6 +963,9 @@ avg_label_location <- avg_doy_summaries %>%
 ```
 
 
+Figure 2-1. -- Comparison of cumulative observer fees by day in 2020 with the mean cumulative observer fees assessed from 2013 to 2019 in inflation adjusted millions of dolllars (left), as the proportion of overall annual fees (middle), and the difference between the proportions (right). The shading indicates +/- one standard deviation from the 2013-2019 mean. 
+
+
 ```{r fee_comparison_figures}
 
 # Plot of cumulative observer fees by year in inflation adjusted dollars:
@@ -1058,6 +1070,8 @@ ggdraw(fee_pad_bottom3) +
 
 
 ```
+
+Figure 2-2. --  Proportion of each species’ annual observer fees by day, 2013-2020. Note: the scale is different for each species.
 
 
 ```{r spcsprop_heat_maps}
