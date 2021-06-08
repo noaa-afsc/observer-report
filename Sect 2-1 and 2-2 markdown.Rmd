@@ -781,6 +781,267 @@ flextable(bsai) %>%
 [^7]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
 
 
+```{r figure1_dataprep}
+
+# For current year's data:
+
+# Summarize single year fee data by landing ID (report ID or confirmation number), catch_activity_date, and species_group
+current_spcs_landing_summary <- fee_detail %>% 
+  # Creating a landing ID: either the REPORT_ID or the CONFIRMATION_NUMBER
+  mutate(LANDING_ID = ifelse(!is.na(REPORT_ID), REPORT_ID, CONFIRMATION_NUMBER)) %>% 
+  mutate(DOY = yday(CATCH_ACTIVITY_DATE)) %>% 
+  group_by(YEAR, CATCH_ACTIVITY_DATE, DOY, LANDING_ID, SPECIES_GROUP) %>% 
+  summarize(RECORD_COUNT = n(), 
+            FEE = sum(FEE_AMOUNT), .groups = 'drop')
+
+# Summarize single year fee data by landing ID (report ID or confirmation number), and catch_activity_date
+current_total_landing_summary <- fee_detail %>% 
+  # Creating a landing ID: either the REPORT_ID or the CONFIRMATION_NUMBER
+  mutate(LANDING_ID = ifelse(!is.na(REPORT_ID), REPORT_ID, CONFIRMATION_NUMBER)) %>% 
+  mutate(DOY = yday(CATCH_ACTIVITY_DATE)) %>% 
+  group_by(CATCH_ACTIVITY_DATE, LANDING_ID) %>% 
+  summarize(SPECIES_GROUP = 'AllSpecies',
+            RECORD_COUNT = n(), 
+            FEE = sum(FEE_AMOUNT), .groups = 'drop') 
+
+# Consolidate into a single dataset:
+current_landing_summary <- current_spcs_landing_summary %>% 
+  bind_rows(current_total_landing_summary) %>% 
+  mutate(SPECIES_GROUP = factor(SPECIES_GROUP, levels = c('AllSpecies', 'Halibut', 'Sablefish', 'PacificCod', 'Pollock', 'AllOtherSpecies')))
+
+
+# For all years' data (previous and current)
+
+# Summarize fee data by landing ID (report ID or confirmation number), catch_activity_date, species_group
+allyrs_spcs_landing_summary <- previous_fee_detail %>% 
+  # Creating a landing ID: either the REPORT_ID or the CONFIRMATION_NUMBER
+  mutate(LANDING_ID = ifelse(!is.na(REPORT_ID), REPORT_ID, CONFIRMATION_NUMBER)) %>% 
+  group_by(YEAR, CATCH_ACTIVITY_DATE, LANDING_ID, SPECIES_GROUP) %>% 
+  summarize(RECORD_COUNT = n(), 
+            FEE = sum(FEE_AMOUNT), .groups = 'drop') %>%
+  bind_rows(current_spcs_landing_summary) %>% 
+  # Create a Day/Month field:
+  mutate(DOY = yday(CATCH_ACTIVITY_DATE))
+
+# Summarize inflation adjusted fee data by year, doy, species_group
+doy_fee_summary <- allyrs_spcs_landing_summary %>% 
+  # Fine tune the species a bit:
+  filter(!SPECIES_GROUP == 'AllOtherSpecies') %>% 
+  mutate(SPECIES = factor(ifelse(SPECIES_GROUP == 'PacificCod', 'Pacific Cod', SPECIES_GROUP),
+                             levels = c("Pollock", "Pacific Cod", "Sablefish", "Halibut"))) %>% 
+  # Calculate inflation adjusted fees:
+  full_join(cpi) %>% 
+  mutate(ADJ_FEE = round((FEE/CPI_FACTOR),2)) %>% 
+  group_by(YEAR, DOY, SPECIES) %>% 
+  summarize(DOY_ADJ_FEE = sum(ADJ_FEE), .groups = 'drop') %>%
+  data.frame()
+
+# Summarize total fees year:
+all_year_fee <- allyrs_spcs_landing_summary %>% 
+  group_by(YEAR) %>% 
+  summarize(TOTAL_FEE = sum(FEE), .groups = 'drop') 
+
+# Summarize daily fee, cumulative fee, and inflation adjusted cumulative fee by year and day of year:
+all_year_fee_summary <- allyrs_spcs_landing_summary %>% 
+  group_by(YEAR, DOY) %>% 
+  summarize(FEE = sum(FEE), .groups = 'drop') %>% 
+  group_by(YEAR) %>% 
+  mutate(CUM_FEE = cumsum(FEE)) %>% 
+  full_join(all_year_fee, by = "YEAR") %>% 
+  mutate(CUM_PROP = CUM_FEE/TOTAL_FEE) %>% 
+  full_join(cpi) %>% 
+  mutate(ADJ_CUM_FEE = round((CUM_FEE/CPI_FACTOR),2)) %>% 
+  data.frame()
+
+# Calculate average values for 2013-2019 fees:
+avg_doy_summaries <- all_year_fee_summary %>% 
+  filter(!YEAR == 2020) %>% 
+  group_by(DOY) %>% 
+  summarize(AVG_CUM_FEE = mean(CUM_FEE),
+            CUM_FEE_SD = sd(CUM_FEE),
+            AVG_ADJ_CUM_FEE = mean(ADJ_CUM_FEE),
+            ADJ_CUM_FEE_SD = sd(ADJ_CUM_FEE),
+            AVG_CUM_PROP = mean(CUM_PROP),
+            CUM_PROP_SD = sd(CUM_PROP), .groups = 'drop') %>% 
+  data.frame()
+
+
+# Create a data frame of 1-366 DOY:
+all_doy <- data.frame(YEAR = rep(2013:2020, each = 365),
+                      DOY = rep(seq(from = 2, to = 366, by = 1),8))
+
+
+# In an attempt to smooth out those averages for DOYs that don't have activity:
+avg_doy_summaries_test <- all_year_fee_summary %>% 
+  full_join(all_doy, by = c('YEAR','DOY')) %>% 
+  arrange(YEAR, DOY) %>% 
+  # On days with 0 fees, convert NA to 0:
+  replace_na(list(FEE = 0)) %>% 
+  # On days with 0 fees, take the cumulative fee from the day before:
+  fill(CUM_FEE, .direction = "down") %>% 
+  # Same for the cumulative proportion:
+  fill(CUM_PROP, .direction = "down") %>%
+  # Same for the inflation adjusted cumulative fee:
+  fill(ADJ_CUM_FEE, .direction = "down") %>% 
+  # Calculate average values for 2013-2019 fees:
+  filter(!YEAR == 2020) %>% 
+  group_by(DOY) %>% 
+  summarize(AVG_CUM_FEE = mean(CUM_FEE),
+            CUM_FEE_SD = sd(CUM_FEE),
+            AVG_ADJ_CUM_FEE = mean(ADJ_CUM_FEE),
+            ADJ_CUM_FEE_SD = sd(ADJ_CUM_FEE),
+            AVG_CUM_PROP = mean(CUM_PROP),
+            CUM_PROP_SD = sd(CUM_PROP), .groups = 'drop') %>% 
+  data.frame()
+
+
+# Create nice labels for the day of year (instead of 1-365):
+months <- c("Jan", "Apr", "Jul", "Oct", "Jan")
+mo_start_doy <- c(1,92,183,275,366)
+
+
+# Summarize total fees by year and spcs:
+allyrs_annual_spcs_fee <- allyrs_spcs_landing_summary %>% 
+  group_by(YEAR, SPECIES_GROUP) %>% 
+  summarize(SPCS_TOTAL_FEE = sum(FEE), .groups = 'drop') 
+
+
+# Summarize daily fee, cumulative fee, and inflation adjusted cumulative fee by year and day of year:
+allyrs_spcs_fee_summary <- allyrs_spcs_landing_summary %>% 
+  group_by(YEAR, DOY, SPECIES_GROUP) %>% 
+  summarize(FEE = sum(FEE), .groups = 'drop') %>% 
+  full_join(allyrs_annual_spcs_fee, by = c("YEAR", "SPECIES_GROUP")) %>% 
+  mutate(FEE_PROP = FEE/SPCS_TOTAL_FEE) 
+  data.frame()
+
+  
+# Explore the differences between proportions:
+prop_differences <- all_year_fee_summary %>% 
+  filter(YEAR == 2020) %>% 
+  select(DOY, CUM_PROP) %>% 
+  full_join(avg_doy_summaries_test, by = "DOY") %>% 
+  select(-c(AVG_CUM_FEE, CUM_FEE_SD, AVG_ADJ_CUM_FEE, ADJ_CUM_FEE_SD, CUM_PROP_SD)) %>% 
+  arrange(DOY) %>% 
+  # On days in 2020 with 0 fees, take the cumulative proportion from the day before:
+  fill(CUM_PROP, .direction = "down") %>% 
+  # Replace the NA on DOY 1 in 2020 with 0
+  replace_na(list(CUM_PROP = 0)) %>% 
+  # Calculate the differences between the two proportions:
+  mutate(DIFFERENCE = AVG_CUM_PROP - CUM_PROP)
+  
+max(prop_differences$DIFFERENCE)
+min(prop_differences$DIFFERENCE)
+
+```
+
+
+```{r fee_comparison_figures}
+
+# Plot of cumulative observer fees by year in inflation adjusted dollars:
+infl <- ggplot() +
+  # Plot 2020 cumulative fees:
+  geom_line(data = all_year_fee_summary %>% filter(YEAR == 2020), 
+            aes(x = DOY, y = ADJ_CUM_FEE, group = as.factor(YEAR))) +
+  # Plot 2013-2019 average fees:
+  geom_line(data = avg_doy_summaries_test, aes(x = DOY, y = AVG_ADJ_CUM_FEE)) +
+  # Plot 2013-2019 standard deviations:
+  geom_ribbon(data = avg_doy_summaries_test, 
+              aes(x = DOY, ymin = AVG_ADJ_CUM_FEE - ADJ_CUM_FEE_SD, ymax = AVG_ADJ_CUM_FEE+ ADJ_CUM_FEE_SD), alpha = 0.5)+
+  # Set plot attributes:
+  scale_y_continuous(labels = c('0','1','2','3','4','5'), breaks = seq(0,5000000,1000000), limits = c(0,5000000)) +
+  scale_x_continuous(breaks = mo_start_doy, labels = months, limits = c(1,366)) +
+  labs(x = NULL,
+       y = "Cumulative Fees ($M)") +
+  # Add a label for the 2020 line:
+  annotate("text", 
+           #x = 366,
+           #y = 2450000,
+           x = 350,
+           y = 2350000,
+           label = label_location$YEAR,
+           size = 3, color = "gray28", family = "serif") +
+  # Add a label for the 2013-2019 line:
+  annotate("text", 
+           x = 100,
+           y = 2350000,   
+           label = "2013-\n2019",
+           size = 3, color = "gray28", family= "serif") +
+  # AFS themes:
+  theme_classic(base_size = 14) +
+  theme(axis.title.y = element_text(family = "serif", size = 13)) +
+  theme(axis.text = element_text(family = "serif"))
+
+
+# Plot proportion of cumulative observer fees by year:
+prop <- ggplot() +
+  # Plot 2020 proportion of cumulative fees:
+  geom_line(data = all_year_fee_summary %>% filter(YEAR == 2020), 
+            aes(x = DOY, y = CUM_PROP, group = as.factor(YEAR))) +
+  # Plot 2013-2019 average fees:
+  geom_line(data = avg_doy_summaries_test, aes(x = DOY, y = AVG_CUM_PROP)) +
+  # Plot 2013-2019 standard deviations:
+  geom_ribbon(data = avg_doy_summaries, 
+              aes(x = DOY, ymin = AVG_CUM_PROP - CUM_PROP_SD, ymax = AVG_CUM_PROP + CUM_PROP_SD), alpha = 0.5) +
+  # Set plot attributes:
+  scale_x_continuous(breaks = mo_start_doy, labels = months, limits = c(1,366)) +
+  labs(x = NULL,
+       y = "Proportion")    +
+  # Add a label for the 2020 line:
+   annotate("text", 
+            x = 235,
+            y = 0.48,
+            label = label_location$YEAR,
+            size = 3, color = "gray28", family= "serif") +
+  # Add a label for the 2013-2019 line:
+   annotate("text", 
+            x = 90,
+            y = 0.48,
+            label = "2013-\n2019",
+            size = 3, color = "gray28", family= "serif") +
+  # AFS type themes:
+  theme_classic(base_size = 14) +
+  theme(axis.title.y = element_text(family = "serif", size = 13)) +
+  theme(axis.text = element_text(family = "serif"))
+
+
+# Plot difference between the proportions:
+diff <- ggplot(data = prop_differences, aes(x = DOY, y = DIFFERENCE)) + 
+  geom_path() +
+   # Set plot attributes:
+  scale_x_continuous(breaks = mo_start_doy, labels = months, limits = c(1,366)) +
+  scale_y_continuous(limits = c(-0.01,0.15)) +
+  geom_hline(yintercept = 0, linetype = "dashed", show.legend = NA) +
+  labs(x = NULL,
+       y = "Difference") +
+  # AFS type themes:
+  theme_classic(base_size = 14) +
+  theme(axis.title.y = element_text(family = "serif", size = 13)) +
+  theme(axis.text = element_text(family = "serif"))
+
+
+
+# Use cowplot to arrange compound figure:
+fee_panels3 <- plot_grid(infl, prop, diff, ncol=3, label_x = 0.15, rel_widths = c(1,1.1,1.1)) 
+fee_panels3
+
+# Add space to the bottom for axis label:
+fee_pad_bottom3 <- plot_grid(fee_panels3, NULL, ncol = 1, rel_heights = c(9,1))  #Add space to bottom of plot for axis labels
+
+# Add axis labels:
+ggdraw(fee_pad_bottom3) + 
+  draw_label("Month", fontfamily = "serif", x = 0.55, y = 0.07, size = 14)
+  
+
+# Save the plot as a tiff:
+#dev.new(width = 5.62, height = 4.22, unit = "in", noRStudioGD = TRUE); last_plot()
+#ggsave("Cum_Fee_Comparison3.tiff", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
+#ggsave("Cum_Fee_Comparison3.jpeg", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
+
+
+```
+
+
+
 ```{r export, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData file
