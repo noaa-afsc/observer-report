@@ -11,7 +11,7 @@ library(devtools)
 # load the data files.
 # * chng wd filepath as needed *
 
-setwd("~/Analytical Projects/Projects/Statement_redesign/2022_annual_report_2021_report")
+# setwd("~/Analytical Projects/Projects/Statement_redesign/2022_annual_report_2021_report")
 load(file = "scripts/AR_Statements_data.rdata")
 
 
@@ -688,10 +688,11 @@ rate_all_groupings_affi_type <-
                summarize(TOTAL_DAYS      = sum(FACTOR_DAYS), 
                          TOTAL_OBSERVERS = n_distinct(OBSERVER_SEQ),
                          TOTAL_CRUISES   = n_distinct(CRUISE),
-                         DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT) ) %>%
-               filter(DISTINCT_OBSERVER_ASSIGNMENTS >= 3) ) %>%  # for confidentiality, remove any factor combinations with < 3 cruise/permit assignments.
+                         DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT) ) ) %>%
+               # filter(DISTINCT_OBSERVER_ASSIGNMENTS >= 3) ) %>%  # for confidentiality, remove any factor combinations with < 3 cruise/permit assignments.
   #Finally!!!!!  Calculate the rates.
-  mutate(AFFIS_PER_DAY         = TOTAL_STATEMENTS/TOTAL_DAYS,
+  mutate(CONFI_FLAG = ifelse(DISTINCT_OBSERVER_ASSIGNMENTS < 3, 1, 0), 
+         AFFIS_PER_DAY         = TOTAL_STATEMENTS/TOTAL_DAYS,
          INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/TOTAL_DAYS,
          STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/TOTAL_DAYS)*1000,
          INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/TOTAL_DAYS)*1000,
@@ -763,10 +764,11 @@ rate_all_groupings_ole_category <-
                summarize(TOTAL_DAYS      = sum(FACTOR_DAYS), 
                          TOTAL_OBSERVERS = n_distinct(OBSERVER_SEQ),
                          TOTAL_CRUISES   = n_distinct(CRUISE),
-                         DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT) ) %>%
-               filter(DISTINCT_OBSERVER_ASSIGNMENTS >= 3) ) %>%  # for confidentiality, remove any factor combinations with < 3 cruise/permit assignments.
+                         DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT) ) ) %>%
+             #  filter(DISTINCT_OBSERVER_ASSIGNMENTS >= 3) ) %>%  # for confidentiality, remove any factor combinations with < 3 cruise/permit assignments.
   #Finally!!!!!  Calculate the rates.
-  mutate(AFFIS_PER_DAY         = TOTAL_STATEMENTS/TOTAL_DAYS,
+  mutate(CONFI_FLAG            = ifelse(DISTINCT_OBSERVER_ASSIGNMENTS < 3, 1, 0), 
+         AFFIS_PER_DAY         = TOTAL_STATEMENTS/TOTAL_DAYS,
          INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/TOTAL_DAYS,
          STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/TOTAL_DAYS)*1000,
          INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/TOTAL_DAYS)*1000,
