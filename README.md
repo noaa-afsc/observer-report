@@ -10,7 +10,7 @@ This repository is organized into two folders that are pretty self-explanatory
 
 -   scripts
 
--   charts_and_tables - has a sub-folder for confidential data.
+-   charts_and_tables
 
 ## Scripts
 
@@ -24,4 +24,4 @@ Three main scripts are used
 
 ## Important Notes
 
-Outputs currently exclude confidential reporting where less than three observers are present in any given summary output. These data are then extracted
+Outputs currently exclude confidential reporting where less than three observers are present in any given summary output.
