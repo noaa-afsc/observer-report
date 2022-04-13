@@ -486,7 +486,7 @@ incis_per_1000_days_lapp_by_affi_type <-
 incis_per_1000_days_lapp_by_affi_type
 
 ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        dp_yr, 
+                        adp_yr, 
                         "_incis_per_1000_days_lapp_by_affi_type.png", 
                         sep = ''), 
        plot = incis_per_1000_days_lapp_by_affi_type,
@@ -1513,7 +1513,9 @@ incis_per_statement_histog_RandR_only <-
   )
   + labs(x = "# of Occurrences",
          y = "# of statements",
-         title = "Record Keeping & Reporting Occurrences per Statement, 2020",
+         title = paste("Record Keeping & Reporting Occurrences per Statement ",
+                       adp_yr,
+                       sep = ''),
          fill = '')
   
   )
