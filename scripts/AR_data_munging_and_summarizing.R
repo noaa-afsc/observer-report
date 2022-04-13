@@ -722,7 +722,7 @@ rate_all_groupings_affi_type_for_plots <-
 # Make summary table of just the DEPLOYED DAYS for each factor grouping.
 cnt_dep_days_by_factor_group <-
   rate_all_groupings_affi_type %>%
-  distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, DISTINCT_OBSERVER_ASSIGNMENTS
+  distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, DISTINCT_OBSERVER_ASSIGNMENTS, CONFI_FLAG
   ) %>%  
   mutate(FACTOR_GROUP = paste(COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, sep = ''))
 # save this summary table as CSV for output to a report
@@ -753,7 +753,16 @@ days_statements_all_groupings_raw  <-
 rate_all_groupings_ole_category <- 
   cnt_dep_days_all_groupings %>%
   # First, join to raw_statements on cruise/permit, and sum to get the WEIGHTED number_of_incidents and number_of_statements. This is the NUMERATOR of the rates.
-  left_join(raw_statements %>% mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR)) %>%  # LEFT join ensures all days where NO statements were written are counted!! Critical to accurate rate calc.
+  left_join(raw_statements %>% # LEFT join ensures all days where NO statements were written are counted!! Critical to accurate rate calc.
+              mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,  # need to make column names match
+                     OLE_CATEGORY  = factor(OLE_CATEGORY, # need to re-order the levels for the final output table
+                                            levels = c('OLE PRIORITY: INTER-PERSONAL',
+                                                       'OLE PRIORITY: SAFETY AND DUTIES',
+                                                       'COAST GUARD',
+                                                       'LIMITED ACCESS PROGRAMS',
+                                                       'PROTECTED RESOURCE & PROHIBITED SPECIES',
+                                                       'ALL OTHER STATEMENT TYPES')))
+             ) %>%  
   group_by (CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, OLE_CATEGORY) %>%
   summarize(TOTAL_STATEMENTS = sum(if_else(is.na(AFFIDAVIT_ID), 0, FACTOR_WEIGHT_MTHD_1)),
             TOTAL_INCIDENTS  = sum(if_else(is.na(AFFIDAVIT_ID), 0, NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1)) ) %>%
@@ -786,15 +795,16 @@ rate_all_groupings_ole_category <-
 # Make summary table of just the DEPLOYED DAYS for each factor grouping.
 cnt_dep_days_by_factor_group_ole_cat <-
   rate_all_groupings_ole_category %>%
-  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, DISTINCT_OBSERVER_ASSIGNMENTS
+  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, DISTINCT_OBSERVER_ASSIGNMENTS, CONFI_FLAG
   ) %>% 
   summarize(TOTAL_STATEMENTS = sum(if_else(is.na(TOTAL_STATEMENTS), 0, TOTAL_STATEMENTS)),
             TOTAL_INCIDENTS  = sum(if_else(is.na(TOTAL_INCIDENTS), 0, TOTAL_INCIDENTS))
   ) %>%
   mutate(FACTOR_GROUP = paste(COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, sep = ''))
+
 # save this summary table as CSV for output to a report
 write.csv(file = paste("charts_and_tables/tables/tbl_num_dep_days_by_factor_group_", Sys.Date(), ".csv", sep = ''),
-          x    = cnt_dep_days_by_factor_group)
+          x    = cnt_dep_days_by_factor_group_ole_cat)
 
 
 
@@ -806,11 +816,12 @@ write.csv(file = paste("charts_and_tables/tables/tbl_num_dep_days_by_factor_grou
 # Make a CAST of these rates, for tables in the report.
 rate_all_groupings_ole_category_cast_1000 <- 
   merge(
-    reshape2::dcast(data      = rate_all_groupings_ole_category
-                    %>% filter(!is.na(OLE_CATEGORY)), 
-                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION ~ OLE_CATEGORY,
+    reshape2::dcast(data      = rate_all_groupings_ole_category  %>% 
+                                  filter(!is.na(OLE_CATEGORY)), 
+                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_1000_DEPLOYED_DAYS"),
     cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
+
 write.csv(file = paste("charts_and_tables/tables/tbl_rate_all_cast_new_grouping_1000_days_", Sys.Date(), ".csv", sep = ''),
           x    = rate_all_groupings_ole_category_cast_1000)
 
@@ -822,7 +833,7 @@ rate_all_groupings_ole_category_cast_90 <-
   merge(
     reshape2::dcast(data = rate_all_groupings_ole_category  %>%
                       filter(!is.na(OLE_CATEGORY)), 
-                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION ~ OLE_CATEGORY,
+                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_90_DEPLOYED_DAYS"),
     cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
 write.csv(file = paste("charts_and_tables/tables/tbl_rate_all_cast_new_grouping_90_days_", Sys.Date(), ".csv", sep = ''),
@@ -836,7 +847,7 @@ rate_all_groupings_ole_category_cast_per_cruise <-
   merge(
     reshape2::dcast(data      = rate_all_groupings_ole_category
                     %>% filter(!is.na(OLE_CATEGORY)), 
-                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION ~ OLE_CATEGORY,
+                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_CRUISE"),
     cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
 
@@ -847,9 +858,10 @@ rate_all_groupings_ole_category_cast_per_assnmt <-
   merge(
     reshape2::dcast(data      = rate_all_groupings_ole_category
                     %>% filter(!is.na(OLE_CATEGORY)), 
-                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION ~ OLE_CATEGORY,
+                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_ASSIGNMENT") ,
     cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
+
 write.csv(file = paste("charts_and_tables/tables/tbl_rate_all_groupings_ole_category_cast_per_assnmt_", Sys.Date(), ".csv", sep = ''),
           x    = rate_all_groupings_ole_category_cast_per_assnmt)
 
@@ -858,36 +870,21 @@ write.csv(file = paste("charts_and_tables/tables/tbl_rate_all_groupings_ole_cate
 
 # merge all of these CASTed tables into one WIDE table, for the report.
 rate_all_groupings_ole_category_cast_all <-
-  merge(merge(rate_all_groupings_ole_category_cast_1000 %>%
-                rename(ALL_OTHER_STATEMENT_TYPES_1000_DEPLOYED_DAYS = 'ALL OTHER STATEMENT TYPES',
-                       COAST_GUARD_1000_DEPLOYED_DAYS = 'COAST GUARD',
-                       LIMITED_ACCESS_PROGRAMS_1000_DEPLOYED_DAYS = 'LIMITED ACCESS PROGRAMS',
-                       OLE_PRIORITY_INTER_PERSONAL_1000_DEPLOYED_DAYS = 'OLE PRIORITY: INTER-PERSONAL',
-                       OLE_PRIORITY_SAFETY_AND_DUTIES_1000_DEPLOYED_DAYS = 'OLE PRIORITY: SAFETY AND DUTIES',
-                       PROTECTED_RESOURCE_AND_PROHIBITED_SPECIES_1000_DEPLOYED_DAYS = 'PROTECTED RESOURCE & PROHIBITED SPECIES') ,
-              rate_all_groupings_ole_category_cast_90 %>%
-                rename(ALL_OTHER_STATEMENT_TYPES_90_DEPLOYED_DAYS = 'ALL OTHER STATEMENT TYPES',
-                       COAST_GUARD_90_DEPLOYED_DAYS = 'COAST GUARD',
-                       LIMITED_ACCESS_PROGRAMS_90_DEPLOYED_DAYS = 'LIMITED ACCESS PROGRAMS',
-                       OLE_PRIORITY_INTER_PERSONAL_90_DEPLOYED_DAYS = 'OLE PRIORITY: INTER-PERSONAL',
-                       OLE_PRIORITY_SAFETY_AND_DUTIES_90_DEPLOYED_DAYS = 'OLE PRIORITY: SAFETY AND DUTIES',
-                       PROTECTED_RESOURCE_AND_PROHIBITED_SPECIES_90_DEPLOYED_DAYS = 'PROTECTED RESOURCE & PROHIBITED SPECIES')  ,
-              all = TRUE),
-        merge(rate_all_groupings_ole_category_cast_per_cruise %>%
-                rename(ALL_OTHER_STATEMENT_TYPES_CRUISE = 'ALL OTHER STATEMENT TYPES',
-                       COAST_GUARD_CRUISE = 'COAST GUARD',
-                       LIMITED_ACCESS_PROGRAMS_CRUISE = 'LIMITED ACCESS PROGRAMS',
-                       OLE_PRIORITY_INTER_PERSONAL_CRUISE= 'OLE PRIORITY: INTER-PERSONAL',
-                       OLE_PRIORITY_SAFETY_AND_DUTIES_CRUISE = 'OLE PRIORITY: SAFETY AND DUTIES',
-                       PROTECTED_RESOURCE_AND_PROHIBITED_SPECIES_CRUISE = 'PROTECTED RESOURCE & PROHIBITED SPECIES') ,
-              rate_all_groupings_ole_category_cast_per_assnmt %>%
-                rename(ALL_OTHER_STATEMENT_TYPES_ASSIGNMENT = 'ALL OTHER STATEMENT TYPES',
-                       COAST_GUARD_ASSIGNMENT = 'COAST GUARD',
-                       LIMITED_ACCESS_PROGRAMS_ASSIGNMENT = 'LIMITED ACCESS PROGRAMS',
-                       OLE_PRIORITY_INTER_PERSONAL_ASSIGNMENT = 'OLE PRIORITY: INTER-PERSONAL',
-                       OLE_PRIORITY_SAFETY_AND_DUTIES_ASSIGNMENT = 'OLE PRIORITY: SAFETY AND DUTIES',
-                       PROTECTED_RESOURCE_AND_PROHIBITED_SPECIES_ASSIGNMENT = 'PROTECTED RESOURCE & PROHIBITED SPECIES') ,
-              all = TRUE),
+  merge(rate_all_groupings_ole_category_cast_1000 %>%
+          rename(OLE_PRIORITY_INTER_PERSONAL_1000_DEPLOYED_DAYS = 'OLE PRIORITY: INTER-PERSONAL',
+                 OLE_PRIORITY_SAFETY_AND_DUTIES_1000_DEPLOYED_DAYS = 'OLE PRIORITY: SAFETY AND DUTIES',
+                 COAST_GUARD_1000_DEPLOYED_DAYS = 'COAST GUARD',
+                 LIMITED_ACCESS_PROGRAMS_1000_DEPLOYED_DAYS = 'LIMITED ACCESS PROGRAMS',
+                 PROTECTED_RESOURCE_AND_PROHIBITED_SPECIES_1000_DEPLOYED_DAYS = 'PROTECTED RESOURCE & PROHIBITED SPECIES',
+                 ALL_OTHER_STATEMENT_TYPES_1000_DEPLOYED_DAYS = 'ALL OTHER STATEMENT TYPES') ,
+
+        rate_all_groupings_ole_category_cast_per_assnmt %>%
+          rename(OLE_PRIORITY_INTER_PERSONAL_ASSIGNMENT = 'OLE PRIORITY: INTER-PERSONAL',
+                 OLE_PRIORITY_SAFETY_AND_DUTIES_ASSIGNMENT = 'OLE PRIORITY: SAFETY AND DUTIES',
+                 COAST_GUARD_ASSIGNMENT = 'COAST GUARD',
+                 LIMITED_ACCESS_PROGRAMS_ASSIGNMENT = 'LIMITED ACCESS PROGRAMS',
+                 PROTECTED_RESOURCE_AND_PROHIBITED_SPECIES_ASSIGNMENT = 'PROTECTED RESOURCE & PROHIBITED SPECIES',
+                 ALL_OTHER_STATEMENT_TYPES_ASSIGNMENT = 'ALL OTHER STATEMENT TYPES'),
         all = TRUE)
 
 # save this summary table as CSV for output to a report
