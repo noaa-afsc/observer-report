@@ -1,6 +1,4 @@
-# ReadMe ----------------------------------------
-
-# Annual Report Enforcement chapter: Charts generation
+# Annual Report Enforcement chapter: Charts generation ----------
 # Contact Andy Kingham
 # 206-526-4212
 
@@ -28,9 +26,9 @@ load(file = "scripts/AR_summary_tables_output.rdata")
 
 # Define GG's ----------------------------------------
 
-##Heatmap definitions ----------------------------------------
+## Heatmap definitions ----------------------------------------
 
-### theme elements  ----------------------------------------
+### Heatmap theme elements  ----------------------------------------
 fn_heatmap_theme <- function(){ 
   theme(axis.text.x = element_text(angle = 90, 
                                    vjust = 0.5, 
@@ -38,9 +36,7 @@ fn_heatmap_theme <- function(){
 }
 
 
-
-### gg elements ----------------------------------------
-#### 1000 days -----------------------------------------
+### Heatmap 1000 days gg-----------------------------------------
 fn_heatmap_1000_gg <-
   function(ggcategory, ggtitle){
     ggplot(data = rate_all_groupings_affi_type_for_plots %>%
@@ -67,12 +63,7 @@ fn_heatmap_1000_gg <-
 
 
 
-
-
-
-
-
-##### Assnmt -----------------------
+### Heatmap Assnmt gg elements -----------------------
 fn_heatmap_assnmt_gg <-
   function(ggcategory, ggtitle){
     ggplot(data = rate_all_groupings_affi_type_for_plots %>%
@@ -96,7 +87,7 @@ fn_heatmap_assnmt_gg <-
   }
 
 
-### ggsSave parameters   ----------------------------------------
+### Heatmap ggsSave parameters   ----------------------------------------
 fn_save_defs_heatmaps <-
   function(plotname_char, plotname){
     ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
@@ -110,8 +101,9 @@ fn_save_defs_heatmaps <-
       }
 
 
-#### Histogram definitions ----------------------------------
+## Histogram definitions ----------------------------------
 
+### Histogram gg elements ----------------------------------
 fn_histog_gg <-
   function(ggcategory, ggtitle){
     ggplot(data = raw_statements %>%
@@ -130,7 +122,7 @@ fn_histog_gg <-
            title = ggtitle)
   }
 
-### save parameters --------------------------
+### Histogram save parameters --------------------------
 fn_save_defs_histog <- 
   function(plotname_char, plotname){
     ggsave(filename = paste("charts_and_tables/histograms/histog_", 
@@ -145,6 +137,137 @@ fn_save_defs_histog <-
 
 
 
+
+## Barchart gg definitions
+### barchart theme --------------------------------
+fn_barchart_theme <-
+  function(){
+    theme(axis.text.y  = element_text(hjust = 0),
+          strip.text.y.left = element_text(angle = 0, hjust = 0),
+          # panel.spacing=unit(1,"lines"),
+          # strip.background=element_rect(color="grey30", fill="grey90"),
+          # panel.border=element_rect(color= "black"), # "grey90"),
+          axis.ticks.x=element_blank(),
+          legend.position="top" )
+  }
+
+### barchart facet -------------------------
+fn_barchart_facet <-
+  function(){
+    facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
+               scales = "free",
+               switch="both",
+               # bleed = FALSE,
+               labeller = label_wrap_gen())
+  }
+
+### barchart labels -----------------------------------
+fn_barchart_labs <-
+  function(rate_type){
+    labs(x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
+         fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
+         y = paste("# Occurrences per ", rate_type, sep = '') # ,
+         #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
+    ) }
+
+
+### barchart 1000 gg definitions --------------------------
+fn_barchart_1000_gg <-
+  function(ggcategory, rate_type){
+    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
+             ungroup() %>% 
+             mutate(FILL = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
+             ) %>%
+             filter(CALENDAR_YEAR == adp_yr,
+                    CONFI_FLAG == 0,
+                    OLE_CATEGORY == ggcategory), 
+           aes('',
+               # keeping this here COMMENTED OUT, because it is a useful way of grouping as well, but not used.  
+               # x = paste(VESSEL_TYPE, 
+               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+               #           ' ~ ', NMFS_REGION, 
+               #           sep = ''),
+               y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
+               fill = FILL) ) +
+      geom_col(position  = "dodge") +
+      geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
+                # nudge_y = 2,
+                position = position_dodge(width = 1),
+                #  vjust = 0.3,
+                fontface = "bold") +
+      # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
+      #              scales = "free",
+      #              switch="both",
+      #              # bleed = FALSE,
+      #              labeller = label_wrap_gen())
+      fn_barchart_facet() +
+      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      fn_barchart_labs(rate_type = "1000 Deployed Days") +
+      scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
+      # + theme_bw()
+      fn_barchart_theme()
+  }
+
+
+
+
+
+### barchart assnmt gg definitions --------------------------
+fn_barchart_assnmt_gg <-
+  function(ggcategory){
+    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
+             ungroup() %>% 
+             mutate(FILL = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
+             ) %>%
+             filter(CALENDAR_YEAR == adp_yr,
+                    CONFI_FLAG == 0,
+                    OLE_CATEGORY == ggcategory), 
+           aes('',
+               # keeping this here COMMENTED OUT, because it is a useful way of grouping as well, but not used.  
+               # x = paste(VESSEL_TYPE, 
+               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+               #           ' ~ ', NMFS_REGION, 
+               #           sep = ''),
+               y = INCIDENTS_PER_ASSIGNMENT,
+               fill = FILL) ) +
+      geom_col(position  = "dodge") +
+      geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
+                # nudge_y = 2,
+                position = position_dodge(width = 1),
+                #  vjust = 0.3,
+                fontface = "bold") +
+      # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
+      #              scales = "free",
+      #              switch="both",
+      #              # bleed = FALSE,
+      #              labeller = label_wrap_gen())
+      fn_barchart_facet() +
+      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      fn_barchart_labs(rate_type = "Vessel/Plant Assignment") +
+      scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
+      # + theme_bw()
+      fn_barchart_theme()
+  }
+
+
+
+
+### barchart ggsave parameters ---------------------------------
+fn_save_defs_barchart <-
+  function(plotname_char, plotname){
+    ggsave(filename = paste("charts_and_tables/barcharts/bar_chart_", 
+                            adp_yr, "_",
+                            plotname_char,
+                            ".png",
+                            sep = ''), 
+           plot   = plotname,
+           height = 10.00,  # mess with these as needed
+           width  = 15.6) # mess with these as needed
+  }
 
 
 
@@ -882,7 +1005,7 @@ fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_other_by_affi_type",
 
 
 
-# Histograms Incis per Statement ----------------------------------------
+# Histograms (Incis per Statement) ----------------------------------------
 
 ## all other types ----------------------------------------
 incis_per_statement_histog_all_other_types <-
@@ -959,6 +1082,7 @@ fn_save_defs_histog(plotname_char = "incis_per_statement_histog_prohib",
 
 ## All Categs Incis Per Statement ----------------------------------------
 # THIS IS ALSO A KEEPER
+# UPDATE: NOT USED.
 
 incis_per_statement_histog_all <-
   (ggplot(raw_statements %>%
@@ -1116,151 +1240,6 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 # BARCHARTS ----------------------------------------
 
-
-
-## Barchart gg definitions
-### barchart theme definition --------------------------------
-fn_barchart_theme <-
-  function(){
-    theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top" )
-     }
-
-### barchart facet defintion -------------------------
-fn_barchart_facet <-
-  function(){
-    facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  }
-
-### barchart label definitions -----------------------------------
-fn_barchart_labs <-
-  function(rate_type){
-labs(x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-     fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-     y = paste("# Occurrences per ", rate_type, sep = '') # ,
-     #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-    ) }
-
-
-### barchart 1000 gg definitions --------------------------
-fn_barchart_1000_gg <-
-  function(ggcategory, rate_type){
-    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
-                   ungroup() %>% 
-                   mutate(FILL = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-                   ) %>%
-                   filter(CALENDAR_YEAR == adp_yr,
-                          CONFI_FLAG == 0,
-                          OLE_CATEGORY == ggcategory), 
-           aes('',
-               # keeping this here COMMENTED OUT, because it is a useful way of grouping as well, but not used.  
-               # x = paste(VESSEL_TYPE, 
-               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-               #           ' ~ ', NMFS_REGION, 
-               #           sep = ''),
-               y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-               fill = FILL) ) +
-     geom_col(position  = "dodge") +
-     geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-                    # nudge_y = 2,
-                    position = position_dodge(width = 1),
-                    #  vjust = 0.3,
-                    fontface = "bold") +
-    # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-    #              scales = "free",
-    #              switch="both",
-    #              # bleed = FALSE,
-    #              labeller = label_wrap_gen())
-     fn_barchart_facet() +
-     scale_y_continuous(position="right") + # Put the y-axis labels on the right
-     fn_barchart_labs(rate_type = "1000 Deployed Days") +
-     scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
-    # + theme_bw()
-     fn_barchart_theme()
-  }
-
-
-
-
-
-### barchart assnmt gg definitions --------------------------
-fn_barchart_assnmt_gg <-
-  function(ggcategory){
-    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
-             ungroup() %>% 
-             mutate(FILL = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-             ) %>%
-             filter(CALENDAR_YEAR == adp_yr,
-                    CONFI_FLAG == 0,
-                    OLE_CATEGORY == ggcategory), 
-           aes('',
-               # keeping this here COMMENTED OUT, because it is a useful way of grouping as well, but not used.  
-               # x = paste(VESSEL_TYPE, 
-               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-               #           ' ~ ', NMFS_REGION, 
-               #           sep = ''),
-               y = INCIDENTS_PER_ASSIGNMENT,
-               fill = FILL) ) +
-      geom_col(position  = "dodge") +
-      geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-                # nudge_y = 2,
-                position = position_dodge(width = 1),
-                #  vjust = 0.3,
-                fontface = "bold") +
-      # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-      #              scales = "free",
-      #              switch="both",
-      #              # bleed = FALSE,
-      #              labeller = label_wrap_gen())
-      fn_barchart_facet() +
-      scale_y_continuous(position="right") + # Put the y-axis labels on the right
-      fn_barchart_labs(rate_type = "Vessel/Plant Assignment") +
-      scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
-      # + theme_bw()
-      fn_barchart_theme()
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### barchart ggsave parameters ---------------------------------
-fn_save_defs_barchart <-
-  function(plotname_char, plotname){
-    ggsave(filename = paste("charts_and_tables/barcharts/bar_chart_", 
-                            adp_yr, "_",
-                            plotname_char,
-                            ".png",
-                            sep = ''), 
-           plot   = plotname,
-           height = 10.00,  # mess with these as needed
-           width  = 15.6) # mess with these as needed
-  }
-
-
 ## Prohibs 1000_days ----------------------------------------
 incis_per_1000_days_prohib_bar <-
  fn_barchart_1000_gg(ggcategory = 'PROTECTED RESOURCE & PROHIBITED SPECIES')
@@ -1346,6 +1325,9 @@ fn_save_defs_barchart(plotname_char = "incis_per_assnmt_interpersonal_bar",
 
 
 
+
+
+# STOP HERE --------------------------
 
 
 
