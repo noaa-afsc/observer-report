@@ -1,12 +1,11 @@
-####################
+# ReadMe ----------------------------------------
+
 # Annual Report Enforcement chapter: Charts generation
 # Contact Andy Kingham
 # 206-526-4212
 
 
-############
-# load req'd packages
-
+# load req'd packages ----------------------------------------
 library(plyr)
 library(reshape2)
 library(dplyr)
@@ -22,20 +21,18 @@ library(ggpmisc)
 
 
 
-# load the data files.
+# load the data files. ----------------------------------------
 # * chng wd filepath as needed *
 rm(list = ls())
 load(file = "scripts/AR_summary_tables_output.rdata")
 
 
 
-###############
 
 
 
 
-######################
-# Make Charts: Heat Maps
+# Heat Maps ----------------------------------------
 # There are 4 Charts for EACH OLE_CATEGORY, for a total of 24 charts: 
 # 1. rate per 1000 deployed days
 # 2. rate per 90 deployed days
@@ -43,10 +40,9 @@ load(file = "scripts/AR_summary_tables_output.rdata")
 # 4. rate per vessel/plant assignment
 
 
-#################
-# OLE_CATEGORY = OLE PRIORITY: SAFETY AND DUTIES only
+## SAFETY AND DUTIES ----------------------------------------
 
-# Incidents Per 1000 Deployed Days 
+### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_work_env_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>% 
@@ -88,7 +84,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per 90 Deployed Days
+### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTED OUT, not used.
 
 # incis_per_90_days_work_env_by_affi_type <-
@@ -131,7 +127,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per CRUISE
+### Incidents Per CRUISE ----------------------------------------
 # COMMENTED OUT, not used.
 
 # incis_per_cruise_work_env_by_affi_type <-
@@ -172,7 +168,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per ASSIGNMENT
+### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_work_env_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -244,12 +240,9 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-######################
+## OLE PRIORITY: INTER-PERSONAL ----------------------------------------
 
-#################
-# OLE_CATEGORY = OLE PRIORITY: INTER-PERSONAL only
-
-# Incidents Per 1000 Deployed Days 
+### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_interpersonal_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -291,7 +284,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per 90 Deployed Days
+### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_90_days_interpersonal_by_affi_type <-
@@ -335,7 +328,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per CRUISE
+### Incidents Per CRUISE ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_cruise_interpersonal_by_affi_type <-
@@ -378,7 +371,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per ASSIGNMENT
+### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_interpersonal_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -450,11 +443,9 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-####################
-# OLE_CATEGORY = LIMITED ACCESS PROGRAMS
-####################
+## OLE_CATEGORY = LIMITED ACCESS PROGRAMS ----------------------------------------
 
-# Incidents Per 1000 Deployed Days 
+### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_lapp_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -497,7 +488,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per 90 Deployed Days
+### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_90_days_lapp_by_affi_type <-
@@ -542,7 +533,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per CRUISE
+### Incidents Per CRUISE ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_cruise_lapp_by_affi_type <-
@@ -585,7 +576,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per ASSIGNMENT
+### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_lapp_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -654,12 +645,9 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
+## PROTECTED RESOURCE & PROHIBITED SPECIES ----------------------------------------
 
-####################
-# OLE_CATEGORY = PROTECTED RESOURCE & PROHIBITED SPECIES
-####################
-
-# Incidents Per 1000 Deployed Days 
+### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_prohib_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -702,7 +690,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per 90 Deployed Days
+### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_90_days_prohib_by_affi_type <-
@@ -747,7 +735,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per CRUISE
+### Incidents Per CRUISE ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_cruise_prohib_by_affi_type <-
@@ -790,7 +778,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per ASSIGNMENT
+### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_prohib_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -854,11 +842,10 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-####################
-# OLE_CATEGORY = COAST GUARD
-####################
 
-# Incidents Per 1000 Deployed Days 
+## OLE_CATEGORY = COAST GUARD ----------------------------------------
+
+### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_cg_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -901,7 +888,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per 90 Deployed Days
+### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_90_days_cg_by_affi_type <-
@@ -946,7 +933,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per CRUISE
+### Incidents Per CRUISE ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_cruise_cg_by_affi_type <-
@@ -989,7 +976,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per ASSIGNMENT
+### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_cg_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -1055,11 +1042,10 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-####################
-# OLE_CATEGORY = ALL OTHER STATEMENT TYPES
-####################
 
-# Incidents Per 1000 Deployed Days 
+## ALL OTHER STATEMENT TYPES ----------------------------------------
+
+### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_other_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -1103,7 +1089,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per 90 Deployed Days
+### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_90_days_other_by_affi_type <-
@@ -1148,7 +1134,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per CRUISE
+### Incidents Per CRUISE ----------------------------------------
 # COMMENTING OUT, not used.
 
 # incis_per_cruise_other_by_affi_type <-
@@ -1191,7 +1177,7 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-# Incidents Per ASSIGNMENT
+### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_other_by_affi_type <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>%
@@ -1250,18 +1236,11 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 
-##########################################################
-##########################################################
 
 
 
-
-
-
-
-
-
-#########################
+# Histograms Incis per Statement ----------------------------------------
+## all other types ----------------------------------------
 incis_per_statement_histog_all_other_types<-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1287,7 +1266,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-#########################
+## Coast Guard ----------------------------------------
 incis_per_statement_histog_cg <-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1317,7 +1296,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-#########################
+## LAPP ----------------------------------------
 incis_per_statement_histog_LAPP <-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1350,7 +1329,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-#########################
+## InterPersonal ----------------------------------------
 incis_per_statement_histog_Interpersonal <-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1379,15 +1358,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-
-
-
-
-
-
-
-
-#########################
+## Safety and Duties ----------------------------------------
 incis_per_statement_histog_Safety <-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1418,7 +1389,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-#########################
+## Prohib ----------------------------------------
 incis_per_statement_histog_prohib <-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1454,9 +1425,9 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-###############
+## All Categs Incis Per Statement ----------------------------------------
 # THIS IS ALSO A KEEPER
-#########################
+
 incis_per_statement_histog_all <-
   (ggplot(raw_statements %>%
             filter(FIRST_VIOL_YEAR == adp_yr) %>%
@@ -1490,7 +1461,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-#########################
+## R&R only ----------------------------------------
 incis_per_statement_histog_RandR_only <-
   (ggplot(days_statements_all_groupings_raw %>%
             mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1,
@@ -1530,10 +1501,9 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-###########
+## all categs_facet ----------------------------------------
 # THIS ONE IS A KEEPER
-##########
-#########################
+
 incis_per_statement_all_facet <-
 (ggplot(days_statements_all_groupings_raw %>%
           mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1,
@@ -1571,7 +1541,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-#########################
+# BOXPLOT incis per statement ----------------------------------------
 (ggplot(days_statements_all_groupings_raw %>%
           mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1,
                  STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
@@ -1611,16 +1581,16 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 
 
-###################
-# barcharts
-##################
 
-# Incidents Per 1000_days PROHIB
+# BARCHARTS ----------------------------------------
+
+## Prohibs 1000_days ----------------------------------------
 (ggplot(rate_all_groupings_affi_type_for_plots %>%
           ungroup() %>% 
           mutate(FILL        =  factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(CALENDAR_YEAR)
           ) %>%
           filter(CALENDAR_YEAR == adp_yr,
+                 CONFI_FLAG == 0,
                  OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES'), 
         aes('',
             # x = paste(VESSEL_TYPE, 
@@ -1672,7 +1642,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_1000_days_prohib_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1701,12 +1671,13 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days CG
+## CG 1000 days ----------------------------------------
 (ggplot(rate_all_groupings_affi_type_for_plots %>%
           ungroup() %>% 
           mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(CALENDAR_YEAR)
           ) %>%
-          filter(CALENDAR_YEAR == adp_yr, 
+          filter(CALENDAR_YEAR == adp_yr,
+                 CONFI_FLAG == 0, 
                  OLE_CATEGORY ==  'COAST GUARD'), 
         aes('',
             # x = paste(VESSEL_TYPE, 
@@ -1759,7 +1730,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_1000_days_CG_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1768,7 +1739,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days OTHER
+## Other types 1000 Days ----------------------------------------
 (ggplot(rate_all_groupings_affi_type_for_plots %>%
           ungroup() %>% 
           mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')),
@@ -1776,6 +1747,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
                  #               VESSEL_TYPE = factor(if_else(VESSEL_TYPE == 'CV', 'Catcher Vessel', as.character(VESSEL_TYPE)),levels = c('PLANT', 'CP/MS Vessel', 'Catcher Vessel'))
           ) %>%
           filter(CALENDAR_YEAR == adp_yr, 
+                 CONFI_FLAG == 0,
                  OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES'),
         aes('',
             # x = paste(VESSEL_TYPE, 
@@ -1827,7 +1799,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_1000_days_other_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1838,12 +1810,13 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days LAPP
+## LAPP 1000 days ----------------------------------------
 (ggplot(rate_all_groupings_affi_type_for_plots %>%
           ungroup() %>% 
           mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
           ) %>%
           filter(CALENDAR_YEAR == adp_yr, 
+                 CONFI_FLAG == 0,
                  OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS'), 
         aes('',
             # x = paste(VESSEL_TYPE, 
@@ -1896,7 +1869,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_1000_days_LAPP_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1911,13 +1884,14 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days SAFETY
+# Safety 1000 days ----------------------------------------
 safety_barchart <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>% 
             mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(YEAR)
             ) %>%
             filter(CALENDAR_YEAR == adp_yr, 
+                   CONFI_FLAG == 0,
                    OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'), 
           aes('',
               # x = paste(VESSEL_TYPE, 
@@ -1972,7 +1946,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_1000_days_safety_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1984,13 +1958,14 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days Inter-personal
+## Inter-personal 1000 days ----------------------------------------
 priority_interpersonal_barchart_1000 <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>% 
             mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
             ) %>%
-            filter(CALENDAR_YEAR == adp_yr, 
+            filter(CALENDAR_YEAR == adp_yr,
+                   CONFI_FLAG == 0, 
                    OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'), 
           aes('',
               # x = paste(VESSEL_TYPE, 
@@ -2045,7 +2020,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_1000_days_interpersonal_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -2055,13 +2030,14 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per AssIGNMENT Inter Personal
+## Inter Personal Assnmt ----------------------------------------
 priority_interpersonal_barchart_assnmt <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>% 
             mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
             ) %>%
             filter(CALENDAR_YEAR == adp_yr, 
+                   CONFI_FLAG == 0,
                    OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'), 
           aes('',
               # x = paste(VESSEL_TYPE, 
@@ -2115,7 +2091,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
              adp_yr, 
              "_incis_per_assnmt_interpersonal_by_affi_type.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -2153,10 +2129,11 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-###############################################
-#  barcharts_by_year
 
-# Incidents Per 1000_days SAFETY
+# barcharts by Year ----------------------------------------
+# COMMENTED OUT, not used.
+
+# Safety 1000 days  ----------------------------------------
 safety_barchart_year <-
   (ggplot(rate_all_groupings_affi_type_for_plots %>%
             ungroup() %>% 
@@ -2228,7 +2205,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days LAPP
+## LAPP 1000 days ----------------------------------------
 (ggplot(rate_all_groupings_affi_type_for_plots %>%
           ungroup() %>% 
           mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
@@ -2291,7 +2268,7 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-# Incidents Per 1000_days PROHIB
+## Prohib 1000 days ----------------------------------------
 (ggplot(rate_all_groupings_affi_type_for_plots %>%
           ungroup() %>% 
           mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
@@ -2395,9 +2372,11 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 
-#  line plots_by_year
+#  LINE plots_by_year ----------------------------------------
+# COMMENTED OUT, not used.
 
-# # Incidents Per 1000_days SAFETY
+## Safety 1000 days ----------------------------------------
+
 # safety_lineplot_year <-
 #   (ggplot(rate_all_groupings_affi_type_for_plots %>%
 #             ungroup() %>% 
