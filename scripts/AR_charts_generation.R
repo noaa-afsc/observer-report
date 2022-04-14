@@ -26,6 +26,123 @@ library(ggpmisc)
 rm(list = ls())
 load(file = "scripts/AR_summary_tables_output.rdata")
 
+# Define GG's ----------------------------------------
+
+##Heatmap definitions ----------------------------------------
+
+### theme elements  ----------------------------------------
+fn_heatmap_theme <- function(){ 
+  theme(axis.text.x = element_text(angle = 90, 
+                                   vjust = 0.5, 
+                                   hjust = 1))
+}
+
+
+
+### gg elements ----------------------------------------
+#### 1000 days -----------------------------------------
+fn_heatmap_1000_gg <-
+  function(ggcategory, ggtitle){
+    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
+                     ungroup() %>% 
+                     filter(OLE_CATEGORY == ggcategory,
+                            CONFI_FLAG == 0,
+                            CALENDAR_YEAR == adp_yr), 
+           aes(x = '', 
+               y = AFFIDAVIT_TYPE)) +
+      geom_tile(aes(fill  = INCIDENTS_PER_1000_DEPLOYED_DAYS)) +
+      geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
+                fontface = "bold") +
+      facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE) +
+      scale_fill_gradient(low  = "blue",
+                          high = "yellow",
+                          name =  paste("Occurrences",  
+                                        "Per 1000", 
+                                        "Deployed",
+                                        "Days", sep = "\n"))  +
+      labs(x = '', y = "Statement Type", title = ggtitle) +
+      fn_heatmap_theme() 
+    }
+
+
+
+
+
+
+
+
+
+##### Assnmt -----------------------
+fn_heatmap_assnmt_gg <-
+  function(ggcategory, ggtitle){
+    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
+             ungroup() %>% 
+             filter(OLE_CATEGORY == ggcategory,
+                    CONFI_FLAG == 0,
+                    CALENDAR_YEAR == adp_yr), 
+           aes(x = '', 
+               y = AFFIDAVIT_TYPE)) +
+      geom_tile(aes(fill  = INCIDENTS_PER_ASSIGNMENT)) +
+      geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
+                    fontface = "bold") +
+      facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE) +
+      scale_fill_gradient(low  = "blue",
+                          high = "yellow",
+                          name =  paste("Occurrences", 
+                                        "Per Vessel/Plant", 
+                                        "Assignment", sep = "\n")) +
+      labs(x = '', y = "Statement Type", title = ggtitle) +
+      fn_heatmap_theme() 
+  }
+
+
+### ggsSave parameters   ----------------------------------------
+fn_save_defs_heatmaps <-
+  function(plotname_char, plotname){
+    ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
+                        adp_yr, "_",
+                        plotname_char,
+                        ".png",
+                        sep = ''), 
+       plot   = plotname,
+       height = 8.00,  # mess with these as needed
+       width  = 15.6) # mess with these as needed
+      }
+
+
+#### Histogram definitions ----------------------------------
+
+fn_histog_gg <-
+  function(ggcategory, ggtitle){
+    ggplot(data = raw_statements %>%
+             filter(FIRST_VIOL_YEAR == adp_yr) %>%
+             mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
+                    STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
+             filter(OLE_CATEGORY == ggcategory),
+           aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE)) +
+      geom_histogram(stat     = "bin",
+                     binwidth = 1,
+                     position = "dodge") +
+      facet_wrap (. ~ OLE_CATEGORY, scales="free") +
+      labs(x = "# of Ocurrences",
+           y = "# of statements",
+           fill = "Statement Type",
+           title = ggtitle)
+  }
+
+### save parameters --------------------------
+fn_save_defs_histog <- 
+  function(plotname_char, plotname){
+    ggsave(filename = paste("charts_and_tables/histograms/histog_", 
+                            adp_yr, "_",
+                            plotname_char,
+                            ".png",
+                            sep = ''), 
+           plot   = plotname,
+           height = 8.00,  # mess with these as needed
+           width  = 15.6) # mess with these as needed
+  }
+
 
 
 
@@ -44,41 +161,14 @@ load(file = "scripts/AR_summary_tables_output.rdata")
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_work_env_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>% 
-            filter(OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_1000_DEPLOYED_DAYS))
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE)
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group OLE PRIORITY: SAFETY AND DUTIES")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per 1000", 
-                                      "Deployed",
-                                      "Days", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
-  )
+  fn_heatmap_1000_gg(
+    ggcategory = 'OLE PRIORITY: SAFETY AND DUTIES',
+    ggtitle    = "Statement Category Group OLE PRIORITY: SAFETY AND DUTIES"
+              )
 
 incis_per_1000_days_work_env_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                  adp_yr, "_incis_per_1000_days_work_env_by_affi_type.png",
-                  sep = ''), 
-       plot = incis_per_1000_days_work_env_by_affi_type,
-       height=7.00,  # mess with these as needed
-       width=15.6) # mess with these as needed
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_work_env_by_affi_type",
+                      plotname = incis_per_1000_days_work_env_by_affi_type)
 
 
 
@@ -170,58 +260,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_work_env_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES',
-                   CALENDAR_YEAR == adp_yr),  
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_ASSIGNMENT))
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE)
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group OLE PRIORITY: SAFETY AND DUTIES")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per Vessel/Plant",
-                                      "Assignment", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
-  )
+  fn_heatmap_assnmt_gg(
+    ggcategory = 'OLE PRIORITY: SAFETY AND DUTIES',
+    ggtitle = "Statement Category Group OLE PRIORITY: SAFETY AND DUTIES"
+    )
 
 incis_per_assnmt_work_env_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, "_incis_per_assnmt_work_env_by_affi_type.png", 
-                        sep = '') , 
-       plot = incis_per_assnmt_work_env_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_work_env_by_affi_type",
+                      plotname = incis_per_assnmt_work_env_by_affi_type)
 
 
 
@@ -244,43 +290,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_interpersonal_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_1000_DEPLOYED_DAYS))
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x= '',
-          y = "Statement Type",
-          title = "Statement Category Group OLE PRIORITY: INTER-PERSONAL")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per 1000", 
-                                      "Deployed",
-                                      "Days", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_1000_gg(
+    ggcategory = 'OLE PRIORITY: INTER-PERSONAL',  
+    ggtitle = "Statement Category Group OLE PRIORITY: INTER-PERSONAL"
   )
 
 incis_per_1000_days_interpersonal_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, "_incis_per_1000_days_interpersonal_by_affi_type.png",
-                        sep = '') , 
-       plot = incis_per_1000_days_interpersonal_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_interpersonal_by_affi_type",
+                      plotname = incis_per_1000_days_interpersonal_by_affi_type)
 
 
 
@@ -373,69 +390,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_interpersonal_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_ASSIGNMENT))
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group OLE PRIORITY: INTER-PERSONAL")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per Vessel/Plant", 
-                                      "Assignment", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_assnmt_gg(
+    ggcategory = 'OLE PRIORITY: INTER-PERSONAL',  
+    ggtitle = "Statement Category Group OLE PRIORITY: INTER-PERSONAL"
   )
 
 incis_per_assnmt_interpersonal_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
-                        adp_yr, 
-                        "_incis_per_assnmt_interpersonal_by_affi_type.png", 
-                        sep = '') , 
-       height=7.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_interpersonal_by_affi_type",
+                      plotname = incis_per_assnmt_interpersonal_by_affi_type)
 
 
 
@@ -447,43 +409,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_lapp_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_1000_DEPLOYED_DAYS))
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group LIMITED ACCESS PROGRAMS")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per 1000", 
-                                      "Deployed",
-                                      "Days", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_1000_gg(
+    ggcategory =  'LIMITED ACCESS PROGRAMS',  
+    ggtitle = "Statement Category Group LIMITED ACCESS PROGRAMS"
   )
 
 incis_per_1000_days_lapp_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_1000_days_lapp_by_affi_type.png", 
-                        sep = ''), 
-       plot = incis_per_1000_days_lapp_by_affi_type,
-       height=7.00, width=15.6)
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_lapp_by_affi_type",
+                      plotname = incis_per_1000_days_lapp_by_affi_type)
 
 
 
@@ -578,69 +511,17 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_lapp_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_ASSIGNMENT))
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group LIMITED ACCESS PROGRAMS")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per Vessel/Plant", 
-                                      "Assignment", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_assnmt_gg(
+    ggcategory =  'LIMITED ACCESS PROGRAMS',  
+    ggtitle = "Statement Category Group LIMITED ACCESS PROGRAMS"
   )
 
 incis_per_assnmt_lapp_by_affi_type
+fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_lapp_by_affi_type",
+                      plotname = incis_per_assnmt_lapp_by_affi_type)
 
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_assnmt_lapp_by_affi_type.png", 
-                        sep = ''), 
-       plot = incis_per_assnmt_lapp_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
+ 
 
 
 
@@ -649,43 +530,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_prohib_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_1000_DEPLOYED_DAYS))
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group PROTECTED RESOURCE & PROHIBITED SPECIES")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per 1000", 
-                                      "Deployed",
-                                      "Days", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_1000_gg(
+    ggcategory =  'PROTECTED RESOURCE & PROHIBITED SPECIES',  
+    ggtitle = "Statement Category Group  PROTECTED RESOURCE & PROHIBITED SPECIES"
   )
 
 incis_per_1000_days_prohib_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_1000_days_prohib_by_affi_type.png", 
-                        sep = ''), 
-       plot = incis_per_1000_days_prohib_by_affi_type,
-       height=7.00, width=15.6)
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_prohib_by_affi_type",
+                      plotname = incis_per_1000_days_prohib_by_affi_type)
 
 
 
@@ -780,63 +632,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_prohib_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_ASSIGNMENT))
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group PROTECTED RESOURCE & PROHIBITED SPECIES")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per Vessel/Plant", 
-                                      "Assignment", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_assnmt_gg(
+    ggcategory =  'PROTECTED RESOURCE & PROHIBITED SPECIES',  
+    ggtitle = "Statement Category Group  PROTECTED RESOURCE & PROHIBITED SPECIES"
   )
 
 incis_per_assnmt_prohib_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_assnmt_prohib_by_affi_type.png", 
-                        sep = '') , 
-       plot = incis_per_assnmt_prohib_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_prohib_by_affi_type",
+                      plotname = incis_per_assnmt_prohib_by_affi_type)
 
 
 
@@ -847,45 +650,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_cg_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'COAST GUARD',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_1000_DEPLOYED_DAYS))
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group COAST GUARD")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per 1000", 
-                                      "Deployed",
-                                      "Days", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
-  )
+  fn_heatmap_1000_gg(
+    ggcategory =  'COAST GUARD',  
+    ggtitle    = "Statement Category Group COAST GUARD"
+       )
 
 incis_per_1000_days_cg_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_1000_days_cg_by_affi_type.png", 
-                        sep = ''), 
-       plot = incis_per_1000_days_cg_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_cg_by_affi_type",
+                      plotname = incis_per_1000_days_cg_by_affi_type)
 
 
 ### Incidents Per 90 Deployed Days ----------------------------------------
@@ -978,66 +750,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_cg_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'COAST GUARD',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_ASSIGNMENT))
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group COAST GUARD")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per Vessel/Plant", 
-                                      "Assignment", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_assnmt_gg(
+    ggcategory =  'COAST GUARD',  
+    ggtitle    = "Statement Category Group COAST GUARD"
   )
 
 incis_per_assnmt_cg_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_assnmt_cg_by_affi_type.png",
-                        sep = '') , 
-       plot = incis_per_assnmt_cg_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_cg_by_affi_type",
+                      plotname = incis_per_assnmt_cg_by_affi_type)
 
 
 
@@ -1047,45 +767,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 incis_per_1000_days_other_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_1000_DEPLOYED_DAYS))
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              fontface = "bold"
-  )
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group ALL OTHER STATEMENT TYPES")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per 1000", 
-                                      "Deployed",
-                                      "Days", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_1000_gg(
+    ggcategory =  'ALL OTHER STATEMENT TYPES',  
+    ggtitle    = "Statement Category Group ALL OTHER STATEMENT TYPES"
   )
 
 incis_per_1000_days_other_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_1000_days_other_by_affi_type.png", 
-                        sep = '') , 
-       plot = incis_per_1000_days_other_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_other_by_affi_type",
+                      plotname = incis_per_1000_days_other_by_affi_type)
 
 
 
@@ -1179,60 +868,14 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 ### Incidents Per ASSIGNMENT ----------------------------------------
 incis_per_assnmt_other_by_affi_type <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>%
-            filter(OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES',
-                   CALENDAR_YEAR == adp_yr), 
-          aes(x = '',
-              y = AFFIDAVIT_TYPE ) 
-  )
-  + geom_tile(aes(fill = INCIDENTS_PER_ASSIGNMENT))
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              fontface = "bold")
-  + facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-                 scales = "free_y")
-  + labs( x = '',
-          y = "Statement Type",
-          title = "Statement Category Group ALL OTHER STATEMENT TYPES")
-  + scale_fill_gradient(low  = "blue",
-                        high = "yellow",
-                        name =  paste("Occurrences",  
-                                      "Per Vessel/Plant", 
-                                      "Assignment", sep = "\n"))
-  + theme(axis.text.x = element_text(angle = 90, 
-                                     vjust = 0.5, 
-                                     hjust = 1))
-  
+  fn_heatmap_assnmt_gg(
+    ggcategory =  'ALL OTHER STATEMENT TYPES',  
+    ggtitle    = "Statement Category Group ALL OTHER STATEMENT TYPES"
   )
 
 incis_per_assnmt_other_by_affi_type
-
-ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, 
-                        "_incis_per_assnmt_other_by_affi_type.png", 
-                        sep = '') , 
-       plot = incis_per_assnmt_other_by_affi_type,
-       height=7.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_other_by_affi_type",
+                      plotname = incis_per_assnmt_other_by_affi_type)
 
 
 
@@ -1240,56 +883,27 @@ ggsave(filename = paste("charts_and_tables/heat_maps/hm_",
 
 
 # Histograms Incis per Statement ----------------------------------------
-## all other types ----------------------------------------
-incis_per_statement_histog_all_other_types<-
-  (ggplot(raw_statements %>%
-            filter(FIRST_VIOL_YEAR == adp_yr) %>%
-            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
-                   STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
-            filter(OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES'),
-          aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE))
-   + geom_histogram(stat     = "bin",
-                    binwidth = 1,
-                    position = "dodge")
-   + facet_wrap (. ~ OLE_CATEGORY, scales="free")
-   + labs(x = "# of Ocurrences",
-          y = "# of statements",
-          fill = "Statement Type")
-  )
 
-incis_per_statement_histog_all_other_types
-ggsave(paste("charts_and_tables/histograms/histog_", 
-             adp_yr, 
-             "_incis_per_statement_all_other_types.png", 
-             sep = '') , 
-       height=7.00, width=15.6)
+## all other types ----------------------------------------
+incis_per_statement_histog_all_other_types <-
+  fn_histog_gg(ggcategory = 'ALL OTHER STATEMENT TYPES',
+               ggtitle = 'Statement Category Group ALL OTHER STATEMENT TYPES') 
+
+fn_save_defs_histog(plotname_char = "incis_per_statement_histog_all_other_types",
+                    plotname = incis_per_statement_histog_all_other_types)
+
+
 
 
 
 ## Coast Guard ----------------------------------------
 incis_per_statement_histog_cg <-
-  (ggplot(raw_statements %>%
-            filter(FIRST_VIOL_YEAR == adp_yr) %>%
-            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
-                   STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
-            filter(OLE_CATEGORY == 'COAST GUARD'),
-          aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE))
-   + geom_histogram(stat     = "bin",
-                    binwidth = 1,
-                    position = "stack")
-   + facet_wrap (.~ OLE_CATEGORY, scales="free")
-   + labs(x = "# of Ocurrences",
-          y = "# of statements",
-          fill = "Statement Type")
-  )
+  fn_histog_gg(ggcategory = 'COAST GUARD',
+               ggtitle = 'Statement Category Group COAST GUARD') 
 
 incis_per_statement_histog_cg
-ggsave(paste("charts_and_tables/histograms/histog_", 
-             adp_yr, 
-             "_incis_per_statement_histog_cg.png", 
-             sep = '') , 
-      height=7.00, width=15.6)
-
+fn_save_defs_histog(plotname_char = "incis_per_statement_histog_cg",
+                    plotname = incis_per_statement_histog_cg)
 
 
 
@@ -1298,127 +912,45 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 ## LAPP ----------------------------------------
 incis_per_statement_histog_LAPP <-
-  (ggplot(raw_statements %>%
-            filter(FIRST_VIOL_YEAR == adp_yr) %>%
-            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
-                   STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
-            filter(OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS'),
-          aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE))
-   + geom_histogram(stat     = "bin",
-                    binwidth = 1,
-                    position = "stack")
-   + facet_wrap (.~ OLE_CATEGORY, scales="free")
-   + labs(x = "# of Ocurrences",
-          y = "# of statements",
-          fill = "Statement Type")
-  )
+  fn_histog_gg(ggcategory = 'LIMITED ACCESS PROGRAMS',
+               ggtitle = 'Statement Category Group LIMITED ACCESS PROGRAMS') 
 
 incis_per_statement_histog_LAPP
-ggsave(paste("charts_and_tables/histograms/histog_", 
-             adp_yr, 
-             "_incis_per_statement_histog_LAPP.png", 
-             sep = '') , 
-      height=7.00, width=15.6)
-
-
-
-
-
-
-
+fn_save_defs_histog(plotname_char = "incis_per_statement_histog_LAPP",
+                    plotname = incis_per_statement_histog_LAPP)
 
 
 
 ## InterPersonal ----------------------------------------
 incis_per_statement_histog_Interpersonal <-
-  (ggplot(raw_statements %>%
-            filter(FIRST_VIOL_YEAR == adp_yr) %>%
-            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
-                   STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
-            filter(OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
-          aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE))
-   + geom_histogram(stat     = "bin",
-                    binwidth = 1,
-                    position = "stack")
-   + facet_wrap (.~ OLE_CATEGORY, scales="free")
-   + labs(x = "# of Ocurrences",
-          y = "# of statements",
-          fill = "Statement Type")
-  )
+  fn_histog_gg(ggcategory = 'OLE PRIORITY: INTER-PERSONAL',
+               ggtitle = 'Statement Category Group OLE PRIORITY: INTER-PERSONAL') 
 
 incis_per_statement_histog_Interpersonal
-ggsave(paste("charts_and_tables/histograms/histog_", 
-             adp_yr, 
-             "_incis_per_statement_interpersonal.png", 
-             sep = '') , 
-       height=7.00, width=15.6)
-
-
-
-
+fn_save_defs_histog(plotname_char = "incis_per_statement_histog_Interpersonal",
+                    plotname = incis_per_statement_histog_Interpersonal)
+ 
 
 
 ## Safety and Duties ----------------------------------------
 incis_per_statement_histog_Safety <-
-  (ggplot(raw_statements %>%
-            filter(FIRST_VIOL_YEAR == adp_yr) %>%
-            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
-                   STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
-            filter(OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'),
-          aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE))
-   + geom_histogram(stat     = "bin",
-                    binwidth = 1,
-                    position = "stack")
-   + facet_wrap (.~ OLE_CATEGORY, scales="free")
-   + labs(x = "# of Ocurrences",
-          y = "# of statements",
-          fill = "Statement Type")
-  )
+  fn_histog_gg(ggcategory = 'OLE PRIORITY: SAFETY AND DUTIES',
+               ggtitle = 'Statement Category Group OLE PRIORITY: SAFETY AND DUTIES') 
 
 incis_per_statement_histog_Safety
-ggsave(paste("charts_and_tables/histograms/histog_", 
-             adp_yr, 
-             "_incis_per_statement_safety.png", 
-             sep = '') , 
-       height=7.00, width=15.6)
-
-
-
-
-
+fn_save_defs_histog(plotname_char = "incis_per_statement_histog_Safety",
+                    plotname = incis_per_statement_histog_Safety)
 
 
 
 ## Prohib ----------------------------------------
 incis_per_statement_histog_prohib <-
-  (ggplot(raw_statements %>%
-            filter(FIRST_VIOL_YEAR == adp_yr) %>%
-            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS,
-                   STATEMENT_TYPE = AFFIDAVIT_TYPE) 
-          %>%
-            filter(OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES') 
-          ,
-          aes(x=NUMBER_OF_INCIDENTS, fill = STATEMENT_TYPE))
-   + geom_histogram(stat     = "bin",
-                    binwidth = 1,
-                    position = "stack")
-   + facet_wrap (.~ OLE_CATEGORY, scales="free")
-   + labs(x = "# of Ocurrences",
-          y = "# of statements",
-          fill = "Statement Type")
-  )
+  fn_histog_gg(ggcategory = 'PROTECTED RESOURCE & PROHIBITED SPECIES',
+               ggtitle = 'Statement Category Group PROTECTED RESOURCE & PROHIBITED SPECIES') 
 
 incis_per_statement_histog_prohib
-ggsave(paste("charts_and_tables/histograms/histog_", 
-             adp_yr, 
-             "_incis_per_statement_prohib.png", 
-             sep = '') , 
-       height=7.00, width=15.6)
-
-
-
-
-
+fn_save_defs_histog(plotname_char = "incis_per_statement_histog_prohib",
+                    plotname = incis_per_statement_histog_prohib)
 
 
 
@@ -1454,7 +986,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
              adp_yr, 
              "_incis_per_statement_all.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1496,7 +1028,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
              adp_yr, 
              "_incis_per_statement_RandR_only.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1537,7 +1069,7 @@ ggsave(paste("charts_and_tables/histograms/histog_",
              adp_yr, 
              "_incis_per_statement_all_facet.png", 
              sep = '') , 
-       height=7.00, width=15.6)
+       height=10.00, width=15.6)
 
 
 
@@ -1584,87 +1116,158 @@ ggsave(paste("charts_and_tables/histograms/histog_",
 
 # BARCHARTS ----------------------------------------
 
+
+
+## Barchart gg definitions
+### barchart theme definition --------------------------------
+fn_barchart_theme <-
+  function(){
+    theme(axis.text.y  = element_text(hjust = 0),
+          strip.text.y.left = element_text(angle = 0, hjust = 0),
+          # panel.spacing=unit(1,"lines"),
+          # strip.background=element_rect(color="grey30", fill="grey90"),
+          # panel.border=element_rect(color= "black"), # "grey90"),
+          axis.ticks.x=element_blank(),
+          legend.position="top" )
+     }
+
+### barchart facet defintion -------------------------
+fn_barchart_facet <-
+  function(){
+    facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
+               scales = "free",
+               switch="both",
+               # bleed = FALSE,
+               labeller = label_wrap_gen())
+  }
+
+### barchart label definitions -----------------------------------
+fn_barchart_labs <-
+  function(rate_type){
+labs(x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
+     fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
+     y = paste("# Occurrences per ", rate_type, sep = '') # ,
+     #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
+    ) }
+
+
+### barchart 1000 gg definitions --------------------------
+fn_barchart_1000_gg <-
+  function(ggcategory, rate_type){
+    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
+                   ungroup() %>% 
+                   mutate(FILL = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
+                   ) %>%
+                   filter(CALENDAR_YEAR == adp_yr,
+                          CONFI_FLAG == 0,
+                          OLE_CATEGORY == ggcategory), 
+           aes('',
+               # keeping this here COMMENTED OUT, because it is a useful way of grouping as well, but not used.  
+               # x = paste(VESSEL_TYPE, 
+               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+               #           ' ~ ', NMFS_REGION, 
+               #           sep = ''),
+               y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
+               fill = FILL) ) +
+     geom_col(position  = "dodge") +
+     geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
+                    # nudge_y = 2,
+                    position = position_dodge(width = 1),
+                    #  vjust = 0.3,
+                    fontface = "bold") +
+    # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
+    #              scales = "free",
+    #              switch="both",
+    #              # bleed = FALSE,
+    #              labeller = label_wrap_gen())
+     fn_barchart_facet() +
+     scale_y_continuous(position="right") + # Put the y-axis labels on the right
+     fn_barchart_labs(rate_type = "1000 Deployed Days") +
+     scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
+    # + theme_bw()
+     fn_barchart_theme()
+  }
+
+
+
+
+
+### barchart assnmt gg definitions --------------------------
+fn_barchart_assnmt_gg <-
+  function(ggcategory){
+    ggplot(data = rate_all_groupings_affi_type_for_plots %>%
+             ungroup() %>% 
+             mutate(FILL = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
+             ) %>%
+             filter(CALENDAR_YEAR == adp_yr,
+                    CONFI_FLAG == 0,
+                    OLE_CATEGORY == ggcategory), 
+           aes('',
+               # keeping this here COMMENTED OUT, because it is a useful way of grouping as well, but not used.  
+               # x = paste(VESSEL_TYPE, 
+               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+               #           ' ~ ', NMFS_REGION, 
+               #           sep = ''),
+               y = INCIDENTS_PER_ASSIGNMENT,
+               fill = FILL) ) +
+      geom_col(position  = "dodge") +
+      geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
+                # nudge_y = 2,
+                position = position_dodge(width = 1),
+                #  vjust = 0.3,
+                fontface = "bold") +
+      # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
+      #              scales = "free",
+      #              switch="both",
+      #              # bleed = FALSE,
+      #              labeller = label_wrap_gen())
+      fn_barchart_facet() +
+      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      fn_barchart_labs(rate_type = "Vessel/Plant Assignment") +
+      scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
+      # + theme_bw()
+      fn_barchart_theme()
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### barchart ggsave parameters ---------------------------------
+fn_save_defs_barchart <-
+  function(plotname_char, plotname){
+    ggsave(filename = paste("charts_and_tables/barcharts/bar_chart_", 
+                            adp_yr, "_",
+                            plotname_char,
+                            ".png",
+                            sep = ''), 
+           plot   = plotname,
+           height = 10.00,  # mess with these as needed
+           width  = 15.6) # mess with these as needed
+  }
+
+
 ## Prohibs 1000_days ----------------------------------------
-(ggplot(rate_all_groupings_affi_type_for_plots %>%
-          ungroup() %>% 
-          mutate(FILL        =  factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(CALENDAR_YEAR)
-          ) %>%
-          filter(CALENDAR_YEAR == adp_yr,
-                 CONFI_FLAG == 0,
-                 OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES'), 
-        aes('',
-            # x = paste(VESSEL_TYPE, 
-            #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-            #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-            #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-            #           ' ~ ', NMFS_REGION, 
-            #           sep = ''),
-            y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-            fill = FILL
-        ) 
-)
-+ geom_col(position  = "dodge")
-+ geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-            # nudge_y = 2,
-            position = position_dodge(width = 1),
-            #  vjust = 0.3,
-            fontface = "bold")
-# + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-#              scales = "free",
-#              switch="both",
-#              # bleed = FALSE,
-#              labeller = label_wrap_gen())
-+ facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
-             scales = "free",
-             switch="both",
-             # bleed = FALSE,
-             labeller = label_wrap_gen())
-+ scale_y_continuous(position="right")  # Put the y-axis labels on the right
+incis_per_1000_days_prohib_bar <-
+ fn_barchart_1000_gg(ggcategory = 'PROTECTED RESOURCE & PROHIBITED SPECIES')
 
-+ labs( x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-        fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-        y = "# Occurrences per 1000 Deployed Days" # ,
-        #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-)
-+ scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-# + theme_bw()
-+ theme(axis.text.y  = element_text(hjust = 0),
-        strip.text.y.left = element_text(angle = 0, hjust = 0),
-        # panel.spacing=unit(1,"lines"),
-        # strip.background=element_rect(color="grey30", fill="grey90"),
-        # panel.border=element_rect(color= "black"), # "grey90"),
-        axis.ticks.x=element_blank(),
-        legend.position="top"
-)
-
-)
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_prohib_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+incis_per_1000_days_prohib_bar
+fn_save_defs_barchart(plotname_char = "incis_per_1000_days_prohib_bar",
+                      plotname = incis_per_1000_days_prohib_bar)
 
 
 
@@ -1672,212 +1275,35 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 ## CG 1000 days ----------------------------------------
-(ggplot(rate_all_groupings_affi_type_for_plots %>%
-          ungroup() %>% 
-          mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(CALENDAR_YEAR)
-          ) %>%
-          filter(CALENDAR_YEAR == adp_yr,
-                 CONFI_FLAG == 0, 
-                 OLE_CATEGORY ==  'COAST GUARD'), 
-        aes('',
-            # x = paste(VESSEL_TYPE, 
-            #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-            #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-            #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-            #           ' ~ ', NMFS_REGION, 
-            #           sep = ''),
-            y = STATEMENTS_PER_1000_DEPLOYED_DAYS,
-            fill = FILL
-        ) 
-)
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(STATEMENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE  + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Vessel Type ~ Gear Type  ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-)
+incis_per_1000_days_CG_bar <-
+  fn_barchart_1000_gg(ggcategory = 'COAST GUARD')
 
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_CG_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
-
-
-
-
+incis_per_1000_days_CG_bar
+fn_save_defs_barchart(plotname_char = "incis_per_1000_days_CG_bar",
+                      plotname = incis_per_1000_days_CG_bar)
 
 
 
 
 ## Other types 1000 Days ----------------------------------------
-(ggplot(rate_all_groupings_affi_type_for_plots %>%
-          ungroup() %>% 
-          mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')),
-                 #              VESSEL_TYPE = if_else(VESSEL_TYPE == 'CP/MS', 'CP/MS Vessel', as.character(VESSEL_TYPE)),
-                 #               VESSEL_TYPE = factor(if_else(VESSEL_TYPE == 'CV', 'Catcher Vessel', as.character(VESSEL_TYPE)),levels = c('PLANT', 'CP/MS Vessel', 'Catcher Vessel'))
-          ) %>%
-          filter(CALENDAR_YEAR == adp_yr, 
-                 CONFI_FLAG == 0,
-                 OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES'),
-        aes('',
-            # x = paste(VESSEL_TYPE, 
-            #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-            #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-            #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-            #           ' ~ ', NMFS_REGION, 
-            #           sep = ''),
-            y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-            fill = FILL
-        ) 
-)
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
+incis_per_1000_days_other_bar <-
+  fn_barchart_1000_gg(ggcategory = 'ALL OTHER STATEMENT TYPES')
+
+incis_per_1000_days_other_bar
+fn_save_defs_barchart(plotname_char = "incis_per_1000_days_other_bar",
+                      plotname = incis_per_1000_days_other_bar)
   
-  + labs( x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
   
-)
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_other_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
-
-
-
-
-
-
-
 
 
 
 ## LAPP 1000 days ----------------------------------------
-(ggplot(rate_all_groupings_affi_type_for_plots %>%
-          ungroup() %>% 
-          mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-          ) %>%
-          filter(CALENDAR_YEAR == adp_yr, 
-                 CONFI_FLAG == 0,
-                 OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS'), 
-        aes('',
-            # x = paste(VESSEL_TYPE, 
-            #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-            #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-            #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-            #           ' ~ ', NMFS_REGION, 
-            #           sep = ''),
-            y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-            fill = FILL
-        ) 
-)
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-)
+incis_per_1000_days_LAPP_bar <-
+  fn_barchart_1000_gg(ggcategory = 'LIMITED ACCESS PROGRAMS')
 
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_LAPP_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
-
-
-
-
-
-
-
-
+incis_per_1000_days_LAPP_bar
+fn_save_defs_barchart(plotname_char = "incis_per_1000_days_LAPP_bar",
+                      plotname = incis_per_1000_days_LAPP_bar)
 
 
 
@@ -1885,245 +1311,38 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 
 
 # Safety 1000 days ----------------------------------------
-safety_barchart <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>% 
-            mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(YEAR)
-            ) %>%
-            filter(CALENDAR_YEAR == adp_yr, 
-                   CONFI_FLAG == 0,
-                   OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'), 
-          aes('',
-              # x = paste(VESSEL_TYPE, 
-              #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-              #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-              #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-              #           ' ~ ', NMFS_REGION, 
-              #           sep = ''),
-              #  x = MANAGEMENT_PROGRAM_CODE,
-              y = STATEMENTS_PER_1000_DEPLOYED_DAYS,
-              fill = FILL
-          ) 
-  )
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(STATEMENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-  )
+incis_per_1000_days_SAFETY_bar <-
+  fn_barchart_1000_gg(ggcategory = 'OLE PRIORITY: SAFETY AND DUTIES')
 
-safety_barchart
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_safety_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
+incis_per_1000_days_SAFETY_bar
+fn_save_defs_barchart(plotname_char = "incis_per_1000_days_SAFETY_bar",
+                      plotname = incis_per_1000_days_SAFETY_bar)
 
-
-
-
-
-
-
-
+ 
 
 
 
 ## Inter-personal 1000 days ----------------------------------------
-priority_interpersonal_barchart_1000 <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>% 
-            mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-            ) %>%
-            filter(CALENDAR_YEAR == adp_yr,
-                   CONFI_FLAG == 0, 
-                   OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'), 
-          aes('',
-              # x = paste(VESSEL_TYPE, 
-              #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-              #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-              #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-              #           ' ~ ', NMFS_REGION, 
-              #           sep = ''),
-              #  x = MANAGEMENT_PROGRAM_CODE,
-              y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-              fill = FILL
-          ) 
-  )
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
+incis_per_1000_days_interpersonal_bar <-
+  fn_barchart_1000_gg(ggcategory = 'OLE PRIORITY: INTER-PERSONAL')
+
+incis_per_1000_days_interpersonal_bar
+fn_save_defs_barchart(plotname_char = "incis_per_1000_days_interpersonal_bar",
+                      plotname = incis_per_1000_days_interpersonal_bar)
+
+
   
-  + labs( x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-  )
-
-priority_interpersonal_barchart_1000
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_interpersonal_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
-
-
-
-
-
-
+ 
 
 
 
 ## Inter Personal Assnmt ----------------------------------------
-priority_interpersonal_barchart_assnmt <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>% 
-            mutate(FILL        = factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-            ) %>%
-            filter(CALENDAR_YEAR == adp_yr, 
-                   CONFI_FLAG == 0,
-                   OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'), 
-          aes('',
-              # x = paste(VESSEL_TYPE, 
-              #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-              #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-              #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-              #           ' ~ ', NMFS_REGION, 
-              #           sep = ''),
-              y = INCIDENTS_PER_ASSIGNMENT,
-              fill = FILL
-          ) 
-  )
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-              # nudge_y = 2,
-              # position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per Assignment" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-  )
+incis_per_assnmt_interpersonal_bar <-
+  fn_barchart_assnmt_gg(ggcategory = 'OLE PRIORITY: INTER-PERSONAL')
 
-priority_interpersonal_barchart_assnmt
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_assnmt_interpersonal_by_affi_type.png", 
-             sep = '') , 
-       height=10.00, width=15.6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+incis_per_assnmt_interpersonal_bar
+fn_save_defs_barchart(plotname_char = "incis_per_assnmt_interpersonal_bar",
+                      plotname = incis_per_assnmt_interpersonal_bar)
 
 
 
@@ -2133,207 +1352,207 @@ ggsave(paste("charts_and_tables/barcharts/bar_chart_",
 # barcharts by Year ----------------------------------------
 # COMMENTED OUT, not used.
 
-# Safety 1000 days  ----------------------------------------
-safety_barchart_year <-
-  (ggplot(rate_all_groupings_affi_type_for_plots %>%
-            ungroup() %>% 
-            mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(YEAR)
-            ) %>%
-            filter(# CALENDAR_YEAR == 2020, 
-              OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'), 
-          aes('',
-              # x = paste(VESSEL_TYPE, 
-              #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-              #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-              #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-              #           ' ~ ', NMFS_REGION, 
-              #           sep = ''),
-              #  x = MANAGEMENT_PROGRAM_CODE,
-              y = STATEMENTS_PER_1000_DEPLOYED_DAYS,
-              fill = FILL
-          ) 
-  )
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(STATEMENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Coverage Type ~ Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-  )
-
-
-
-
-safety_barchart_year
-
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_safety_by_affi_type_year_comprson.png", 
-             sep = '') , 
-       height=8.00, width=15.6)
-
-
-
-
+## Safety 1000 days  ----------------------------------------
+# safety_barchart_year <-
+#   (ggplot(rate_all_groupings_affi_type_for_plots %>%
+#             ungroup() %>% 
+#             mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' ')) # factor(YEAR)
+#             ) %>%
+#             filter(# CALENDAR_YEAR == 2020, 
+#               OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'), 
+#           aes('',
+#               # x = paste(VESSEL_TYPE, 
+#               #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+#               #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+#               #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+#               #           ' ~ ', NMFS_REGION, 
+#               #           sep = ''),
+#               #  x = MANAGEMENT_PROGRAM_CODE,
+#               y = STATEMENTS_PER_1000_DEPLOYED_DAYS,
+#               fill = FILL
+#           ) 
+#   )
+#   + geom_col(position  = "dodge")
+#   + geom_text(aes(label = round(STATEMENTS_PER_1000_DEPLOYED_DAYS, 1)),
+#               # nudge_y = 2,
+#               position = position_dodge(width = 1),
+#               #  vjust = 0.3,
+#               fontface = "bold")
+#   # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
+#   #              scales = "free",
+#   #              switch="both",
+#   #              bleed = FALSE,
+#   #              labeller = label_wrap_gen())
+#   + facet_grid(AFFIDAVIT_TYPE ~ COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
+#                scales = "free",
+#                switch="both",
+#                # bleed = FALSE,
+#                labeller = label_wrap_gen())
+#   + scale_y_continuous(position="right")  # Put the y-axis labels on the right
+#   
+#   + labs( x = 'Coverage Type ~ Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
+#           fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
+#           y = "# Occurrences per 1000 Deployed Days" # ,
+#           #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
+#   )
+#   + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
+#   # + theme_bw()
+#   + theme(axis.text.y  = element_text(hjust = 0),
+#           strip.text.y.left = element_text(angle = 0, hjust = 0),
+#           # panel.spacing=unit(1,"lines"),
+#           # strip.background=element_rect(color="grey30", fill="grey90"),
+#           # panel.border=element_rect(color= "black"), # "grey90"),
+#           axis.ticks.x=element_blank(),
+#           legend.position="top"
+#   )
+#   
+#   )
+# 
+# 
+# 
+# 
+# safety_barchart_year
+# 
+# ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
+#              adp_yr, 
+#              "_incis_per_1000_days_safety_by_affi_type_year_comprson.png", 
+#              sep = '') , 
+#        height=8.00, width=15.6)
+# 
+# 
+# 
+# 
 
 
 ## LAPP 1000 days ----------------------------------------
-(ggplot(rate_all_groupings_affi_type_for_plots %>%
-          ungroup() %>% 
-          mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-          ) %>%
-          filter(# CALENDAR_YEAR == 2020, 
-            OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS'), 
-        aes('',
-            # x = paste(VESSEL_TYPE, 
-            #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-            #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-            #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-            #           ' ~ ', NMFS_REGION, 
-            #           sep = ''),
-            y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-            fill = FILL
-        ) 
-)
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Coverage Type ~ Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-)
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_LAPP_by_affi_type_year_comprson.png", 
-             sep = '') , 
-       height=8.00, width=15.6)
-
-
+# (ggplot(rate_all_groupings_affi_type_for_plots %>%
+#           ungroup() %>% 
+#           mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
+#           ) %>%
+#           filter(# CALENDAR_YEAR == 2020, 
+#             OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS'), 
+#         aes('',
+#             # x = paste(VESSEL_TYPE, 
+#             #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+#             #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+#             #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+#             #           ' ~ ', NMFS_REGION, 
+#             #           sep = ''),
+#             y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
+#             fill = FILL
+#         ) 
+# )
+#   + geom_col(position  = "dodge")
+#   + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
+#               # nudge_y = 2,
+#               position = position_dodge(width = 1),
+#               #  vjust = 0.3,
+#               fontface = "bold")
+#   # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
+#   #              scales = "free",
+#   #              switch="both",
+#   #              bleed = FALSE,
+#   #              labeller = label_wrap_gen())
+#   + facet_grid(AFFIDAVIT_TYPE ~ COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
+#                scales = "free",
+#                switch="both",
+#                # bleed = FALSE,
+#                labeller = label_wrap_gen())
+#   + scale_y_continuous(position="right")  # Put the y-axis labels on the right
+#   
+#   + labs( x = 'Coverage Type ~ Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
+#           fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
+#           y = "# Occurrences per 1000 Deployed Days" # ,
+#           #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
+#   )
+#   + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
+#   # + theme_bw()
+#   + theme(axis.text.y  = element_text(hjust = 0),
+#           strip.text.y.left = element_text(angle = 0, hjust = 0),
+#           # panel.spacing=unit(1,"lines"),
+#           # strip.background=element_rect(color="grey30", fill="grey90"),
+#           # panel.border=element_rect(color= "black"), # "grey90"),
+#           axis.ticks.x=element_blank(),
+#           legend.position="top"
+#   )
+#   
+# )
+# ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
+#              adp_yr, 
+#              "_incis_per_1000_days_LAPP_by_affi_type_year_comprson.png", 
+#              sep = '') , 
+#        height=8.00, width=15.6)
+# 
+# 
 
 
 
 ## Prohib 1000 days ----------------------------------------
-(ggplot(rate_all_groupings_affi_type_for_plots %>%
-          ungroup() %>% 
-          mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
-          ) %>%
-          filter(# CALENDAR_YEAR == 2020, 
-            OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES'), 
-        aes('',
-            # x = paste(VESSEL_TYPE, 
-            #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
-            #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
-            #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
-            #           ' ~ ', NMFS_REGION, 
-            #           sep = ''),
-            y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
-            fill = FILL
-        ) 
-)
-  + geom_col(position  = "dodge")
-  + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-              # nudge_y = 2,
-              position = position_dodge(width = 1),
-              #  vjust = 0.3,
-              fontface = "bold")
-  # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
-  #              scales = "free",
-  #              switch="both",
-  #              bleed = FALSE,
-  #              labeller = label_wrap_gen())
-  + facet_grid(AFFIDAVIT_TYPE ~ COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
-               scales = "free",
-               switch="both",
-               # bleed = FALSE,
-               labeller = label_wrap_gen())
-  + scale_y_continuous(position="right")  # Put the y-axis labels on the right
-  
-  + labs( x = 'Coverage Type ~ Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
-          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-          y = "# Occurrences per 1000 Deployed Days" # ,
-          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
-  )
-  + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
-  # + theme_bw()
-  + theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top"
-  )
-  
-)
-ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
-             adp_yr, 
-             "_incis_per_1000_days_PROHIB_by_affi_type_year_comprson.png", 
-             sep = '') , 
-       height=8.00, width=15.6)
-
-
-
-
-
-
-
-
+# (ggplot(rate_all_groupings_affi_type_for_plots %>%
+#           ungroup() %>% 
+#           mutate(FILL        = factor(CALENDAR_YEAR) # factor(paste(COVERAGE_TYPE, 'COVERAGE', sep= ' '))
+#           ) %>%
+#           filter(# CALENDAR_YEAR == 2020, 
+#             OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES'), 
+#         aes('',
+#             # x = paste(VESSEL_TYPE, 
+#             #           if_else(is.na(GEAR_TYPE), '   ', ' ~ '), 
+#             #           if_else(is.na(GEAR_TYPE), '   ', as.character(GEAR_TYPE)), 
+#             #           ' ~ ', MANAGEMENT_PROGRAM_CODE, 
+#             #           ' ~ ', NMFS_REGION, 
+#             #           sep = ''),
+#             y = INCIDENTS_PER_1000_DEPLOYED_DAYS,
+#             fill = FILL
+#         ) 
+# )
+#   + geom_col(position  = "dodge")
+#   + geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
+#               # nudge_y = 2,
+#               position = position_dodge(width = 1),
+#               #  vjust = 0.3,
+#               fontface = "bold")
+#   # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION, 
+#   #              scales = "free",
+#   #              switch="both",
+#   #              bleed = FALSE,
+#   #              labeller = label_wrap_gen())
+#   + facet_grid(AFFIDAVIT_TYPE ~ COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE, 
+#                scales = "free",
+#                switch="both",
+#                # bleed = FALSE,
+#                labeller = label_wrap_gen())
+#   + scale_y_continuous(position="right")  # Put the y-axis labels on the right
+#   
+#   + labs( x = 'Coverage Type ~ Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
+#           fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
+#           y = "# Occurrences per 1000 Deployed Days" # ,
+#           #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
+#   )
+#   + scale_fill_manual(values =c("#F8766D", "#00BFC4"))
+#   # + theme_bw()
+#   + theme(axis.text.y  = element_text(hjust = 0),
+#           strip.text.y.left = element_text(angle = 0, hjust = 0),
+#           # panel.spacing=unit(1,"lines"),
+#           # strip.background=element_rect(color="grey30", fill="grey90"),
+#           # panel.border=element_rect(color= "black"), # "grey90"),
+#           axis.ticks.x=element_blank(),
+#           legend.position="top"
+#   )
+#   
+# )
+# ggsave(paste("charts_and_tables/barcharts/bar_chart_", 
+#              adp_yr, 
+#              "_incis_per_1000_days_PROHIB_by_affi_type_year_comprson.png", 
+#              sep = '') , 
+#        height=8.00, width=15.6)
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 
 
 
