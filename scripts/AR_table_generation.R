@@ -26,19 +26,16 @@ load(file = "scripts/AR_rate_output.rdata")
 
 ###############
 
-# Make summary table of just the DEPLOYED DAYS for each factor grouping.
-cnt_dep_days_by_factor_group_ole_cat <-
+# Make summary table of just the STATEMENTS and INCIDENTS for each factor grouping, all statement categories aggregated.
+# Useful to make because it is used in multiple places later.
+cnt_incis_by_factor_group_all_categs <-
   rate_all_groupings_ole_category %>%
   group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, DISTINCT_OBSERVER_ASSIGNMENTS, CONFI_FLAG
   ) %>% 
-  summarize(TOTAL_STATEMENTS = sum(if_else(is.na(TOTAL_STATEMENTS), 0, TOTAL_STATEMENTS)),
-            TOTAL_INCIDENTS  = sum(if_else(is.na(TOTAL_INCIDENTS), 0, TOTAL_INCIDENTS))
+  summarize(TOTAL_STATEMENTS = sum(if_else(is.na(TOTAL_STATEMENTS), 0, TOTAL_STATEMENTS)), # There are 0 statements if it is NA for the category.
+            TOTAL_INCIDENTS  = sum(if_else(is.na(TOTAL_INCIDENTS), 0, TOTAL_INCIDENTS)) # There are 0 incidents if it is NA for the category.
   ) %>%
   mutate(FACTOR_GROUP = paste(COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, sep = ''))
-
-
-
-
 
 ######################
 
@@ -47,12 +44,12 @@ cnt_dep_days_by_factor_group_ole_cat <-
 
 # CASTed table per 1000 days
 rate_all_groupings_ole_category_cast_1000 <- 
-  merge(
-    reshape2::dcast(data      = rate_all_groupings_ole_category  %>% 
-                      filter(!is.na(OLE_CATEGORY)), 
+  merge(reshape2::dcast(data = rate_all_groupings_ole_category  %>% 
+                      filter(!is.na(OLE_CATEGORY)),  # for the report, ONLY show factor groups that had statement occurrences.
                     formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_1000_DEPLOYED_DAYS"),
-    cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
+        cnt_incis_by_factor_group_all_categs,
+        all=TRUE)
 
 
 
@@ -64,7 +61,7 @@ rate_all_groupings_ole_category_cast_per_assnmt <-
                     %>% filter(!is.na(OLE_CATEGORY)), 
                     formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_ASSIGNMENT") ,
-    cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
+    cnt_incis_by_factor_group_all_categs, all=TRUE)
 
 
 
@@ -77,7 +74,7 @@ rate_all_groupings_ole_category_cast_per_assnmt <-
 #                       filter(!is.na(OLE_CATEGORY)), 
 #                     formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
 #                     value.var = "INCIDENTS_PER_90_DEPLOYED_DAYS"),
-#     cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
+#     cnt_incis_by_factor_group_all_categs, all=TRUE)
 
 
 
@@ -90,7 +87,7 @@ rate_all_groupings_ole_category_cast_per_assnmt <-
 #                     %>% filter(!is.na(OLE_CATEGORY)), 
 #                     formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
 #                     value.var = "INCIDENTS_PER_CRUISE"),
-#     cnt_dep_days_by_factor_group_ole_cat, all=TRUE)
+#     cnt_incis_by_factor_group_all_categs, all=TRUE)
 
 
 
@@ -128,21 +125,26 @@ write.csv(file = paste("charts_and_tables/tables/tbl_",
                        adp_yr,
                        "_rate_ole_category.csv",
                        sep = ''),
-          x    = rate_all_groupings_ole_category_all %>% 
-            select(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION,
-                   CONFI_FLAG,
-                   VESSEL_PLANT_ASSIGNMENTS = DISTINCT_OBSERVER_ASSIGNMENTS,
-                   DEPLOYED_DAYS = TOTAL_DAYS,
-                   TOTAL_STATEMENTS, TOTAL_OCCURRENCES = TOTAL_INCIDENTS,
-                   `OLE PRIORITY: INTER-PERSONAL per ASSNMT`,
-                   `OLE PRIORITY: INTER-PERSONAL`,
-                   `OLE PRIORITY: SAFETY AND DUTIES`,
-                   `COAST GUARD`,
-                   `LIMITED ACCESS PROGRAMS`,
-                   `PROTECTED RESOURCE & PROHIBITED SPECIES`,
-                   `ALL OTHER STATEMENT TYPES`
-            )
-)
+        x    = rate_all_groupings_ole_category_all %>% 
+                select(`Coverage Type` = COVERAGE_TYPE, 
+                       `Vessel Type`   = VESSEL_TYPE, 
+                       `Gear Type`     = GEAR_TYPE, 
+                       `Management Program` = MANAGEMENT_PROGRAM_CODE, 
+                       `NMFS Region`   = NMFS_REGION, 
+                       `Confi Flag`    = CONFI_FLAG,
+                       `Vessel/Plant Assignments` = DISTINCT_OBSERVER_ASSIGNMENTS,
+                       `Deployed Days` = TOTAL_DAYS,
+                       `Statements (all categories)`  = TOTAL_STATEMENTS, 
+                       `Occurrences (all categories)` = TOTAL_INCIDENTS,
+                       `OLE PRIORITY: INTER-PERSONAL per ASSNMT`,
+                       `OLE PRIORITY: INTER-PERSONAL`,
+                       `OLE PRIORITY: SAFETY AND DUTIES`,
+                       `COAST GUARD`,
+                       `LIMITED ACCESS PROGRAMS`,
+                       `PROTECTED RESOURCE & PROHIBITED SPECIES`,
+                       `ALL OTHER STATEMENT TYPES`
+                     )
+        )
 
 
 
