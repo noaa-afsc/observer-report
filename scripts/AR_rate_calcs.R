@@ -162,7 +162,7 @@ days_statements_all_groupings_raw  <-
 
 
 ######################
-# Second rate: First, by OLE_CATEOGRY, for each factor combination.
+# Second rate: by OLE_CATEOGRY, for each factor combination.
 
 rate_all_groupings_ole_category <- 
   # First, summarize for each factor combination and get the total days etc.  These are the DENOMINATORS of the rates.
@@ -186,8 +186,8 @@ rate_all_groupings_ole_category <-
                                                            'LIMITED ACCESS PROGRAMS',
                                                            'PROTECTED RESOURCE & PROHIBITED SPECIES',
                                                            'ALL OTHER STATEMENT TYPES'))
-                  )
-              ) %>%  
+                         )
+                         ) %>%  
               group_by (CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, OLE_CATEGORY) %>%
               summarize(TOTAL_STATEMENTS = sum(if_else(is.na(AFFIDAVIT_ID), 0, FACTOR_WEIGHT_MTHD_1)),
                         TOTAL_INCIDENTS  = sum(if_else(is.na(AFFIDAVIT_ID), 0, NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1)) ) %>%
