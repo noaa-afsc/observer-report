@@ -46,7 +46,7 @@
 source("AR_descriptive_helper.r")
 
 #Create a generalized YEAR object that corresponds to the Annual Report year
-YEAR <- 2020
+YEAR <- 2021
 
 # Set up ROracle connection for database calling information from R environment:
 channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
@@ -58,8 +58,13 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 ## Load Valhalla Data ---------------------------------------------------------------------------------------------
 
 # Query Valhalla data directly from the database for the Annual Report:
-valhalla_query <- paste0("select * from akfish_sf.valhalla_scratch where adp = ", YEAR)
-valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
+#valhalla_query <- paste0("select * from akfish_sf.valhalla_scratch where adp = ", YEAR)
+#valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
+
+
+# 2021 data aren't currently in the database.  Load .RData file instead:
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
+valhalla_data <- VALHALLA  
 
 
 ## Valhalla data transformations  ----------------------------------------------------------------------------------- 
@@ -96,64 +101,71 @@ prep_data <- valhalla_data %>%
 # Corrections to strata ---------------------------------------------------------------------------- 
 
 # Hardcode the following STRATA changes here:
-#  1. The Appendix D of the 2020 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) 
+#  1. Appendix C of the 2021 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) 
 #     to participate in the EM innovation and research zero selection pool. The Defender (1472) is using the deployment of 
-#     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  HOWEVER, AFSC
-#     data show that the Kariel did NOT participate in EM research, so only hardcode the 3. Since I don't have access to the AFSC
-#     data that this is based on, Check with Phil each year.
+#     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  HOWEVER, AFSC/PacStates
+#     staff have indicated that only the Middleton and the Defender actually participated in EM research, so only hardcode the 2. 
+#     Since I don't have access to the AFSC data that this is based on, Check with Phil each year.
 #  2. Refer to the EM TRW EFP strata in the BSAI as FULL COVERAGE and the EM TRW EFP strata in the GOA as PARTIAL COVERAGE
 
 
 table(prep_data$STRATA)
-#EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
-#25095       3660      23645     653192      57177      10568      25248      28465 
+# EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
+#  51899      13100      36242     919218     125469      46714      26432      72952 
 
 table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
+# HAL  POT 
+# 1198  167
 #table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
-table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # The Predator didn't fish in 2020?
+# EM_HAL EM_POT 
+# 872     32 
+#table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # HAL and POT
+# HAL POT 
+# 19 123 
 table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
-
+# HAL 
+# 613 
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
-# 2020 version:
+# 2021 version:
 prep_data <- prep_data %>% 
   rename(ORIGINAL_STRATA = STRATA) %>% 
-  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029','2844', '1472'), 'ZERO_EM_RESEARCH', 
+  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
                          ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
                                 ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA))))
 
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-#            EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
-# EM_HAL      25095      0               0               0      0      0      0      0      0                0
-# EM_POT          0   3660               0               0      0      0      0      0      0                0
-# EM_TRW_EFP      0      0           15655            7990      0      0      0      0      0                0
-# FULL            0      0               0               0 653192      0      0      0      0                0
-# HAL             0      0               0               0      0  56541      0      0      0              636
-# POT             0      0               0               0      0      0  10430      0      0              138
-# TRW             0      0               0               0      0      0      0  25248      0                0
-# ZERO            0      0               0               0      0      0      0      0  28465                0
-  
+#             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
+# EM_HAL      51899      0               0               0      0      0      0      0      0                0
+# EM_POT          0  13100               0               0      0      0      0      0      0                0
+# EM_TRW_EFP      0      0           27830            8412      0      0      0      0      0                0
+# FULL            0      0               0               0 919218      0      0      0      0                0
+# HAL             0      0               0               0      0 123658      0      0      0             1811
+# POT             0      0               0               0      0      0  46547      0      0              167
+# TRW             0      0               0               0      0      0      0  26432      0                0
+# ZERO            0      0               0               0      0      0      0      0  72952                0
+#    
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
 #     N      Y 
-#138560 688490 
+#302968 989058   
 
-# Hardcode the following changes to 3 trips here:
+# Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
 prep_data <- prep_data %>% 
   rename(ORIGINAL_OBSERVED_FLAG = OBSERVED_FLAG) %>% 
   mutate(OBSERVED_FLAG = ifelse(TRIP_ID %in% c('28207362.0', '28207273.0', '28207833.0') & ORIGINAL_OBSERVED_FLAG == 'N', 'Y', ORIGINAL_OBSERVED_FLAG))
 
 table(prep_data$OBSERVED_FLAG)
-#     N      Y 
-#137783 689267
+# N      Y 
+# 302968 989058 
 
 table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
-#       N      Y
-#N 137783    777
-#Y      0 688490
+#        N      Y
+# N 302968      0
+# Y      0 989058
 
 
 
@@ -182,7 +194,7 @@ valhalla_run_date <- valhalla_data %>%
   mutate(RUNDATE = format(RUN_DATE, '%d-%b-%Y')) %>% 
   distinct(RUNDATE)
 
-#valhalla_run_date$RUNDATE <- '03-APR-2021'
+#valhalla_run_date$RUNDATE <- '05-APR-2022'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
@@ -210,7 +222,7 @@ mr.rate AS mortality_rate,
 r.value AS source_table 
 FROM akfish_report.transaction_fact txn
 JOIN akfish_report.transaction_fact_log tfl ON txn.transaction_fact_log_pk = tfl.transaction_fact_log_pk  
-JOIN cas_run cas ON tfl.cas_run_id = cas.cas_run_id 
+JOIN cas_run cas ON tfl.cas_run_log_pk = cas.cas_run_log_pk 
 JOIN akfish_report.catch_report cr ON txn.catch_report_pk = cr.catch_report_pk 
 JOIN akfish_report.catch_report_source crs ON cr.catch_report_source_pk = crs.catch_report_source_pk 
 JOIN akfish_report.species_group sg ON txn.species_group_pk = sg.species_group_pk 
