@@ -144,11 +144,11 @@ fn_barchart_theme <-
   function(){
     theme(axis.text.y  = element_text(size = 7, hjust = 0),
           strip.text.y.left = element_text(size = 8, angle = 0, hjust = 0),
-          strip.text.x = element_text(size = 5),
-          # panel.border = element_blank(), 
-          # panel.spacing = unit(0,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
+          strip.text.x = element_text(size = 4),
+           #panel.border = element_blank(), 
+           panel.spacing = unit(0,"lines"),
+           strip.background = element_rect(color="grey30", fill="grey90"),
+           panel.border = element_rect(color= "black", fill = NA), # "grey90"),
           axis.ticks.x = element_blank(),
           legend.position = "none")
   }
@@ -212,10 +212,6 @@ fn_barchart_1000_gg <-
       # + theme_bw()
       fn_barchart_theme()
   }
-
-
-
-
 
 ### barchart assnmt gg definitions --------------------------
 fn_barchart_assnmt_gg <-
@@ -1252,11 +1248,6 @@ incis_per_1000_days_prohib_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_prohib_bar",
                       plotname = incis_per_1000_days_prohib_bar)
 
-
-
-
-
-
 ## CG 1000 days ----------------------------------------
 incis_per_1000_days_CG_bar <-
   fn_barchart_1000_gg(ggcategory = 'COAST GUARD')
@@ -1264,9 +1255,6 @@ incis_per_1000_days_CG_bar <-
 incis_per_1000_days_CG_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_CG_bar",
                       plotname = incis_per_1000_days_CG_bar)
-
-
-
 
 ## Other types 1000 Days ----------------------------------------
 incis_per_1000_days_other_bar <-
@@ -1276,10 +1264,6 @@ incis_per_1000_days_other_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_other_bar",
                       plotname = incis_per_1000_days_other_bar)
   
-  
-
-
-
 ## LAPP 1000 days ----------------------------------------
 incis_per_1000_days_LAPP_bar <-
   fn_barchart_1000_gg(ggcategory = 'LIMITED ACCESS PROGRAMS')
@@ -1287,11 +1271,6 @@ incis_per_1000_days_LAPP_bar <-
 incis_per_1000_days_LAPP_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_LAPP_bar",
                       plotname = incis_per_1000_days_LAPP_bar)
-
-
-
-
-
 
 # Safety 1000 days ----------------------------------------
 incis_per_1000_days_SAFETY_bar <-
@@ -1301,10 +1280,6 @@ incis_per_1000_days_SAFETY_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_SAFETY_bar",
                       plotname = incis_per_1000_days_SAFETY_bar)
 
- 
-
-
-
 ## Inter-personal 1000 days ----------------------------------------
 incis_per_1000_days_interpersonal_bar <-
   fn_barchart_1000_gg(ggcategory = 'OLE PRIORITY: INTER-PERSONAL')
@@ -1312,12 +1287,6 @@ incis_per_1000_days_interpersonal_bar <-
 incis_per_1000_days_interpersonal_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_interpersonal_bar",
                       plotname = incis_per_1000_days_interpersonal_bar)
-
-
-  
- 
-
-
 
 ## Inter Personal Assnmt ----------------------------------------
 incis_per_assnmt_interpersonal_bar <-
