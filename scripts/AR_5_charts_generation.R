@@ -160,7 +160,8 @@ fn_barchart_facet <-
                scales = "free",
                switch= "both",
                # bleed = FALSE,
-               labeller = label_wrap_gen())
+               labeller = label_wrap_gen(),
+               shrink = TRUE)
   }
 
 ### barchart labels -----------------------------------
@@ -195,10 +196,10 @@ fn_barchart_1000_gg <-
                fill = FILL) ) +
       geom_col(position  = "dodge") +
       geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-               #  nudge_y = 2,
                 position = position_dodge(width = 1),
-                 # vjust = 0.3,
-                fontface = "bold", size = 2) +
+                fontface = "bold", size = 2,
+               vjust="inward",
+               hjust="inward") +
       # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
       #              scales = "free",
       #              switch="both",
