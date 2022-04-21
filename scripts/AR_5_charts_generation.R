@@ -4,18 +4,18 @@
 
 
 # load req'd packages ----------------------------------------
-library(plyr)
-library(reshape2)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
-library(lubridate)
-library(data.table)
-library(sqldf)
-library(scales)
-library(devtools)
-library(ggh4x)
-library(ggpmisc)
+# library(plyr)
+# library(reshape2)
+ library(dplyr)
+ library(ggplot2)
+# library(tidyr)
+# library(lubridate)
+# library(data.table)
+# library(sqldf)
+# library(scales)
+# library(devtools)
+# library(ggh4x)
+# library(ggpmisc)
 
 
 
@@ -138,7 +138,7 @@ fn_save_defs_histog <-
 
 
 
-## Barchart gg definitions
+## Barchart gg definitions ----
 ### barchart theme --------------------------------
 fn_barchart_theme <-
   function(){
