@@ -142,13 +142,15 @@ fn_save_defs_histog <-
 ### barchart theme --------------------------------
 fn_barchart_theme <-
   function(){
-    theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
+    theme(axis.text.y  = element_text(size = 7, hjust = 0),
+          strip.text.y.left = element_text(size = 8, angle = 0, hjust = 0),
+          strip.text.x = element_text(size = 5),
+          # panel.border = element_blank(), 
+          # panel.spacing = unit(0,"lines"),
           # strip.background=element_rect(color="grey30", fill="grey90"),
           # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top" )
+          axis.ticks.x = element_blank(),
+          legend.position = "none")
   }
 
 ### barchart facet -------------------------
@@ -156,7 +158,7 @@ fn_barchart_facet <-
   function(){
     facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
                scales = "free",
-               switch="both",
+               switch= "both",
                # bleed = FALSE,
                labeller = label_wrap_gen())
   }
@@ -193,10 +195,10 @@ fn_barchart_1000_gg <-
                fill = FILL) ) +
       geom_col(position  = "dodge") +
       geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-                # nudge_y = 2,
+               #  nudge_y = 2,
                 position = position_dodge(width = 1),
-                #  vjust = 0.3,
-                fontface = "bold") +
+                 # vjust = 0.3,
+                fontface = "bold", size = 2) +
       # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
       #              scales = "free",
       #              switch="both",
@@ -262,11 +264,12 @@ fn_save_defs_barchart <-
     ggsave(filename = paste("charts_and_tables/barcharts/bar_chart_", 
                             adp_yr, "_",
                             plotname_char,
-                            ".png",
+                            ".pdf",
                             sep = ''), 
            plot   = plotname,
-           height = 10.00,  # mess with these as needed
-           width  = 15.6) # mess with these as needed
+           height = 5.7,  # mess with these as needed
+           width  = 9, 
+           units = "in") # mess with these as needed
   }
 
 
