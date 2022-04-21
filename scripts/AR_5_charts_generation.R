@@ -269,9 +269,6 @@ fn_save_defs_barchart <-
            units = "in") # mess with these as needed
   }
 
-
-
-
 # Heat Maps ----------------------------------------
 # There are 4 Charts for EACH OLE_CATEGORY, for a total of 24 charts: 
 # 1. rate per 1000 deployed days
@@ -1295,10 +1292,6 @@ incis_per_assnmt_interpersonal_bar <-
 incis_per_assnmt_interpersonal_bar
 fn_save_defs_barchart(plotname_char = "incis_per_assnmt_interpersonal_bar",
                       plotname = incis_per_assnmt_interpersonal_bar)
-
-
-
-
 
 # STOP HERE --------------------------
 
