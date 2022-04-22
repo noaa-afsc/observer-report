@@ -144,11 +144,11 @@ fn_barchart_theme <-
   function(){
     theme(axis.text.y  = element_text(size = 7, hjust = 0),
           strip.text.y.left = element_text(size = 8, angle = 0, hjust = 0),
-          strip.text.x = element_text(size = 4),
-           #panel.border = element_blank(), 
+          strip.text.x = element_text(size = 5),
            panel.spacing = unit(0,"lines"),
            strip.background = element_rect(color="grey30", fill="grey90"),
-           panel.border = element_rect(color= "black", fill = NA), # "grey90"),
+           panel.border = element_rect(color= "black", fill = "NA", size = 0.1), # "grey90"),
+           panel.grid = element_blank(),
           axis.ticks.x = element_blank(),
           legend.position = "none")
   }
@@ -1255,7 +1255,8 @@ fn_save_defs_barchart(plotname_char = "incis_per_1000_days_CG_bar",
 
 ## Other types 1000 Days ----------------------------------------
 incis_per_1000_days_other_bar <-
-  fn_barchart_1000_gg(ggcategory = 'ALL OTHER STATEMENT TYPES')
+  fn_barchart_1000_gg(ggcategory = 'ALL OTHER STATEMENT TYPES') +
+  theme(strip.text.x = element_text(size = 4))
 
 incis_per_1000_days_other_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_other_bar",
