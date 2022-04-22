@@ -17,8 +17,6 @@
 # library(ggh4x)
 # library(ggpmisc)
 
-
-
 # load the data files. ----------------------------------------
 # * chng wd filepath as needed *
 rm(list = ls())
@@ -173,7 +171,6 @@ fn_barchart_labs <-
          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
     ) }
 
-
 ### barchart 1000 gg definitions --------------------------
 fn_barchart_1000_gg <-
   function(ggcategory, rate_type){
@@ -289,10 +286,6 @@ incis_per_1000_days_work_env_by_affi_type <-
 incis_per_1000_days_work_env_by_affi_type
 fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_work_env_by_affi_type",
                       plotname = incis_per_1000_days_work_env_by_affi_type)
-
-
-
-
 
 ### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTED OUT, not used.
