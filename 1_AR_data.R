@@ -7,7 +7,7 @@ source("3_helper.R")
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2020 
+year <- 2021 
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
