@@ -167,7 +167,7 @@ fn_barchart_labs <-
   function(rate_type){
     labs(x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-         y = paste("# Occurrences per ", rate_type, sep = '') # ,
+         y = paste("Occurrences per ", rate_type, "\n") # Added a space for right y axis.
          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
     ) }
 
@@ -203,7 +203,9 @@ fn_barchart_1000_gg <-
       #              # bleed = FALSE,
       #              labeller = label_wrap_gen())
       fn_barchart_facet() +
-      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      scale_y_continuous(position="right",
+                         labels = function(x) ifelse(x == 0, "", x)) + #https://stackoverflow.com/questions/56771267/remove-trailing-zeros-in-ggplot-axis 
+      # for more control of how much space, you could use, limits = function(y){c(min(y), max(y)*1.1)})
       fn_barchart_labs(rate_type = "1000 Deployed Days") +
       scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
       # + theme_bw()
@@ -248,9 +250,6 @@ fn_barchart_assnmt_gg <-
       # + theme_bw()
       fn_barchart_theme()
   }
-
-
-
 
 ### barchart ggsave parameters ---------------------------------
 fn_save_defs_barchart <-
