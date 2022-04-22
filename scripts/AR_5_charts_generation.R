@@ -237,14 +237,18 @@ fn_barchart_assnmt_gg <-
                 # nudge_y = 2,
                 position = position_dodge(width = 1),
                 #  vjust = 0.3,
-                fontface = "bold") +
+                fontface = "bold",
+                size = 2,
+                vjust="inward",
+                hjust="inward") +
       # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
       #              scales = "free",
       #              switch="both",
       #              # bleed = FALSE,
       #              labeller = label_wrap_gen())
       fn_barchart_facet() +
-      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      scale_y_continuous(position="right",
+                         labels = function(x) ifelse(x == 0, "", x)) + #https://stackoverflow.com/questions/56771267/remove-trailing-zeros-in-ggplot-axis 
       fn_barchart_labs(rate_type = "Vessel/Plant Assignment") +
       scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
       # + theme_bw()
