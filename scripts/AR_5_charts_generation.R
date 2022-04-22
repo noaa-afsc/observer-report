@@ -1248,7 +1248,7 @@ fn_save_defs_barchart(plotname_char = "incis_per_1000_days_CG_bar",
 ## Other types 1000 Days ----------------------------------------
 incis_per_1000_days_other_bar <-
   fn_barchart_1000_gg(ggcategory = 'ALL OTHER STATEMENT TYPES') +
-  theme(strip.text.x = element_text(size = 4))
+  theme(strip.text.x = element_text(size = 4)) #TODO - this is a hack.
 
 incis_per_1000_days_other_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_other_bar",
