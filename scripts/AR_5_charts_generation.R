@@ -4,20 +4,18 @@
 
 
 # load req'd packages ----------------------------------------
-library(plyr)
-library(reshape2)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
-library(lubridate)
-library(data.table)
-library(sqldf)
-library(scales)
-library(devtools)
-library(ggh4x)
-library(ggpmisc)
-
-
+# library(plyr)
+# library(reshape2)
+ library(dplyr)
+ library(ggplot2)
+# library(tidyr)
+# library(lubridate)
+# library(data.table)
+# library(sqldf)
+# library(scales)
+# library(devtools)
+# library(ggh4x)
+# library(ggpmisc)
 
 # load the data files. ----------------------------------------
 # * chng wd filepath as needed *
@@ -138,17 +136,19 @@ fn_save_defs_histog <-
 
 
 
-## Barchart gg definitions
+## Barchart gg definitions ----
 ### barchart theme --------------------------------
 fn_barchart_theme <-
   function(){
-    theme(axis.text.y  = element_text(hjust = 0),
-          strip.text.y.left = element_text(angle = 0, hjust = 0),
-          # panel.spacing=unit(1,"lines"),
-          # strip.background=element_rect(color="grey30", fill="grey90"),
-          # panel.border=element_rect(color= "black"), # "grey90"),
-          axis.ticks.x=element_blank(),
-          legend.position="top" )
+    theme(axis.text.y  = element_text(size = 7, hjust = 0),
+          strip.text.y.left = element_text(size = 8, angle = 0, hjust = 0),
+          strip.text.x = element_text(size = 5),
+           panel.spacing = unit(0,"lines"),
+           strip.background = element_rect(color="grey30", fill="grey90"),
+           panel.border = element_rect(color= "black", fill = "NA", size = 0.1), # "grey90"),
+           panel.grid = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.position = "none")
   }
 
 ### barchart facet -------------------------
@@ -156,9 +156,10 @@ fn_barchart_facet <-
   function(){
     facet_grid(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
                scales = "free",
-               switch="both",
+               switch= "both",
                # bleed = FALSE,
-               labeller = label_wrap_gen())
+               labeller = label_wrap_gen(),
+               shrink = TRUE)
   }
 
 ### barchart labels -----------------------------------
@@ -166,10 +167,9 @@ fn_barchart_labs <-
   function(rate_type){
     labs(x = 'Vessel Type ~ Gear Type ~ Geographic Region ~ Management Program',
          fill = '', # paste("Coverage Type ~","\n", "Observer Role"),
-         y = paste("# Occurrences per ", rate_type, sep = '') # ,
+         y = paste("Occurrences per ", rate_type, "\n") # Added a space for right y axis.
          #    title = "OLE PRIORITY: SAFETY AND DUTIES Statements -   Occurrences per 1000 Deployed Days"
     ) }
-
 
 ### barchart 1000 gg definitions --------------------------
 fn_barchart_1000_gg <-
@@ -193,26 +193,24 @@ fn_barchart_1000_gg <-
                fill = FILL) ) +
       geom_col(position  = "dodge") +
       geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
-                # nudge_y = 2,
                 position = position_dodge(width = 1),
-                #  vjust = 0.3,
-                fontface = "bold") +
+                fontface = "bold", size = 2,
+               vjust="inward",
+               hjust="inward") +
       # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
       #              scales = "free",
       #              switch="both",
       #              # bleed = FALSE,
       #              labeller = label_wrap_gen())
       fn_barchart_facet() +
-      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      scale_y_continuous(position="right",
+                         labels = function(x) ifelse(x == 0, "", x)) + #https://stackoverflow.com/questions/56771267/remove-trailing-zeros-in-ggplot-axis 
+      # for more control of how much space, you could use, limits = function(y){c(min(y), max(y)*1.1)})
       fn_barchart_labs(rate_type = "1000 Deployed Days") +
       scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
       # + theme_bw()
       fn_barchart_theme()
   }
-
-
-
-
 
 ### barchart assnmt gg definitions --------------------------
 fn_barchart_assnmt_gg <-
@@ -239,22 +237,23 @@ fn_barchart_assnmt_gg <-
                 # nudge_y = 2,
                 position = position_dodge(width = 1),
                 #  vjust = 0.3,
-                fontface = "bold") +
+                fontface = "bold",
+                size = 2,
+                vjust="inward",
+                hjust="inward") +
       # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
       #              scales = "free",
       #              switch="both",
       #              # bleed = FALSE,
       #              labeller = label_wrap_gen())
       fn_barchart_facet() +
-      scale_y_continuous(position="right") + # Put the y-axis labels on the right
+      scale_y_continuous(position="right",
+                         labels = function(x) ifelse(x == 0, "", x)) + #https://stackoverflow.com/questions/56771267/remove-trailing-zeros-in-ggplot-axis 
       fn_barchart_labs(rate_type = "Vessel/Plant Assignment") +
       scale_fill_manual(values =c("#F8766D", "#00BFC4")) +
       # + theme_bw()
       fn_barchart_theme()
   }
-
-
-
 
 ### barchart ggsave parameters ---------------------------------
 fn_save_defs_barchart <-
@@ -262,15 +261,13 @@ fn_save_defs_barchart <-
     ggsave(filename = paste("charts_and_tables/barcharts/bar_chart_", 
                             adp_yr, "_",
                             plotname_char,
-                            ".png",
+                            ".pdf",
                             sep = ''), 
            plot   = plotname,
-           height = 10.00,  # mess with these as needed
-           width  = 15.6) # mess with these as needed
+           height = 5.7,  # mess with these as needed
+           width  = 9, 
+           units = "in") # mess with these as needed
   }
-
-
-
 
 # Heat Maps ----------------------------------------
 # There are 4 Charts for EACH OLE_CATEGORY, for a total of 24 charts: 
@@ -292,10 +289,6 @@ incis_per_1000_days_work_env_by_affi_type <-
 incis_per_1000_days_work_env_by_affi_type
 fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_work_env_by_affi_type",
                       plotname = incis_per_1000_days_work_env_by_affi_type)
-
-
-
-
 
 ### Incidents Per 90 Deployed Days ----------------------------------------
 # COMMENTED OUT, not used.
@@ -1248,11 +1241,6 @@ incis_per_1000_days_prohib_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_prohib_bar",
                       plotname = incis_per_1000_days_prohib_bar)
 
-
-
-
-
-
 ## CG 1000 days ----------------------------------------
 incis_per_1000_days_CG_bar <-
   fn_barchart_1000_gg(ggcategory = 'COAST GUARD')
@@ -1261,21 +1249,15 @@ incis_per_1000_days_CG_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_CG_bar",
                       plotname = incis_per_1000_days_CG_bar)
 
-
-
-
 ## Other types 1000 Days ----------------------------------------
 incis_per_1000_days_other_bar <-
-  fn_barchart_1000_gg(ggcategory = 'ALL OTHER STATEMENT TYPES')
+  fn_barchart_1000_gg(ggcategory = 'ALL OTHER STATEMENT TYPES') +
+  theme(strip.text.x = element_text(size = 4)) #TODO - this is a hack.
 
 incis_per_1000_days_other_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_other_bar",
                       plotname = incis_per_1000_days_other_bar)
   
-  
-
-
-
 ## LAPP 1000 days ----------------------------------------
 incis_per_1000_days_LAPP_bar <-
   fn_barchart_1000_gg(ggcategory = 'LIMITED ACCESS PROGRAMS')
@@ -1283,11 +1265,6 @@ incis_per_1000_days_LAPP_bar <-
 incis_per_1000_days_LAPP_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_LAPP_bar",
                       plotname = incis_per_1000_days_LAPP_bar)
-
-
-
-
-
 
 # Safety 1000 days ----------------------------------------
 incis_per_1000_days_SAFETY_bar <-
@@ -1297,10 +1274,6 @@ incis_per_1000_days_SAFETY_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_SAFETY_bar",
                       plotname = incis_per_1000_days_SAFETY_bar)
 
- 
-
-
-
 ## Inter-personal 1000 days ----------------------------------------
 incis_per_1000_days_interpersonal_bar <-
   fn_barchart_1000_gg(ggcategory = 'OLE PRIORITY: INTER-PERSONAL')
@@ -1309,12 +1282,6 @@ incis_per_1000_days_interpersonal_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_interpersonal_bar",
                       plotname = incis_per_1000_days_interpersonal_bar)
 
-
-  
- 
-
-
-
 ## Inter Personal Assnmt ----------------------------------------
 incis_per_assnmt_interpersonal_bar <-
   fn_barchart_assnmt_gg(ggcategory = 'OLE PRIORITY: INTER-PERSONAL')
@@ -1322,10 +1289,6 @@ incis_per_assnmt_interpersonal_bar <-
 incis_per_assnmt_interpersonal_bar
 fn_save_defs_barchart(plotname_char = "incis_per_assnmt_interpersonal_bar",
                       plotname = incis_per_assnmt_interpersonal_bar)
-
-
-
-
 
 # STOP HERE --------------------------
 
