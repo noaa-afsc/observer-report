@@ -415,7 +415,7 @@ EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
 # participated in EM research
 # Create a dataframe manual (UGH!)
 em_research <- data.frame(cbind(c("2021", "2021"), c("5029", "1472"), c("Middleton", "Defender"), c("Electronic Monitoring -  research not logged ","Electronic Monitoring -  research not logged "), c("","") ))  
-colnames(em_research) <- c("adp", "vessel_id", "vessel_name", "sample_plan_seq_desc", "em_request_status")
+colnames(em_research) <- c("ADP", "VESSEL_ID", "VESSEL_NAME", "SAMPLE_PLAN_SEQ_DESC", "EM_REQUEST_STATUS")
 
 # * Shapefiles ----
 ## Load land and NMFS stat area shapefiles 
@@ -475,6 +475,12 @@ partial_desc <- data.table(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "
 #   "
 # )))
 
+
+
+# For some reason the 2021 partial data.table does not contain a row for GOA EM TRW EFP.  Add one manually as a hack:
+partial <- rbind(partial, list(0.3000, as.POSIXct('2020-12-31 23:00:00', '%Y-%m-%d %H:%M:%S', tz=Sys.timezone()),13,'Trawl','EM EFP'))
+
+
 partial[, GEAR := ifelse(GEAR %like% "Pot", "POT", ifelse(GEAR %like% "Longline", "HAL", ifelse(GEAR %like% "Trawl", "TRW", GEAR)))] # Simplify gear types
 partial[, STRATA := ifelse(           # Define strata based on sample plan and gear type
   SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
@@ -486,6 +492,9 @@ partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    
 partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
 partial[, txt := paste0(formatC(round(Rate * 100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
 dcast(partial, STRATA ~ Effective_Date, value.var="Rate")   # Note that if the rates change for some strata and not others, 'NA' is returned
+
+
+
 
 # Save --------------------------------------------------------------------
 
