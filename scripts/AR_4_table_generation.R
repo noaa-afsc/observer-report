@@ -300,6 +300,7 @@ summ_by_affi_type_current_yr <-
 ######################
   
 summ_by_type_both_years <-
+  # replace the NA's with 0's, because if they are NA, that means there were 0 statements/incidents
     merge(summ_by_affi_type_current_yr,
           summ_by_affi_type_prev_yr,
           all=TRUE) %>%
@@ -309,7 +310,7 @@ summ_by_type_both_years <-
            INCI_RATE_ASSMT_YOY_CHG  = (RATE_PER_ASSNMT_PREV_YR - RATE_PER_ASSNMT)/RATE_PER_ASSNMT_PREV_YR,
            INCI_RATE_1000_YOY_CHG   = (RATE_PER_1000_DAYS_PREV_YR   - RATE_PER_1000_DAYS)/RATE_PER_1000_DAYS_PREV_YR,
            # Note that this next one is a percent change of a percent, so it is just a straight subtraction!!
-           PROPORT_WITH_INCIS_YOY_CHG   = PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR  - PROPORT_FACTOR_GRPS_WITH_INCIS,
+           PROPORT_WITH_INCIS_YOY_CHG   =  PROPORT_FACTOR_GRPS_WITH_INCIS - PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR,
            )
   
     
@@ -325,6 +326,13 @@ write.csv(file = paste("charts_and_tables/tables/tbl_",
                        "_summ_incis_by_type.csv", 
                        sep = ''),
           x    = summ_by_type_both_years %>%
+                  mutate(OLE_CATEGORY = factor(OLE_CATEGORY, # need to re-order the levels for the final output table
+                                               levels = c('OLE PRIORITY: INTER-PERSONAL',
+                                                          'OLE PRIORITY: SAFETY AND DUTIES',
+                                                          'COAST GUARD',
+                                                          'LIMITED ACCESS PROGRAMS',
+                                                          'PROTECTED RESOURCE & PROHIBITED SPECIES',
+                                                          'ALL OTHER STATEMENT TYPES')) ) %>%
                   select(OLE_CATEGORY, 
                          STATEMENT_TYPE   = AFFIDAVIT_TYPE, 
                          TOTAL_STATEMENTS = N_STATEMENTS,
