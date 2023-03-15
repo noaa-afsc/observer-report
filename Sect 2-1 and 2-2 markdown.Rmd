@@ -7,16 +7,17 @@ title: "Annual Report Fee Summary Draft"
 # --------------------------------------------------------------------------------------------------------------- #
 # Program:Sect_2-1and2-2markdown.Rmd                                                                              #
 # Project:Observer Program Annual Report                                                                          #
-# Location: S:\Observer Program Annual Report\2020_Annual_Report\Chapt2_Fees&Budget\                              #
+# Location: S:\Observer Program Annual Report\2022_Annual_Report\Chapt2_Fees&Budget\                              #
+#         (this is the same as G:\FMGROUP\Observer Program Annual Report\2022_Annual_Report\Chapt2_Fees&Budget\ ) #
 # Location: H:\Observer Program\Annual Report Local GIT Projects\Obs Fee Summary\                                 #
 # Objective:                                                                                                      #
-#   - Summarize fee liability by area, gear, vessel length, and species for 2020 Annual Report                    #
-#   - This code was brainstormed in "2020 Fee Query - DRAFT based on warehouse.sql"                               #
+#   - Summarize fee liability by area, gear, vessel length, and species for 2022 Annual Report                    #
+#   - This code was brainstormed in "2022 Fee Query - DRAFT based on warehouse.sql"                               #
 #     1) it doesn't appear that any fee liabilities were waived by OMD                                            #
 #                                                                                                                 #
 #   Note: Do not include administrative fees or interest for late payments.                                       #
 #                                                                                                                 # 
-#   23,644 records for $2,469,241.17                                                                              #
+#   20,840 records for $4,313,676.32                                                                              #
 #                                                                                                                 #
 # Input:                                                                                                          #
 #   - akfish_crf.fee_detail_gf                                                                                    #
@@ -38,7 +39,7 @@ title: "Annual Report Fee Summary Draft"
 #setwd("C:\\Teleworking\\Obs Annual Report\\Ch 2")
 
 library('ROracle')
-#library('toOrdinal')
+library('toOrdinal')
 library(dplyr)
 library(tidyr)
 library(stringr)
@@ -63,12 +64,13 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 # Identify some inputs for the text:
 
 # Publication date of the Federal Register notice for Standard Prices:
-std_price_notice_date <- 'December 18, 2020'
+# see: https://www.fisheries.noaa.gov/action/north-pacific-observer-program-standard-ex-vessel-prices-groundfish-and-halibut-federal
+std_price_notice_date <- 'December 15, 2021'
 
 # Federal Register reference for the Federal Register notice for Standard Prices:  
-std_price_cfr <- '85 FR 82447'
+std_price_cfr <- '86 FR 71240'
 
-# Note: URL needs to be updated in footnote 2 below
+# Note: URL needs to be updated in footnote 3 below
 
 ```
 
@@ -111,7 +113,7 @@ notice_date <- dbGetQuery(channel_cas, late_notice)
 ```{r fee_calculation, include=FALSE}
 
 #Sets SQL code as object used to query the data: 
-# (C:\Teleworking\Obs Annual Report\Ch 2\2021 Fee Query - DRAFT based on warehouse.sql)
+# (G:\FMGROUP\Observer Program Annual Report\2022_Annual_Report\Chapt2_Fees&Budget\2022 Fee Query - DRAFT based on warehouse.sql)
 load_fee_detail <- "SELECT gf.year, 'GF' AS report_source, 
        gf.category,
        gf.processor_permit_id as processor_permit,
@@ -157,11 +159,7 @@ load_fee_detail <- "SELECT gf.year, 'GF' AS report_source,
  WHERE gf.year = extract(year from sysdate) - 1             -- previous year
    and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
    and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status  
-   and gf.person_id <> 1653                                 -- OMD waived the $1.32 fees for HILLSTRAND, JOHN W (person ID 1653)
-   and (gf.fee_person_year_id IS NULL or gf.fee_person_year_id != 7458346)  -- Correction: Beauty Bay Seafoods fees were incorrectly charged because of a bad port code (SEA) instead of FCP and corrected ($296.18)
-                                                                            
-    
-              
+  
 UNION ALL 
 
 -- IFQ landings, area information obtained from IFQ account data:
@@ -217,10 +215,7 @@ SELECT ifq.year, 'IFQ' AS report_source,
   -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
   JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number 
  WHERE ifq.year = extract(year from sysdate) - 1             -- previous year
-   and ifq.management_program_id = 12                        -- observer fees
-   and ifq.person_id <> 1653                                 -- OMD waived the $1.32 fees for HILLSTRAND, JOHN W
-   and (ifq.fee_person_year_id IS NULL or ifq.fee_person_year_id != 7458346)  -- Correction: Beauty Bay Seafoods fees were incorrectly charged because of a bad port code (SEA) instead of FCP and corrected ($296.18)
-        "
+   and ifq.management_program_id = 12                        -- observer fees"
 
 # Query the fees directly from the database:
 fee_detail <- dbGetQuery(channel_cas, load_fee_detail) 
@@ -233,21 +228,12 @@ fee_total <- fee_detail %>%
 ```
 
 
-
-```{r toOrdinal_bit, eval=FALSE, include=FALSE}
-
-# This was removed from the text below.  WIth time and pateience in 2023 for 2022 Annual Report, debug this and replace XXXth text below:
-
-#`r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")`
-
-```
-
 # 2  FEES AND BUDGET
  
 
 ### 2.1	Budget for Partial Coverage Category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
 
-Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the XXXth year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-2` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
+Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-2` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
 
 Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees were billed.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX.  In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]` <!--and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed.--> Additional notices will be mailed as needed.  Processors submitting late fee payments were charged a one time administrative fee of $25 plus interest on the observer fees with each notice. 
 
@@ -273,13 +259,13 @@ The observer fee was 1.25% of the ex-vessel value of the groundfish and halibut 
 
 [^2]:Final Rule: Fee Adjustment to 1.65% (85 FR 41424, July 10, 2020).  Available online at: [85 FR 41424](https://www.federalregister.gov/documents/2020/07/10/2020-13775/fisheries-of-the-exclusive-economic-zone-off-alaska-adjust-the-north-pacific-observer-program-fee)
 
-[^3]:Available online at: [`r std_price_cfr`](https://www.federalregister.gov/documents/2019/12/16/2019-27064/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
+[^3]:Available online at: [`r std_price_cfr`](https://www.federalregister.gov/documents/2021/12/15/2021-27103/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
 
 
 
 **INSERT SECTION PAGE BREAK HERE:**
 
-Table 2-2. -- Observer fees [^3] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for _all areas combined_.
+Table 2-2. -- Observer fees [^4] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for _all areas combined_.
 
 ```{r table1_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -385,25 +371,25 @@ flextable(all_areas) %>%
   # Bold the headers, gear labels, and all gear totals:
   bold(part = "header") %>% 
   bold(j = 1) %>% 
-  bold(i = 15) %>% 
+  bold(i = 16) %>% 
   # Merge the gear labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=15, j=c(1:2)) %>% 
+  merge_at(i=16, j=c(1:2)) %>% 
   # Add dashed horizontal lines before gear subtotals:
-  border(i = c(3,6,10,13), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(3,7,11,14), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  border(i = c(4,7,11,14), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = c(4,8,12,15), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   fix_border_issues(part = "body") %>% 
   # Add percentages as a footer hack:
   set_footer_df(mapping = pct_labels, key = "col_keys") %>% 
   align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
   bold(part = "footer") %>% 
   # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
-  merge_at(j=c(1:2), part = "footer") %>% 
+  merge_at(j=c(1:2), part = "footer") #%>% 
   # Add footer:
-  footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
+  #footnote(i = 2, j = 1:8, part = "header",
+  #         value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
   #fix_border_issues(part = "footer")
   #hline_bottom(part = "footer", border= fp_border(color="black", width = 1))
   #border_outer(border = fp_border(color="black", width = 1), part = "footer")
@@ -411,15 +397,15 @@ flextable(all_areas) %>%
 
 
 ```
+Rounding error sometimes results in slight differences in row and column totals.
 
-
-[^3]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payments are not included.
+[^4]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payments are not included.
 
 
 **INSERT PAGE BREAK HERE:**
 
 
-Table 2-3. -- Observer fees[^4] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Gulf of Alaska_.[^5]
+Table 2-3. -- Observer fees[^5] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Gulf of Alaska_.[^6]
 
 ```{r table2_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -520,25 +506,25 @@ flextable(goa) %>%
   # Bold the headers, gear labels, and all gear totals:
   bold(part = "header") %>% 
   bold(j = 1) %>% 
-  bold(i = 15) %>% 
+  bold(i = 16) %>% 
   # Merge the gear labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=15, j=c(1:2)) %>% 
+  merge_at(i=16, j=c(1:2)) %>% 
   # Add dashed horizontal lines before gear subtotals:
-  border(i = c(3,6,10,13), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(3,7,11,14), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  border(i = c(4,7,11,14), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = c(4,8,12,15), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   fix_border_issues(part = "body") %>% 
   # Add percentages as a footer hack:
   set_footer_df(mapping = goa_pct_labels, key = "col_keys") %>% 
   align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
   bold(part = "footer") %>% 
   # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
-  merge_at(j=c(1:2), part = "footer") %>% 
+  merge_at(j=c(1:2), part = "footer") #%>% 
   # Add footer:
-  footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
+  #footnote(i = 1, j = 1, part = "header",
+  #         value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
   #fix_border_issues(part = "footer")
   #hline_bottom(part = "footer", border= fp_border(color="black", width = 1))
   #border_outer(border = fp_border(color="black", width = 1), part = "footer")
@@ -546,14 +532,16 @@ flextable(goa) %>%
 
 
 ```
+Rounding error sometimes results in slight differences in row and column totals.
 
-[^4]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
 
-[^5]:The Gulf of Alaska includes Pacific halibut regulatory areas 2C, 3A, and 3B; and sablefish regulatory areas Western GOA, Central GOA, West Yakutat, and Southeast Outside.
+[^5]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
+
+[^6]:The Gulf of Alaska includes Pacific halibut regulatory areas 2C, 3A, and 3B; and sablefish regulatory areas Western GOA, Central GOA, West Yakutat, and Southeast Outside.
 
 **INSERT PAGE BREAK HERE:**
 
-Table 2-4. -- Observer fees[^6] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Bering Sea/Aleutian Islands_.[^7]
+Table 2-4. -- Observer fees[^7] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Bering Sea/Aleutian Islands_.[^8]
 
 
 ```{r table3_prep, echo=FALSE, message=FALSE, warning=FALSE}
@@ -672,10 +660,10 @@ flextable(bsai) %>%
   align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
   bold(part = "footer") %>% 
   # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
-  merge_at(j=c(1:2), part = "footer") %>% 
+  merge_at(j=c(1:2), part = "footer")# %>% 
   # Add footer:
-  footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
+  #footnote(i = 1, j = 1, part = "header",
+  #         value = as_paragraph("Rounding error sometimes results in slight differences in row and column totals.")) #+
   #fix_border_issues(part = "footer")
   #hline_bottom(part = "footer", border= fp_border(color="black", width = 1))
   #border_outer(border = fp_border(color="black", width = 1), part = "footer")
@@ -683,403 +671,13 @@ flextable(bsai) %>%
 
 
 ```
-[^6]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
-
-[^7]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
+Rounding error sometimes results in slight differences in row and column totals.
 
 
-```{r figure1_dataprep, eval=FALSE, include=FALSE}
+[^7]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
 
-# For current year's data:
+[^8]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
 
-# Summarize single year fee data by landing ID (report ID or confirmation number), catch_activity_date, and species_group
-current_spcs_landing_summary <- fee_detail %>% 
-  # Creating a landing ID: either the REPORT_ID or the CONFIRMATION_NUMBER
-  mutate(LANDING_ID = ifelse(!is.na(REPORT_ID), REPORT_ID, CONFIRMATION_NUMBER)) %>% 
-  mutate(DOY = yday(CATCH_ACTIVITY_DATE)) %>% 
-  group_by(YEAR, CATCH_ACTIVITY_DATE, DOY, LANDING_ID, SPECIES_GROUP) %>% 
-  summarize(RECORD_COUNT = n(), 
-            FEE = sum(FEE_AMOUNT), .groups = 'drop')
-
-# Summarize single year fee data by landing ID (report ID or confirmation number), and catch_activity_date
-current_total_landing_summary <- fee_detail %>% 
-  # Creating a landing ID: either the REPORT_ID or the CONFIRMATION_NUMBER
-  mutate(LANDING_ID = ifelse(!is.na(REPORT_ID), REPORT_ID, CONFIRMATION_NUMBER)) %>% 
-  mutate(DOY = yday(CATCH_ACTIVITY_DATE)) %>% 
-  group_by(CATCH_ACTIVITY_DATE, LANDING_ID) %>% 
-  summarize(SPECIES_GROUP = 'AllSpecies',
-            RECORD_COUNT = n(), 
-            FEE = sum(FEE_AMOUNT), .groups = 'drop') 
-
-# Consolidate into a single dataset:
-current_landing_summary <- current_spcs_landing_summary %>% 
-  bind_rows(current_total_landing_summary) %>% 
-  mutate(SPECIES_GROUP = factor(SPECIES_GROUP, levels = c('AllSpecies', 'Halibut', 'Sablefish', 'PacificCod', 'Pollock', 'AllOtherSpecies')))
-
-
-# For all years' data (previous and current)
-
-# Summarize fee data by landing ID (report ID or confirmation number), catch_activity_date, species_group
-allyrs_spcs_landing_summary <- previous_fee_detail %>% 
-  # Creating a landing ID: either the REPORT_ID or the CONFIRMATION_NUMBER
-  mutate(LANDING_ID = ifelse(!is.na(REPORT_ID), REPORT_ID, CONFIRMATION_NUMBER)) %>% 
-  group_by(YEAR, CATCH_ACTIVITY_DATE, LANDING_ID, SPECIES_GROUP) %>% 
-  summarize(RECORD_COUNT = n(), 
-            FEE = sum(FEE_AMOUNT), .groups = 'drop') %>%
-  bind_rows(current_spcs_landing_summary) %>% 
-  # Create a Day/Month field:
-  mutate(DOY = yday(CATCH_ACTIVITY_DATE))
-
-# Summarize inflation adjusted fee data by year, doy, species_group
-doy_fee_summary <- allyrs_spcs_landing_summary %>% 
-  # Fine tune the species a bit:
-  filter(!SPECIES_GROUP == 'AllOtherSpecies') %>% 
-  mutate(SPECIES = factor(ifelse(SPECIES_GROUP == 'PacificCod', 'Pacific Cod', SPECIES_GROUP),
-                             levels = c("Pollock", "Pacific Cod", "Sablefish", "Halibut"))) %>% 
-  # Calculate inflation adjusted fees:
-  full_join(cpi) %>% 
-  mutate(ADJ_FEE = round((FEE/CPI_FACTOR),2)) %>% 
-  group_by(YEAR, DOY, SPECIES) %>% 
-  summarize(DOY_ADJ_FEE = sum(ADJ_FEE), .groups = 'drop') %>%
-  data.frame()
-
-# Summarize total fees year:
-all_year_fee <- allyrs_spcs_landing_summary %>% 
-  group_by(YEAR) %>% 
-  summarize(TOTAL_FEE = sum(FEE), .groups = 'drop') 
-
-# Summarize daily fee, cumulative fee, and inflation adjusted cumulative fee by year and day of year:
-all_year_fee_summary <- allyrs_spcs_landing_summary %>% 
-  group_by(YEAR, DOY) %>% 
-  summarize(FEE = sum(FEE), .groups = 'drop') %>% 
-  group_by(YEAR) %>% 
-  mutate(CUM_FEE = cumsum(FEE)) %>% 
-  full_join(all_year_fee, by = "YEAR") %>% 
-  mutate(CUM_PROP = CUM_FEE/TOTAL_FEE) %>% 
-  full_join(cpi) %>% 
-  mutate(ADJ_CUM_FEE = round((CUM_FEE/CPI_FACTOR),2)) %>% 
-  data.frame()
-
-# Calculate average values for 2013-2019 fees:
-avg_doy_summaries <- all_year_fee_summary %>% 
-  filter(!YEAR == 2020) %>% 
-  group_by(DOY) %>% 
-  summarize(AVG_CUM_FEE = mean(CUM_FEE),
-            CUM_FEE_SD = sd(CUM_FEE),
-            AVG_ADJ_CUM_FEE = mean(ADJ_CUM_FEE),
-            ADJ_CUM_FEE_SD = sd(ADJ_CUM_FEE),
-            AVG_CUM_PROP = mean(CUM_PROP),
-            CUM_PROP_SD = sd(CUM_PROP), .groups = 'drop') %>% 
-  data.frame()
-
-
-# Create a data frame of 1-366 DOY:
-all_doy <- data.frame(YEAR = rep(2013:2020, each = 365),
-                      DOY = rep(seq(from = 2, to = 366, by = 1),8))
-
-
-# In an attempt to smooth out those averages for DOYs that don't have activity:
-avg_doy_summaries_test <- all_year_fee_summary %>% 
-  full_join(all_doy, by = c('YEAR','DOY')) %>% 
-  arrange(YEAR, DOY) %>% 
-  # On days with 0 fees, convert NA to 0:
-  replace_na(list(FEE = 0)) %>% 
-  # On days with 0 fees, take the cumulative fee from the day before:
-  fill(CUM_FEE, .direction = "down") %>% 
-  # Same for the cumulative proportion:
-  fill(CUM_PROP, .direction = "down") %>%
-  # Same for the inflation adjusted cumulative fee:
-  fill(ADJ_CUM_FEE, .direction = "down") %>% 
-  # Calculate average values for 2013-2019 fees:
-  filter(!YEAR == 2020) %>% 
-  group_by(DOY) %>% 
-  summarize(AVG_CUM_FEE = mean(CUM_FEE),
-            CUM_FEE_SD = sd(CUM_FEE),
-            AVG_ADJ_CUM_FEE = mean(ADJ_CUM_FEE),
-            ADJ_CUM_FEE_SD = sd(ADJ_CUM_FEE),
-            AVG_CUM_PROP = mean(CUM_PROP),
-            CUM_PROP_SD = sd(CUM_PROP), .groups = 'drop') %>% 
-  data.frame()
-
-
-# Create nice labels for the day of year (instead of 1-365):
-months <- c("Jan", "Apr", "Jul", "Oct", "Jan")
-mo_start_doy <- c(1,92,183,275,366)
-
-
-# Summarize total fees by year and spcs:
-allyrs_annual_spcs_fee <- allyrs_spcs_landing_summary %>% 
-  group_by(YEAR, SPECIES_GROUP) %>% 
-  summarize(SPCS_TOTAL_FEE = sum(FEE), .groups = 'drop') 
-
-
-# Summarize daily fee, cumulative fee, and inflation adjusted cumulative fee by year and day of year:
-allyrs_spcs_fee_summary <- allyrs_spcs_landing_summary %>% 
-  group_by(YEAR, DOY, SPECIES_GROUP) %>% 
-  summarize(FEE = sum(FEE), .groups = 'drop') %>% 
-  full_join(allyrs_annual_spcs_fee, by = c("YEAR", "SPECIES_GROUP")) %>% 
-  mutate(FEE_PROP = FEE/SPCS_TOTAL_FEE) 
-  data.frame()
-
-  
-# Explore the differences between proportions:
-prop_differences <- all_year_fee_summary %>% 
-  filter(YEAR == 2020) %>% 
-  select(DOY, CUM_PROP) %>% 
-  full_join(avg_doy_summaries_test, by = "DOY") %>% 
-  select(-c(AVG_CUM_FEE, CUM_FEE_SD, AVG_ADJ_CUM_FEE, ADJ_CUM_FEE_SD, CUM_PROP_SD)) %>% 
-  arrange(DOY) %>% 
-  # On days in 2020 with 0 fees, take the cumulative proportion from the day before:
-  fill(CUM_PROP, .direction = "down") %>% 
-  # Replace the NA on DOY 1 in 2020 with 0
-  replace_na(list(CUM_PROP = 0)) %>% 
-  # Calculate the differences between the two proportions:
-  mutate(DIFFERENCE = AVG_CUM_PROP - CUM_PROP)
-  
-#max(prop_differences$DIFFERENCE)
-#min(prop_differences$DIFFERENCE)
-
-
-# Identify some label locations just in case:
-label_location <- all_year_fee_summary %>% 
-  filter(YEAR == 2020) %>% 
-  group_by(YEAR) %>% 
-  summarize(LABEL_Y_LOCATION = max(ADJ_CUM_FEE),
-            LABEL_X_LOCATION = max(DOY), .groups = 'drop')
-
-avg_label_location <- avg_doy_summaries %>% 
-  summarize(LABEL_Y_LOCATION = max(AVG_CUM_FEE),
-            LABEL_ADJY_LOCATION = max(AVG_ADJ_CUM_FEE),
-            LABEL_X_LOCATION = max(DOY), .groups = 'drop')
-
-
-```
-
-
-Figure 2-1. -- Comparison of cumulative observer fees by day in 2020 with the mean cumulative observer fees assessed from 2013 to 2019 in inflation adjusted millions of dolllars (left), as the proportion of overall annual fees (middle), and the difference between the proportions (right). The shading indicates +/- one standard deviation from the 2013-2019 mean. 
-
-
-```{r fee_comparison_figures, eval=FALSE, include=FALSE}
-
-# Plot of cumulative observer fees by year in inflation adjusted dollars:
-infl <- ggplot() +
-  # Plot 2020 cumulative fees:
-  geom_line(data = all_year_fee_summary %>% filter(YEAR == 2020), 
-            aes(x = DOY, y = ADJ_CUM_FEE, group = as.factor(YEAR))) +
-  # Plot 2013-2019 average fees:
-  geom_line(data = avg_doy_summaries_test, aes(x = DOY, y = AVG_ADJ_CUM_FEE)) +
-  # Plot 2013-2019 standard deviations:
-  geom_ribbon(data = avg_doy_summaries_test, 
-              aes(x = DOY, ymin = AVG_ADJ_CUM_FEE - ADJ_CUM_FEE_SD, ymax = AVG_ADJ_CUM_FEE+ ADJ_CUM_FEE_SD), alpha = 0.5)+
-  # Set plot attributes:
-  scale_y_continuous(labels = c('0','1','2','3','4','5'), breaks = seq(0,5000000,1000000), limits = c(0,5000000)) +
-  scale_x_continuous(breaks = mo_start_doy, labels = months, limits = c(1,366)) +
-  labs(x = NULL,
-       y = "Cumulative Fees ($M)") +
-  # Add a label for the 2020 line:
-  annotate("text", 
-           #x = 366,
-           #y = 2450000,
-           x = 350,
-           y = 2350000,
-           label = label_location$YEAR,
-           size = 3, color = "gray28", family = "serif") +
-  # Add a label for the 2013-2019 line:
-  annotate("text", 
-           x = 100,
-           y = 2350000,   
-           label = "2013-\n2019",
-           size = 3, color = "gray28", family= "serif") +
-  # AFS themes:
-  theme_classic(base_size = 14) +
-  theme(axis.title.y = element_text(family = "serif", size = 13)) +
-  theme(axis.text = element_text(family = "serif"))
-
-
-# Plot proportion of cumulative observer fees by year:
-prop <- ggplot() +
-  # Plot 2020 proportion of cumulative fees:
-  geom_line(data = all_year_fee_summary %>% filter(YEAR == 2020), 
-            aes(x = DOY, y = CUM_PROP, group = as.factor(YEAR))) +
-  # Plot 2013-2019 average fees:
-  geom_line(data = avg_doy_summaries_test, aes(x = DOY, y = AVG_CUM_PROP)) +
-  # Plot 2013-2019 standard deviations:
-  geom_ribbon(data = avg_doy_summaries, 
-              aes(x = DOY, ymin = AVG_CUM_PROP - CUM_PROP_SD, ymax = AVG_CUM_PROP + CUM_PROP_SD), alpha = 0.5) +
-  # Set plot attributes:
-  scale_x_continuous(breaks = mo_start_doy, labels = months, limits = c(1,366)) +
-  labs(x = NULL,
-       y = "Proportion")    +
-  # Add a label for the 2020 line:
-   annotate("text", 
-            x = 235,
-            y = 0.48,
-            label = label_location$YEAR,
-            size = 3, color = "gray28", family= "serif") +
-  # Add a label for the 2013-2019 line:
-   annotate("text", 
-            x = 90,
-            y = 0.48,
-            label = "2013-\n2019",
-            size = 3, color = "gray28", family= "serif") +
-  # AFS type themes:
-  theme_classic(base_size = 14) +
-  theme(axis.title.y = element_text(family = "serif", size = 13)) +
-  theme(axis.text = element_text(family = "serif"))
-
-
-# Plot difference between the proportions:
-diff <- ggplot(data = prop_differences, aes(x = DOY, y = DIFFERENCE)) + 
-  geom_path() +
-   # Set plot attributes:
-  scale_x_continuous(breaks = mo_start_doy, labels = months, limits = c(1,366)) +
-  scale_y_continuous(limits = c(-0.01,0.15)) +
-  geom_hline(yintercept = 0, linetype = "dashed", show.legend = NA) +
-  labs(x = NULL,
-       y = "Difference") +
-  # AFS type themes:
-  theme_classic(base_size = 14) +
-  theme(axis.title.y = element_text(family = "serif", size = 13)) +
-  theme(axis.text = element_text(family = "serif"))
-
-
-
-# Use cowplot to arrange compound figure:
-fee_panels3 <- plot_grid(infl, prop, diff, ncol=3, label_x = 0.15, rel_widths = c(1,1.1,1.1)) 
-#fee_panels3
-
-# Add space to the bottom for axis label:
-fee_pad_bottom3 <- plot_grid(fee_panels3, NULL, ncol = 1, rel_heights = c(9,1))  #Add space to bottom of plot for axis labels
-
-# Add axis labels:
-ggdraw(fee_pad_bottom3) + 
-  draw_label("Month", fontfamily = "serif", x = 0.55, y = 0.07, size = 14)
-  
-
-# Save the plot as a tiff:
-#dev.new(width = 5.62, height = 4.22, unit = "in", noRStudioGD = TRUE); last_plot()
-#ggsave("Cum_Fee_Comparison3.tiff", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
-#ggsave("Cum_Fee_Comparison3.jpeg", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
-
-
-```
-
-Figure 2-2. --  Proportion of each species’ annual observer fees by day, 2013-2020. Note: the scale is different for each species.
-
-
-```{r spcsprop_heat_maps, eval=FALSE, include=FALSE}
-
-for_propheatmap <- allyrs_spcs_fee_summary %>% 
-  mutate(YEAR = factor(YEAR, levels = c("2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013")))
-
-prop_limits <- allyrs_spcs_fee_summary %>% 
-  group_by(SPECIES_GROUP) %>% 
-  summarize(minp = min(FEE_PROP),
-            maxp = max(FEE_PROP), .groups = "drop")
-
-
-hmHLBTp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "Halibut"), 
-                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
-  geom_tile() +
-  labs(x = NULL, 
-       y = NULL,
-       fill = "Proportion of\nobserver fees ") +
-  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) +
-  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
-  scale_fill_viridis(limits = c(0,0.02), breaks = c(0, 0.01, 0.02), labels = c("0%", "1%", "2%")) +
-  theme_classic(base_size = 14) +
-  theme(legend.position = "bottom",
-        legend.title = element_text(family = "serif", size = 10),
-        legend.text = element_text(family = "serif", size = 9),
-        legend.key.size = unit(0.4,"cm"),
-        legend.margin=margin(0,0,10,0),
-        legend.box.margin = margin(-10,-10,-10,0)) +
-  theme(axis.text = element_text(family = "serif"))
- 
- 
-hmSABLp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "Sablefish"), 
-                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
-  geom_tile() +
-  labs(x = NULL, 
-       y = NULL,
-       fill = "Proportion of\nobserver fees ") +
-  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) + 
-  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
-  scale_fill_viridis(limits = c(0,0.03), breaks = c(0, 0.015, 0.03), labels = c("0%", "1.5%", "3%")) +
-  theme_classic(base_size = 14) +
-  theme(legend.position = "bottom",
-        legend.title = element_text(family = "serif", size = 10),
-        legend.text = element_text(family = "serif", size = 9),
-        legend.key.size = unit(0.4,"cm"),
-        legend.margin=margin(0,0,10,0),
-        legend.box.margin = margin(-10,-10,-10,0)) +
-  theme(axis.text = element_text(family = "serif"))
- 
-
-hmPCODp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "PacificCod"), 
-                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
-  geom_tile() +
-  labs(x = NULL, 
-       y = NULL,
-       fill = "Proportion of\nobserver fees ") +
-  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) +
-  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
-  scale_fill_viridis(limits = c(0,0.05), breaks = c(0,0.025, 0.05), labels = c("0%", "2.5%", "5%")) +
-  theme_classic(base_size = 14) +
-  theme(legend.position = "bottom",
-        legend.title = element_text(family = "serif", size = 10),
-        legend.text = element_text(family = "serif", size = 9),
-        legend.key.size = unit(0.4,"cm"),
-        legend.margin=margin(0,0,10,0),
-        legend.box.margin = margin(-10,-10,-10,0)) +
-  theme(axis.text = element_text(family = "serif"))
- 
-
-hmPLCKp <- ggplot(data = for_propheatmap %>% filter(SPECIES_GROUP == "Pollock"), 
-                 aes(x = DOY, y = YEAR, fill = FEE_PROP)) +
-  geom_tile() +
-  labs(x = NULL, 
-       y = NULL,
-       fill = "Proportion of\nobserver fees ") +
-  scale_x_continuous(expand = c(0,0,0,0), breaks = mo_start_doy, labels = months, limits = c(1,366)) + 
-  scale_y_discrete(expand = expansion(mult = c(0, 0))) +
-  scale_fill_viridis(limits = c(0,0.04), breaks = c(0,0.02, 0.04), labels = c("0%", "2%", "4%")) +
-  theme_classic(base_size = 14) +
-  theme(legend.position = "bottom",
-        legend.title = element_text(family = "serif", size = 10),
-        legend.text = element_text(family = "serif", size = 9),
-        legend.key.size = unit(0.4,"cm"),
-        legend.margin=margin(0,0,10,0),
-        legend.box.margin = margin(-10,-10,-10,0)) +
-  theme(axis.text = element_text(family = "serif"))
- 
-
-# Use cowplot to arrange compound figure:
-spcsprop_heatmaps <- plot_grid(hmHLBTp, hmPCODp, hmSABLp, hmPLCKp, ncol=2,
-                           labels = c("Halibut", "Pacific Cod", "Sablefish", "Pollock"),
-                           label_size = 11,
-                           label_fontfamily = "serif",
-                           rel_heights = c(1,1,1,1),
-                           label_x = 0,
-                           hjust = 0,
-                           vjust = 0.5)
-
-
-# Add space to the left and bottom for axis labels:
-hmp_pad_side <- plot_grid(NULL, spcsprop_heatmaps, ncol = 2, rel_widths = c(0.35, 6)) 
-hmp_pad_bottom <- plot_grid(NULL, hmp_pad_side, NULL, ncol = 1, rel_heights = c(0.5,9,0.5))  
-
-# Add axis labels:
-ggdraw(hmp_pad_bottom) + 
-  draw_label("Month", fontfamily = "serif", x = 0.55, y = 0.03, size = 15) +
-  draw_label("Year", fontfamily = "serif", angle = 90, x = 0.02, y = 0.57, size = 15) 
-
-# Save the plot as a tiff:
-#dev.new(width = 5.62, height = 4.22, unit = "in", noRStudioGD = TRUE); last_plot()
-#ggsave("ProportionDailyFees.tiff", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
-#ggsave("ProportionDailyFees.jpeg", width = dev.size()[1], height = dev.size()[2], dpi = 600); dev.off()
-
-```
 
 
 ```{r export, echo=FALSE, message=FALSE, warning=FALSE}
@@ -1087,7 +685,7 @@ ggdraw(hmp_pad_bottom) +
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData file
 rm(list= ls()[!(ls() %in% c('fee_detail','fee_total', 'all_areas', 'goa', 'bsai'))])
 
-# Export data file so it can be used for figure development:
+# Export data file:
 #save(fee_detail, fee_total, all_areas, goa, bsai,
 #     file = paste0("Observer_Fee_Data_", as.numeric(format(Sys.Date(), "%Y"))-1,".RData"))
 
