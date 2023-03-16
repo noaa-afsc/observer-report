@@ -75,9 +75,13 @@ To correct for this bias, NMFS is developing an analytic (modeled) method to adj
 
 ```{r data_inputs, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
+# https://stackoverflow.com/questions/29189663/trying-to-publish-an-r-notebook-and-keep-getting-the-same-error-error-in-contri
+chooseCRANmirror(graphics=FALSE, ind=1)    
+knitr::opts_chunk$set(echo = TRUE)
+
 # LOAD DATA 
 
-YEAR <- 2020
+YEAR <- 2021
 
 #Source helper file (libraries, ggplot themes, etc.)
 source("AR_descriptive_helper.r")
@@ -93,25 +97,27 @@ rm(list= ls()[!(ls() %in% c('YEAR', 'work_data', 'addl_catch_table', 'fig.theme'
 
 ```{r all_trips, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
+#detach(package:plyr)
+
 # Summarize ALL trip and vessel counts for three different levels of aggregation:
 total_counts <- work_data %>% 
   # Detail summaries for strata, FMP area, gear, and vessel length category:
   group_by(STRATA, FMP, AGENCY_GEAR_CODE, VESSEL_LENGTH_CATEGORY) %>% 
   summarize(TRIP_COUNT = n_distinct(TRIP_ID),
-            VESSEL_COUNT = n_distinct(VESSEL_ID)) %>%
+            VESSEL_COUNT = n_distinct(VESSEL_ID), .groups = 'drop') %>%
   # FMP Area summaries for vessel length category:
   bind_rows(work_data %>% group_by(FMP, VESSEL_LENGTH_CATEGORY) %>% 
               summarize(AGENCY_GEAR_CODE = " ",
                         STRATA           = "FMP AREA Subtotal",
                         TRIP_COUNT = n_distinct(TRIP_ID),
-                        VESSEL_COUNT = n_distinct(VESSEL_ID))) %>% 
+                        VESSEL_COUNT = n_distinct(VESSEL_ID), .groups = 'drop')) %>% 
   # Overall summaries for vessel length category:
   bind_rows(work_data %>% group_by(VESSEL_LENGTH_CATEGORY) %>% 
               summarize(AGENCY_GEAR_CODE = " ",
                         STRATA           = " ",
                         FMP              = "Total Unique",
                         TRIP_COUNT = n_distinct(TRIP_ID),
-                        VESSEL_COUNT = n_distinct(VESSEL_ID))) %>% 
+                        VESSEL_COUNT = n_distinct(VESSEL_ID), .groups = 'drop')) %>% 
   data.frame()
  
 
@@ -133,7 +139,7 @@ obs_counts <- work_data %>%
   # Detail summaries for strata, FMP area, gear, and vessel length category:
   group_by(STRATA, FMP, AGENCY_GEAR_CODE, VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
   summarize(TRIP_COUNT_OBS = n_distinct(TRIP_ID),
-            VESSEL_COUNT_OBS = n_distinct(VESSEL_ID)) %>%
+            VESSEL_COUNT_OBS = n_distinct(VESSEL_ID), .groups = 'drop') %>%
   # FMP Area summaries for vessel length category:
   bind_rows(work_data %>% 
               filter(OBSERVED_FLAG == 'Y') %>% 
@@ -141,7 +147,7 @@ obs_counts <- work_data %>%
               summarize(AGENCY_GEAR_CODE = " ",
                         STRATA           = "FMP AREA Subtotal",
                         TRIP_COUNT_OBS = n_distinct(TRIP_ID),
-                        VESSEL_COUNT_OBS = n_distinct(VESSEL_ID))) %>% 
+                        VESSEL_COUNT_OBS = n_distinct(VESSEL_ID), .groups = 'drop')) %>% 
   # Overall summaries for vessel length category:
   bind_rows(work_data %>% 
               group_by(VESSEL_LENGTH_CATEGORY, OBSERVED_FLAG) %>% 
@@ -150,7 +156,7 @@ obs_counts <- work_data %>%
                         STRATA           = " ",
                         FMP              = "Total Unique",
                         TRIP_COUNT_OBS = n_distinct(TRIP_ID),
-                        VESSEL_COUNT_OBS = n_distinct(VESSEL_ID))) %>% 
+                        VESSEL_COUNT_OBS = n_distinct(VESSEL_ID), .groups = 'drop')) %>% 
   data.frame()
  
 
@@ -400,13 +406,23 @@ catch_detail_wide <- catch_detail %>%
 #Add new rows because JIG doesn't have a discard row and assign the same column names used in catch_wide
 jig_rows <- data.frame(cbind(c("GOA", "BSAI"), c("Jig", "Jig"), c("Discard", "Discard")))  
 col_names <- names(catch_detail_wide[,1:3])
-names(jig_rows) <- col_names  
+names(jig_rows) <- col_names 
 
 # The columns in jig_rows need to be character values rather than factors for later formatting:
 jig_rows <- jig_rows %>% 
   mutate_all(as.character)
 
+
+# Add a filler row for retained jig data in the BSAI (if needed) to the catch_detail_wide data frame: 
+bsai_jig_retained <- data.frame(cbind(c("BSAI"), c("Jig"), c("Retained")))                         
+names(bsai_jig_retained) <- col_names 
+                        
+catch_detail_wide <- catch_detail_wide %>% 
+  merge(bsai_jig_retained, all = TRUE)
+                        
+
 # Append the additional columns:
+library(plyr); library(dplyr)
 catch_wide <- rbind.fill(catch_detail_wide, jig_rows)
 
 # Provide a gear order:
@@ -417,6 +433,7 @@ catch_wide <- catch_wide %>%
                                           ifelse(AGENCY_GEAR_CODE == 'Pot', 4, 5)))))  %>% 
   arrange(FMP, GEARORDER, desc(RETAINED))
 
+#detach(package:plyr)
 
 ```
 
@@ -468,7 +485,7 @@ flextable(table4_3) %>%
   align(i = 2, j = c(1:2), align = "left", part = "header") %>% 
   align(i = 2, j = c(3:14), align = "right", part = "header") %>% 
   # Format the columns:
-  colformat_num(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
+  colformat_double(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
   colformat_num(j = c(5,8,11,14), big.mark = ",", digits = 0, suffix = "%" ) %>% 
   bold(j=c(1,2,5,8,11,14), part = "body") %>% 
   # Merge the gear labels into a single cell: 
@@ -533,7 +550,7 @@ flextable(table4_4) %>%
   align(i = 2, j = c(1:2), align = "left", part = "header") %>% 
   align(i = 2, j = c(3:14), align = "right", part = "header") %>% 
   # Format the columns:
-  colformat_num(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
+  colformat_double(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
   colformat_num(j = c(5,8,11,14), big.mark = ",", digits = 0, suffix = "%" ) %>% 
   bold(j=c(1,2,5,8,11,14), part = "body") %>% 
   # Merge the gear labels into a single cell: 
