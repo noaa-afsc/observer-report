@@ -63,7 +63,8 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 
 
 # 2021 data aren't currently in the database.  Load .RData file instead:
-load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
+#load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
 valhalla_data <- VALHALLA  
 
 
@@ -110,8 +111,8 @@ prep_data <- valhalla_data %>%
 
 
 table(prep_data$STRATA)
-# EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
-#  51899      13100      36242     919218     125469      46714      26432      72952 
+#EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
+#50768      13276      36242     919154     125535      46714      26432      72917  
 
 table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
 # HAL  POT 
@@ -137,21 +138,19 @@ prep_data <- prep_data %>%
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 #             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
-# EM_HAL      51899      0               0               0      0      0      0      0      0                0
-# EM_POT          0  13100               0               0      0      0      0      0      0                0
+# EM_HAL      50768      0               0               0      0      0      0      0      0                0
+# EM_POT          0  13276               0               0      0      0      0      0      0                0
 # EM_TRW_EFP      0      0           27830            8412      0      0      0      0      0                0
-# FULL            0      0               0               0 919218      0      0      0      0                0
-# HAL             0      0               0               0      0 123658      0      0      0             1811
+# FULL            0      0               0               0 919154      0      0      0      0                0
+# HAL             0      0               0               0      0 123724      0      0      0             1811
 # POT             0      0               0               0      0      0  46547      0      0              167
 # TRW             0      0               0               0      0      0      0  26432      0                0
-# ZERO            0      0               0               0      0      0      0      0  72952                0
-#    
-
+# ZERO            0      0               0               0      0      0      0      0  72917                0
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
 #     N      Y 
-#302968 989058   
+#301344 989694 
 
 # Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
 prep_data <- prep_data %>% 
@@ -160,12 +159,12 @@ prep_data <- prep_data %>%
 
 table(prep_data$OBSERVED_FLAG)
 # N      Y 
-# 302968 989058 
+# 301344 989694
 
 table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
 #        N      Y
-# N 302968      0
-# Y      0 989058
+# N 301344      0
+# Y      0 989694
 
 
 
@@ -194,7 +193,7 @@ valhalla_run_date <- valhalla_data %>%
   mutate(RUNDATE = format(RUN_DATE, '%d-%b-%Y')) %>% 
   distinct(RUNDATE)
 
-#valhalla_run_date$RUNDATE <- '05-APR-2022'
+#valhalla_run_date$RUNDATE <- '12-MAY-2022'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 

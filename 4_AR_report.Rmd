@@ -44,10 +44,18 @@ partial_time <- rbind(partial_time,
 
 
 # The partial coverage programmed rate was never set equal to those in the ADP (like it was in 2020).  Hardcode some corrections:
+#     The monitoring rates for the first time period come from Table 1 (page 14) of the 2021 ADP and the monitoring rates for the second time-period come 
+#     from a Geoff Mayhew memo dated 8/26/2021:
+# Also... according to the EA, "Under the EFP, the goal has been to achieve observer monitoring at a rate of 1 in every 3 trips (33%)."
+
 partial_time_hardcoded <- partial_time %>% 
-  mutate(Rate = ifelse(STRATA == 'HAL', 0.1513, Rate)) %>%
-  mutate(Rate = ifelse(STRATA == 'POT', 0.1504, Rate)) %>% 
-  mutate(Rate = ifelse(STRATA == 'TRW', 0.1612, Rate))
+  mutate(Rate = ifelse(STRATA == 'EM TRW EFP', 0.3333, Rate)) %>% 
+  mutate(Rate = ifelse(STRATA == 'HAL' & Effective_Date == as.Date("2021-01-01"), 0.1513, Rate)) %>%
+  mutate(Rate = ifelse(STRATA == 'POT' & Effective_Date == as.Date("2021-01-01"), 0.1504, Rate)) %>% 
+  mutate(Rate = ifelse(STRATA == 'TRW' & Effective_Date == as.Date("2021-01-01"), 0.1612, Rate)) %>% 
+  mutate(Rate = ifelse(STRATA == 'HAL' & Effective_Date == as.Date("2021-09-01"), 0.1790, Rate)) %>%
+  mutate(Rate = ifelse(STRATA == 'POT' & Effective_Date == as.Date("2021-09-01"), 0.1760, Rate)) %>% 
+  mutate(Rate = ifelse(STRATA == 'TRW' & Effective_Date == as.Date("2021-09-01"), 0.2100, Rate))
 
 
 # Avoid scientific notation
@@ -362,8 +370,9 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 # Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  
 odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
 
-# 2020-ONLY: define time periods
-date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), as.Date("2020-03-26"), max(odds.dat$PLANNED_EMBARK_DATE))
+# 2021-ONLY: define time periods
+#date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), as.Date("2021-09-01"), max(odds.dat$PLANNED_EMBARK_DATE))  # this resulted in a duplicated 9/1/2021
+date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), max(odds.dat$PLANNED_EMBARK_DATE))
 date_cuts <- date_cuts[order(date_cuts)] 
 
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
@@ -371,6 +380,7 @@ odds.dat <- mutate(odds.dat, random.assign = NA) %>%
             mutate(PERIOD := ifelse(STRATA %like% "EM",1, PERIOD)) %>% # Don't split EM strata by period; make period = 1
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
+
 
 # Are assignments being performed as programmed?
 # ND = Not observed (Provider Defaulted)
@@ -552,23 +562,34 @@ for.p.wide <- merge(
   arrange(Source, STRATA)
 
 # Need to merge in the selection rates for calculating p-values later
+# for.p.wide <- merge(
+#   for.p.wide, 
+#   merge(partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
+#         filter(STRATA != "EM TRW EFP") %>%
+#         distinct(STRATA) %>%   # This doesn't work for 2021
+#         crossing(data.frame(PERIOD = 1:3)),
+#       partial_og %>% filter(STRATA != "EM TRW EFP") %>% 
+#         distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
+#         group_by(STRATA) %>%
+#         mutate(PERIOD = seq_len(n())) %>%
+#         mutate(PERIOD = ifelse(PERIOD==2, PERIOD+1, PERIOD)), all=T
+#       )  %>% 
+#   group_by(STRATA) %>%
+#   mutate(ODDS_SELECTION_PCT = ifelse(PERIOD == 2, ODDS_SELECTION_PCT[PERIOD==1], 
+#                                      ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[PERIOD==1], 
+#                                             ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[PERIOD==1], ODDS_SELECTION_PCT)))), 
+#   by=c("STRATA", "PERIOD"), all = TRUE)
+
+# Need to merge in the selection rates for calculating p-values later
 for.p.wide <- merge(
   for.p.wide, 
-  merge(partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
+  partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
         filter(STRATA != "EM TRW EFP") %>%
-        distinct(STRATA) %>%
-        crossing(data.frame(PERIOD = 1:3)),
-      partial_og %>% filter(STRATA != "EM TRW EFP") %>% 
-        distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
-        group_by(STRATA) %>%
-        mutate(PERIOD = seq_len(n())) %>%
-        mutate(PERIOD = ifelse(PERIOD==2, PERIOD+1, PERIOD)), all=T
-      )  %>% 
-  group_by(STRATA) %>%
-  mutate(ODDS_SELECTION_PCT = ifelse(PERIOD == 2, ODDS_SELECTION_PCT[PERIOD==1], 
-                                     ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[PERIOD==1], 
-                                            ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[PERIOD==1], ODDS_SELECTION_PCT)))), 
-  by=c("STRATA", "PERIOD"), all = TRUE)
+        mutate(PERIOD = ifelse(Effective_Date == as.Date("2021-01-01"), 1, 2),
+               ODDS_SELECTION_PCT = Rate * 100) %>% 
+        select(-c(Effective_Date, descriptions, formatted_strat, txt, Rate)),
+  by = c("STRATA", "PERIOD"), all = TRUE)
+  
 
 # Put into long format
 p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2020-ONLY: Adding period
@@ -576,12 +597,12 @@ p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -OD
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
 
-p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1
-  group_by(STRATA) %>%
-  mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
-                                     ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
-                                     ODDS_SELECTION_PCT)) %>%
-  ungroup()
+#p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1.  This didn't happen in 2021
+  # group_by(STRATA) %>%
+  # mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
+  #                                    ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
+  #                                    ODDS_SELECTION_PCT)) %>%
+  # ungroup()
 
 for(i in 1:nrow(p.table)){
   p.table$pct[i] = round((p.table$value[i] / p.table$Total.n[i]) * 100, 2)
@@ -595,7 +616,7 @@ p.table <- p.table %>%
            mutate(ODDS_SELECTION_PCT = format(ODDS_SELECTION_PCT, nsmall=1), pct = format(pct, nsmall=1))
 
 # Cleanup
-rm(for.p.wide)
+#rm(for.p.wide)
 
 # rename values for one column
 p.table$key[p.table$key == "inherit.n"] <- "Expected"
@@ -1921,7 +1942,7 @@ kbl(
 
 #####  
 
-```{r disposition.table, echo=FALSE, include=FALSE}
+```{r disposition.table, echo=FALSE}
 # Table 2 from 2019 Annual Report
 ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
 
@@ -1935,7 +1956,7 @@ kable(disposition.table, escape=F)
 
 #####  
 
-```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
+```{r logged.table, echo=FALSE, tab.cap=""}
 # Table 3 from 2019 Annual Report
 ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
 
@@ -1951,9 +1972,9 @@ kable(logged.table, escape=F)
 
 ```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
 Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
-# For the period when waivers were in place, remove p-values for 'After Waivers'
-Selection.table <- Selection.table %>%
-  mutate(`*p*` = ifelse(Period==2 & !(Strata %like% "EM") & `Trip disposition` %like% "After Waivers", "", `*p*`))   
+# For the period when waivers were in place, remove p-values for 'After Waivers' # I DON'T THINK THIS APPLIED IN 2021
+#Selection.table <- Selection.table %>%
+#  mutate(`*p*` = ifelse(Period==2 & !(Strata %like% "EM") & `Trip disposition` %like% "After Waivers", "", `*p*`))   
 Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
 
 kable(Selection.table %>% 
@@ -1963,9 +1984,9 @@ kable(Selection.table %>%
       escape=F, align="llrrrrr") %>%
   kable_paper() %>%
   pack_rows(index = c("Fixed-gear EM strata : full year"=8, 
-                      "Observer strata : Jan. 1 - Mar. 25"=12,
-                      "Observer strata : Mar. 25 - Jun. 30"=12,
-                      "Observer strata : Jul. 1 - Dec. 31"=12), indent=F) 
+                      "Observer strata : Jan. 1 - Aug. 31"=12,
+                      #"Observer strata : Mar. 25 - Jun. 30"=12,
+                      "Observer strata : Sep. 1 - Dec. 31"=12), indent=F) 
 ```
 
 #####  

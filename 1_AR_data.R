@@ -56,7 +56,8 @@ load("G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_raw_
 #work.data <- dbGetQuery(channel_afsc, script)
 
 # 2021 Valhalla data aren't currently in the database.  Load .RData file instead:
-load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
+#load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
 work.data <- VALHALLA
 rm(VALHALLA)
 
