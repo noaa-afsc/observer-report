@@ -3,11 +3,11 @@
 #
 # Program:AR_descriptive_data.Rmd                                         
 # Project:Observer Program Annual Report Descriptive Chapter                                      
-# Location: S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info 
+# Location: S:\Observer Program Annual Report\2022_Annual_Report\Chapt3-4_Descriptive_Info 
 #      or: H:\Observer Program\Annual Report Local GIT Project\Descriptive Info
 #
 # Objectives:                                                                  
-# - Query and perform some data clean-up for the descriptive chapter (Ch.4) of the Observer Program Annual Report
+# - Query and perform some data clean-up for the descriptive chapter (Ch.3/4) of the Observer Program Annual Report
 # - Generate catch table summaries that are posted to the AKRO website 
 #   (https://www.fisheries.noaa.gov/alaska/fisheries-observers/observed-catch-tables-north-pacific-observer-program)
 #
@@ -24,7 +24,7 @@
 #      - akfish_report.species_group 
 #      - akfish_report.flag 
 #      - akfish_report.mortality_rate 
-#  - S:\Observer Program Annual Report\2019_Annual_Report\Chap4_Descriptive_Info\2013_2019_catchtables.csv 
+#  - S:\Observer Program Annual Report\20122Annual_Report\Chap3-4_Descriptive_Info\2013_2022_catchtables.csv 
 #
 # Output:    
 # Normal locations:
@@ -46,7 +46,7 @@
 source("AR_descriptive_helper.r")
 
 #Create a generalized YEAR object that corresponds to the Annual Report year
-YEAR <- 2021
+YEAR <- 2022
 
 # Set up ROracle connection for database calling information from R environment:
 channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
@@ -58,14 +58,14 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 ## Load Valhalla Data ---------------------------------------------------------------------------------------------
 
 # Query Valhalla data directly from the database for the Annual Report:
-#valhalla_query <- paste0("select * from akfish_sf.valhalla_scratch where adp = ", YEAR)
-#valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
+valhalla_query <- paste0("select * from akfish_sf.valhalla where adp = ", YEAR)
+valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
 
 
 # 2021 data aren't currently in the database.  Load .RData file instead:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
-load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
-valhalla_data <- VALHALLA  
+#load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
+#valhalla_data <- VALHALLA  
 
 
 ## Valhalla data transformations  ----------------------------------------------------------------------------------- 
@@ -102,19 +102,18 @@ prep_data <- valhalla_data %>%
 # Corrections to strata ---------------------------------------------------------------------------- 
 
 # Hardcode the following STRATA changes here:
-#  1. Appendix C of the 2021 ADP calls for 3 vessels (the Middleton (5029), the Kariel (3759), and the Predator (2844)) 
-#     to participate in the EM innovation and research zero selection pool. The Defender (1472) is using the deployment of 
-#     an EM Lite system (no cameras), so is also part of the EM innovation and research zero selection pool.  HOWEVER, AFSC/PacStates
-#     staff have indicated that only the Middleton and the Defender actually participated in EM research, so only hardcode the 2. 
-#     Since I don't have access to the AFSC data that this is based on, Check with Phil each year.
-#  2. Refer to the EM TRW EFP strata in the BSAI as FULL COVERAGE and the EM TRW EFP strata in the GOA as PARTIAL COVERAGE
+#  1. The 2022 ADP indicates that NO vessels are participating in the EM Innovation Project in 2022. SO no strata changes
+#     for this. There are 6 vessels participating in the cost effective and mobile EM system project that are doing a 
+#     side-by-side comparison of their existing EM system with a new one. I imagine these would stay as EM_HAL or EM_POT? 
+#     A third project is testing trawl EM systems on fixed gear (pot) vessels. They will take observers to allow for an 
+#     observer vs. EM counts comparison.  Double check with Phil how these last vessels should be treated.  
 
 
 table(prep_data$STRATA)
 #EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
-#50768      13276      36242     919154     125535      46714      26432      72917  
+#57549      19946      33633     860823     127781      58069      29439      74801 
 
-table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
+#table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
 # HAL  POT 
 # 1198  167
 #table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
@@ -123,20 +122,20 @@ table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
 #table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # HAL and POT
 # HAL POT 
 # 19 123 
-table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
+#table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
 # HAL 
 # 613 
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
 # 2021 version:
-prep_data <- prep_data %>% 
-  rename(ORIGINAL_STRATA = STRATA) %>% 
-  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
-                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
-                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA))))
+#prep_data <- prep_data %>% 
+#  rename(ORIGINAL_STRATA = STRATA) %>% 
+#  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
+#                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
+#                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA))))
 
 
-table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
+#table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 #             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
 # EM_HAL      50768      0               0               0      0      0      0      0      0                0
 # EM_POT          0  13276               0               0      0      0      0      0      0                0
@@ -149,22 +148,19 @@ table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
-#     N      Y 
-#301344 989694 
+#N      Y 
+#333013 929028 
 
 # Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
-prep_data <- prep_data %>% 
-  rename(ORIGINAL_OBSERVED_FLAG = OBSERVED_FLAG) %>% 
-  mutate(OBSERVED_FLAG = ifelse(TRIP_ID %in% c('28207362.0', '28207273.0', '28207833.0') & ORIGINAL_OBSERVED_FLAG == 'N', 'Y', ORIGINAL_OBSERVED_FLAG))
+#prep_data <- prep_data %>% 
+#  rename(ORIGINAL_OBSERVED_FLAG = OBSERVED_FLAG) %>% 
+#  mutate(OBSERVED_FLAG = ifelse(TRIP_ID %in% c('28207362.0', '28207273.0', '28207833.0') & ORIGINAL_OBSERVED_FLAG == 'N', 'Y', ORIGINAL_OBSERVED_FLAG))
 
-table(prep_data$OBSERVED_FLAG)
-# N      Y 
-# 301344 989694
+#table(prep_data$OBSERVED_FLAG)
 
-table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
-#        N      Y
-# N 301344      0
-# Y      0 989694
+
+#table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
+
 
 
 
@@ -183,7 +179,7 @@ table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
 # In order to remain consistent with previous versions of the annual report, the Ch. 4 catch tables need to include
 # halibut PSC estimates rather than halibut mortality: 
 #     - For 2017 PSC estimates were added to a version of Valhalla from v_cas_psc_estimate (in Cathy_valhalla_3_14_17.RData).  
-#     - For 2018, 2019, and 2020 the mortality rates from the warehouse are needed to back calculate the estimates from the mortality
+#     - For 2018 onward the mortality rates from the warehouse are needed to back calculate the estimates from the mortality
 #       (NOTE: you cannot simply use the DMRs in akfish.core_halibut_mortality_rate because some discards occur through deck sorting
 #              and have their own haul or vessel specific DMR applied)
 
@@ -193,7 +189,8 @@ valhalla_run_date <- valhalla_data %>%
   mutate(RUNDATE = format(RUN_DATE, '%d-%b-%Y')) %>% 
   distinct(RUNDATE)
 
-#valhalla_run_date$RUNDATE <- '12-MAY-2022'
+valhalla_run_date
+#valhalla_run_date$RUNDATE <- '21-FEB-2023'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
@@ -215,6 +212,7 @@ WHERE rownum = 1
 SELECT distinct crs.catch_report_source_pk, -- identified as ca_reference_key in 2019 Valhalla dataset
 cr.data_source_type_code,
 crs.catch_report_type_code,
+fmp.area_code AS fmp,
 sg.species_group_code, 
 txn.mortality_rate_pk,
 mr.rate AS mortality_rate,
@@ -227,6 +225,7 @@ JOIN akfish_report.catch_report_source crs ON cr.catch_report_source_pk = crs.ca
 JOIN akfish_report.species_group sg ON txn.species_group_pk = sg.species_group_pk 
 JOIN akfish_report.flag r ON txn.retained_flag_pk = r.flag_pk 
 JOIN akfish_report.mortality_rate mr ON txn.mortality_rate_pk = mr.mortality_rate_pk 
+JOIN akfish_report.area fmp ON txn.fmp_area_pk = fmp.area_pk
 WHERE tfl.year = ", YEAR,
 " AND sg.species_group_code = 'HLBT'
 AND r.value = 'N' -- discarded")
@@ -244,10 +243,9 @@ warehouse_data <- warehouse_data %>%
 # Merge the datasets so the DMR can be used to back calculate the estimate:
 apply_dmr <- prep_data %>% 
   left_join(warehouse_data, 
-            by = c("CA_REFERENCE_KEY", "SPECIES_GROUP_CODE", "SOURCE_TABLE", "DATA_SOURCE_TYPE_CODE", "CATCH_REPORT_TYPE_CODE")) %>% 
+            by = c("CA_REFERENCE_KEY", "SPECIES_GROUP_CODE", "SOURCE_TABLE", "DATA_SOURCE_TYPE_CODE", "CATCH_REPORT_TYPE_CODE", "FMP")) %>% 
   # Calculate the estimate from the DMR and the mortality for PSC:
   mutate(HALIBUT_WEIGHT_NOMORT = ifelse(!is.na(MORTALITY_RATE), as.numeric(WEIGHT_POSTED)/as.numeric(MORTALITY_RATE), NA))
-
 
 
 # ---- Review halibut data and the new halibut_weight_nomort field just to make sure I understand which to use for the Ch4 catch tables:
@@ -266,7 +264,7 @@ apply_dmr <- prep_data %>%
 
         # Verify that when discarded halibut is wastage, there is no difference between the weight posted and the weight 
         # with no DMRs applied:
-        #table(discarded.halibut[discarded.halibut$GROUNDFISH_FLAG=='Y',]$difference)
+        table(discarded.halibut[discarded.halibut$GROUNDFISH_FLAG=='Y',]$difference)
 # ---------------------------------------------------------------------------------------------------------------------------- #
 
         
@@ -376,7 +374,7 @@ export_format <- catch_tables %>%
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
+rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
 
-#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
-#     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
+save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
+     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
