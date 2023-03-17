@@ -128,23 +128,24 @@ table(prep_data$STRATA)
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
 # 2021 version:
-#prep_data <- prep_data %>% 
-#  rename(ORIGINAL_STRATA = STRATA) %>% 
-#  mutate(STRATA = ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
-#                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
-#                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA))))
+prep_data <- prep_data %>% 
+  rename(ORIGINAL_STRATA = STRATA) %>% 
+  mutate(STRATA = #ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
+                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
+                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA)))#)
 
 
-#table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-#             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO ZERO_EM_RESEARCH
-# EM_HAL      50768      0               0               0      0      0      0      0      0                0
-# EM_POT          0  13276               0               0      0      0      0      0      0                0
-# EM_TRW_EFP      0      0           27830            8412      0      0      0      0      0                0
-# FULL            0      0               0               0 919154      0      0      0      0                0
-# HAL             0      0               0               0      0 123724      0      0      0             1811
-# POT             0      0               0               0      0      0  46547      0      0              167
-# TRW             0      0               0               0      0      0      0  26432      0                0
-# ZERO            0      0               0               0      0      0      0      0  72917                0
+table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
+#             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
+# EM_HAL      57549      0               0               0      0      0      0      0      0
+# EM_POT          0  19946               0               0      0      0      0      0      0
+# EM_TRW_EFP      0      0           21754           11879      0      0      0      0      0
+# FULL            0      0               0               0 860823      0      0      0      0
+# HAL             0      0               0               0      0 127781      0      0      0
+# POT             0      0               0               0      0      0  58069      0      0
+# TRW             0      0               0               0      0      0      0  29439      0
+# ZERO            0      0               0               0      0      0      0      0  74801
+
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
@@ -374,7 +375,7 @@ export_format <- catch_tables %>%
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
+#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
 
-save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
-     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
+#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
+#     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
