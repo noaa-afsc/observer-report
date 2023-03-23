@@ -1,8 +1,9 @@
 
 # Setup -------------------------------------------------------------------
 
-# Get packages and user-defined functions
-source("3_helper.R")
+# Get packages
+library(data.table)
+library(ROracle)
 
 # Random number seed
 set.seed(052870)
@@ -10,12 +11,9 @@ set.seed(052870)
 # Report year (year that fishing and observing took place)
 year <- 2021 
 
-# The user's physical location when running this code (used to pull data from the closest database)
-location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
-
 # Establish database connections
-channel_afsc  <- channel.fxn(location)
-channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
+channel_afsc  <- eval(parse(text = Sys.getenv("channel_afsc")))
+channel_akro  <- eval(parse(text = Sys.getenv("channel_cas")))
 
 # Get data ----------------------------------------------------------------
 
@@ -279,8 +277,7 @@ partial <- setDT(dbGetQuery(channel_afsc, paste(
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(location, channel_afsc, channel_akro)
+rm(channel_afsc, channel_akro)
 
 # Save
-#save.image(file = "2_AR_data_abbreviated.Rdata")
 save.image(file = "G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_raw_afsc_data.RData")
