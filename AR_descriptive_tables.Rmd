@@ -632,7 +632,7 @@ flextable(table3_4) %>%
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   ## Add footer:
-  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside."))
+  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
 
 
 
