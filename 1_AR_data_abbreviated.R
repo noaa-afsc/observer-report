@@ -9,7 +9,7 @@ library(ROracle)
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2021 
+year <- 2022 
 
 # Establish database connections
 channel_afsc  <- eval(parse(text = Sys.getenv("channel_afsc")))
@@ -280,4 +280,4 @@ partial <- setDT(dbGetQuery(channel_afsc, paste(
 rm(channel_afsc, channel_akro)
 
 # Save
-save.image(file = "G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_raw_afsc_data.RData")
+save.image(file = "G:\\FMGROUP\\Observer Program Annual Report\\2022_Annual_Report\\2_AR_raw_afsc_data.RData")
