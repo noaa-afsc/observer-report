@@ -7,21 +7,26 @@ source("3_helper.R")
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2021 
+year <- 2022 
 
 # The user's physical location when running this code (used to pull data from the closest database)
 #location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
 # Establish database connections
+channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
+                         username =paste(Sys.getenv('CASid')), 
+                         password =paste(Sys.getenv('CASpw')), 
+                         dbname = Sys.getenv("myCASConnStr"))
+
 #channel_afsc  <- channel.fxn(location)
 #channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
 # Get data ----------------------------------------------------------------
 
-# As a work-around for the 2021 Annual Report, which will contain a very abbreviated version of Chapter 3 (only the equivalent to Table 3-3 from 
+# As a work-around for the 2022 Annual Report, which will contain a very abbreviated version of Chapter 3 (only the equivalent to Table 3-3 from 
 # the 2020 Annual Report), Phil ran 1_AR_data_abbreviated.R which pulled the raw AFSC data for Cathy (who isn't set up to access AFSC data directly)
-load("G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_raw_afsc_data.RData") 
-
+#load("G:\\FMGROUP\\Observer Program Annual Report\\2022_Annual_Report\\2_AR_raw_afsc_data.RData") 
+load("Z:\\FMGROUP\\Observer Program Annual Report\\2022_Annual_Report\\2_AR_raw_afsc_data.RData") 
 
 
 # To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
@@ -52,14 +57,14 @@ load("G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_raw_
 # The code that creates Valhalla is maintained separately from this project
 #script <- paste0("select * 
 #                  from loki.akr_valhalla_scratch_v")
-
-#work.data <- dbGetQuery(channel_afsc, script)
+script <- paste0("select * from akfish_sf.valhalla where adp = ", year)
+work.data <- dbGetQuery(channel_cas, script)
 
 # 2021 Valhalla data aren't currently in the database.  Load .RData file instead:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
-load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
-work.data <- VALHALLA
-rm(VALHALLA)
+#load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
+#work.data <- VALHALLA
+#rm(VALHALLA)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
@@ -478,8 +483,8 @@ partial_desc <- data.table(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "
 
 
 
-# For some reason the 2021 partial data.table does not contain a row for GOA EM TRW EFP.  Add one manually as a hack:
-partial <- rbind(partial, list(0.3000, as.POSIXct('2020-12-31 23:00:00', '%Y-%m-%d %H:%M:%S', tz=Sys.timezone()),13,'Trawl','EM EFP'))
+# For some reason the 2022 partial data.table does not contain a row for GOA EM TRW EFP.  Add one manually as a hack:
+partial <- rbind(partial, list(0.3000, as.POSIXct('2021-12-31 23:00:00', '%Y-%m-%d %H:%M:%S', tz=Sys.timezone()),13,'Trawl','EM EFP'))
 
 
 partial[, GEAR := ifelse(GEAR %like% "Pot", "POT", ifelse(GEAR %like% "Longline", "HAL", ifelse(GEAR %like% "Trawl", "TRW", GEAR)))] # Simplify gear types
@@ -504,4 +509,5 @@ dcast(partial, STRATA ~ Effective_Date, value.var="Rate")   # Note that if the r
 
 # Save
 #save.image(file = "2_AR_data.Rdata")
-save.image(file = "G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_data.Rdata")
+#save.image(file = paste0("G:\\FMGROUP\\Observer Program Annual Report\\",year,"_Annual_Report\\2_AR_data.Rdata"))
+#save.image(file = paste0("Z:\\FMGROUP\\Observer Program Annual Report\\",year,"_Annual_Report\\2_AR_data.Rdata"))

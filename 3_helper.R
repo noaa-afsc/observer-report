@@ -18,11 +18,13 @@ if(!require("reshape2"))   install.packages("reshape2")
 if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
 if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles
 if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed
+if(!require("ROracle"))   install.packages("ROracle")
 if(!require("scales"))  install.packages("scales")
 if(!require("sf"))  install.packages("sf")
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
+
 
 # II. Functions ----
 
