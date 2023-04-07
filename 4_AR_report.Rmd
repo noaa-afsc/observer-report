@@ -26,21 +26,21 @@ load("G:\\FMGROUP\\Observer Program Annual Report\\2021_Annual_Report\\2_AR_data
 source("3_helper.R")
 
 # Saving original partial object from work.data for strata will different selection rates at different time periods
-partial_og <- partial 
+#partial_og <- partial 
 
 # Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
-partial <- partial[1:6,]
+#partial <- partial[1:6,]
 
 # Create a version of the partial coverage programmed rate table that includes all time periods    
 partial_time <- partial %>% 
                 filter(Effective_Date == min(Effective_Date)) %>% 
-                mutate(Effective_Date = as.Date(Effective_Date), Expire_After = as.Date(c("2021-12-31", "2021-12-31", "2021-12-31", "2021-08-31", "2021-08-31", "2021-08-31"))) %>% 
+                mutate(Effective_Date = as.Date(Effective_Date), Expire_After = as.Date(c("2022-12-31", "2022-12-31", "2022-12-31", "2022-12-31", "2022-12-31", "2022-12-31"))) %>% 
                 select(Effective_Date, Expire_After, STRATA, Rate, descriptions, formatted_strat, txt)
 
-partial_time <- rbind(partial_time,
-                      partial_time %>% 
-                      filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
-                      mutate(Effective_Date = as.Date("2021-09-01"), Expire_After = as.Date("2021-12-31")))
+#partial_time <- rbind(partial_time,
+#                      partial_time %>% 
+#                      filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
+#                      mutate(Effective_Date = as.Date("2021-09-01"), Expire_After = as.Date("2021-12-31")))
 
 
 # The partial coverage programmed rate was never set equal to those in the ADP (like it was in 2020).  Hardcode some corrections:
@@ -48,14 +48,14 @@ partial_time <- rbind(partial_time,
 #     from a Geoff Mayhew memo dated 8/26/2021:
 # Also... according to the EA, "Under the EFP, the goal has been to achieve observer monitoring at a rate of 1 in every 3 trips (33%)."
 
-partial_time_hardcoded <- partial_time %>% 
-  mutate(Rate = ifelse(STRATA == 'EM TRW EFP', 0.3333, Rate)) %>% 
-  mutate(Rate = ifelse(STRATA == 'HAL' & Effective_Date == as.Date("2021-01-01"), 0.1513, Rate)) %>%
-  mutate(Rate = ifelse(STRATA == 'POT' & Effective_Date == as.Date("2021-01-01"), 0.1504, Rate)) %>% 
-  mutate(Rate = ifelse(STRATA == 'TRW' & Effective_Date == as.Date("2021-01-01"), 0.1612, Rate)) %>% 
-  mutate(Rate = ifelse(STRATA == 'HAL' & Effective_Date == as.Date("2021-09-01"), 0.1790, Rate)) %>%
-  mutate(Rate = ifelse(STRATA == 'POT' & Effective_Date == as.Date("2021-09-01"), 0.1760, Rate)) %>% 
-  mutate(Rate = ifelse(STRATA == 'TRW' & Effective_Date == as.Date("2021-09-01"), 0.2100, Rate))
+# partial_time_hardcoded <- partial_time %>% 
+#   mutate(Rate = ifelse(STRATA == 'EM TRW EFP', 0.3333, Rate)) %>% 
+#   mutate(Rate = ifelse(STRATA == 'HAL' & Effective_Date == as.Date("2021-01-01"), 0.1513, Rate)) %>%
+#   mutate(Rate = ifelse(STRATA == 'POT' & Effective_Date == as.Date("2021-01-01"), 0.1504, Rate)) %>% 
+#   mutate(Rate = ifelse(STRATA == 'TRW' & Effective_Date == as.Date("2021-01-01"), 0.1612, Rate)) %>% 
+#   mutate(Rate = ifelse(STRATA == 'HAL' & Effective_Date == as.Date("2021-09-01"), 0.1790, Rate)) %>%
+#   mutate(Rate = ifelse(STRATA == 'POT' & Effective_Date == as.Date("2021-09-01"), 0.1760, Rate)) %>% 
+#   mutate(Rate = ifelse(STRATA == 'TRW' & Effective_Date == as.Date("2021-09-01"), 0.2100, Rate))
 
 
 # Avoid scientific notation
@@ -80,9 +80,10 @@ if(annual.report){
 # 2 full coverage (FULL, EM TRW EFP)
 # 3 partial coverage observed (HAL, POT, TRW)
 # 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP) + 
-# 1 zero coverage EM research (Zero EM Research) +
+# 1 zero coverage EM research (Zero EM Research) +   ## Not this in 2022?
 # 1 zero coverage (ZERO)
-total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
+#total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
+total.strat <- nrow(unique(work.data[, c("COVERAGE_TYPE", "STRATA")]))
 ```
 
 `r if(tech.memo){'# Abstract'}`  
@@ -372,12 +373,12 @@ odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
 
 # 2021-ONLY: define time periods
 #date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), as.Date("2021-09-01"), max(odds.dat$PLANNED_EMBARK_DATE))  # this resulted in a duplicated 9/1/2021
-date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), max(odds.dat$PLANNED_EMBARK_DATE))
-date_cuts <- date_cuts[order(date_cuts)] 
+#date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), max(odds.dat$PLANNED_EMBARK_DATE))
+#date_cuts <- date_cuts[order(date_cuts)] 
 
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
-            mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=F, include.lowest = T)) %>%  # 2020-ONLY: Adding period to odds.dat
-            mutate(PERIOD := ifelse(STRATA %like% "EM",1, PERIOD)) %>% # Don't split EM strata by period; make period = 1
+            #mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=F, include.lowest = T)) %>%  # 2020-ONLY: Adding period to odds.dat
+            #mutate(PERIOD := ifelse(STRATA %like% "EM",1, PERIOD)) %>% # Don't split EM strata by period; make period = 1
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
 
@@ -416,9 +417,11 @@ disposition <- # Merging two elements:
   merge(
     # The first is by strata
     odds.dat %>%  
-      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      #select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(STRATA, PERIOD, random.assign) %>%
+      group_by(STRATA, random.assign) %>%
+      #group_by(STRATA, PERIOD, random.assign) %>%
       summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
                 Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
@@ -446,9 +449,11 @@ disposition <- # Merging two elements:
      #    select(-Trips.selected) %>% 
      #    data.frame(), 
     odds.dat %>%  
-      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      #select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(PERIOD, random.assign) %>%
+      group_by(random.assign) %>%
+      #group_by(PERIOD, random.assign) %>%
       summarize(STRATA = "Total",
                 Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
@@ -477,7 +482,7 @@ disposition.table <-
   disposition %>%
   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
-         'Period' = PERIOD,
+         #'Period' = PERIOD,
          'Random number outcomes' = random.assign, 
          'Logged (*a*)' = Trips.logged.ODDS, 
          'Cancelled by system (*b*)' = Trips.cancelled.bysystem,
@@ -497,7 +502,8 @@ logged <-
   # only pull in partial coverage
   filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-  group_by(STRATA, PERIOD) %>%                                                 # 2020-ONLY: Added period to group
+  group_by(STRATA) %>%
+  #group_by(STRATA, PERIOD) %>%                                                 # 2020-ONLY: Added period to group
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
             # Number of trips that are not selected by a random number but were 
@@ -519,7 +525,7 @@ logged <-
 
 logged.table <- bind_rows(logged, 
                       logged %>% 
-                      group_by(PERIOD) %>%          # 2020-ONLY: Added period
+                      #group_by(PERIOD) %>%          # 2020-ONLY: Added period
                       summarise(STRATA = "Total",
                                 Total.trips = sum(Total.trips),
                                 Random.selected = sum(Random.selected),
@@ -528,7 +534,8 @@ logged.table <- bind_rows(logged,
                                 Total.final.selected = sum(Total.final.selected)) %>% 
                       mutate(Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
                              Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))) %>% 
-                      select(`Strata`=STRATA, `Period`=PERIOD, `Total Trips`=Total.trips,
+                      select(`Strata`=STRATA, `Total Trips`=Total.trips,
+                      #select(`Strata`=STRATA, `Period`=PERIOD, `Total Trips`=Total.trips,
                              `Random number selection (*r*)`=Random.selected, 
                              `Inherited selection** (*i*)`=Inherit.selected,
                              `Randomly selected but waived (*w*)`=Waivers.selected, 
@@ -543,7 +550,8 @@ logged.table <- bind_rows(logged,
 # under various assumptions
 for.p.wide <- merge(
   logged %>% 
-  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
+  #group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
+  group_by(STRATA) %>%              
   summarize(random.n = Random.selected,
             inherit.n = Total.final.selected,
             inherit.butnowaiver.n = (Total.final.selected + Waivers.selected),
@@ -554,7 +562,8 @@ for.p.wide <- merge(
   odds.dat %>% 
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
   filter(!is.na(random.assign)) %>% 
-  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
+  #group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
+  group_by(STRATA) %>%             
   summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
             Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
             Source = "ODDS random number"), 
@@ -583,16 +592,19 @@ for.p.wide <- merge(
 # Need to merge in the selection rates for calculating p-values later
 for.p.wide <- merge(
   for.p.wide, 
-  partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
+  partial %>% 
+  #partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
         filter(STRATA != "EM TRW EFP") %>%
-        mutate(PERIOD = ifelse(Effective_Date == as.Date("2021-01-01"), 1, 2),
+        mutate(#PERIOD = ifelse(Effective_Date == as.Date("2022-01-01"), 1, 2),
                ODDS_SELECTION_PCT = Rate * 100) %>% 
         select(-c(Effective_Date, descriptions, formatted_strat, txt, Rate)),
-  by = c("STRATA", "PERIOD"), all = TRUE)
+  by = c("STRATA"), all = TRUE)
+  #by = c("STRATA", "PERIOD"), all = TRUE)
   
 
 # Put into long format
-p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2020-ONLY: Adding period
+p.table <- gather(data = for.p.wide, key, value, -STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source)
+#p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2020-ONLY: Adding period
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
@@ -635,7 +647,7 @@ Selection.table <- p.table %>%
                                         'After Waivers, *d* (*a*-*b*+*c*-*d*)' = key=="Expected",
                                         .ordered=TRUE, .method="unique")) %>% 
                    select("Strata" = STRATA, 
-                          "Period" = PERIOD,
+                          #"Period" = PERIOD,
                           "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
                           "n" = value,  # "Selected trips"
                           "N" = Total.n,   # "Total trips"
@@ -928,8 +940,8 @@ Coverage.Table.partial <- plyr::rbind.fill(
     group_by(TRIP_ID) %>% 
     mutate(START = min(TRIP_TARGET_DATE)) %>% 
     ungroup() %>% 
-    #left_join(partial_time[, .(STRATA, Effective_Date, Expire_After, Rate)], on = "STRATA") %>% 
-    left_join(partial_time_hardcoded[, .(STRATA, Effective_Date, Expire_After, Rate)], on = "STRATA") %>% 
+    left_join(partial_time[, .(STRATA, Effective_Date, Expire_After, Rate)], on = "STRATA") %>% 
+    #left_join(partial_time_hardcoded[, .(STRATA, Effective_Date, Expire_After, Rate)], on = "STRATA") %>% 
     filter(START >= Effective_Date & START <= Expire_After) %>% 
     group_by(COVERAGE_TYPE, STRATA, Effective_Date, Expire_After) %>%
     summarize(V=length(unique(VESSEL_ID[START >= Effective_Date & START <= Expire_After])),
@@ -2014,10 +2026,8 @@ kbl(Coverage.Table, escape = FALSE) %>%
   # Group rows
   pack_rows("Full coverage: Jan. 1 - Dec. 31", 1, 3, label_row_css = "text-align: center") %>% 
   pack_rows("Partial coverage EM: Jan. 1 - Dec. 31", 4, 6, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed: Jan. 1 - Aug. 31", 7, 9, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed: Sep. 1 - Dec. 31", 10, 12, label_row_css = "text-align: center") %>% 
-  #pack_rows("Partial coverage observed: Sep. 1 - Dec. 31", 13, 15, label_row_css = "text-align: center") %>%   
-  pack_rows("Zero coverage: Jan. 1 - Dec. 31", 14, 15, label_row_css = "text-align: center")
+  pack_rows("Partial coverage observed: Jan. 1 - Dec. 31", 7, 10, label_row_css = "text-align: center") %>% 
+  pack_rows("Zero coverage: Jan. 1 - Dec. 31", 11, 11 label_row_css = "text-align: center")
 ```
 
 #####  
