@@ -20,7 +20,13 @@ library(devtools)
 # load the data files.
 # * chng wd filepath as needed *
 rm(list = ls())
-load(file = "scripts/AR_rate_output.rdata")
+
+
+# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
+# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
+adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
+
+load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_3_rate_output.rdata"))
 
 
 
@@ -121,10 +127,10 @@ rate_all_groupings_ole_category_all <-
 #    # remove unneeded columns, if any (?)
 #    # change borders, merge cells, change column names (remove underscores, update names), other visual cleanup stuff.
 
-write.csv(file = paste("charts_and_tables/tables/tbl_",
+write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
                        adp_yr,
-                       "_rate_ole_category.csv",
-                       sep = ''),
+                       "_rate_ole_category.csv"
+                       ),
         x    = rate_all_groupings_ole_category_all %>% 
                 select(`Coverage Type` = COVERAGE_TYPE, 
                        `Vessel Type`   = VESSEL_TYPE, 
@@ -305,12 +311,39 @@ summ_by_type_both_years <-
           summ_by_affi_type_prev_yr,
           all=TRUE) %>%
     # Calculate YOY change
-    mutate(N_STATEMENTS_YOY_CHG = (N_STATEMENTS_PREV_YR - N_STATEMENTS)/N_STATEMENTS_PREV_YR,
-           N_INCIDENTS_YOY_CHG  = (N_INCIDENTS_PREV_YR  - N_INCIDENTS) /N_INCIDENTS_PREV_YR,
-           INCI_RATE_ASSMT_YOY_CHG  = (RATE_PER_ASSNMT_PREV_YR - RATE_PER_ASSNMT)/RATE_PER_ASSNMT_PREV_YR,
-           INCI_RATE_1000_YOY_CHG   = (RATE_PER_1000_DAYS_PREV_YR   - RATE_PER_1000_DAYS)/RATE_PER_1000_DAYS_PREV_YR,
+    mutate(N_STATEMENTS_YOY_CHG = (N_STATEMENTS - N_STATEMENTS_PREV_YR)/N_STATEMENTS_PREV_YR,
+           N_INCIDENTS_YOY_CHG  = (N_INCIDENTS  - N_INCIDENTS_PREV_YR) /N_INCIDENTS_PREV_YR,
+           INCI_RATE_ASSMT_YOY_CHG  = (RATE_PER_ASSNMT - RATE_PER_ASSNMT_PREV_YR)/RATE_PER_ASSNMT_PREV_YR,
+           INCI_RATE_1000_YOY_CHG   = (RATE_PER_1000_DAYS   - RATE_PER_1000_DAYS_PREV_YR)/RATE_PER_1000_DAYS_PREV_YR,
            # Note that this next one is a percent change of a percent, so it is just a straight subtraction!!
            PROPORT_WITH_INCIS_YOY_CHG   =  PROPORT_FACTOR_GRPS_WITH_INCIS - PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR,
+           
+           # Next change the NA's in %_YOY_CHANGE columns to either -100% or 100%, depending on which year has the NA.  
+           # If LAST YEAR has the NA and this year does NOT, then make it 100% change YOY; 
+           # if THIS YEAR has an NA and LAST YEAR does NOT, make it -100% change YOY.
+           N_STATEMENTS_YOY_CHG = ifelse(is.na(N_STATEMENTS) & !is.na(N_STATEMENTS_PREV_YR), -1, N_STATEMENTS_YOY_CHG),
+           N_STATEMENTS_YOY_CHG = ifelse(is.na(N_STATEMENTS_PREV_YR) & !is.na(N_STATEMENTS), 1, N_STATEMENTS_YOY_CHG),
+           N_INCIDENTS_YOY_CHG = ifelse(is.na(N_INCIDENTS) & !is.na(N_INCIDENTS_PREV_YR), -1, N_INCIDENTS_YOY_CHG),
+           N_INCIDENTS_YOY_CHG = ifelse(is.na(N_INCIDENTS_PREV_YR) & !is.na(N_INCIDENTS), 1, N_INCIDENTS_YOY_CHG),
+           INCI_RATE_ASSMT_YOY_CHG = ifelse(is.na(RATE_PER_ASSNMT) & !is.na(RATE_PER_ASSNMT_PREV_YR), -1, INCI_RATE_ASSMT_YOY_CHG),
+           INCI_RATE_ASSMT_YOY_CHG = ifelse(is.na(RATE_PER_ASSNMT_PREV_YR) & !is.na(RATE_PER_ASSNMT), 1, INCI_RATE_ASSMT_YOY_CHG),
+           INCI_RATE_1000_YOY_CHG = ifelse(is.na(RATE_PER_1000_DAYS) & !is.na(RATE_PER_1000_DAYS_PREV_YR), -1, INCI_RATE_1000_YOY_CHG),
+           INCI_RATE_1000_YOY_CHG = ifelse(is.na(RATE_PER_1000_DAYS_PREV_YR) & !is.na(RATE_PER_1000_DAYS), 1, INCI_RATE_1000_YOY_CHG),
+           PROPORT_WITH_INCIS_YOY_CHG = ifelse(is.na(PROPORT_FACTOR_GRPS_WITH_INCIS) & !is.na(PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR), -1, PROPORT_WITH_INCIS_YOY_CHG),
+           PROPORT_WITH_INCIS_YOY_CHG = ifelse(is.na(PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR) & !is.na(PROPORT_FACTOR_GRPS_WITH_INCIS), 1, PROPORT_WITH_INCIS_YOY_CHG),
+           
+           # replace the NA's in the main statements/incidents value columns with 0's, because if those are NA, that means there were 0 statements/incidents
+           N_STATEMENTS = ifelse(is.na(N_STATEMENTS), 0, N_STATEMENTS),
+           N_INCIDENTS = ifelse(is.na(N_INCIDENTS), 0, N_INCIDENTS),
+           N_STATEMENTS_PREV_YR = ifelse(is.na(N_STATEMENTS_PREV_YR), 0, N_STATEMENTS_PREV_YR),
+           N_INCIDENTS_PREV_YR = ifelse(is.na(N_INCIDENTS_PREV_YR), 0, N_INCIDENTS_PREV_YR),
+           RATE_PER_ASSNMT = ifelse(is.na(RATE_PER_ASSNMT), 0, RATE_PER_ASSNMT),
+           RATE_PER_ASSNMT_PREV_YR = ifelse(is.na(RATE_PER_ASSNMT_PREV_YR), 0, RATE_PER_ASSNMT_PREV_YR),
+           RATE_PER_1000_DAYS = ifelse(is.na(RATE_PER_1000_DAYS), 0, RATE_PER_1000_DAYS),
+           RATE_PER_1000_DAYS_PREV_YR = ifelse(is.na(RATE_PER_1000_DAYS_PREV_YR), 0, RATE_PER_1000_DAYS_PREV_YR),
+           PROPORT_FACTOR_GRPS_WITH_INCIS = ifelse(is.na(PROPORT_FACTOR_GRPS_WITH_INCIS), 0, PROPORT_FACTOR_GRPS_WITH_INCIS),
+           PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR = ifelse(is.na(PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR), 0, PROPORT_FACTOR_GRPS_WITH_INCIS_PREV_YR),
+           
            )
   
     
@@ -321,10 +354,10 @@ summ_by_type_both_years <-
 #   # make column headers not caps, 
 #   # add grid lines, etc)
 
-write.csv(file = paste("charts_and_tables/tables/tbl_", 
-                       adp_yr, 
-                       "_summ_incis_by_type.csv", 
-                       sep = ''),
+write.csv(file =  paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
+                         adp_yr,
+                         "_summ_incis_by_type.csv"
+                         ),
           x    = summ_by_type_both_years %>%
                   mutate(OLE_CATEGORY = factor(OLE_CATEGORY, # need to re-order the levels for the final output table
                                                levels = c('OLE PRIORITY: INTER-PERSONAL',
@@ -357,4 +390,4 @@ write.csv(file = paste("charts_and_tables/tables/tbl_",
 # Save Output -------------------------------------------------------------
 #Requires the folder 'scripts'
 save(list = ls(),
-     file = paste0("scripts/", "AR_summary_tables_output.rdata"))
+     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_4_summary_tables_output.rdata"))

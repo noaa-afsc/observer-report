@@ -17,7 +17,12 @@ library(devtools)
 # load the data files.
 # * chng wd filepath as needed *
 rm(list = ls())
-load(file = "scripts/AR_rolling_join_output.rdata")
+
+# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
+# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
+adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
+
+load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_2_rolling_join_output.rdata"))
 
 
 
@@ -108,11 +113,10 @@ rate_all_groupings_affi_type_for_plots <-
   )
 
 # output this for OLE to examine.  It includes confidential data so not for public use.
-write.csv(file = paste("charts_and_tables/tables/tbl_", 
-                       adp_yr, 
-                       "_rate_all_groupings_by_affi_type_", 
-                       Sys.Date(), ".csv", 
-                       sep = ''),
+write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_", 
+                        adp_yr, 
+                        "_rate_all_groupings_by_affi_type.csv"
+                        ),
           x    = rate_all_groupings_affi_type_for_plots)
 
 
@@ -243,6 +247,6 @@ rate_no_groupings <-
 # Save Output -------------------------------------------------------------
 #Requires the folder 'scripts'
 save(list = ls(),
-     file = paste0("scripts/", "AR_rate_output.rdata"))
+     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_3_rate_output.rdata"))
 
 

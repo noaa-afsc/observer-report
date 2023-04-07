@@ -14,13 +14,18 @@
 # library(sqldf)
 # library(scales)
 # library(devtools)
-# library(ggh4x)
+library(ggh4x)
 # library(ggpmisc)
 
 # load the data files. ----------------------------------------
 # * chng wd filepath as needed *
 rm(list = ls())
-load(file = "scripts/AR_summary_tables_output.rdata")
+
+# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
+# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
+adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
+
+load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/AR_4_summary_tables_output.rdata"))
 
 # Define GG's ----------------------------------------
 
@@ -88,11 +93,12 @@ fn_heatmap_assnmt_gg <-
 ### Heatmap ggsSave parameters   ----------------------------------------
 fn_save_defs_heatmaps <-
   function(plotname_char, plotname){
-    ggsave(filename = paste("charts_and_tables/heat_maps/hm_", 
-                        adp_yr, "_",
-                        plotname_char,
-                        ".png",
-                        sep = ''), 
+    ggsave(filename = paste0(adp_yr,
+                             "_outputs/charts_and_tables/heat_maps/hm_", 
+                              adp_yr, "_",
+                              plotname_char,
+                             ".png"
+                            ), 
        plot   = plotname,
        height = 8.00,  # mess with these as needed
        width  = 15.6) # mess with these as needed
@@ -123,11 +129,12 @@ fn_histog_gg <-
 ### Histogram save parameters --------------------------
 fn_save_defs_histog <- 
   function(plotname_char, plotname){
-    ggsave(filename = paste("charts_and_tables/histograms/histog_", 
-                            adp_yr, "_",
-                            plotname_char,
-                            ".png",
-                            sep = ''), 
+    ggsave(filename = paste0(adp_yr,
+                             "_outputs/charts_and_tables/histograms/histog_", 
+                             adp_yr, "_",
+                             plotname_char,
+                             ".png"
+                             ), 
            plot   = plotname,
            height = 8.00,  # mess with these as needed
            width  = 15.6) # mess with these as needed
@@ -258,11 +265,12 @@ fn_barchart_assnmt_gg <-
 ### barchart ggsave parameters ---------------------------------
 fn_save_defs_barchart <-
   function(plotname_char, plotname){
-    ggsave(filename = paste("charts_and_tables/barcharts/bar_chart_", 
-                            adp_yr, "_",
-                            plotname_char,
-                            ".pdf",
-                            sep = ''), 
+    ggsave(filename = paste0(adp_yr,
+                             "_outputs/charts_and_tables/barcharts/bar_chart_", 
+                             adp_yr, "_",
+                             plotname_char,
+                             ".pdf"
+                             ), 
            plot   = plotname,
            height = 5.7,  # mess with these as needed
            width  = 9, 
@@ -1005,6 +1013,7 @@ incis_per_statement_histog_all_other_types <-
   fn_histog_gg(ggcategory = 'ALL OTHER STATEMENT TYPES',
                ggtitle = 'Statement Category Group ALL OTHER STATEMENT TYPES') 
 
+incis_per_statement_histog_all_other_types
 fn_save_defs_histog(plotname_char = "incis_per_statement_histog_all_other_types",
                     plotname = incis_per_statement_histog_all_other_types)
 

@@ -1,0 +1,35 @@
+Category Group,Statement Category,AFFIDAVIT_TYPE,OLE_CATEGORY,N_STATEMENTS,N_INCIDENTS,NUM_CATEGS_WITH_0_INCIDS,NUM_CATEGS_WITH_>0_INCIDS,
+,,,,,,,,
+OLE PRIORITY: INTER-PERSONAL,Disruptive/Bothersome Behavior - Conflict Resolved,Disruptive/Bothersome Behavior - Conflict Resolved,OLE PRIORITY: INTER-PERSONAL,27,41,18,15,45%
+,Harassment-Assault,Harassment-Assault,OLE PRIORITY: INTER-PERSONAL,3,3,31,2,6%
+,Harassment - Sexual,Harassment - Sexual,OLE PRIORITY: INTER-PERSONAL,14,18,21,12,36%
+,"Intimidation, coercion, hostile work environment","Intimidation, coercion, hostile work environment",OLE PRIORITY: INTER-PERSONAL,31,164,16,17,52%
+OLE PRIORITY: SAFETY AND DUTIES,Interference/Sample Biasing,Interference/Sample Biasing,OLE PRIORITY: SAFETY AND DUTIES,19,231,19,14,42%
+,Safety-NMFS,Safety-NMFS,OLE PRIORITY: SAFETY AND DUTIES,75,265,13,20,61%
+COAST GUARD,MARPOL/Oil Spill,MARPOL/Oil Spill,COAST GUARD,83,281,13,20,61%
+,Safety-USCG-Equipment,Safety-USCG-Equipment,COAST GUARD,25,29,17,16,48%
+,Safety-USCG-Fail to Conduct Drills,Safety-USCG-Fail to Conduct Drills,COAST GUARD,156,242,15,18,55%
+,Safety-USCG-Marine Casualty,Safety-USCG-Marine Casualty,COAST GUARD,203,323,8,25,76%
+LIMITED ACCESS PROGRAMS,AFA,AFA,LIMITED ACCESS PROGRAMS,29,255,29,4,12%
+,Amendment 80,Amendment 80,LIMITED ACCESS PROGRAMS,76,1003,27,6,18%
+,Catcher Processer Longline,Catcher Processer Longline,LIMITED ACCESS PROGRAMS,18,174,26,7,21%
+,IFQ Retention,IFQ Retention,LIMITED ACCESS PROGRAMS,12,37,30,3,9%
+,Rockfish Program,Rockfish Program,LIMITED ACCESS PROGRAMS,1,2,32,1,3%
+PROTECTED RESOURCE & PROHIBITED SPECIES,Amendment 91 salmon,Amendment 91 salmon,PROTECTED RESOURCE & PROHIBITED SPECIES,73,244,28,5,15%
+,Gulf of Alaska Salmon,Gulf of Alaska Salmon,PROTECTED RESOURCE & PROHIBITED SPECIES,29,36,29,4,12%
+,Marine Mammal-Feeding,Marine Mammal-Feeding,PROTECTED RESOURCE & PROHIBITED SPECIES,1,1,32,1,3%
+,Marine Mammal-Harassment*,Marine Mammal-Harassment,PROTECTED RESOURCE & PROHIBITED SPECIES,4,8,29,4,12%
+,Prohibited Species - Mishandling,Prohibited Species - Mishandling,PROTECTED RESOURCE & PROHIBITED SPECIES,60,171,14,19,58%
+,Prohibited Species - Retaining,Prohibited Species - Retaining,PROTECTED RESOURCE & PROHIBITED SPECIES,2,20,30,3,9%
+,Sample Bias-Marine Mammals,Sample Bias-Marine Mammals,PROTECTED RESOURCE & PROHIBITED SPECIES,2,2,32,1,3%
+,Sample Bias-Seabirds,Sample Bias-Seabirds,PROTECTED RESOURCE & PROHIBITED SPECIES,0,0,,33,100%
+,Seabird-Avoidance Measures,Seabird-Avoidance Measures,PROTECTED RESOURCE & PROHIBITED SPECIES,9,42,30,3,9%
+,Seabird-Harassment,Seabird-Harassment,PROTECTED RESOURCE & PROHIBITED SPECIES,2,3,31,2,6%
+ALL OTHER STATEMENT TYPES,Contractor Problems,Contractor Problems,ALL OTHER STATEMENT TYPES,13,18,26,7,21%
+,Failure to Notify,Failure to Notify,ALL OTHER STATEMENT TYPES,48,287,15,18,55%
+,Inadequate Accomodations,Inadequate Accomodations,ALL OTHER STATEMENT TYPES,12,55,25,8,24%
+,IR/IU,IR/IU,ALL OTHER STATEMENT TYPES,64,249,15,18,55%
+,Miscellaneous Violations,Miscellaneous Violations,ALL OTHER STATEMENT TYPES,7,28,27,6,18%
+,Reasonable Assistance,Reasonable Assistance,ALL OTHER STATEMENT TYPES,60,159,12,21,64%
+,Record Keeping and Reporting,Record Keeping and Reporting,ALL OTHER STATEMENT TYPES,261,2066,5,28,85%
+,Restricted Access,Restricted Access,ALL OTHER STATEMENT TYPES,7,13,29,4,12%

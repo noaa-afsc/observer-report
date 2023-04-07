@@ -23,6 +23,9 @@ library(devtools)
 ###############################################################################
 ###############################################################################
 
+# clean up first
+rm(list = ls())
+
 #Open data channel
 #####################
 
@@ -37,15 +40,42 @@ channel <- dbConnect(odbc::odbc(),"AFSC",
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
 
 # first_date is the first violation date for statements.  Must be the current year, PLUS the previous year.
-# Generally this is 01-JAN of the year PRIOR to the ADP year.
-first_date <- rstudioapi::showPrompt(title = "First Date", message = "Enter the first date for statements in this analysis (DD-MON-RR format):", default = "")
+# Generally this is 01-JAN of the year PRIOR to the ADP year..
+first_date <- rstudioapi::showPrompt(title = "First Date",
+                                     message ="Enter the first date for statements in this analysis.  Must be the current year, PLUS the previous year.  Generally this is 01-JAN of the year PRIOR to the ADP year.  (Use DD-MON-RR format):",
+                                     default = "")
 
 # last_date is the Last calendar day of the annual report year, generally 31-DEC of the most recent year.
-last_date  <- rstudioapi::showPrompt(title = "Last Date", message = "Enter the last date for statements in this analysis (DD-MON-RR format):", default = "")
+last_date  <- rstudioapi::showPrompt(title = "Last Date", 
+                                     message = "Enter the last date for statements in this analysis.  This is the Last calendar day of the annual report year, generally 31-DEC of the most recent year. (DD-MON-RR format):", 
+                                     default = "")
+
+
+# Get min and max manual_year cruise numbers.  This is only used in the next step after this one, nowhere else.
+manual_year_cruises <-
+  dbGetQuery(channel,
+             "SELECT max(cruise) as max_cruise,
+                     min(cruise) AS min_cruise,
+                     manual_year
+                FROM (SELECT cruise, 
+                             norpac.ole_statement_factors_pkg.GetManualYearForCruise(ocr.cruise) AS manual_year
+                        FROM ols_observer_cruise ocr) a
+               WHERE manual_year is not null --this PL/SQL function does not handle cruises prior to 1999 so these are filtered out.          
+               GROUP BY manual_year
+               ")
+
+
+#Set the first CRUISE NUMBER for the analysis
+#IMPORTANT!!!!
 
 # first_cruise must be several cruise numbers prior to the first cruise for the year prior to this annual report year.
-# rule of thumb is to subtract 200 from the first manual_year cruise for the year PRIOR to the annaul report year.
-first_cruise <- rstudioapi::showPrompt(title = "Last Date", message = "Enter the first CRUISE number for statements in this query. NOTE: use a SMALLER cruise than you need, to ensure ALL cruises for the ADP year are selected.  Cruises will be filtered based on specific dates at a later step.", default = "")
+# Use the results from the previous query, if needed.
+# The RULE OF THUMB IS: subtract 200 from the FIRST manual_year cruise for the year PRIOR to the annual report year.
+# Bottom line is you need MORE than the manual_year, because cruises deploy across the calendar year break.
+# They will be filtered explicitly on DEPLOYED_DATE in a later step, this is just to ensure ALL that are needed are returned.
+first_cruise <- rstudioapi::showPrompt(title = "First Cruise", 
+                                       message = "Enter the first CRUISE number for statements in this query. NOTE: use a SMALLER cruise than you need, to ensure ALL cruises for the ADP year are selected.  Cruises will be filtered based on specific dates at a later step.",
+                                       default = "")
 ########################
 #SQL Queries
 ####################
@@ -242,21 +272,6 @@ hauls <-
 
 
 
-
-
-# df_offloads <- 
-#   dbGetQuery(channel,
-#              paste(
-#              "SELECT distinct trunc(mgm.landing_date) AS landing_date, mgm.processor_permit_id, lid.vessel_id,
-#                      mgm.fmp_area_code AS nmfs_region,
-#                      mgm.management_program_code, extract(year FROM mgm.landing_date) AS calendar_year
-#                 FROM norpac_views.atl_landing_mgm_id_mv mgm
-#                 JOIN norpac_views.atl_landing_id_mv lid
-#                   ON lid.report_id = mgm.report_id
-#                WHERE mgm.landing_date >= to_date('", first_date, "', 'DD-MON-RR') -730 -- get WAAAAY more than I need, 2 years more, in case I need it for rolling joins.
-#                  AND lid.cp_landing_flag in (null, 'N') ",
-#              sep = ''))  
-
 df_offloads <- 
   dbGetQuery(channel,
              paste(
@@ -278,24 +293,6 @@ df_offloads <-
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-# df_em_efp_offloads <-
-#   dbGetQuery(channel,
-#              "SELECT ed.*,
-#                      extract(YEAR from ed.landing_date) AS calendar_year
-#                 FROM norpac_views.em_efp_trawl_deliveries ed")
-# 
-# 
 
 df_em_efp_offloads <-
   dbGetQuery(channel,
@@ -321,7 +318,7 @@ df_em_efp_offloads <-
 
 
 # Save Output -------------------------------------------------------------
-#Requires the folder 'scripts'
+#Requires the folder "(adp_yr)_outputs/Rdata_workspaces/" to be in the working directory.
 save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloads", "df_em_efp_offloads", "df_fishery_dates", "first_cruise", "first_date", "last_date", "adp_yr"), 
-     file = paste0("scripts/", "AR_Statements_data.rdata"))
+     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_1_Statements_data.rdata"))
 
