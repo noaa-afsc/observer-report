@@ -29,19 +29,19 @@ load("Z:\\FMGROUP\\Observer Program Annual Report\\2022_Annual_Report\\2_AR_raw_
 # Pull in this report year's Valhalla
 # The code that creates Valhalla is maintained separately from this project
 
-#script <- paste0("select * from akfish_sf.valhalla where adp = ", year)
-#work.data <- dbGetQuery(channel_cas, script)
+script <- paste0("select * from akfish_sf.valhalla where adp = ", year)
+work.data <- dbGetQuery(channel_cas, script)
 
 # 2021 Valhalla data aren't currently in the database.  Load .RData file instead:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
 
-# 2022 Valhalla data aren't currently in the database.  Load .RData file instead:
+# 2022 Valhalla data are currently in the database.  Use the 4/10/23 based data instead of these previous versions:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2022//2023-04-04cas_valhalla.RData")
-load("Z://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2022//2023-04-04cas_valhalla.RData")
+#load("Z://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2022//2023-04-04cas_valhalla.RData")
 
-work.data <- valhalla
-rm(valhalla)
+#work.data <- valhalla
+#rm(valhalla)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
