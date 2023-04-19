@@ -111,7 +111,7 @@ prep_data <- valhalla_data %>%
 
 table(prep_data$STRATA)
 #EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
-#57549      19946      33633     860823     127781      58069      29439      74801 
+#58888      20008      33633     866212     127797      58072      29439      74901 
 
 #table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
 # HAL  POT 
@@ -127,7 +127,6 @@ table(prep_data$STRATA)
 # 613 
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
-# 2021 version:
 prep_data <- prep_data %>% 
   rename(ORIGINAL_STRATA = STRATA) %>% 
   mutate(STRATA = #ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
@@ -136,21 +135,18 @@ prep_data <- prep_data %>%
 
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-#             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
-# EM_HAL      57549      0               0               0      0      0      0      0      0
-# EM_POT          0  19946               0               0      0      0      0      0      0
-# EM_TRW_EFP      0      0           21754           11879      0      0      0      0      0
-# FULL            0      0               0               0 860823      0      0      0      0
-# HAL             0      0               0               0      0 127781      0      0      0
-# POT             0      0               0               0      0      0  58069      0      0
-# TRW             0      0               0               0      0      0      0  29439      0
-# ZERO            0      0               0               0      0      0      0      0  74801
+#           EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
+#EM_HAL      58888      0               0               0      0      0      0      0      0
+#EM_POT          0  20008               0               0      0      0      0      0      0
+#EM_TRW_EFP      0      0           21754           11879      0      0      0      0      0
+#FULL            0      0               0               0 866212      0      0      0      0
+#HAL             0      0               0               0      0 127797      0      0      0
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
 #N      Y 
-#333013 929028 
+#332613 936337  
 
 # Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
 #prep_data <- prep_data %>% 
@@ -191,7 +187,7 @@ valhalla_run_date <- valhalla_data %>%
   distinct(RUNDATE)
 
 valhalla_run_date
-#valhalla_run_date$RUNDATE <- '21-FEB-2023'
+valhalla_run_date$RUNDATE <- '10-APR-2023'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
