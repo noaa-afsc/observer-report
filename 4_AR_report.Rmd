@@ -1,10 +1,9 @@
 ---
-title: "Deployment Performance Review of the 2020 North Pacific Observer Program"
+title: "Deployment Performance Review of the 2022 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
 always_allow_html: true
 output:
   word_document:
-    reference_docx: docs/word-styles-reference-01.docx
   pdf_document: default
 ---
 
@@ -143,63 +142,6 @@ More information on the sampling design used by observers and the relationship b
 
 `r if(tech.memo){'These changes to the original deployment plan resulted in three time periods to evaluate fishery monitoring deployment for each partial coverage stratum.'}`
 
-# Performance Review Objectives   
-`r if(tech.memo){'The following sections contain the FMSC review of the deployment of observers in'}` `r if(tech.memo){year}` `r if(tech.memo){'relative to the intended sampling plan and goals of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS'}` `r if(tech.memo){year-1}` `r if(tech.memo){'). This report identifies where potential mechanisms for biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(tech.memo){year+2}` `r if(tech.memo){'ADP.'}`  
-The following items from the `r year` ADP have been identified as objectives for evaluation in this report:  
-
-
-* Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
-  
-* Deploy at the coverage rates specified in the `r year` ADP. Following the `r year` ADP, ODDS was programmed to randomly select logged trips at a rate of 23.70% in the *TRW - No Tender* stratum, 17.71% in the *HAL* stratum, 15.43% in the *POT - No Tender* stratum, 27.12% in the *TRW - Tender* stratum, 16.11% in the *POT - Tender* stratum, and 30% in the EM strata. Under a randomized deployment scheme, these partial coverage selection rates are expected to be within a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips).    
-  
-* Collect tissue samples from Chinook and chum salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin. The sampling protocol established in the 2014 ADP (NMFS 2013) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA trawl walleye pollock (*Gadus chalcogrammus*, hereafter referred to as simply ‘pollock’) fishery monitor the offload to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch.    
-  
-* Randomize deployment of observers into the partial coverage category of fishing activities. This randomization is used to collect observer and EM samples that are representative of the entire fishing fleet (observed and monitored trips are equivalent to unobserved and unmonitored trips within a stratum). Evaluation of this objective is focused on the randomization of observer and EM deployments into primary sampling units, and how departures from a random sample affect data quality.      
-  
-## Observer Deployment Performance Metrics  
-Performance metrics have been developed to assess whether the trip-selection process (through the implementation of the `r year` ADP) provides a representative sample of fishing trips in the North Pacific in `r year`. These metrics reflect four mechanisms that can impact the quality of the data: sample frame discrepancies, non-response, differences in trip characteristics, and sample size.        
-
-The performance metrics used in this evaluation are as follows:  
-
-1. Deployment rates for each stratum: This is the basic level of evaluation for comparing targeted and achieved sampling rates, where sampling strata are partitions of the entire population about which we want to make inferences (e.g., generate estimates of catch). Implementation challenges can be identified in this step, such as sample frame inadequacy, selection biases, and issues with sample unit definitions. Specifically, this section assesses the following:        
-
-+ a.  Sample rates and number of samples relative to intended values.   
-  
-+ b.  Quantification of under- and over-coverage rates (sample frame discrepancies). Over-coverage of a population occurs when the sample frame includes elements that are not part of the target population. When these elements are included in the random sample, effort (time, cost) is expended needlessly. Under-coverage results from having a sample frame that does not include a portion of the target population which can lead to biased data if that portion of the population differs from the population included in the sample frame.   
-  
-+ c.  Non-response rates. Non-response occurs when randomly selected elements (trips or vessels) are not actually sampled. If these trips or vessels have different fishing behavior (e.g., catch, areas fished) than the rest of the population, the data collected will not represent the entire fleet (non-response bias).  
-  
-2.  Representativeness of the sample: Randomized sampling is a method used to ensure that the results of sampling reflect the underlying population. Departures from randomization can lead to non-representative data and hence potential bias in estimates of the parameters of interest. A randomized sample design is expected to achieve a rate of monitored events that is similar across both space and time. Representativeness of the sample was divided into three separate components:   
-
-+ a.	Temporal representativeness
-  
-+ + i.	Effort plots: plots of expected and actual monitoring effort over time. Areas where these two lines deviate from each other are indicative of periods with differential realized sample rates (and potential temporal bias).  
-    
-+ b.	Spatial representativeness
-  
-+ + i.	Maps: Maps provide a visual depiction of the spatial distribution of monitoring coverage relative to effort in each partial coverage stratum, as well as where low or high coverage rates occurred.  
-    
-+ + ii.	Probability of monitoring a fewer or greater number of trips within an area than would be expected given the realized sample rate for the entire stratum. These data are used to identify departures from anticipated sampling rates.  
-    
-+ c.	Representativeness of trip characteristics
-  
-+ + i.	Consistency of trip characteristics for monitored and unmonitored portions of the stratum. These metrics are based, in part, on the availability of data for both monitored and unmonitored fishing activities; for example, data that are reported for all trips on landing reports. Attributes tested in this report include the following:     
-    
-+ + + * Trip duration (days).
-        
-+ + + * Vessel length (feet).
-        
-+ + + * The number of NMFS Areas visited during the trip.
-        
-+ + + * The amount of landed catch (metric tons).
-        
-+ + + * The number of species in the landed catch (also known as species richness).
-        
-+ + + * The proportion of the total landed catch that was due to the most prevalent species (pMax, an inverse a measure of species diversity where an increase in pMax indicates a decline in diversity).  
-        
-3.  Adequacy of sample size: A well-designed sampling program will have a sample large enough to reasonably ensure that the characteristics of interest in the entire target population are represented in the data. Whether the sample size collected was adequate was determined through an examination of the probability of deploying observers at the implemented rate and having no monitoring coverage in one or more cells (e.g., defined by NMFS Reporting Area and strata).     
-
-Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated *p*-values. Additionally, our focus on landed catch is due to the fact that total catch is comprised of retained and discarded portions, and since discarded catch is not available from unmonitored trips, landed catch represents the only portion of the catch that is available from all trips.  
 
 # Changes to This Report from Last Year  
 <!-- Manually update this section -->  
@@ -207,14 +149,7 @@ Changes to our analyses were necessary to properly address the changes to the de
 
 # Evaluation of Deployment in `r year`  
 The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
-## Evaluating Effort Predictions  
-
-Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
-
-In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark=",")` observer days, which was `r ifelse(eval$pct.budget.remain != 0, abs(eval$pct.budget.remain), " ")` `r ifelse(eval$pct.budget.remain != 0, "%", "")` `r eval$more.or.less` predicted by the average simulation, but well within the range of possibilities predicted in the `r year` ADP (`r fig_nums('outcomes.plot', display = "cite")`, top panel). This is explained by the fact that there was more effort in *HAL*, *POT – Tender*, and *TRW – Tender* than expected (`r tbl_nums('trip.budget.table', display="cite")`). Despite observing more days than predicted, expenditures for partial observer coverage were under budget (`r fig_nums('outcomes.plot', display = "cite")`, bottom panel). This resulted because the cost of a partial coverage observer day in `r year` was less than the expected cost that was estimated in the `r year` ADP.     
-
-# Performance of the Observer Declare and Deploy System in Trip-Selection  
-The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
+    
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
 # Calculate a test metric for the random number process in ODDS
@@ -917,7 +852,7 @@ Coverage.Table <- replace(Coverage.Table, is.na(Coverage.Table), " ")
 rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.TOTALS, Coverage.Table.zero)
 ```
 
-```{r coverage_paragraph, message=FALSE, warning=FALSE, include=FALSE}
+```{r coverage_paragraph, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # Objects referenced in-text:
 
 #Coverage trip and vessel totals (including EM)
@@ -941,7 +876,7 @@ perc_vessels_obs <- Coverage.Table %>%
 
 The `r year` Observer Program had `r total.strat` different deployment strata to be evaluated (`r tbl_nums('Coverage.Table', display = "cite")`). There was one *Full* coverage stratum comprised of trips taken both by vessels that were required to have full coverage (e.g., AFA vessels) and those fishing in the BSAI that opted into full coverage. There were seven partial coverage strata: five observed strata defined by gear and tender designation and two EM strata defined by gear designation. There were also two zero coverage strata: one zero coverage EM research stratum and one *Zero Coverage* stratum for jig vessels and vessels under 40 ft. length overall.      
 
-```{r em_times, message=FALSE, warning=FALSE, include=FALSE}
+```{r em_times, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 em_times <- EM.review %>% 
             filter(EM_DATA_REVIEWED=="YES") %>% 
             distinct(EM_REVIEWED_TRIP_NUMBER, 
@@ -1029,11 +964,11 @@ kable(Selection.table %>%
         #select(-Period), 
       col.names=c("Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
       escape=F, align="llrrrrr") %>%
-  kable_paper() %>%
-  pack_rows(index = c("Fixed-gear EM strata : full year"=8, 
-                      "Observer strata : Jan. 1 - Aug. 31"=12,
+  kable_paper() #%>%
+  #pack_rows(index = c("Fixed-gear EM strata : full year"=8, 
+  #                    "Observer strata : Jan. 1 - Aug. 31"=12,
                       #"Observer strata : Mar. 25 - Jun. 30"=12,
-                      "Observer strata : Sep. 1 - Dec. 31"=12), indent=F) 
+  #                    "Observer strata : Sep. 1 - Dec. 31"=12), indent=F) 
 ```
 
 #####  
@@ -1065,8 +1000,28 @@ kbl(Coverage.Table, escape = FALSE) %>%
   pack_rows("Zero coverage", 11, 11, label_row_css = "text-align: center")
 ```
 
+```{r TEM.Offloads, echo=FALSE, tab.cap=""}
+
+# Identify the number of TEM offloads to be used in a paragraph of Chapter 3
+
+tem.fmp.offloads <- work.data %>% 
+  filter(STRATA == 'EM TRW EFP') %>% 
+  group_by(FMP) %>% 
+  summarize(offloads = n_distinct(REPORT_ID))
+
+tem.fmp.offloads
+
+tem.offloads <- work.data %>% 
+  filter(STRATA == 'EM TRW EFP') %>% 
+  group_by(ADP) %>% 
+  summarize(offloads = n_distinct(REPORT_ID))
+
+tem.offloads
+
+
+```
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
-save.image(file="4_AR_report.Rdata")
+#save.image(file="4_AR_report.Rdata")
 ```
