@@ -1034,6 +1034,25 @@ table(waived$WAIVER_DESCRIPTION)
 
 ```
 
+```{r HAL.cancellations, echo=FALSE, tab.cap=""}
+
+# Determine the number of HAL trips not selected for observer coverage and how many of THOSE were cancelled?
+
+hal_not_selected <- odds.dat %>%  
+  select(STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+  filter(STRATA == 'HAL') %>% 
+  mutate(OBS_SELECTION = ifelse(random.assign == 0, 'Not Selected', 'Selected')) %>% 
+  group_by(OBS_SELECTION) %>% 
+  summarize(Trips.total = n(),
+            Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC")]),) %>% 
+  mutate(Pct.cancelled = round((Trips.cancelled.byusers/Trips.total)*100, 3))
+            
+
+hal_not_selected 
+
+```
+
+
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 #save.image(file="4_AR_report.Rdata")
