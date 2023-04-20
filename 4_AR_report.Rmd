@@ -1021,6 +1021,19 @@ tem.offloads
 
 ```
 
+```{r HAL.waivers, echo=FALSE, tab.cap=""}
+
+# Identify the reason 12 HAL trips were waived -  to be used in a paragraph of Chapter 3
+
+waived <- odds.dat %>% 
+  filter(!is.na(WAIVER_TYPE)) %>% 
+  filter(DESCRIPTION == 'Declared Gear & Tender Delivery - Longline No Tender Delivery') %>% 
+  filter(random.assign == 1)
+
+table(waived$WAIVER_DESCRIPTION)
+
+```
+
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 #save.image(file="4_AR_report.Rdata")
