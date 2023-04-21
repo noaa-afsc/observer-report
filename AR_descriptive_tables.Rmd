@@ -405,8 +405,8 @@ flextable(bsai) %>%
   border(i = 17, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
-  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside.",
-                              "2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Chapter 3."))
+  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
+                              "2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata."))
 
 
 
@@ -483,8 +483,8 @@ flextable(goa) %>%
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   # Add footer:
-  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside.",
-                              "2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Chapter 3."))
+  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
+                              "The sum of total unique vessels in the three vessel length categories is one greater than is seen in Table 3-1.  This is due to a fishing vessel changing its length on file with NMFS mid-year and having landings under the two different lengths and vessel length categories."))
 
 
 
@@ -632,7 +632,7 @@ flextable(table3_4) %>%
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   ## Add footer:
-  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
+  add_footer_lines(values = c("1 Monitored reflects either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
 
 
 
@@ -695,7 +695,7 @@ flextable(table3_5) %>%
   border(i = c(2,4,6,8), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
-  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside."))
+  add_footer_lines(values = c("1 Monitored reflects either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
 
 ```
 
