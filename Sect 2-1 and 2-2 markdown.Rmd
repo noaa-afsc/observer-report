@@ -159,6 +159,7 @@ load_fee_detail <- "SELECT gf.year, 'GF' AS report_source,
  WHERE gf.year = extract(year from sysdate) - 1             -- previous year
    and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
    and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status  
+   and gf.fee_person_year_id NOT IN (8080237, 8080239)      -- Fees were waived for Greg Einerson and Gregory Favretto
   
 UNION ALL 
 
@@ -215,7 +216,8 @@ SELECT ifq.year, 'IFQ' AS report_source,
   -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
   JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number 
  WHERE ifq.year = extract(year from sysdate) - 1             -- previous year
-   and ifq.management_program_id = 12                        -- observer fees"
+   and ifq.management_program_id = 12                        -- observer fees
+   and ifq.fee_person_year_id NOT IN (8080237, 8080239)      -- Fees were waived for Greg Einerson and Gregory Favretto"
 
 # Query the fees directly from the database:
 fee_detail <- dbGetQuery(channel_cas, load_fee_detail) 
