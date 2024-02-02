@@ -1,5 +1,5 @@
 ## Migrated copy of the 2020_Annual_Report_Repository.
-### What follows is as written for the repository at the time of migration.
+### What follows is as written for the repository at the time of migration (2/1/2024).
 
 #### Repository for the 2020 Annnual Report Chapter 3, Deployment Performance Review of fishery monitoring in the North Pacific
 
