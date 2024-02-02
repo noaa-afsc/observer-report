@@ -1,6 +1,7 @@
-# 2020_Annual_Report_Repository
+## Migrated copy of the 2020_Annual_Report_Repository.
+### What follows is as written for the repository at the time of migration.
 
-Repository for the 2020 Annnual Report Chapter 3, Deployment Performance Review of fishery monitoring in the North Pacific
+#### Repository for the 2020 Annnual Report Chapter 3, Deployment Performance Review of fishery monitoring in the North Pacific
 
 Phil Ganz, Geoff Mayhew, Craig Faunce
 
