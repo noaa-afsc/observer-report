@@ -10,15 +10,15 @@
 # Set up the environment
 ##########
 
-library(odbc)
-library(reshape2)
-library(plyr)
-library(dplyr)
-library(tidyr)
-library(lubridate)
-library(data.table)
-library(sqldf)
-library(devtools)
+if(!require("odbc"))        install.packages("odbc",        repos='http://cran.us.r-project.org')
+if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
+if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
+if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
+if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
+if(!require("ggplot2"))     install.packages("ggplot2",     repos='http://cran.us.r-project.org')
+if(!require("scales"))      install.packages("scales",      repos='http://cran.us.r-project.org')
+if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
+
 
 ###############################################################################
 ###############################################################################
@@ -311,14 +311,38 @@ df_em_efp_offloads <-
                 FROM norpac_views.atl_landing_mgm_id_mv o
                 JOIN norpac_views.em_efp_trawl_deliveries ed
                   ON o.report_id = ed.report_id
-             ") %>%
+             ")  %>%
   # have to change 'EXP' to 'AFA' for the 6 or so records that were recorded as such, it is messing things up.  They are AFA and that is a mistake some processors made!!
   mutate(MANAGEMENT_PROGRAM_CODE = ifelse(MANAGEMENT_PROGRAM_CODE == 'EXP', 'AFA', MANAGEMENT_PROGRAM_CODE))    
 
 
 
 # Save Output -------------------------------------------------------------
-#Requires the folder "(adp_yr)_outputs/Rdata_workspaces/" to be in the working directory.
-save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloads", "df_em_efp_offloads", "df_fishery_dates", "first_cruise", "first_date", "last_date", "adp_yr"), 
-     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_1_Statements_data.rdata"))
+# MUST SAVE OUTSIDE wd, because we cannot have "data" on the GitHub site.
+# UPdate to your local filepath as needed.
+
+Rdata_files_path <- "C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/2023/"
+
+save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloads", "df_em_efp_offloads", "df_fishery_dates", "first_cruise", "first_date", "last_date", "adp_yr", "Rdata_files_path"), 
+     file = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"))
+
+
+#' Authorize the googledrive package to access your NOAA Gdrive. Authenticating via this browser should be a one-time
+#' thing. Future calls to googledrive functions will prompt you to simply select your NOAA google account as the one 
+#' you want to re-authorize
+#' 
+#' Commenting out, UNCOMMENT if needed.
+# googledrive::drive_auth()
+
+# Assign google drive location
+# MAKE SURE IT IS CORRECT GOOGLE PATH
+project_dribble <- googledrive::drive_get("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/")
+
+# upload the .Rdata file to g-drive
+googledrive::drive_upload(
+  media     = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"),     #' *The local filepath to the file you want to upload*
+  path      = project_dribble,                        #' *The dribble object of the Gdrive folder you want to upload to*
+  name      = "AR_1_OLD_DATA_Statements_data.Rdata",  #' *Optional. Assignes your uploaded object with a different file name.*,
+  overwrite = T                                       #' *A control for overwriting existing Gdrive files*.
+) 
 
