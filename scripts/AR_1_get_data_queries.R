@@ -14,9 +14,6 @@ if(!require("odbc"))        install.packages("odbc",        repos='http://cran.u
 if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
 if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
 if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
-if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
-if(!require("ggplot2"))     install.packages("ggplot2",     repos='http://cran.us.r-project.org')
-if(!require("scales"))      install.packages("scales",      repos='http://cran.us.r-project.org')
 if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
 
 
@@ -321,11 +318,7 @@ df_em_efp_offloads <-
 # MUST SAVE OUTSIDE wd, because we cannot have "data" on the GitHub site.
 # UPdate to your local filepath as needed.
 
-Rdata_files_path <- "C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/2023/"
-
-save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloads", "df_em_efp_offloads", "df_fishery_dates", "first_cruise", "first_date", "last_date", "adp_yr", "Rdata_files_path"), 
-     file = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"))
-
+Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
 
 #' Authorize the googledrive package to access your NOAA Gdrive. Authenticating via this browser should be a one-time
 #' thing. Future calls to googledrive functions will prompt you to simply select your NOAA google account as the one 
@@ -336,7 +329,22 @@ save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloa
 
 # Assign google drive location
 # MAKE SURE IT IS CORRECT GOOGLE PATH
-project_dribble <- googledrive::drive_get("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/")
+# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
+# MUCH faster to use the hard-coded drive ID (see below)
+
+# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
+#                                                 adp_yr))
+
+project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+
+
+save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloads", 
+              "df_em_efp_offloads", "df_fishery_dates", "first_cruise", 
+              "first_date", "last_date", "adp_yr", "Rdata_files_path",
+              "project_dribble"), 
+     file = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"))
+
+
 
 # upload the .Rdata file to g-drive
 googledrive::drive_upload(
