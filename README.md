@@ -2,7 +2,7 @@
 
 Geoff Mayhew (lead, [geoff.mayhew\@noaa.gov](mailto:geoff.mayhew@noaa.gov)), Phil Ganz, Craig Faunce and Christian Gredzens
 
-NEW! - Data are now stored in the analysts' Shared Google Drive folder: [AnnRpt-Deployment-Chapter](https://drive.google.com/drive/folders/1dCrXRDV9qnaMMhFY9arHteCgPMsVV3zj)
+NEW! - Data are now stored in the analysts' Shared Google Drive folder: [Projects/AnnRpt-Deployment-Chapter/](https://drive.google.com/drive/folders/1dCrXRDV9qnaMMhFY9arHteCgPMsVV3zj)
 
 NEW! - Updates planned for spatial and temporal evaluations based on the 2024 Integrated analysis. [FOLDER / FILE LOCATION]
 
