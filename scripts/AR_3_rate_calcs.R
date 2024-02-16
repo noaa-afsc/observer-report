@@ -4,17 +4,22 @@
 # Contact Andy Kingham
 # 206-526-4212
 
-library(plyr)
-library(reshape2)
-library(dplyr)
-library(tidyr)
-library(lubridate)
-library(data.table)
-library(sqldf)
-library(devtools)
+# Set up environment -----------------------------------------------------------
+
+# Load pkgs
+if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
+if(!require("reshape2"))    install.packages("reshape2",    repos='http://cran.us.r-project.org')
+if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
+if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
+if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
+if(!require("data.table"))  install.packages("data.table",  repos='http://cran.us.r-project.org')
+if(!require("sqldf"))       install.packages("sqldf",       repos='http://cran.us.r-project.org')
+if(!require("devtools"))    install.packages("devtools",    repos='http://cran.us.r-project.org')
+if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
 
 
-# load the data files.
+
+# load the data files.----------------------------------------------------------
 # * chng wd filepath as needed *
 rm(list = ls())
 
@@ -22,7 +27,47 @@ rm(list = ls())
 # NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
 
-load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_2_rolling_join_output.rdata"))
+# Set the filepath, change to your own local as needed
+# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
+Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
+
+
+# Pull Rdata file from google drive.
+# NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
+
+# Identify the g-drive file to download
+# MAKE SURE IT IS CORRECT GOOGLE PATH
+
+# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
+# MUCH faster to use the hard-coded drive ID (see below)
+
+# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
+#                                                 adp_yr))
+
+
+
+## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+################
+
+  # project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+  # 
+  # data_dribble <- 
+  #   drive_ls(project_dribble) %>%
+  #   filter(name == "AR_2_rolling_join_output.Rdata")
+  # 
+  # # Download the file from g-drive into local
+  # drive_download(
+  #   data_dribble,
+  #   path = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
+  #   overwrite = T
+  # )
+
+################
+## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+
+
+
+load(file = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"))
 
 
 
@@ -245,8 +290,17 @@ rate_no_groupings <-
 
 ##################
 # Save Output -------------------------------------------------------------
-#Requires the folder 'scripts'
 save(list = ls(),
-     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_3_rate_output.rdata"))
+     file = paste0(Rdata_files_path, "AR_3_rate_output.rdata"))
+
+
+
+# upload the .Rdata file to g-drive
+googledrive::drive_upload(
+  media     = paste0(Rdata_files_path, "AR_3_rate_output.rdata"),
+  name      = "AR_3_rate_output.rdata",
+  path      = project_dribble
+) 
+
 
 

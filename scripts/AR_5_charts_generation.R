@@ -4,18 +4,9 @@
 
 
 # load req'd packages ----------------------------------------
-# library(plyr)
-# library(reshape2)
  library(dplyr)
  library(ggplot2)
-# library(tidyr)
-# library(lubridate)
-# library(data.table)
-# library(sqldf)
-# library(scales)
-# library(devtools)
-library(ggh4x)
-# library(ggpmisc)
+ library(ggh4x)
 
 # load the data files. ----------------------------------------
 # * chng wd filepath as needed *
@@ -25,7 +16,52 @@ rm(list = ls())
 # NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
 
-load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/AR_4_summary_tables_output.rdata"))
+
+
+
+# Set the filepath for up- and down-loading Rdata files, change to your own local as needed
+# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
+Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
+
+
+# Pull Rdata file from google drive.
+# NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
+
+# Identify the g-drive file to download
+# MAKE SURE IT IS CORRECT GOOGLE PATH
+
+# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
+# MUCH faster to use the hard-coded drive ID (see below)
+
+# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
+#                                                 adp_yr))
+
+
+
+## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+################
+
+# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# 
+# data_dribble <- 
+#   drive_ls(project_dribble) %>%
+#   filter(name == "AR_4_summary_tables_output.rdata")
+# 
+# # Download the file from g-drive into local
+# drive_download(
+#   data_dribble,
+#   path = paste0(Rdata_files_path, "AR_4_summary_tables_output.rdata"),
+#   overwrite = T
+# )
+
+###############
+## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+
+
+# Load the file
+load(file = paste0(Rdata_files_path, "AR_4_summary_tables_output.rdata"))
+
+
 
 # Define GG's ----------------------------------------
 

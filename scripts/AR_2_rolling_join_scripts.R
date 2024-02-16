@@ -3,27 +3,80 @@
 # Contact Andy Kingham
 # 206-526-4212
 
-library(plyr)
-library(reshape2)
-library(dplyr)
-library(tidyr)
-library(lubridate)
-library(data.table)
-library(sqldf)
-library(devtools)
+
+# Set up environment -----------------------------------------------------------
+
+# Load pkgs
+if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
+if(!require("reshape2"))    install.packages("reshape2",    repos='http://cran.us.r-project.org')
+if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
+if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
+if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
+if(!require("data.table"))  install.packages("data.table",  repos='http://cran.us.r-project.org')
+if(!require("sqldf"))       install.packages("sqldf",       repos='http://cran.us.r-project.org')
+if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
 
 
-# load the data files.
-# * chng wd filepath as needed *
+
+# Clear everything first
 rm(list = ls())
 
+
+
+# Set year
 # adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
 # NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
 
+# Set the filepath, change to your own local as needed
+# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
+Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
 
-load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_1_Statements_data.rdata"))
+# Pull Rdata file from google drive.
+# NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
 
+# Identify the g-drive file to download
+# MAKE SURE IT IS CORRECT GOOGLE PATH
+
+# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
+# MUCH faster to use the hard-coded drive ID (see below)
+
+# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
+#                                                 adp_yr))
+
+
+## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+################
+
+  # project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+  # 
+  # data_dribble <- 
+  #   drive_ls(project_dribble) %>%
+  #     filter(name == "AR_1_OLD_DATA_Statements_data.Rdata")
+  # 
+  # # Download the file from g-drive into local
+  # drive_download(
+  #   data_dribble,
+  #   path = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"),
+  #   overwrite = T
+#               )
+
+################
+## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+
+
+
+
+
+# load it from local into R
+load(file = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"))
+
+
+
+
+
+
+# Begin Data Munge Section ------------------------------------------------------
 
 #First, get all the factors by joining the ASSIGNMENTS data to the haul data.
 # This gets each factor for every date that has a value in haul data for that date.
@@ -647,7 +700,18 @@ rm(dt_em_offloads_m, dt_em_offloads_nr, dt_em_offloads, dt_hauls, dt_hauls_g, dt
 
 ##################
 # Save Output -------------------------------------------------------------
-#Requires the folder "(adp_yr)_outputs/Rdata_workspaces/" to be in the working directory.
+
+# (NOTE: this script is applicable to both OLD STATEMENT DATA,
+# as well as NEW STATEMENT DATA, so no need to call it OLD_DATA in the filename.)
 save(list = ls(),
-     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_2_rolling_join_output.rdata"))
+     file = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"))
+
+
+# upload the .Rdata file to g-drive
+googledrive::drive_upload(
+  media     = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
+  name      = "AR_2_rolling_join_output.Rdata",
+  path      = project_dribble
+                          ) 
+
 
