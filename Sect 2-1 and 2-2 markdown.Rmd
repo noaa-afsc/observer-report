@@ -65,10 +65,10 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 
 # Publication date of the Federal Register notice for Standard Prices:
 # see: https://www.fisheries.noaa.gov/action/north-pacific-observer-program-standard-ex-vessel-prices-groundfish-and-halibut-federal
-std_price_notice_date <- 'December 15, 2021'
+std_price_notice_date <- 'December 29, 2022'
 
 # Federal Register reference for the Federal Register notice for Standard Prices:  
-std_price_cfr <- '86 FR 71240'
+std_price_cfr <- '88 FR 80164'
 
 # Note: URL needs to be updated in footnote 3 below
 
@@ -159,7 +159,6 @@ load_fee_detail <- "SELECT gf.year, 'GF' AS report_source,
  WHERE gf.year = extract(year from sysdate) - 1             -- previous year
    and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
    and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status  
-   and gf.fee_person_year_id NOT IN (8080237, 8080239)      -- Fees were waived for Greg Einerson and Gregory Favretto
   
 UNION ALL 
 
@@ -216,8 +215,7 @@ SELECT ifq.year, 'IFQ' AS report_source,
   -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
   JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number 
  WHERE ifq.year = extract(year from sysdate) - 1             -- previous year
-   and ifq.management_program_id = 12                        -- observer fees
-   and ifq.fee_person_year_id NOT IN (8080237, 8080239)      -- Fees were waived for Greg Einerson and Gregory Favretto"
+   and ifq.management_program_id = 12                        -- observer fees"
 
 # Query the fees directly from the database:
 fee_detail <- dbGetQuery(channel_cas, load_fee_detail) 
@@ -369,19 +367,19 @@ flextable(all_areas) %>%
                     AllOtherSpecies = "All Other Species",
                     TOTAL = "Total All Species")  %>% 
   # Format the currency columns:
-  colformat_double(j = c(3,4,5,6,7, 8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  colformat_double(j = c(3,4,5,6,7,8), big.mark = ",", prefix = "$", digits = 0) %>% 
   # Bold the headers, gear labels, and all gear totals:
   bold(part = "header") %>% 
   bold(j = 1) %>% 
-  bold(i = 16) %>% 
+  bold(i = 15) %>%  #THIS SHOULD BE THE LAST, TOTAL ALL GEAR ROW number 
   # Merge the gear labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=16, j=c(1:2)) %>% 
+  merge_at(i=15, j=c(1:2)) %>%     #THIS SHOULD BE THE LAST, TOTAL ALL GEAR ROW number 
   # Add dashed horizontal lines before gear subtotals:
-  border(i = c(3,7,11,14), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(3,7,11,13), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  border(i = c(4,8,12,15), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = c(4,8,12,14), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   fix_border_issues(part = "body") %>% 
   # Add percentages as a footer hack:
   set_footer_df(mapping = pct_labels, key = "col_keys") %>% 
@@ -508,15 +506,15 @@ flextable(goa) %>%
   # Bold the headers, gear labels, and all gear totals:
   bold(part = "header") %>% 
   bold(j = 1) %>% 
-  bold(i = 16) %>% 
+  bold(i = 15) %>% 
   # Merge the gear labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=16, j=c(1:2)) %>% 
+  merge_at(i=15, j=c(1:2)) %>% 
   # Add dashed horizontal lines before gear subtotals:
-  border(i = c(3,7,11,14), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(3,7,11,13), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  border(i = c(4,8,12,15), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = c(4,8,12,14), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   fix_border_issues(part = "body") %>% 
   # Add percentages as a footer hack:
   set_footer_df(mapping = goa_pct_labels, key = "col_keys") %>% 
