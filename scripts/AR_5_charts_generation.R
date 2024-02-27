@@ -1144,7 +1144,7 @@ incis_per_statement_histog_all <-
   )
 
 incis_per_statement_histog_all
-ggsave(paste("charts_and_tables/histograms/histog_", 
+ggsave(paste(adp_yr,"_outputs/charts_and_tables/histograms/histog_", 
              adp_yr, 
              "_incis_per_statement_all.png", 
              sep = '') , 
@@ -1186,7 +1186,7 @@ incis_per_statement_histog_RandR_only <-
   )
 
 incis_per_statement_histog_RandR_only
-ggsave(paste("charts_and_tables/histograms/histog_", 
+ggsave(paste(adp_yr,"_outputs/charts_and_tables/histograms/histog_", 
              adp_yr, 
              "_incis_per_statement_RandR_only.png", 
              sep = '') , 
@@ -1227,7 +1227,7 @@ incis_per_statement_all_facet <-
 )
 
 incis_per_statement_all_facet
-ggsave(paste("charts_and_tables/histograms/histog_", 
+ggsave(paste(adp_yr,"_outputs/charts_and_tables/histograms/histog_", 
              adp_yr, 
              "_incis_per_statement_all_facet.png", 
              sep = '') , 

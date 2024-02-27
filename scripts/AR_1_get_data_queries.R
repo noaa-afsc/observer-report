@@ -82,80 +82,81 @@ first_cruise <- rstudioapi::showPrompt(title = "First Cruise",
 # Statements
 # Amend as needed to get statements for the current year.
 raw_statements <-
-  dbGetQuery(channel,
-             paste("
-              SELECT AFFIDAVIT_ID,
-                     (select species 
-                        from MANAGEMENT_TARGET_FISHERIES 
-                                 where code = aff.mgmt_fish_code) as MGMT_FISH_CODE,
-                     FIRST_VIOLATION_DATE,
-                     nvl(NUMBER_VIOLATIONS, 1) AS NUMBER_VIOLATIONS, --replace nulls with 1.  If this is an issue in a given year, this produces the lowest possible estimate.
-                     aff.COMMENTS,
-                     (select status_value 
-                        from affidavit_case_status
-                       where status = aff.affidavit_case_status) as AFFIDAVIT_CASE_STATUS,
-                     AFFIDAVIT_DATE,
-                     AFFIDAVIT_RECEIVED,
-                     CASE_NUMBER,
-                     (SELECT AFFIDAVIT_SUBJECT
-                        FROM affidavit_subject
-                       WHERE affidavit_type = aff.affidavit_type) AFFIDAVIT_TYPE,
+  dbGetQuery(
+   channel,
+   paste("
+          SELECT AFFIDAVIT_ID,
+                 (select species 
+                    from MANAGEMENT_TARGET_FISHERIES 
+                             where code = aff.mgmt_fish_code) as MGMT_FISH_CODE,
+                 FIRST_VIOLATION_DATE,
+                 nvl(NUMBER_VIOLATIONS, 1) AS NUMBER_VIOLATIONS, --replace nulls with 1.  If this is an issue in a given year, this produces the lowest possible estimate.
+                 aff.COMMENTS,
+                 (select status_value 
+                    from affidavit_case_status
+                   where status = aff.affidavit_case_status) as AFFIDAVIT_CASE_STATUS,
+                 AFFIDAVIT_DATE,
+                 AFFIDAVIT_RECEIVED,
+                 CASE_NUMBER,
+                 (SELECT AFFIDAVIT_SUBJECT
+                    FROM affidavit_subject
+                   WHERE affidavit_type = aff.affidavit_type) AFFIDAVIT_TYPE,
 
-                    --stick the ole_category on there.  Categories come from the Annual Report.
-                    
-                    CASE WHEN aff.affidavit_type IN ('XX', 'F','E','VV') 
-                            THEN 'OLE PRIORITY: INTER-PERSONAL'
-                         WHEN aff.affidavit_type IN ('DD','QQ','H','G','GG') 
-                            THEN 'OLE PRIORITY: SAFETY AND DUTIES'
-                         WHEN aff.affidavit_type IN ('SS','ZZ','WW','M','L','EE','K','I','J','BB','X','CC','P','Q','O','FF','N')
-                            THEN 'PROTECTED RESOURCE & PROHIBITED SPECIES'
-                         WHEN aff.affidavit_type IN ('W','MM','T','U','Z','KK','NN','LL') 
-                            THEN 'ALL OTHER STATEMENT TYPES'
-                         WHEN aff.affidavit_type IN ('V','HH','II','JJ')
-                            THEN 'COAST GUARD'
-                         WHEN aff.affidavit_type IN ('OO','PP','TT','RR','R','UU')
-                            THEN 'LIMITED ACCESS PROGRAMS'
-                         ELSE 'UNKNOWN'   
-                       END AS ole_category,
-                     AGENT,
-                     CAPTAIN_NAME,
-                     TRIPS_JOIN,
-                     AFFIDAVIT_FORWARDED_DATE,
-                     (select location_text 
-                        from affidavit_forwarding_locations
-                       where location_code = aff.forwarded_location) as FORWARDED_LOCATION,
-                     ENFORCEMENT_COMMENTS,
-                     FORWARDED_AED_DATE,
-                     aff.VESSEL_PLANT_SEQ,
-                     to_number(aff.PERMIT) PERMIT,
-                     aff.CRUISE,
-                     nvl(extract(YEAR FROM aff.first_violation_date), extract(YEAR FROM aff.create_date)) affi_year,
-                     extract(YEAR FROM aff.first_violation_date) first_viol_year,
-                     norpac.ole_statement_factors_pkg.getManualYearForCruise(aff.cruise) AS manual_year
-                FROM OBSERVER_AFFIDAVITS aff
-                LEFT OUTER JOIN ols_observer_cruise ocr
-                  ON ocr.cruise = aff.cruise
-                LEFT OUTER JOIN ols_observer_contract oco
-                  ON oco.contract_number = ocr.contract_number
-                LEFT OUTER JOIN ols_lov_employer emp
-                  ON emp.employer_code = oco.employer_code
-                LEFT OUTER JOIN ols_observer o
-                  ON o.observer_seq = oco.observer_seq
-                LEFT OUTER JOIN ols_vessel_plant vp
-                  ON aff.vessel_plant_seq = vp.vessel_plant_seq   
-                LEFT OUTER JOIN ols_debriefed_vessplant dvp
-                  ON dvp.vessel_plant_seq = vp.vessel_plant_seq
-                LEFT OUTER JOIN ols_debriefing_schedule ds
-                  ON ds.schedule_seq = dvp.schedule_seq
-                LEFT OUTER JOIN ols_lov_staff s
-                  ON s.staff_id = ds.debriefer_staff_id             
-                  WHERE aff.first_violation_date BETWEEN 
-                      to_date('", first_date, "', 'DD-MON-RR') AND
-                      to_date('", last_date, "', 'DD-MON-RR')
-                    AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
-                 AND oco.hake_flag = 'N'                  --eliminate HAKE cruises 
-                 ORDER BY affidavit_id desc",
-                   sep = ''))
+                --stick the ole_category on there.  Categories come from the Annual Report.
+                
+                CASE WHEN aff.affidavit_type IN ('XX', 'F','E','VV') 
+                        THEN 'OLE PRIORITY: INTER-PERSONAL'
+                     WHEN aff.affidavit_type IN ('DD','QQ','H','G','GG') 
+                        THEN 'OLE PRIORITY: SAFETY AND DUTIES'
+                     WHEN aff.affidavit_type IN ('SS','ZZ','WW','M','L','EE','K','I','J','BB','X','CC','P','Q','O','FF','N')
+                        THEN 'PROTECTED RESOURCE & PROHIBITED SPECIES'
+                     WHEN aff.affidavit_type IN ('W','MM','T','U','Z','KK','NN','LL') 
+                        THEN 'ALL OTHER STATEMENT TYPES'
+                     WHEN aff.affidavit_type IN ('V','HH','II','JJ')
+                        THEN 'COAST GUARD'
+                     WHEN aff.affidavit_type IN ('OO','PP','TT','RR','R','UU')
+                        THEN 'LIMITED ACCESS PROGRAMS'
+                     ELSE 'UNKNOWN'   
+                   END AS ole_category,
+                 AGENT,
+                 CAPTAIN_NAME,
+                 TRIPS_JOIN,
+                 AFFIDAVIT_FORWARDED_DATE,
+                 (select location_text 
+                    from affidavit_forwarding_locations
+                   where location_code = aff.forwarded_location) as FORWARDED_LOCATION,
+                 ENFORCEMENT_COMMENTS,
+                 FORWARDED_AED_DATE,
+                 aff.VESSEL_PLANT_SEQ,
+                 to_number(aff.PERMIT) PERMIT,
+                 aff.CRUISE,
+                 nvl(extract(YEAR FROM aff.first_violation_date), extract(YEAR FROM aff.create_date)) affi_year,
+                 extract(YEAR FROM aff.first_violation_date) first_viol_year,
+                 norpac.ole_statement_factors_pkg.getManualYearForCruise(aff.cruise) AS manual_year
+            FROM OBSERVER_AFFIDAVITS aff
+            LEFT OUTER JOIN ols_observer_cruise ocr
+              ON ocr.cruise = aff.cruise
+            LEFT OUTER JOIN ols_observer_contract oco
+              ON oco.contract_number = ocr.contract_number
+            LEFT OUTER JOIN ols_lov_employer emp
+              ON emp.employer_code = oco.employer_code
+            LEFT OUTER JOIN ols_observer o
+              ON o.observer_seq = oco.observer_seq
+            LEFT OUTER JOIN ols_vessel_plant vp
+              ON aff.vessel_plant_seq = vp.vessel_plant_seq   
+            LEFT OUTER JOIN ols_debriefed_vessplant dvp
+              ON dvp.vessel_plant_seq = vp.vessel_plant_seq
+            LEFT OUTER JOIN ols_debriefing_schedule ds
+              ON ds.schedule_seq = dvp.schedule_seq
+            LEFT OUTER JOIN ols_lov_staff s
+              ON s.staff_id = ds.debriefer_staff_id             
+              WHERE aff.first_violation_date BETWEEN 
+                  to_date('", first_date, "', 'DD-MON-RR') AND
+                  to_date('", last_date, "',  'DD-MON-RR')
+                AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
+             AND oco.hake_flag = 'N'                  --eliminate HAKE cruises 
+          ",
+         sep = ''))
 
 
 ###################
@@ -257,7 +258,7 @@ hauls <-
                           FROM norpac.atl_haul h
                           JOIN norpac.atl_nmfs_area_v rv  
                             ON h.nmfs_area = rv.nmfs_area
-                          LEFT OUTER JOIN norpac_views.akr_obs_haul_mv h2
+                          LEFT OUTER JOIN norpac_views.akr_obs_haul h2
                             ON h.cruise   = h2.cruise
                            AND to_number(h.permit)   = h2.vessel_id
                            AND h.haul_seq = h2.haul_seq
@@ -281,7 +282,7 @@ df_offloads <-
                      extract(year  FROM landing_date) AS calendar_year,       
                      vessel_id, processor_permit_id, management_program_code,
                      decode(fmp_area_code, 'N/A', null, fmp_area_code) nmfs_region
-                FROM norpac_views.atl_landing_mgm_id_mv
+                FROM norpac_views.atl_landing_mgm_id
                WHERE landing_date >= (to_date('", first_date, "', 'DD-MON-RR') -730) --get WAAAY more than I need, to ensure I have other years for the rolling join, if I need it.
                ",
                sep = ''))  
@@ -305,7 +306,7 @@ df_em_efp_offloads <-
                               WHEN GOA_POLLOCK_OFFLOAD = 'YES'
                               THEN 'GOA'
                           END) AS nmfs_region
-                FROM norpac_views.atl_landing_mgm_id_mv o
+                FROM norpac_views.atl_landing_mgm_id o
                 JOIN norpac_views.em_efp_trawl_deliveries ed
                   ON o.report_id = ed.report_id
              ")  %>%

@@ -114,6 +114,7 @@ cnt_dep_days_all_groupings <-
 #     # The THIRD is with NO factors (all aggregated).
 
 
+
 # First rate: by affi_type, for each factor combination.
 rate_all_groupings_affi_type <-
   # First, summarize for each factor combination and get the total days etc.  These are the DENOMINATORS of the rates.
