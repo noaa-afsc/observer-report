@@ -322,8 +322,8 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   # Split up the dataset by year_col and stratum_cols #
   #===================================================#
   
+  data_dmn <- copy(data)
   if(!is.null(dmn_cols)) {
-    data_dmn <- copy(data)       # Create a copy that will keep dmn_cols
     data <- unique(data[, -..dmn_cols])  # Remove 'dmn_cols' for now
   }
   
@@ -519,8 +519,9 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
    
     #' TODO *is BOX_ID unique to ADP or can there be crossover between years? Does time start over each year, or is it independent?*
     
+    # Merge details back in (ADP year, HEX_ID and TIME)
     box_id_details <- unique(data_dmn[, .(BOX_ID, ADP, HEX_ID, TIME)])
-    dmn_nbr_dt <- box_id_details[OUT, on = .(BOX_ID)]
+    dmn_nbr_dt <- box_id_details[dmn_nbr_dt, on = .(BOX_ID)]
     setcolorder(dmn_nbr_dt, c(year_col, stratum_cols, dmn_cols, "BOX_ID", "BOX_DMN_n", "BOX_DMN_w", "BOX_DMN_nbr"))
     
     # Calculate Number of trips in each STRATA x dmn_cols. Note that trips that have multiple 
