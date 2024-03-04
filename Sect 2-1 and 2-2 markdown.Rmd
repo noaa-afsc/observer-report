@@ -113,7 +113,7 @@ notice_date <- dbGetQuery(channel_cas, late_notice)
 ```{r fee_calculation, include=FALSE}
 
 #Sets SQL code as object used to query the data: 
-# (G:\FMGROUP\Observer Program Annual Report\2022_Annual_Report\Chapt2_Fees&Budget\2022 Fee Query - DRAFT based on warehouse.sql)
+# (G:\FMGROUP\Observer Program Annual Report\2023_Annual_Report\Chapt2_Fees&Budget\2023 Fee Query - DRAFT based on warehouse.sql)
 load_fee_detail <- "SELECT gf.year, 'GF' AS report_source, 
        gf.category,
        gf.processor_permit_id as processor_permit,
@@ -159,6 +159,7 @@ load_fee_detail <- "SELECT gf.year, 'GF' AS report_source,
  WHERE gf.year = extract(year from sysdate) - 1             -- previous year
    and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
    and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status  
+   and gf.catch_report_source_pk != 9778885                 -- Exclude Unisea fees for a landing report (Report ID 9524973) that was deleted ($211.20) - Correction by OMD  
   
 UNION ALL 
 
