@@ -546,10 +546,8 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
     geom_sf <- merge(stat_area_lst$HEX_GEOMETRY, dt_out, on = .(HEX_ID))
     box_res$geom_sf <- geom_sf
     
-    if(!is.null(dmn_cols)) {
-      geom_dmn_sf <- merge(stat_area_lst$HEX_GEOMETRY, dmn_nbr_dt, on = .(HEX_ID))
-      box_res$dmn$geom_dmn_df <- geom_dmn_sf
-    }
+    geom_dmn_sf <- merge(stat_area_lst$HEX_GEOMETRY, dmn_nbr_dt, on = .(HEX_ID))
+    box_res$dmn$geom_dmn_df <- geom_dmn_sf
   }
   
   # Return results
@@ -565,34 +563,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
 calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor_lst) {
   
   # TODO Manually add the fill for the pools!
-  # box_def <- copy(box_sq); selection_rates <- copy(eval_rates$CURRENT.PROX); 
-  
-  if(F) {
-    
-    box_def$dmn$strata_dt      # Get STRATUM_ID
-    # With OB as only donors (including TRW_EM to itself as it is observer-based)
-    acceptor_donor_lst <-  c(
-      rep(list(4:5), times = 2),                # 1-2: OB to FG_EM
-      list(3),                                  # 3:   EM_TRW donates to itself (still an observer!)
-      rep(list(4:5), times = 2),                # 4-5: OB_HAL and OB_POT
-      list(6),                                  # 6:   OB: OB_TRW
-      list(4:5)                                 # 7:   OB to ZERO
-    )
-    
-    # With non-OB Donors
-    acceptor_donor_lst <-  c(
-      rep(list(1:2), times = 2),                # 1-2: FG_EM to itself
-      rep(list(NULL), times = 5)                # No other comparisons
-    )
-    
-  }
-  
-  # Testing with FMP
-  if(F) {
-    acceptor_donor_lst <- copy(ob_adl)
-  }
-  
-  
+
   year_col <- box_def$params$year_col
   stratum_cols <- box_def$params$stratum_cols
   dmn_cols <- box_def$params$dmn_cols
@@ -624,10 +595,19 @@ calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor
       focus_stratum <- stratum_dt[i, ..stratum_cols]
       
       # Subset the data to include the acceptor and its donors, then split by domain
-      focus_dmn_lst <- split(unique(rbind(
+      focus_dmn_dt <- unique(rbind(
         dmn_dat[focus_stratum, on = stratum_cols],
         dmn_dat[stratum_dt[acceptor_donor_lst[[i]], ..stratum_cols], on = stratum_cols]
-      )), by = dmn_cols)
+      ))
+      if(is.null(dmn_cols)){
+        focus_dmn_lst <- list(focus_dmn_dt)
+      } else {
+        focus_dmn_lst <- split(focus_dmn_dt, by = dmn_cols)
+      }
+      # focus_dmn_lst <- split(unique(rbind(
+      #   dmn_dat[focus_stratum, on = stratum_cols],
+      #   dmn_dat[stratum_dt[acceptor_donor_lst[[i]], ..stratum_cols], on = stratum_cols]
+      # )), by = dmn_cols)
       
       out[[i]] <- rbindlist(lapply(focus_dmn_lst, function(x) {
         # x <- focus_dmn_lst[[1]]
