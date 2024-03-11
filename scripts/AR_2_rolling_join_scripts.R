@@ -52,12 +52,12 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
   # 
   # data_dribble <- 
   #   drive_ls(project_dribble) %>%
-  #     filter(name == "AR_1_OLD_DATA_Statements_data.Rdata")
+  #     filter(name == "AR_1_Statements_data.Rdata")
   # 
   # # Download the file from g-drive into local
   # drive_download(
   #   data_dribble,
-  #   path = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"),
+  #   path = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"),
   #   overwrite = T
 #               )
 
@@ -69,7 +69,7 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 
 
 # load it from local into R
-load(file = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"))
+load(file = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"))
 
 
 

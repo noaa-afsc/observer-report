@@ -159,6 +159,84 @@ raw_statements <-
          sep = ''))
 
 
+
+
+
+
+#################
+# statements NEW DATA mid-2023 and on
+####################
+
+raw_statements_new <-
+  dbGetQuery(
+    channel,
+    paste0("SELECT  os.ole_obs_statement_seq AS ole_obs_statement_seq
+                 ,	os.ole_obs_statement_seq AS affidavit_id
+                 ,  oc.category     
+                 ,  os.witness_flag
+                 ,  os.victim_name
+                 ,	norpac.OLE_STATEMENT_PKG.get_first_violation_date(os.ole_obs_statement_seq) AS first_violation_date
+                 ,  extract(YEAR FROM norpac.OLE_STATEMENT_PKG.get_first_violation_date(os.ole_obs_statement_seq) ) first_viol_year
+                 ,	(SELECT COUNT(*)
+                   	   FROM norpac.OLE_OBS_STATEMENT_UNIT osu2
+                      WHERE osu2.ole_obs_statement_detail_seq = osd.ole_obs_statement_detail_seq ) 
+                       AS number_violations
+                 ,	(SELECT listagg(distinct INCIDENT_UNIT, ', ')
+                  	   FROM norpac.OLE_LOV_INCIDENT_UNIT lu
+                       JOIN norpac.OLE_OBS_STATEMENT_UNIT osu3 ON osu3.ole_incident_unit_seq = lu.ole_incident_unit_seq
+                  	   JOIN norpac.OLE_OBS_STATEMENT_DETAIL osd3 ON osu3.ole_obs_statement_detail_seq = osd3.ole_obs_statement_detail_seq
+                  	  WHERE osu3.ole_obs_statement_detail_seq = osd.ole_obs_statement_detail_seq)
+                      AS units  
+                 ,   ( SELECT listagg(distinct subcategory, ', ')
+                        FROM norpac.OLE_LOV_SUBCATEGORY lsc
+                        JOIN norpac.OLE_LOV_REGULATION lr ON lr.ole_subcategory_seq = lsc.ole_subcategory_seq
+                       WHERE lr.ole_regulation_seq = osd.ole_regulation_seq)
+                      AS subcategory
+                 ,	to_char(os.approved_date, 'MM/DD/YYYY') AS affidavit_date
+                 ,	to_char(os.affidavit_signed_date, 'MM/DD/YYYY') AS affidavit_signed_date
+                 ,	to_char(os.affidavit_forwarded_date, 'MM/DD/YYYY') AS affidavit_forwarded_date
+                 ,	to_char(os.affidavit_received_date, 'MM/DD/YYYY') AS affidavit_received
+                 ,  oc.category AS affidavit_type
+                 ,	os.create_date AS create_date
+                 ,	os.created_by AS created_by
+                 ,	os.last_update_date AS last_update_date
+                 ,	os.last_updated_by AS last_updated_by
+                 ,	CASE WHEN os.permit = 0 OR os.permit is null 
+                         THEN 'No Permit'
+                         ELSE v.name
+                     END AS violating_vsplnt
+                 ,  CASE WHEN os.permit = 0 OR os.permit is null 
+                         THEN null
+                         ELSE decode(norpac.ole_statement_factors_pkg.wasCruiseAssndToVssPlnt_TF(
+                                                     in_cruise => os.cruise, 
+                                                     in_permit => os.permit),
+                                     'T', 'Y', 'F', 'N')               
+                     END AS was_assigned_to_permit_flag           
+                 ,	os.cruise AS cruise
+                 ,	os.permit AS permit
+                 ,	norpac.ols_obsrvr.getObserverNameByCruise(ocr.cruise) observer_name
+                 ,	os.comments
+                 ,  (SELECT listagg(distinct ole_category, ', ') FROM norpac.ole_transform ot
+                      WHERE osd.ole_regulation_seq = ot.ole_regulation_seq)
+                     AS ole_category
+            FROM norpac.OLE_OBS_STATEMENT os
+            JOIN norpac.ole_lov_category oc ON oc.ole_category_seq = os.ole_category_seq
+            JOIN norpac.ole_obs_statement_detail osd ON osd.ole_obs_statement_seq = os.ole_obs_statement_seq
+            LEFT OUTER JOIN norpac.atl_vessplant_v v ON v.permit = os.permit
+            LEFT OUTER JOIN norpac.OLS_OBSERVER_CRUISE ocr ON ocr.cruise = os.cruise
+            LEFT OUTER JOIN norpac.OLS_OBSERVER_CONTRACT oco ON oco.contract_number = ocr.contract_number
+            LEFT OUTER JOIN norpac.OLS_DEBRIEFING_SCHEDULE ds ON ds.cruise = ocr.cruise
+           WHERE trunc(norpac.OLE_STATEMENT_PKG.get_first_violation_date(os.ole_obs_statement_seq)) BETWEEN 
+                      to_date('", first_date, "', 'DD-MON-RR') AND
+                      to_date('", last_date,  "', 'DD-MON-RR')
+                --      to_date(:in_first_date, 'DD-MON-RR') AND
+                --      to_date(:in_last_date,  'DD-MON-RR')
+             AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
+             AND oco.hake_flag = 'N'                  --eliminate HAKE cruises
+           "))
+
+
+
 ###################
 # deployed_dates for each cruise/permit SQL query
 
@@ -339,19 +417,20 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
 
 
-save(list = c("raw_statements", "assignments_dates_cr_perm", "hauls", "df_offloads", 
+save(list = c("raw_statements", "raw_statements_new", 
+             "manual_year_cruises",  "assignments_dates_cr_perm", "hauls", "df_offloads", 
               "df_em_efp_offloads", "df_fishery_dates", "first_cruise", 
               "first_date", "last_date", "adp_yr", "Rdata_files_path",
               "project_dribble"), 
-     file = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"))
+     file = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"))
 
 
 
 # upload the .Rdata file to g-drive
 googledrive::drive_upload(
-  media     = paste0(Rdata_files_path, "AR_1_OLD_DATA_Statements_data.Rdata"),     #' *The local filepath to the file you want to upload*
+  media     = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"),     #' *The local filepath to the file you want to upload*
   path      = project_dribble,                        #' *The dribble object of the Gdrive folder you want to upload to*
-  name      = "AR_1_OLD_DATA_Statements_data.Rdata",  #' *Optional. Assignes your uploaded object with a different file name.*,
+  name      = "AR_1_Statements_data.Rdata",  #' *Optional. Assignes your uploaded object with a different file name.*,
   overwrite = T                                       #' *A control for overwriting existing Gdrive files*.
 ) 
 
