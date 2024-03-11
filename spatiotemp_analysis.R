@@ -14,7 +14,7 @@ project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
 #' Load spatial data
 (load("source_data/ak_shp.rdata"))
 
-#' Load spatiotemporal functions developed for the 2024 ADP. *TRIM THIS FUNCTION LIST DOWN*
+#' Load spatiotemporal functions developed for the 2024 ADP. 
 source("functions/spatiotemp_functions.R")
 
 #' Load the ADFG statistical area shapefile.
@@ -753,7 +753,7 @@ ggplot(distributions.fmp , aes(x = X)) +
   theme(legend.position = "bottom", legend.key = element_rect(fill = "white")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
   geom_text(data = dmn_N, aes(label = STRATA_DMN_N, x = X, y = 1), hjust = 0, vjust = 1, size = 3.5)
-
+#' TODO If we want to include year, can maybe use facet_nested, which also has the 'independent' argument
 
 
 
@@ -1084,3 +1084,364 @@ ggsave("test.em_hal.bsai.png", path = "figures/", plot = test.em_hal.bsai, width
 
 
 #' TODO Can we look at a time series of expected interspersion?
+#' 
+#' 
+#' 
+#' 
+#' 
+#' 
+
+
+#=======================#
+# ODDS for 2022-2023 ---------------------------------------------------------------------------------------------------
+#=======================#
+
+#' Note: Geoff has a odds_cancellation_investigation.R script in his local on the ADP GitHub repo with some figures for
+#' looking at ODDS as a time series. Could be useful to investiate deviations from expected rates.
+
+library(odbc)
+channel <- dbConnect(
+  odbc::odbc(), "AFSC", 
+  UID = rstudioapi::askForPassword("Database user"),  PWD = rstudioapi::askForPassword("Database password")
+)
+
+#' I can't get the script from 1_AR_data.R to run : *"NORPAC"."ODDS_RANDOM_NUMBER"."GETCONTROLPCT": invalid identifier*
+# Pull ODDS data from the ODDS schema
+odds_pull <- setDT(dbGetQuery(channel, paste(
+  "
+  SELECT 
+    a.trip_plan_log_seq, a.trip_status_code, a.date_logged, a.vessel_seq, a.cancel_date_time, 
+    b.trip_stratas_seq, b.trip_monitor_code AS TRIP_MONITOR_CODE, b.trip_selected,  b.random_number_used, b.strata, b.strata_group_seq,
+    c.group_code, c.gear_typecode, c.description AS STRATUM_DESCRIPTION,
+    d.release_seq, d.release_request_date_time, d.release_status_seq, d.release_comment, d.release_response_comment, d.release_reason_seq,
+    e.release_status_code, e.description AS RELEASE_STATUS_DESCRIPTION,
+    f.release_reason_descript,
+    g.trip_plan_log_seq AS INHERIT_TRIP_SEQ,
+    h.description AS RELEASE_STATUS
+   
+  FROM odds.odds_trip_plan_log a
+    LEFT JOIN odds.odds_trip_stratas b
+      ON a.trip_plan_log_seq = b.trip_plan_log_seq 
+    LEFT JOIN odds.odds_strata c
+      ON b.strata = c.strata
+    LEFT JOIN odds.odds_strata_release d
+      ON b.trip_stratas_seq = d.trip_stratas_seq
+    LEFT JOIN odds.odds_lov_release_status e
+      ON d.release_status_seq = e.release_status_seq
+    LEFT JOIN odds.odds_lov_release_reason f
+      ON d.release_reason_seq = f.release_reason_seq
+    LEFT JOIN odds.odds_trip_stratas g
+      ON b.inherit_trip_seq = g.trip_stratas_seq
+    LEFT JOIN odds.odds_lov_release_status h
+      ON d.release_status_seq = h.release_status_seq
+  WHERE extract(YEAR FROM a.date_logged) >= 2020
+  "
+)))
+
+# Assign stratum 
+odds_pull_stratum <- unique(odds_pull[, .(TRIP_PLAN_LOG_SEQ, STRATA, GEAR_TYPECODE, GROUP_CODE, STRATUM_DESCRIPTION)])
+unique(odds_pull_stratum[, .(STRATA, GROUP_CODE, STRATUM_DESCRIPTION, GEAR_TYPECODE)])[order(STRATA, GROUP_CODE)]
+odds_pull_stratum[, STRATUM := fcase(
+  STRATA %in% 11:19, fcase(
+    GEAR_TYPECODE == 3, "OB_TRW",
+    GEAR_TYPECODE == 6, "OB_POT",
+    GEAR_TYPECODE == 8, "OB_HAL"),
+  STRATA %in% 20:23, fcase(
+    GEAR_TYPECODE == 6, "EM_POT",
+    GEAR_TYPECODE == 8, "EM_HAL"),
+  STRATA %in% 25:26, "EM_TRW",
+  STRATA %in% 96:97, "OB_Multi_Area_IFQ",
+  STRATA %in% 98, "EM_Multi_Area_IFQ")]         # In 1_AR_data.R, we split EM_Multi_Area_IFQ into the gear-based strata
+# Merge in stratum
+odds_pull[, STRATUM := odds_pull_stratum[odds_pull, STRATUM, on = .(TRIP_PLAN_LOG_SEQ)]]
+# If stratum is NA, it was a 2024 stratum
+odds_pull <- odds_pull[!is.na(STRATUM)]
+
+odds_pull[year(DATE_LOGGED) == 2022][, table(TRIP_STATUS_CODE)]
+odds_pull[year(DATE_LOGGED) == 2022][TRIP_STATUS_CODE == "CP"][, sum(TRIP_MONITOR_CODE %in% c("OA", "RO")/.N), keyby = .(STRATA = STRATUM)]
+
+odds_pull[year(DATE_LOGGED) == 2023][, table(TRIP_STATUS_CODE)]
+odds_pull[year(DATE_LOGGED) == 2023][TRIP_STATUS_CODE == "CP"][, sum(TRIP_MONITOR_CODE %in% c("OA", "RO")/.N), keyby = .(STRATA = STRATUM)]
+
+
+
+
+#==============#
+# 2023 Data ------------------------------------------------------------------------------------------------------------
+#==============#
+
+#' TODO No hyperlink yet - get this from Phil's message in the Grill chat
+(load("source_data/2024-02-20cas_valhalla.Rdata"))  # loads `valhalla` object
+valhalla[, range(TRIP_TARGET_DATE)]  # all 2023 trips
+
+#' Calculate realized monitoring rates for Partial Coverage strata
+realized_rate_2023 <- unique(valhalla[COVERAGE_TYPE == "PARTIAL", .(ADP, TRIP_ID, STRATA, OBSERVED_FLAG)])[
+][, .(SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)
+][, STRATA := fcase(
+  STRATA %in% c("EM_HAL", "EM_POT", "ZERO"), STRATA,
+  STRATA == "EM_TRW_EFP", "EM_TRW",
+  STRATA %in% c("HAL", "POT", "TRW"), paste0("OB_", STRATA)
+)][, .SD, keyby = .(ADP, STRATA)]
+realized_rate_2023  # Only 16.6% and 16.3% in EM_HAL and EM_POT in 2023. ODDS has 32.1% and 32.1%
+
+#' Both EM_HAL and EM_POT at under 17?? Seem like review is behind.
+fgem_trips <- unique(valhalla[STRATA %in% c("EM_HAL", "EM_POT"), .(STRATA, TRIP_ID, TRIP_TARGET_DATE, LANDING_DATE, OBSERVED_FLAG)])
+fgem_trips[, ':=' (
+  TRIP_TARGET_DATE = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = T), 
+  LANDING_DATE = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = T)),
+  keyby = .(TRIP_ID)]
+fgem_trips <- unique(fgem_trips)
+ggplot(fgem_trips, aes(x = TRIP_TARGET_DATE, fill = OBSERVED_FLAG)) + 
+  facet_grid(STRATA ~ .) + 
+  geom_histogram(color = "black") + theme(legend.position = "bottom")
+#' TODO How well does this track on the ODDS side?
+
+# What rates were programmed for the 2023 ADP?
+
+
+
+
+
+
+#==============#
+# 2022 Data ------------------------------------------------------------------------------------------------------------
+#==============#
+# Pull pull VALHALLA 2022 and see if the OBSERVED_FLAG is nay different than what I have above
+valhalla_2022 <- setDT(dbGetQuery(channel, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
+
+realized_rate_2022 <- unique(valhalla_2022[COVERAGE_TYPE == "PARTIAL", .(ADP, TRIP_ID, STRATA, OBSERVED_FLAG)])[
+][, .(SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)
+][, STRATA := fcase(
+  STRATA %in% c("EM_HAL", "EM_POT", "ZERO"), STRATA,
+  STRATA == "EM_TRW_EFP", "EM_TRW",
+  STRATA %in% c("HAL", "POT", "TRW"), paste0("OB_", STRATA)
+)][, .SD, keyby = .(ADP, STRATA)]
+realized_rate_2022  # Still only seeing 20.2% and 24.4% in EM_HAL and EM_POT in 2022. ODDS has 31.5% and 36.7%.
+
+#' The 2022 AR had these same monitoring % reported, which was review through April 10, 2023.
+#' TODO Do we need to re-run Valhalla for the 2022 year?
+
+# TODOS ----
+# clean up functions script to only include what is needed
+
+
+#======================================================================================================================#
+# STARTING ALL OVER ---------------------------------------------------------------------------------------------------
+#======================================================================================================================#
+
+
+#======================================================================================================================#
+# Valhalla -------------------------------------------------------------------------------------------------------------
+#======================================================================================================================#
+# Loading Valhalla for 2022 and 2023
+
+# For now, pull VALHALLA for 2022 and 2023. Will load from an .rdata file when the data is finalized.
+if(F){
+  
+  library(odbc)
+  channel <- dbConnect(
+    odbc::odbc(), "AFSC", 
+    UID = rstudioapi::askForPassword("Database user"), PWD = rstudioapi::askForPassword("Database password"))
+  
+  # For Valhalla table only has through 2022, with the last run date as 2023-04-10
+  valhalla.2022 <- setDT(dbGetQuery(channel, paste("SELECT * FROM loki.akr_valhalla WHERE adp IN (2022, 2023)")))
+  
+  # Load Phil's 2023 valhalla dataset (available in the GRILL chat)
+  (load("source_data/2024-02-20cas_valhalla.Rdata"))
+  # Reconcile differences in column classes
+  valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
+  valhalla.2022[, LANDING_DATE := as.Date(LANDING_DATE)]
+  # Combine the 2022 and 2023 datasets. Note that TRIP_ID will be a character format (2022 was, but 2023 was numeric)
+  valhalla <- rbind(valhalla.2022, valhalla)
+}
+
+#' Load spatiotemporal functions (modified from the 2024 ADP)
+source("functions/spatiotemp_functions.R")
+
+#' Load the ADFG statistical area shapefile.
+stat_area_sf <- st_read(
+  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = T) %>%
+  select(STAT_AREA) %>%
+  st_transform(crs = 3467)
+
+#======================================================================================================================#
+# Sample Rates ---------------------------------------------------------------------------------------------------------
+#======================================================================================================================#
+
+## Programmed Rates (ODDS ) --------------------------------------------------------------------------------------------
+# The ODDS pull will take place in 1_AR_data.R, but for now we can grab the programmed rates from the tables..
+
+# Pull ODDS data from the ODDS schema
+odds_rates_pull <- setDT(dbGetQuery(channel, paste(
+  "
+  SELECT UNIQUE
+    a.strata, a.percent, a.effective_date,
+    b.group_code, b.description, b.gear_typecode, b.pelagic_nonpelagic_trawl
+  FROM odds.odds_strata_rates a 
+    JOIN odds.odds_strata b 
+        ON a.strata = b.strata
+  WHERE extract(YEAR FROM a.effective_date) IN(2022, 2023)
+  ORDER BY a.effective_date;
+  "
+)))
+
+odds_rates <- unique(odds_rates_pull[
+# Exclude multi-area IFQ and EM_compliance
+][!(STRATA %in% c(96, 97, 98))
+# Define ADP Year
+][, ADP := as.integer(year(EFFECTIVE_DATE))
+# Identify Stratum based on group (Observer/EM) and gear type.
+][, STRATUM := fcase(
+  GROUP_CODE %in% c(10,11), fcase(
+    GEAR_TYPECODE == 6, "OB_POT", 
+    GEAR_TYPECODE == 8, "OB_HAL",
+    GEAR_TYPECODE == 3, "OB_TRW"),
+  GROUP_CODE == 13, fcase(
+    GEAR_TYPECODE == 6, "EM_POT",
+    GEAR_TYPECODE == 8, "EM_HAL"))
+][, .(ADP, STRATA = STRATUM, SAMPLE_RATE = PERCENT/100)])
+# Hard-code the rates for Trawl EM
+odds_rates.em_trw <- copy(odds_rates[1:2])[, ':=' (ADP = as.integer(2022:2023), STRATA = "EM_TRW", SAMPLE_RATE = 0.3333)][]
+# Hard-code the rates for ZERO
+odds_rates.zero <- copy(odds_rates[1:2])[, ':=' (ADP = as.integer(2022:2023), STRATA = "ZERO", SAMPLE_RATE = 0)][]
+# Combine 
+odds_rates_programmed <- rbind(odds_rates, odds_rates.em_trw, odds_rates.zero)[, .SD, keyby = .(ADP, STRATA)]
+
+## Realized Rates (ODDS) -----------------------------------------------------------------------------------------------
+#' *This is done in 1_AR_data.R*. We will have to decide how to apply the ODDS trip selection outcomes to VALHALLA if w
+#' want to evaluate spatiotemporal monitoring coverage of what we 'think we'll get' versus 'what we have on hand'.
+
+## Realized Rates (Valhalla) -------------------------------------------------------------------------------------------
+
+#' *NOTE* the 'realized' rates from VALHALLA reflect which trips have data, and doesn't reflect which trips were 
+#' actually selected/monitored. Therefore, because fixed-gear EM review is so far behind, the 'realized' rates are
+#' apparently much lower than the intended 'programmed' rates.
+#' *FOR NOW* we will use VALHALLA as-is, but if we can use the ODDS dataset to identify which VALHALLA trips were 
+#' monitored, then we can better evaluate what coverage will eventually be achieved in the fixed-gear EM strata.
+
+valhalla_rates_realized <- unique(valhalla[COVERAGE_TYPE == "PARTIAL", .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)])[
+][, .(SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)
+][, STRATA := fcase(
+  STRATA %in% c("EM_HAL", "EM_POT", "ZERO"), STRATA,
+  STRATA == "EM_TRW_EFP", "EM_TRW",
+  STRATA %in% c("HAL", "POT", "TRW"), paste0("OB_", STRATA)
+)][, .SD, keyby = .(ADP, STRATA)]
+
+#======================================================================================================================#
+# Define Boxes ---------------------------------------------------------------------------------------------------------
+#======================================================================================================================#
+
+# Run the Valhalla through a ata wrangling function to prepare it for the box definitions.
+pc_effort_st <- spatiotemp_data_prep(valhalla)
+
+# Define boxes based on stratum only
+box_def.stratum <- define_boxes(
+  data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+  year_col = "ADP", stratum_cols = "STRATA", geom = T)
+
+box_def.stratum_fmp <- define_boxes(
+  data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+  year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
+
+#======================================================================================================================#
+# Evaluate Interspersion -----------------------------------------------------------------------------------------------
+#======================================================================================================================#
+
+#' TODO `Could also look at expected distribution vs realized of number of neighboring monitored trips for each box`
+#' This can perhaps show with more resolution when/where monitoring was clumped or dispersed, rather than just whether
+#' each box had at least one sample (gaps)
+
+
+## Interspersion: Stratum ----------------------------------------------------------------------------------------------
+
+#' TODO *I should be able to put this into a simple wrapper function
+### Expectation given the programmed rates
+programmed_exp_dt.stratum <- calculate_dmn_interspersion(
+  box_def = box_def.stratum,
+  selection_rates = odds_rates_programmed,
+  acceptor_donor_lst = as.list(seq_len(nrow(box_def.stratum$dmn$strata_dt))) # Make each stratum donate only to itself
+)
+dmn_cols <- unlist(programmed_exp_dt.stratum$params, use.names = F)
+programmed_exp_smry_dt.stratum <- programmed_exp_dt.stratum$RAW[
+][, .(BOX_DMN_w = sum(BOX_DMN_w), POOL_DMN_INTERSPERSION = weighted.mean(BOX_DONOR_SAMPLE_PROB, w = BOX_DMN_w)), keyby = dmn_cols]
+
+### Expectation given the realized rates
+realized_exp_dt.stratum <- calculate_dmn_interspersion(
+  box_def = box_def.stratum,
+  selection_rates = valhalla_rates_realized,
+  acceptor_donor_lst = as.list(seq_len(nrow(box_def.stratum$dmn$strata_dt))) # Make each stratum donate only to itself
+)
+realized_exp_smry_dt.stratum <- realized_exp_dt.stratum$RAW[
+][, .(BOX_DMN_w = sum(BOX_DMN_w), POOL_DMN_INTERSPERSION = weighted.mean(BOX_DONOR_SAMPLE_PROB, w = BOX_DMN_w)), keyby = dmn_cols]
+
+# Calculate the expected number of monitored trips in each box or each boxe's neighborhood?
+# Start with box
+realized_exp_dt.stratum.mon_nbr <-  copy(realized_exp_dt.stratum$RAW)
+realized_exp_dt.stratum.mon_nbr[, MON_NBR := BOX_DMN_n * BOX_DONOR_SAMPLE_PROB]
+
+## Realized 2023-2024 ----
+
+# This is applicable to any box definition
+realized_monitored <- pc_effort_st[unique(valhalla[OBSERVED_FLAG == "Y", .(TRIP_ID)]), on = c(wd_TRIP_ID = "TRIP_ID")]
+realized_monitored.boxes <- box_def.stratum$og_data[realized_monitored, on = .(ADP, STRATA, TRIP_ID)]
+# Count number of monitored trips in each box
+realized_monitored_boxes_n <- realized_monitored.boxes[
+][, .(BOX_n = uniqueN(TRIP_ID)), keyby = .(ADP, STRATA, BOX_ID)
+][!is.na(STRATA)][STRATA != "ZERO"]
+
+ggplot(realized_exp_dt.stratum.mon_nbr[STRATA != "ZERO"]) + 
+  facet_grid2(STRATA ~ ADP, scales = "free", independent = "all") + 
+  geom_density(aes(x = MON_NBR)) + 
+  geom_density(data = realized_monitored_boxes_n, aes(x = BOX_n), color = "red", alpha = 0.5)
+
+
+
+## Interspersion: Stratum X FMP ----------------------------------------------------------------------------------------
+
+
+
+### Expectation given the programmed rates
+programmed_exp_dt.stratum_fmp <- calculate_dmn_interspersion(
+  box_def = box_def.stratum_fmp,
+  selection_rates = odds_rates_programmed,
+  acceptor_donor_lst = as.list(seq_len(nrow(box_def.stratum_fmp$dmn$strata_dt))) # Make each stratum donate only to itself
+)
+dmn_cols <- unlist(programmed_exp_dt.stratum_fmp$params, use.names = F)
+programmed_exp_smry_dt.stratum_fmp <- programmed_exp_dt.stratum_fmp$RAW[
+][, .(
+  BOX_DMN_w = sum(BOX_DMN_w), 
+  POOL_DMN_INTERSPERSION = weighted.mean(BOX_DONOR_SAMPLE_PROB, w = BOX_DMN_w)
+), keyby = dmn_cols]
+
+### Expectation given the realized rates
+realized_exp_dt.stratum_fmp <- calculate_dmn_interspersion(
+  box_def = box_def.stratum_fmp,
+  selection_rates = valhalla_rates_realized,
+  acceptor_donor_lst = as.list(seq_len(nrow(box_def.stratum_fmp$dmn$strata_dt))) # Make each stratum donate only to itself
+)
+dmn_cols <- unlist(realized_exp_dt.stratum_fmp$params, use.names = F)
+realized_exp_smry_dt.stratum_fmp <- realized_exp_dt.stratum_fmp$RAW[
+][, .(
+  BOX_DMN_w = sum(BOX_DMN_w), 
+  POOL_DMN_INTERSPERSION = weighted.mean(BOX_DONOR_SAMPLE_PROB, w = BOX_DMN_w)
+), keyby = dmn_cols]
+
+# Calculate the expected number of monitored trips in each box or each boxe's neighborhood?
+# Start with box
+realized_exp_dt.stratum_fmp.mon_nbr <-  copy(realized_exp_dt.stratum_fmp$RAW)
+realized_exp_dt.stratum_fmp.mon_nbr[, MON_NBR := BOX_DMN_n * BOX_DONOR_SAMPLE_PROB]
+
+## Realized 2023-2024 ----
+
+realized_monitored <- pc_effort_st[unique(valhalla[OBSERVED_FLAG == "Y", .(TRIP_ID)]), on = c(wd_TRIP_ID = "TRIP_ID")]
+realized_monitored.boxes <- box_def.stratum_fmp$og_data[realized_monitored, on = .(ADP, STRATA, TRIP_ID)]
+# Count number of monitored trips in each box
+realized_monitored_boxes_n <- realized_monitored.boxes[
+][, .(BOX_n = uniqueN(TRIP_ID)), keyby = .(ADP, STRATA, BOX_ID)
+][!is.na(STRATA)][STRATA != "ZERO"]
+
+ggplot(realized_exp_dt.stratum_fmp.mon_nbr[STRATA != "ZERO"]) + 
+  facet_grid2(STRATA ~ ADP + BSAI_GOA, scales = "free", independent = "all") + 
+  geom_density(aes(x = MON_NBR)) + 
+  geom_density(data = realized_monitored_boxes_n, aes(x = BOX_n), color = "red", alpha = 0.5)
+# TODO I need to use simulation outputs for this. I have too many fractions of trips expected which doesn't give me the same result!
