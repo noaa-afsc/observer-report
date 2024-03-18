@@ -17,9 +17,9 @@ title: "Annual Report Descriptive Data Draft"
 #
 # Inputs:      
 # Normal locations:                                                                   
-#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_data.Rdata
-#     - catch.tables - 2013-2019 catch tables for posting to the AKRO website (NOT USED in this script)
-#     - previous.catch.tables - previous year's version of the catch tables (2013-2018) (NOT USED in this script)
+#  - S:\Observer Program Annual Report\YYYY_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_YYYY_data.Rdata
+#     - catch.tables - 2013-2022 catch tables for posting to the AKRO website (NOT USED in this script)
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2021) (NOT USED in this script)
 #     - VALHALLA - the original Valhalla data (NOT USED in this script)
 #     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #                        (NOT USED in this script)
@@ -28,7 +28,7 @@ title: "Annual Report Descriptive Data Draft"
 #
 # Output:  
 # Normal locations:  
-#   - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_2019_tables.html
+#   - S:\Observer Program Annual Report\YYYY_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_YYYY_tables.html
 #     - catch_wide - summary of catch by FMP area, sector, gear, and retained flag with subtotals. Includes percent observed.
 #     - counts_wide - monitored and total trip counts.  Includes percent monitored.
 #     - table4_3 - GOA table of monitored catch.
@@ -39,30 +39,167 @@ title: "Annual Report Descriptive Data Draft"
 
 ```
 
-# 4 Descriptive Information
+# 3 Descriptive Information
 
-### 4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
+## 3.1  Deployment Summary
 
-In Chapter 3, Table 3-3 provides trip and vessel counts based on coverage type and strata. However, the Council has previously requested a summary of trip and vessel counts based on criteria which are not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel length).  Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP area, strata, gear type, and vessel length category within the full and partial coverage categories. Trips are summarized as the number of monitored trips and the total number of trips.  Monitored trips reflect either trips with an observer, EM fixed gear trips if at least some video was reviewed, or EM trawl trips where salmon and Pacific halibut were observed for at the shoreside plant.  The rationale for defining monitored trips for EM fixed gear or EM trawl trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
+In past years, Chapter 3 (the deployment performance review) was prepared by the Fishery
+Monitoring Science Committee. However, a full evaluation of 2021 deployment (with FMSC
+review) was not completed for this Annual Report, and instead a summary of anticipated and
+realized deployment is provided in this chapter (Table 3-1). Not including a full evaluation of
+deployment is a temporary situation to facilitate work on evaluating sampling design and cost
+efficiencies that may be incorporated into the 2024 ADP. Additionally, changes in sampling
+strata and deployment methods are not anticipated for the 2023 ADP. The NMFS plans to
+publish the full 2021 Deployment Performance Review as a stand-alone tech memo after
+analyses for the 2024 ADP have been completed.
 
-Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes more than one gear type on a trip or within the year. The table rows titled “BSAI Subtotal”, “GOA Subtotal”, and “Total Unique” include the number of unique vessels and unique trips in each vessel length category where each vessel or trip is counted only once, in each of the FMP areas or overall, respectively.
+In December 2020, NMFS released the final 2021 ADP (NMFS 2020). Due to limitations on
+transportation and health mandates associated with COVID-19, observers were deployed on
+randomly selected trips according to a port-based trip selection model in 2021. The port-specific
+deployment method excluded trips from observation if they did not depart and land within a port
+that was on the list of observable ports.
 
- 
+The observable ports were identified because travel and lodging conditions allowed observers to
+meet and maintain applicable health mandates and advisories for deployment into the
+commercial fisheries and because there were expected to be enough fishing trips originating and
+ending in these ports to make it cost effective to place observers in these communities. These
+ports included: 1) Akutan, 2) Dutch Harbor/Unalaska, 3) False Pass, 4) Homer, 5) Juneau, 6)
+Ketchikan, 7) King Cove, 8) Kodiak, 9) Nome, 10) Petersburg, 11) Sand Point, 12) Seward, 13)
+Sitka, and 14) Yakutat. In statistical terms, prior to COVID-19, all ports were within the
+sampling frame, whereas only some ports remained in the sampling frame in response to
+COVID-19.
 
-### 4.2  Total Catch and Discards and Amount of Catch Observed
-The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS CAS in Table 4-3 and Table 4-4 for  `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. 2014. 
+Target deployment rates were as follows:
+• Hook-and-Line - 15.13%.
+• Pot - 15.04%.
+• Trawl vessels not participating in EM - 16.12%.
+
+The programmed rates for the ODDS differed from the ADP target monitoring rates in order to
+account for monitoring waivers (NMFS 2020). Initially, the ‘sample frame adjusted rate’ was
+estimated as the selection rate required of trips within the sample frame in order to achieve the
+target monitoring rate for all trips. The ODDS programmed rates resulted after an additional
+adjustment to the sample frame rate accounted for anticipated waivers due to other logistic
+limitations of deployment under COVID-19 safety protocols. Consequently, the ODDS was
+programmed at the beginning of the year to randomly select logged trips at a rate of 23.35% in 
+the HAL stratum, 29.92% in the POT stratum, 19.29% in the TRW stratum. These programmed
+rates were expected to result in the target monitoring rates listed above.
+In August 2021, NMFS released an Information Bulletin to announce the expansion of observer
+deployment for all ports throughout Alaska beginning on 1 September 2021. This change was
+consistent with the updated NOAA policy on observer waivers, which states that vessels are no
+longer eligible for release from observer coverage under the Emergency Rule if a fully
+vaccinated or quarantined/shelter-in-place observer is available. The ODDS programmed rates
+therefore had to be updated as the sample frame adjustment was no longer required. Combined
+with estimates of the remaining budget, remaining fishing effort, and deployment costs, new
+target deployment rates were assigned to the observer sampling strata with the intention of
+achieving the yearly monitoring rates originally set in the 2021 ADP by the end of the year.
+
+Target deployment rates were adjusted as follows:
+• Hook-and Line - 17.9%.
+• Pot - 17.6%.
+• Trawl vessels not participating in EM - 21.0%.
+
+Other adjustments to the ODDS trip selection rates were required to achieve these monitoring
+rates. Waivers could still be given if the observer provider could not assign an observer who had
+quarantined for 14 days with only 3 days of notice to a trip, or if the provider or observers did
+not feel safe with the vessel’s quarantine status. Beginning 1 September, selection rates in the
+ODDS were programmed to randomly select logged trips at a rate of 19.70% in the HAL stratum,
+19.40% in the POT stratum, and 21.00% in the TRW stratum. These programmed rates were
+expected to result in the second set of target monitoring rates listed above, for trips that occurred
+on or after 1 September.
+
+Following the 2021 ADP, ODDS was programmed to randomly select logged trips at a rate of
+30% in the EM HAL and EM POT strata. Because no waivers were expected in EM, the target
+monitoring rate (and programmed rate) for these strata was constant at 30%.
+
+### 3.1.1 At-Sea Deployments Rate Summary
+
+This section compares the coverage rate achieved against the expected coverage rates. Data used
+in this evaluation are stored within the Catch Accounting System (CAS, managed by the
+AKRO), the Observer Program database (NORPAC, managed by the AFSC), and eLandings
+(under joint management by Alaska Department of Fish and Game - ADF&G; the International
+Pacific Halibut Commission - IPHC; and the NMFS).
+
+The 2021 Observer Program had 13 different deployment strata to be evaluated (Table 3-1).
+There was one full coverage observed stratum (Full) comprised of trips taken both by vessels
+that were required to have full coverage (e.g., AFA catcher/processor vessels) and those fishing
+in the BSAI that opted into full coverage. There was one full coverage trawl EM stratum (EM
+TRW EFP) comprised of trips taken by AFA catcher vessels fishing for pollock under the
+Exempted Fishing Permit (EFP). There were three partial coverage EM strata: EM HAL, EM
+POT, and EM TRW EFP. There were three partial coverage observed strata defined by gear: HAL, POT, and TRW.
+There were also two zero coverage strata: one zero coverage EM research stratum and one zero
+coverage stratum for jig vessels and vessels under 40 ft. length overall.
+
+Evaluations for the full coverage category and zero-selection pool are straightforward - either the
+coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved
+100% coverage in the Full observed stratum, and 100% coverage in the full coverage EM TRW
+EFP stratum (Table 3-1). The program achieved perfect compliance with both zero coverage
+strata (Table 3-1). Under the assumption that deployment was randomized, a 95% confidence
+interval computed from the realized coverage rates (under the assumption of a binomial
+distribution for observed trips) will contain the expected deployment rate 95% of the time. If
+expected coverage levels were within the 95% confidence intervals, then we conclude that
+realized and expected coverage rates were equal. Coverage rates were consistent with expected
+values in seven of the nine partial coverage strata for which they were evaluated. Coverage rates
+were lower than expected for HAL during the first time period. Coverage rates were higher than
+expected for TRW in the second time period (Table 3-1).
+
+In combination across all strata, coverage levels, and fishery monitoring tools, 3,747 trips
+(43.2%) and 423 vessels (44.2%) were successfully monitored among all fishing in federal
+fisheries of Alaska in 2021 (Table 3-1).
+
+### 3.1.2  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
+
+Table 3-1 provides trip and vessel counts based on coverage type and strata. However, the
+Council has previously requested a summary of trip and vessel counts based on criteria that are
+not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel
+length). Table 3-2 and Table 3-3 provide a summary of the number of vessels and trips by FMP
+area, strata, gear type, and vessel length category within the full and partial coverage categories.
+Trips are summarized as the number of monitored trips and the total number of trips. Monitored
+trips reflect either trips with an observer, EM fixed gear trips if at least some video was
+reviewed, or EM trawl trips where salmon and Pacific halibut were observed at the shoreside
+plant. The rationale for defining monitored trips for EM fixed gear or EM trawl trips this way is
+that it is most similar to the way in which trips in other strata are considered observed (i.e.,
+irrespective of whether or not haul information or usable species composition data were
+collected).
+
+Vessels and trips may be counted more than once in a vessel length category in Table 3-2 and
+Table 3-3 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes
+more than one gear type on a trip or within the year. The table rows titled “BSAI Subtotal”,
+“GOA Subtotal”, and “Total Unique” include the number of unique vessels and unique trips in
+each vessel length category where each vessel or trip is counted only once, in each of the FMP
+areas or overall, respectively.
+
+
+## 3.2  Total Catch and Discards and Amount of Catch Observed
+
+The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS Catch Accounting System (CAS) in Table 3-4 and Table 3-5 for `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. (2014). 
 
 It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not _a priori_ be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum[^1].  
 
-In Table 4-3 and Table 4-4, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where salmon or Pacific halibut were observed for at the shoreside plant.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
+In Table 3-4 and Table 3-5, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where salmon or Pacific halibut were observed for at the shoreside plant.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
 
-All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction.  Additional retained and discard catch information, broken down by species for the Gulf of Alaska (GOA) and Bering Sea/Aleutian Islands (BSAI), are available online for `r as.numeric(format(Sys.Date(), "%Y"))-1` as well as prior years.[^2] 
+All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction.  
+
+These tables can also be used to compare the proportion of catch that occurred in full coverage or
+the partial coverage categories or the proportion of catch that was monitored for trips in partial
+coverage. For example:
+
+* In the BSAI and GOA combined, 93.4% of pelagic trawl catch was on trips in the full
+coverage category and 6.6% was on trips in partial coverage. All partial coverage trips
+were in the GOA and 27.2% of their catch was monitored;
+* In the BSAI and GOA combined, 94.9% of non-pelagic trawl catch was on trips in full
+coverage category and 5.1% was on trips in partial coverage. Partial coverage trips
+occurred in both the BSAI and GOA with 44.0% and 20.6% of their catch monitored,
+respectively.
+
+Additional retained and discard catch information, broken down by species for the Gulf of Alaska (GOA) and Bering Sea/Aleutian Islands (BSAI), are available online for `r as.numeric(format(Sys.Date(), "%Y"))-1` as well as prior years.[^2] 
 
 #### Discarded Pacific halibut in the IFQ fishery ####
 
-Caution should be exercised when interpreting the results for halibut in the halibut IFQ fishery in Table 4-3 and Table 4-4. For hook-and-line catch, the estimated weight of each species caught is the product of the estimated number of fish, the mean weight per fish, and the proportion of the catch that is discarded. While these methods provide unbiased estimates of total catch, the estimate of at-sea discards relies on the assumption that the proportion of the number of discarded is equal to the proportion of the weight discarded. The Pacific halibut fishery is the only federally managed fishery with a regulatory minimum size limit (32 in) and this creates a unique data collection issue for observers who collect data from the unsorted (retained and discarded) catch without inferring which fish would be discarded by the vessel. As a result, the mean weight per fish that is calculated from the observer’s sample of combined discarded and retained fish over-estimates the mean weight of discarded fish and underestimates the weight of retained fish. Hence the proportion of the number of halibut retained (reported in observer data) does not equal the proportion of halibut weight retained, resulting in over-estimates of halibut discard within the directed fishery. 
-
-To correct for this bias, NMFS is developing an analytic (modeled) method to adjust for this bias by adjusting the percentage of halibut retained to reflect the differences in mean weight for retained (and discarded) halibut.  A NOAA Technical Memorandum describing the change is currently going through final review.  This solution has been implemented for 2021, and future years, and the same correction is being implemented for previous years, back to 2013. The change was not available in time to incorporate into the CAS and be reflected in the tables for this report, however.  Corrections for the bias will be included in Tables 4-1 and 4-2 for the 2021 Annual Report.
+New for the 2021 report were bias-corrected estimates of Pacific halibut discarded in the IFQ halibut
+fishery. In 2022, NMFS published a method to adjust for this bias by adjusting the percentage of
+halibut retained to reflect the differences in mean weight for retained (and discarded) halibut
+(Cahalan and Gasper 2022). This solution was implemented starting in 2021 and continues to be included
+in the estimates of directed halibut fishery discard summarized in this report.
 
 
 ***
@@ -81,7 +218,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # LOAD DATA 
 
-YEAR <- 2021
+YEAR <- 2022
 
 #Source helper file (libraries, ggplot themes, etc.)
 source("AR_descriptive_helper.r")
@@ -205,7 +342,7 @@ counts_wide <- total_counts_wide %>%
 
 ```
 
-Table 4-1. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
+Table 3-2. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
 
 
 ```{r flextable_TABLE4_1, message=FALSE, warning=FALSE, echo=FALSE}
@@ -263,14 +400,13 @@ flextable(bsai) %>%
   # Merge the area labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
-  merge_at(i=16, j=c(2:3)) %>% 
+  merge_at(i=18, j=c(2:3)) %>% 
   # Add dashed horizontal lines before area subtotals:
-  border(i = 15, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = 17, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
-  # Add footer:
-  footnote(i = 1, j = 1:2, part = "header",
-           value = as_paragraph(c("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Ch. 3.")))
+  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
+                              "2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata."))
 
 
 
@@ -279,7 +415,7 @@ flextable(bsai) %>%
 
 
 
-Table 4-2. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
+Table 3-3. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
 
 
 ```{r flextable_TABLE4_2, message=FALSE, warning=FALSE, echo=FALSE}
@@ -337,18 +473,19 @@ flextable(goa) %>%
   # Merge the area labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
-  merge_at(i=21, j=c(2:3)) %>% 
+  merge_at(i=19, j=c(2:3)) %>% 
   # Merge 'Total Unique' label across 2 cells (area and strata):
-  merge_at(i=22, j=c(1:2)) %>% 
+  merge_at(i=20, j=c(1:2)) %>% 
   # Add dashed horizontal line before area subtotals:
-  border(i = 20, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = 18, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add solid horizontal line before unique totals:
-  border(i = 21, part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = 19, part = "body", border.bottom = fp_border(style = "solid")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   # Add footer:
-  footnote(i = 1, j = 1:2, part = "header",
-           value = as_paragraph(c("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside.", "Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata described in Chapter 3.")))
+  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
+                              "The sum of total unique vessels in the three vessel length categories is one greater than is seen in Table 3-1.  This is due to a fishing vessel changing its length on file with NMFS mid-year and having landings under the two different lengths and vessel length categories."))
+
 
 
 
@@ -440,13 +577,13 @@ catch_wide <- catch_wide %>%
 
 **INSERT PAGE BREAK** 
 
-Table 4-3. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
+Table 3-4. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
 
 
-```{r Table4_3_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+```{r Table3_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the GOA data and rearrange the column order:
-table4_3 <- catch_wide %>% 
+table3_4 <- catch_wide %>% 
   filter(FMP=='GOA') %>% 
   select(c(2:3,
            4,9,14, #Catcher/Processors
@@ -458,7 +595,7 @@ table4_3 <- catch_wide %>%
 
 
 # Create a table for the Fee Summaries in All Areas:
-flextable(table4_3) %>% 
+flextable(table3_4) %>% 
   # Adjust column header labels where necessary:
   set_header_labels(AGENCY_GEAR_CODE = "Gear",
                     RETAINED = "Catch",
@@ -494,9 +631,8 @@ flextable(table4_3) %>%
   border(i = c(2,4,6,8), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
-  # Add footer:
-  footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside."))
+  ## Add footer:
+  add_footer_lines(values = c("1 Monitored reflects either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
 
 
 
@@ -505,13 +641,13 @@ flextable(table4_3) %>%
 
 **INSERT PAGE BREAK** 
 
-Table 4-4. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
+Table 3-5. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
 
 
-```{r Table4_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+```{r Table3_5_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the GOA data and rearrange the column order:
-table4_4 <- catch_wide %>% 
+table3_5 <- catch_wide %>% 
   filter(FMP=='BSAI') %>% 
   select(c(2:3,
            4,9,14, #Catcher/Processors
@@ -523,7 +659,7 @@ table4_4 <- catch_wide %>%
 
 
 # Create a table for the Fee Summaries in All Areas:
-flextable(table4_4) %>% 
+flextable(table3_5) %>% 
   # Adjust column header labels where necessary:
   set_header_labels(AGENCY_GEAR_CODE = "Gear",
                     RETAINED = "Catch",
@@ -559,9 +695,7 @@ flextable(table4_4) %>%
   border(i = c(2,4,6,8), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
-  # Add footer:
-  footnote(i = 1, j = 1, part = "header",
-           value = as_paragraph("Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside."))
+  add_footer_lines(values = c("1 Monitored reflects either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
 
 ```
 
@@ -569,10 +703,10 @@ flextable(table4_4) %>%
 ```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table4_3', 'table4_4'))])
+rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table3_4', 'table3_5'))])
 
 
-#save('YEAR', 'work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table4_3', 'table4_4',
+#save('YEAR', 'work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table3_4', 'table3_5',
 #     file = paste0("AR_descriptive_", YEAR, "_tables.RData"))
 
 ```
