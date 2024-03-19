@@ -3,11 +3,11 @@
 #
 # Program:AR_descriptive_data.Rmd                                         
 # Project:Observer Program Annual Report Descriptive Chapter                                      
-# Location: S:\Observer Program Annual Report\2022_Annual_Report\Chapt3-4_Descriptive_Info 
+# Location: S:\Observer Program Annual Report\2023_Annual_Report\Chapt4_Descriptive_Info 
 #      or: H:\Observer Program\Annual Report Local GIT Project\Descriptive Info
 #
 # Objectives:                                                                  
-# - Query and perform some data clean-up for the descriptive chapter (Ch.3/4) of the Observer Program Annual Report
+# - Query and perform some data clean-up for the descriptive chapter (Ch.4) of the Observer Program Annual Report
 # - Generate catch table summaries that are posted to the AKRO website 
 #   (https://www.fisheries.noaa.gov/alaska/fisheries-observers/observed-catch-tables-north-pacific-observer-program)
 #
@@ -24,7 +24,7 @@
 #      - akfish_report.species_group 
 #      - akfish_report.flag 
 #      - akfish_report.mortality_rate 
-#  - S:\Observer Program Annual Report\20122Annual_Report\Chap3-4_Descriptive_Info\2013_2022_catchtables.csv 
+#  - S:\Observer Program Annual Report\2023Annual_Report\Chap4_Descriptive_Info\2013_2023_catchtables.csv 
 #
 # Output:    
 # Normal locations:
@@ -35,7 +35,7 @@
 #     - warehouse_data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #     - addl_catch_table - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
 #     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
-#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\2013_2019_catchtables.csv
+#  - S:\Observer Program Annual Report\2023_Annual_Report\Chapt4_Descriptive_Info\2013_YEAR_catchtables.csv
 #
 # -------------------------------------------------------------------------------------------------------------------- #
 
@@ -46,7 +46,7 @@
 source("AR_descriptive_helper.r")
 
 #Create a generalized YEAR object that corresponds to the Annual Report year
-YEAR <- 2022
+YEAR <- 2023
 
 # Set up ROracle connection for database calling information from R environment:
 channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
@@ -58,14 +58,15 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 ## Load Valhalla Data ---------------------------------------------------------------------------------------------
 
 # Query Valhalla data directly from the database for the Annual Report:
-valhalla_query <- paste0("select * from akfish_sf.valhalla where adp = ", YEAR)
-valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
+#valhalla_query <- paste0("select * from akfish_sf.valhalla where adp = ", YEAR)
+#valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
 
 
-# 2021 data aren't currently in the database.  Load .RData file instead:
+# 2023 data aren't currently in the database.  Load .RData file instead:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
-#valhalla_data <- VALHALLA  
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2023//2024-02-20CAS_VALHALLA.RData")
+valhalla_data <- valhalla  
 
 
 ## Valhalla data transformations  ----------------------------------------------------------------------------------- 
@@ -102,29 +103,13 @@ prep_data <- valhalla_data %>%
 # Corrections to strata ---------------------------------------------------------------------------- 
 
 # Hardcode the following STRATA changes here:
-#  1. The 2022 ADP indicates that NO vessels are participating in the EM Innovation Project in 2022. SO no strata changes
-#     for this. There are 6 vessels participating in the cost effective and mobile EM system project that are doing a 
-#     side-by-side comparison of their existing EM system with a new one. I imagine these would stay as EM_HAL or EM_POT? 
-#     A third project is testing trawl EM systems on fixed gear (pot) vessels. They will take observers to allow for an 
-#     observer vs. EM counts comparison.  Double check with Phil how these last vessels should be treated.  
-
+#  1. The 2023 ADP indicates that NO vessels are participating in the EM Innovation Project in 2023. So no strata changes
+#     for this. 
 
 table(prep_data$STRATA)
 #EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
-#58888      20008      33633     866212     127797      58072      29439      74901 
+#54647      15020      42929     870057     124702      51260      27793      74078  
 
-#table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
-# HAL  POT 
-# 1198  167
-#table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
-# EM_HAL EM_POT 
-# 872     32 
-#table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # HAL and POT
-# HAL POT 
-# 19 123 
-#table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
-# HAL 
-# 613 
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
 prep_data <- prep_data %>% 
@@ -135,18 +120,21 @@ prep_data <- prep_data %>%
 
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-#           EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
-#EM_HAL      58888      0               0               0      0      0      0      0      0
-#EM_POT          0  20008               0               0      0      0      0      0      0
-#EM_TRW_EFP      0      0           21754           11879      0      0      0      0      0
-#FULL            0      0               0               0 866212      0      0      0      0
-#HAL             0      0               0               0      0 127797      0      0      0
+#             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
+# EM_HAL      54647      0               0               0      0      0      0      0      0
+# EM_POT          0  15020               0               0      0      0      0      0      0
+# EM_TRW_EFP      0      0           32313           10616      0      0      0      0      0
+# FULL            0      0               0               0 870057      0      0      0      0
+# HAL             0      0               0               0      0 124702      0      0      0
+# POT             0      0               0               0      0      0  51260      0      0
+# TRW             0      0               0               0      0      0      0  27793      0
+# ZERO            0      0               0               0      0      0      0      0  74078
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
-#N      Y 
-#332613 936337  
+#     N      Y 
+#309053 951433 
 
 # Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
 #prep_data <- prep_data %>% 
@@ -187,7 +175,7 @@ valhalla_run_date <- valhalla_data %>%
   distinct(RUNDATE)
 
 valhalla_run_date
-valhalla_run_date$RUNDATE <- '10-APR-2023'
+valhalla_run_date$RUNDATE <- '20-FEB-2024'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
