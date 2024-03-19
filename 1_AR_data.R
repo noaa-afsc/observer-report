@@ -7,7 +7,7 @@ source("3_helper.R")
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2020 
+year <- 2024
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
@@ -103,53 +103,37 @@ salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 
 # Queries
 script <- paste("
-SELECT
-norpac.ODDS_RANDOM_NUMBER.getControlPct(pl.original_embark_date, vtr.trip_rate_strata)  as ODDS_SELECTION_PCT,
-EXTRACT(YEAR FROM pl.original_embark_date) AS YEAR,      
-vtr.sample_plan_seq,
---vtr.gear_type_code, --Change #1 for 2018 Annual Report
--- vtr.tender_trip_flag, --Change #2 for 2018 Annual Report
--- vtr.trip_rate_strata, 
-vtr.description,
-lov.akr_vessel_id AS VESSEL_ID,
-lov.vessel_seq,
-pl.trip_plan_log_seq,
-pl.gear_type_code, --Change #3 for 2018 Annual Report
-pl.tender_trip_flag, --Change #4 for 2018 Annual Report
-pl.original_embark_date,
-pl.planned_embark_date,
-pl.trip_status_code,
-pl.trip_obs_code,
-pl.trip_selected_obs,
-pl.inherit_obs_trip_seq,
-mon.random_number_used,
-pl.trip_plan_number,
--- This line converts the CLOB format of this field into VARCHAR
+  SELECT 
+  
+    -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
+    odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT,     
+    
+    a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
+    a.original_embark_date, a.planned_embark_date, a.tender_trip_flag,
+    b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata, b.inherit_trip_seq,
+    c.group_code, c.gear_typecode, c.description AS STRATUM_DESCRIPTION,
+    d.release_comment,
+    e.description AS RELEASE_STATUS_DESCRIPTION,
+    f.akr_vessel_id AS VESSEL_ID
+   
+  FROM odds.odds_trip_plan_log a
+    LEFT JOIN odds.odds_trip_stratas b
+      ON a.trip_plan_log_seq = b.trip_plan_log_seq 
+    LEFT JOIN odds.odds_strata c
+      ON b.strata = c.strata
+    LEFT JOIN odds.odds_strata_release d
+      ON b.trip_stratas_seq = d.trip_stratas_seq
+    LEFT JOIN odds.odds_lov_release_status e
+      ON d.release_status_seq = e.release_status_seq
+    LEFT JOIN norpac.atl_lov_vessel f
+      ON a.vessel_seq = f.vessel_seq
+  WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -2:-1, collapse = ","), ")
+    AND a.trip_plan_log_seq != 202328923              -- Just to make the code run for now until the package is fixed
+"
+)
 
-dbms_lob.substr(tw.request_comment,4000) AS WAIVER_DESCRIPTION,
-(SELECT ws.description 
-FROM odds_lov_waiver_status ws
-WHERE tw.waiver_status_seq = ws.waiver_status_seq) AS WAIVER_TYPE
-                
-FROM      
-norpac.odds_vessel_to_rate_strata vtr ,   
-norpac.atl_lov_vessel             lov,
-norpac.odds_trip_plan_log         pl   
--- monitor record doesnt exist for BSAI or early EM ( dont need random number for 100% or 0% selection)
-                
-LEFT OUTER JOIN
-norpac.odds_monitor mon   
-ON pl.trip_plan_log_seq  =  mon.trip_plan_log_seq 
-                AND mon.random_number_used IS NOT NULL 
-                
-LEFT OUTER JOIN
-norpac.odds_trip_waiver tw    
-ON pl.trip_plan_log_seq  =  tw.trip_plan_log_seq 
-WHERE pl.sample_plan_seq = vtr.sample_plan_seq
-AND NVL(pl.gear_type_code, 0) =  NVL( vtr.gear_type_code ,  NVL(pl.gear_type_code, 0))                  
-AND NVL(pl.tender_trip_flag, 0) = NVL( vtr.tender_trip_flag , NVL(pl.tender_trip_flag, 0))               
-AND pl.vessel_seq = lov.vessel_seq 
-AND EXTRACT(YEAR FROM pl.original_embark_date) =", year)
+#' *TODO* this code doesn't work, will need to get old code working again
+#' `error with year = 2020` *Could not find selection rate for strata - date*
 
 odds.dat <- dbGetQuery(channel_afsc, script)
 
