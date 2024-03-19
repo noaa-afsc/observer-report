@@ -3,27 +3,80 @@
 # Contact Andy Kingham
 # 206-526-4212
 
-library(plyr)
-library(reshape2)
-library(dplyr)
-library(tidyr)
-library(lubridate)
-library(data.table)
-library(sqldf)
-library(devtools)
+
+# Set up environment -----------------------------------------------------------
+
+# Load pkgs
+if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
+if(!require("reshape2"))    install.packages("reshape2",    repos='http://cran.us.r-project.org')
+if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
+if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
+if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
+if(!require("data.table"))  install.packages("data.table",  repos='http://cran.us.r-project.org')
+if(!require("sqldf"))       install.packages("sqldf",       repos='http://cran.us.r-project.org')
+if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
 
 
-# load the data files.
-# * chng wd filepath as needed *
+
+# Clear everything first
 rm(list = ls())
 
+
+
+# Set year
 # adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
 # NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
 
+# Set the filepath, change to your own local as needed
+# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
+Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
 
-load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_1_Statements_data.rdata"))
+# Pull Rdata file from google drive.
+# NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
 
+# Identify the g-drive file to download
+# MAKE SURE IT IS CORRECT GOOGLE PATH
+
+# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
+# MUCH faster to use the hard-coded drive ID (see below)
+
+# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
+#                                                 adp_yr))
+
+
+## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+################
+
+# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# 
+# data_dribble <- 
+#   drive_ls(project_dribble) %>%
+#     filter(name == "AR_1_Statements_data.Rdata")
+# 
+# # Download the file from g-drive into local
+# drive_download(
+#   data_dribble,
+#   path = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"),
+#   overwrite = T
+#               )
+
+################
+## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+
+
+
+
+
+# load it from local into R
+load(file = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"))
+
+
+
+
+
+
+# Begin Data Munge Section ------------------------------------------------------
 
 #First, get all the factors by joining the ASSIGNMENTS data to the haul data.
 # This gets each factor for every date that has a value in haul data for that date.
@@ -40,18 +93,18 @@ load(file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_1_Statements_data.r
 assnmts_days_all_groupings <-   
   assignments_dates_cr_perm %>%
   filter(CALENDAR_YEAR <= as.numeric(adp_yr) & CALENDAR_YEAR >= as.numeric(adp_yr) -1 ) %>%
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, VESSEL_OR_PLANT, COVERAGE_TYPE, SPECIAL_DEPLOYMENT_CODE) %>%  # remove duplicates; rows are unique by cruise, permit, date, and factor combination.
-  left_join(sqldf('SELECT DISTINCT PERMIT, HAUL_DATE as DEPLOYED_DATE,
-                          VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION
-                     FROM hauls
-                    UNION ALL
-                   SELECT DISTINCT PROCESSOR_PERMIT_ID as PERMIT,
-                          LANDING_DATE as DEPLOYED_DATE,
-                          null AS VESSEL_TYPE, null as GEAR_TYPE, 
-                          MANAGEMENT_PROGRAM_CODE, NMFS_REGION
-                    FROM df_em_efp_offloads' ) %>%
-              mutate(DEPLOYED_DATE = as.POSIXct(DEPLOYED_DATE, origin = "1970-01-01", tz = 'GMT')
-              )) %>%  
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, VESSEL_OR_PLANT, COVERAGE_TYPE, SPECIAL_DEPLOYMENT_CODE) %>%  # remove duplicates; rows are unique by cruise, permit, date, and factor combination.
+  left_join(rbind(hauls %>%
+                    distinct(PERMIT,
+                             DEPLOYED_DATE = HAUL_DATE,
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION),
+                  df_em_efp_offloads %>%
+                    distinct(PERMIT = PROCESSOR_PERMIT_ID,
+                             DEPLOYED_DATE = LANDING_DATE,
+                             VESSEL_TYPE = NA, GEAR_TYPE = NA, 
+                             MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+                   )
+            ) %>%
   # step 2: hardcode missing values.
   # 1. get plants
   # 2. get cases where there is no hauls in the table, but we have deployment dates for those vessels. Hardcode the factor values for those cruise/permit.
@@ -75,7 +128,7 @@ assnmts_days_all_groupings <-
          # MANAGEMENT_PROGRAM_CODE = if_else(VESSEL_OR_PLANT == 'P'  & lubridate::year(DEPLOYED_DATE) >= 2020 & is.na(MANAGEMENT_PROGRAM_CODE) &   PERMIT %in% c(5320, 5358, 5306, 5305, 5310, 5323),  'AFA', MANAGEMENT_PROGRAM_CODE),  # set this HARD-CODED set of plants = AFA for all years SINCE the EM EFP Plants are AFA after 2020 unless designated as EFP in the special deployment code.
          # MANAGEMENT_PROGRAM_CODE = if_else(VESSEL_OR_PLANT == 'P'  & lubridate::year(DEPLOYED_DATE) >= 2020 & is.na(MANAGEMENT_PROGRAM_CODE) & !(PERMIT %in% c(5320, 5358, 5306, 5305, 5310, 5323)), 'OA', MANAGEMENT_PROGRAM_CODE),  # set plants = OA for all plants NOT in this HARD-CODED set of plants for all years SINCE the EM EFP.
   ) %>%
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 
@@ -110,7 +163,7 @@ assnmts_days_all_groupings[, FINAL_V := ifelse(!is.na(i.VESSEL_TYPE), i.VESSEL_T
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(VESSEL_TYPE = FINAL_V) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 #Check for NA's.  If none, then the rolling join worked correctly.
 table(assnmts_days_all_groupings$VESSEL_TYPE, exclude = FALSE)
@@ -132,7 +185,7 @@ assnmts_days_all_groupings[, FINAL_V := ifelse(!is.na(i.VESSEL_TYPE), i.VESSEL_T
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(VESSEL_TYPE = FINAL_V) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -167,11 +220,11 @@ assnmts_days_all_groupings <-
          # VESSEL_TYPE = ifelse(PERMIT == 3533  & CALENDAR_YEAR == 2019 & is.na(VESSEL_TYPE), 'CV', as.character(VESSEL_TYPE)), # The Highliner had an observer deployed in 2019, but she was seasick and collected no data, so no hauls to match. So no vessel type associated from haul data.  They are CV.
          # VESSEL_TYPE = ifelse(PERMIT == 34732 & CALENDAR_YEAR == 2021 & is.na(VESSEL_TYPE), 'CP/MS', as.character(VESSEL_TYPE)) # The North Star is a new vessel and there is only data in HAUL after 10/1/21, so not available in this data.  It is a CP/MS.
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
-table(assnmts_days_all_groupings$CALENDAR_YEAR,  assnmts_days_all_groupings$VESSEL_TYPE, exclude = FALSE)
+table(assnmts_days_all_groupings$CALENDAR_YEAR ,  assnmts_days_all_groupings$VESSEL_TYPE, exclude = FALSE)
 
 test_df <- 
   sqldf('SELECT * FROM assnmts_days_all_groupings WHERE VESSEL_TYPE is null')
@@ -216,7 +269,7 @@ assnmts_days_all_groupings[, FINAL_G := ifelse(!is.na(i.GEAR_TYPE), i.GEAR_TYPE,
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(GEAR_TYPE = FINAL_G ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 #Check for NA's.  If none, then the rolling join worked correctly.
 
@@ -240,7 +293,7 @@ assnmts_days_all_groupings[, FINAL_G := ifelse(!is.na(i.GEAR_TYPE), i.GEAR_TYPE,
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(GEAR_TYPE = FINAL_G) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -275,7 +328,7 @@ assnmts_days_all_groupings <-
          # GEAR_TYPE   = ifelse(PERMIT %in% c(3533) & is.na(GEAR_TYPE) & CALENDAR_YEAR  == 2019, 'HAL', as.character(GEAR_TYPE)), # The darn Highliner DOES have deployment days in 2019, but no hauls, so no gear_type associated from haul data.  They are Longliner, per the OBS trip data.
          # GEAR_TYPE   = ifelse(PERMIT == 34732 & CALENDAR_YEAR == 2021 & is.na(GEAR_TYPE), 'NPT', as.character(GEAR_TYPE)) # The North Star is a new vessel and there is only data in HAUL after 10/1/21, so not available in this data.  It is NPT.
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -313,7 +366,7 @@ assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 #Check for NA's.  If none, then the rolling join worked correctly.
 table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
@@ -337,7 +390,7 @@ assnmts_days_all_groupings[, FINAL_M := ifelse(!is.na(i.MANAGEMENT_PROGRAM_CODE)
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -363,7 +416,7 @@ assnmts_days_all_groupings[, FINAL_M := ifelse(!is.na(i.MANAGEMENT_PROGRAM_CODE)
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 # Check for NA's.  If none, then the rolling join worked correctly.
@@ -387,7 +440,7 @@ assnmts_days_all_groupings[, FINAL_M := ifelse(!is.na(i.MANAGEMENT_PROGRAM_CODE)
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 # Check for NA's.  If none, then the rolling join worked correctly.
@@ -426,7 +479,7 @@ assnmts_days_all_groupings <-
          # MANAGEMENT_PROGRAM_CODE = ifelse(is.na(MANAGEMENT_PROGRAM_CODE) & PERMIT %in% c(993, 32333)& CALENDAR_YEAR == 2019, 'OA', as.character(MANAGEMENT_PROGRAM_CODE)), # The darn Cape Kiwanda (1235), Hickory Wind (993), and Claire Oceana (32333) have 'N/A' in the obs_haul table for certain dates, and they are not being handled in the rolling join that follows for some reason, even after the previous line that takes care of 'N/A'.  TODO, debug this to eliminate hard-codeing.  For now, these days are all 'OA', per the Landings data. 
          # MANAGEMENT_PROGRAM_CODE = ifelse(is.na(MANAGEMENT_PROGRAM_CODE) & PERMIT %in% c(34732) & CALENDAR_YEAR == 2021, 'A80', as.character(MANAGEMENT_PROGRAM_CODE)), # The darn North Star (33732) has no hauls in the data until 10/1/21, so could not be matched up, so no MGM code can be associated from haul data.  They are A80, per the newer data.
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -465,7 +518,7 @@ assnmts_days_all_groupings[, FINAL_N := ifelse(!is.na(i.NMFS_REGION), i.NMFS_REG
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(NMFS_REGION = FINAL_N) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -490,7 +543,7 @@ assnmts_days_all_groupings[, FINAL_N := ifelse(!is.na(i.NMFS_REGION), i.NMFS_REG
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(NMFS_REGION = FINAL_N) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -514,7 +567,7 @@ assnmts_days_all_groupings[, FINAL_NR := ifelse(!is.na(i.NMFS_REGION), i.NMFS_RE
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(NMFS_REGION = FINAL_NR) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 # Check for NA's.  If none, then the rolling join worked correctly.
@@ -539,7 +592,7 @@ assnmts_days_all_groupings[, FINAL_NR := ifelse(!is.na(i.NMFS_REGION), i.NMFS_RE
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(NMFS_REGION = FINAL_NR) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 # Check for NA's.  If none, then the rolling join worked correctly.
@@ -583,7 +636,7 @@ assnmts_days_all_groupings <-
          # NMFS_REGION = ifelse(PERMIT == 3533 & is.na(NMFS_REGION) & CALENDAR_YEAR == 2019,   'GOA', as.character(NMFS_REGION)), # The darn Highliner DOES have deployment days in 2019, but no hauls, so no nmfs_region associated from haul data.  It is GOA (the trip left fro KODIAK); hardcode this.
          # NMFS_REGION = ifelse(PERMIT == 34732 & is.na(NMFS_REGION) & CALENDAR_YEAR == 2021, 'BSAI', as.character(NMFS_REGION)) # The darn North Star has no data in haul until 10.1.21, so no data to match.  They are BSAI per the newer data.
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OLE_SYSTEM, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -647,7 +700,17 @@ rm(dt_em_offloads_m, dt_em_offloads_nr, dt_em_offloads, dt_hauls, dt_hauls_g, dt
 
 ##################
 # Save Output -------------------------------------------------------------
-#Requires the folder "(adp_yr)_outputs/Rdata_workspaces/" to be in the working directory.
+
+# (NOTE: this script is applicable to both OLD STATEMENT DATA,
+# as well as NEW STATEMENT DATA, so no need to call it OLD_DATA in the filename.)
 save(list = ls(),
-     file = paste0(adp_yr, "_outputs/Rdata_workspaces/", "AR_2_rolling_join_output.rdata"))
+     file = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"))
+
+
+# upload the .Rdata file to g-drive
+googledrive::drive_upload(
+  media     = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
+  name      = "AR_2_rolling_join_output.Rdata",
+  path      = project_dribble
+) 
 
