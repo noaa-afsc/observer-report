@@ -23,7 +23,7 @@ Five main scripts are used
 -   **AR_3_rate_calcs.R** - this file as explained calculates rates and other information used in outputs. [It uses AR_2_rolling_join_scripts.rdata as an input.]{.underline}
 
 -   **AR_4_tables_generation.R** - Generates charts. It generates tables in .csv form that are stored in charts_and_tables folder. [It uses AR_3_rate_cacls.rdata as an input.]{.underline}
--   
+-     
 -   **AR_charts_generation.R** - Generates charts. [Uses AR_rate_calcs.rdata as input.]{.underline}
 
 ## Important Notes
