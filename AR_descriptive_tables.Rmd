@@ -18,8 +18,8 @@ title: "Annual Report Descriptive Data Draft"
 # Inputs:      
 # Normal locations:                                                                   
 #  - S:\Observer Program Annual Report\YYYY_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_YYYY_data.Rdata
-#     - catch.tables - 2013-2022 catch tables for posting to the AKRO website (NOT USED in this script)
-#     - previous.catch.tables - previous year's version of the catch tables (2013-2021) (NOT USED in this script)
+#     - catch.tables - 2013-2023 catch tables for posting to the AKRO website (NOT USED in this script)
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2022) (NOT USED in this script)
 #     - VALHALLA - the original Valhalla data (NOT USED in this script)
 #     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #                        (NOT USED in this script)
@@ -218,7 +218,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # LOAD DATA 
 
-YEAR <- 2022
+YEAR <- 2023
 
 #Source helper file (libraries, ggplot themes, etc.)
 source("AR_descriptive_helper.r")
@@ -400,9 +400,9 @@ flextable(bsai) %>%
   # Merge the area labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
-  merge_at(i=18, j=c(2:3)) %>% 
+  merge_at(i=16, j=c(2:3)) %>% 
   # Add dashed horizontal lines before area subtotals:
-  border(i = 17, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = 15, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
