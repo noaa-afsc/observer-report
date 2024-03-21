@@ -160,6 +160,8 @@ load_fee_detail <- "SELECT gf.year, 'GF' AS report_source,
    and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
    and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status  
    and gf.catch_report_source_pk != 9778885                 -- Exclude Unisea fees for a landing report (Report ID 9524973) that was deleted ($211.20) - Correction by OMD  
+   and gf.fee_person_year_id != 8636521                     -- OMD waived fees ($2.83) for JOHN W HILLSTRAND   
+   and gf.report_id NOT IN (8886977, 8888388, 8887979, 8891836) -- Reversal for Nordic Fury/Alyeska being charged $5,470.74 for Pcod landings in voluntary full coverage
   
 UNION ALL 
 
@@ -216,7 +218,8 @@ SELECT ifq.year, 'IFQ' AS report_source,
   -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
   JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number 
  WHERE ifq.year = extract(year from sysdate) - 1             -- previous year
-   and ifq.management_program_id = 12                        -- observer fees"
+   and ifq.management_program_id = 12                        -- observer fees
+   and ifq.fee_person_year_id != 8636521                     -- OMD waived fees ($2.83) for JOHN W HILLSTRAND "
 
 # Query the fees directly from the database:
 fee_detail <- dbGetQuery(channel_cas, load_fee_detail) 
@@ -247,12 +250,11 @@ Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were maile
 
 
 
-### 2.2	Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`, Summarized by Species, Gear, and Area
+### 2.2	Summaries of Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`
 
 Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
 
-The observer fee was 1.25% of the ex-vessel value of the groundfish and halibut subject to the fee through December 31, 2020.  Beginning January 1, 2021 a fee equal to 1.65% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.[^2]  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^3]  Table 2-2, Table 2-3, and Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.
-
+The observer fee was 1.25% of the ex-vessel value of the groundfish and halibut subject to the fee through December 31, 2020.  Beginning January 1, 2021 a fee equal to 1.65% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.[^2]  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^3]  Table 2-2, Table 2-3, and Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1` by species, gear, and area.  Table 2-5 is new with the 2023 Annual Report and also summarizes fees by area, but differentiates the type of monitoring the vessel was subject to and which selection pool the vessel was in when the fees accrued.  *ADD SOMETHING ABOUT ALL THE MONEY GOES INTO A SINGLE POOL AND ISN'T DIVVIED APART?!?!?!?*  
 
 
 
@@ -261,6 +263,7 @@ The observer fee was 1.25% of the ex-vessel value of the groundfish and halibut 
 [^2]:Final Rule: Fee Adjustment to 1.65% (85 FR 41424, July 10, 2020).  Available online at: [85 FR 41424](https://www.federalregister.gov/documents/2020/07/10/2020-13775/fisheries-of-the-exclusive-economic-zone-off-alaska-adjust-the-north-pacific-observer-program-fee)
 
 [^3]:Available online at: [`r std_price_cfr`](https://www.federalregister.gov/documents/2021/12/15/2021-27103/fisheries-of-the-exclusive-economic-zone-off-alaska-north-pacific-observer-program-standard). 
+
 
 
 
@@ -681,10 +684,252 @@ Rounding error sometimes results in slight differences in row and column totals.
 
 
 
+
+
+```{r fees_by_program, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Consider a table that summarizes fees by: At-sea observers, Fixed gear EM, trawl EM
+
+# Read in fee data and append the sample strata associated with the landing:
+strata_query <- "SELECT gf.year, 'GF' AS report_source, 
+       gf.category,
+       gf.processor_permit_id as processor_permit,
+       gf.vessel_id, gf.adfg_number, --gf.vessel_name, 
+       v.length_overall, 
+       
+       -- summarize the vessels by vessel length category:
+       CASE WHEN v.length_overall < 40                              THEN '<40'
+            WHEN (v.length_overall >= 40 and v.length_overall < 58) THEN '40 - 57.5'  
+                                                                    ELSE '>57.5'
+       END AS LOA_GROUP,
+     
+       gf.report_id, NULL AS confirmation_number, NULL AS ifq_permit_number, 
+       NULL as area, fmp.area_code as area_code,
+       fmp.area_code AS fmp_area,
+       gf.fish_ticket_number, gf.catch_activity_date, 
+       gf.catch_report_source_pk, gf.catch_report_species_fact_pk,
+       gf.agency_species_id, gf.species_group_id,
+       gf.agency_species_name, gf.agency_species_code,
+       
+       -- Aggregate the species in some cases: 
+       CASE WHEN gf.agency_species_code = '110' THEN 'Pacific Cod'
+            WHEN gf.agency_species_code = '710' THEN 'Sablefish'
+            WHEN gf.agency_species_code = '270' THEN 'Pollock'
+            WHEN gf.agency_species_code = '200' THEN 'Halibut'
+                                                ELSE 'All Other Species'
+       END AS species_group,
+       
+       gf.gear_group_id, gf.gear_group_description, 
+       -- Differentiate HAL/POT/JIG as separate gear types:
+       --(SELECT MAX (agency_gear_code) FROM ellr_report z WHERE z.report_id = lp.report_id and z.current_version_flag = 'Y') as gear_code, 
+       g.gear_code,       
+       gf.weight_pounds, gf.price_per_pound, gf.fee_amount,  gf.fee_person_year_id, 
+       ss.sampling_strata_code, ss.sampling_strata_name
+  FROM akfish_crf.fee_detail_gf gf -- The table that contains the detailed records which are subject to fees for GF transactions
+  -- Join to the catch_report_species_fact tables in order to pull FMP area and gear information from the ELLR and ELPR:
+  JOIN akfish_report.catch_report_species_fact crsf ON gf.catch_report_species_fact_pk = crsf.catch_report_species_fact_pk
+  -- Join to the area table to pick up FMP area:
+  JOIN akfish_report.area fmp ON crsf.fmp_area_pk = fmp.area_pk 
+  -- Join to the vessel table in the warehouse from the ELLR/ELPR (catch_report_species_fact table) instead of from v_obsfee_gf_fee: 
+  JOIN akfish_report.vessel v ON crsf.catcher_vessel_pk = v.vessel_pk  
+  -- Join to the gear table in the warehouse from the ELLR/ELPR (catch_report_species_fact table):
+  JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
+  -- Pick up sampling strata
+  JOIN akfish_report.sampling_strata ss ON crsf.sampling_strata_pk = ss.sampling_strata_pk
+ WHERE gf.year = extract(year from sysdate) - 1             -- previous year
+   and gf.management_program_id = 12                        -- observer fees (this excludes cost recovery records)
+   and gf.fee_person_year_id IS NOT NULL                    -- to only pick up invoiced fees and not ones in final status  
+   and gf.catch_report_source_pk != 9778885                 -- Exclude Unisea fees for a landing report (Report ID 9524973) that was deleted ($211.20) - Correction by OMD  
+   and gf.fee_person_year_id != 8636521                     -- OMD waived fees ($2.83) for JOHN W HILLSTRAND   
+   and gf.report_id NOT IN (8886977, 8888388, 8887979, 8891836) -- Reversal for Nordic Fury/Alyeska being charged $5,470.74 for Pcod landings in voluntary full coverage
+
+UNION ALL 
+
+-- IFQ landings, area information obtained from IFQ account data:
+SELECT ifq.year, 'IFQ' AS report_source, 
+       ifq.category,
+       ifq.registered_buyer_number as processor_permit, 
+       ifq.vessel_id, ifq.adfg_number, --ifq.vessel_name, 
+       v.length_overall, 
+       
+       -- summarize the vessels by vessel length category:
+       CASE WHEN v.length_overall < 40                              THEN '<40'
+            WHEN (v.length_overall >= 40 and v.length_overall < 58) THEN '40 - 57.5' 
+                                                                    ELSE '>57.5'
+       END AS LOA_GROUP,
+      
+       ifq.report_id, ifq.confirmation_number, ifq.ifq_permit_number, 
+       ifq.area, ma.code, 
+       
+       -- Aggregate area as BSAI or GOA:
+       CASE WHEN ma.code in ('4A', '4B', '4C', '4D', '4E', 'AI', 'BS') THEN 'BSAI'        
+            WHEN ma.code IN ('2C', '3A', '3B', 'CG', 'SE', 'WG', 'WY') THEN 'GOA'
+                                                                       ELSE 'UHOH'
+       END AS FMP_AREA,  
+        
+       ifq.fish_ticket_number, ifq.catch_activity_date, 
+       NULL AS catch_report_source_pk, NULL AS catch_report_species_fact_pk, 
+       ifq.agency_species_id, NULL AS species_group_id,
+       ifq.agency_species_name, ifq.agency_species_code,
+       
+       -- Aggregate the species in some cases: 
+       CASE WHEN ifq.agency_species_code = '110' THEN 'Pacific Cod'
+            WHEN ifq.agency_species_code = '710' THEN 'Sablefish'
+            WHEN ifq.agency_species_code = '270' THEN 'Pollock'
+            WHEN ifq.agency_species_code = '200' THEN 'Halibut'
+                                               ELSE 'All Other Species'
+       END AS species_group,
+       
+       ifq.gear_group_id, ifq.gear_group_description, 
+            -- Note: ObsFee IFQ data contains gear information as FIXED. Use landing report data (stored in catch_report_species_fact) to distinguish types of fixed gear. 
+       --       Use MAX(g.gear_code) to identify the only gear on each landing report because catch_report_species_fact has a record for each species catch transaction. 
+       --       In the event of a manual landing and the landing report is not available, translate the IFQ gear code from akfish.ifq_landing_transaction:
+       NVL((SELECT MAX(g.gear_code) 
+              FROM akfish_report.catch_report_source crs
+              JOIN akfish_report.catch_report_species_fact crsf ON crs.catch_report_source_pk = crsf.catch_report_source_pk 
+              JOIN akfish_report.gear g ON crsf.gear_pk = g.gear_pk 
+             WHERE ifq.report_id = crs.el_report_id and crs.expire_date IS NULL), decode(ilt.ifq_gear_code, '61', 'HAL', '91', 'POT', '05', 'JIG', '26', 'JIG')) as GEAR_CODE,  --15 and 25?  JIG?                                           
+       ifq.weight_pounds, ifq.price_per_pound, ifq.fee_amount,  ifq.fee_person_year_id,
+       cr.sampling_strata_code, cr.sampling_strata_name
+  FROM akfish_crf.fee_detail_ifq ifq
+   -- join to management area to translate area IDs:
+  JOIN akfish.management_area ma ON ifq.area = ma.id        
+  -- join to the vessel file so we can summarize fees by vessel length:
+  JOIN akfish.v_vessel v ON ifq.vessel_id = v.id             
+  -- join to the PNOL/landing data to pick up gear when there isn't a corresponding landing report (ie out of state landings?):
+  JOIN akfish.ifq_landing_transaction ilt ON ifq.confirmation_number = ilt.confirmation_number 
+  -- join back to catch report and catch report species fact to pick up sampling strata:
+  -- note: there are 15 records with a NULL sampling strata.  Can we figure out what those are?
+  LEFT JOIN (SELECT distinct c.el_report_id, ss2.sampling_strata_code, ss2.sampling_strata_name 
+               FROM akfish_report.catch_report c 
+               JOIN akfish_report.catch_report_source crs ON c.catch_report_source_pk = crs.catch_report_source_pk 
+               JOIN akfish_report.catch_report_species_fact crsf2 ON c.catch_report_species_fact_pk = crsf2.catch_report_species_fact_pk
+               JOIN akfish_report.sampling_strata ss2 ON crsf2.sampling_strata_pk = ss2.sampling_strata_pk
+              WHERE c.year = extract(year from sysdate) - 1 
+                AND c.data_source_type_code != 'CEN'
+                AND crs.expire_date IS NULL  
+                --AND ss2.expire_date IS NULL -- individual gear strata for fixed gear ended in Dec 2023 (so expired now, but not when applied)
+                ) cr ON ifq.report_id = cr.el_report_id
+ WHERE ifq.year = extract(year from sysdate) - 1             -- previous year
+   and ifq.management_program_id = 12                        -- observer fees
+   and ifq.fee_person_year_id != 8636521                     -- OMD waived fees ($2.83) for JOHN W HILLSTRAND "
+
+
+# Query the invoice data from database directly:
+fee_strata <- dbGetQuery(channel_cas, strata_query) 
+
+
+
+# Consider a bit of clean-up (some records don't have a strata OR were incorrectly charged fees):
+working_strata <- fee_strata %>% 
+  mutate(SELECTION_POOL = ifelse(is.na(SAMPLING_STRATA_CODE) & LOA_GROUP == '<40', 'No Selection',
+                                 ifelse(is.na(SAMPLING_STRATA_CODE) & LOA_GROUP != '<40', 'Observer Trip Selection',
+                                        ifelse(SAMPLING_STRATA_CODE %in% c('H', 'P', 'TR'), 'Observer Trip Selection', 
+                                               ifelse(SAMPLING_STRATA_CODE %in% c('EM_H', 'EM_P'), 'Fixed-Gear EM',
+                                                      ifelse(SAMPLING_STRATA_CODE == 'N', 'No Selection', 
+                                                             ifelse(SAMPLING_STRATA_CODE == 'EM_TrawlPartialCoverage', 'Trawl EM', 
+                                                                    # I would probably lump the full coverage error as Observer Trip Selection:
+                                                                    ifelse(SAMPLING_STRATA_CODE == 'F', 'Error', 'Ack')))))))) %>% 
+  mutate(MONITORING = ifelse(SELECTION_POOL %in% c('Observer Trip Selection', 'No Selection'), 'At-Sea Observers', 
+                              ifelse(SELECTION_POOL %in% c('Fixed-Gear EM', 'Trawl EM'), 'Electronic Monitoring', 'Other'))) 
+
+
+# Summarize fees by selection pool and FMP area:
+pool_summary <- working_strata %>% 
+  group_by(MONITORING, SELECTION_POOL, FMP_AREA) %>% 
+  summarise(FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
+  # Append Selection Pool subtotals:
+  bind_rows(working_strata %>% 
+              group_by(MONITORING, SELECTION_POOL) %>% 
+              summarise(FMP_AREA = 'All Areas',
+                        FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
+  # Append FMP Area subtotals:
+  bind_rows(working_strata %>% 
+             group_by(MONITORING, FMP_AREA) %>% 
+             summarise(SELECTION_POOL = 'All Pools',
+                       FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
+  # Append a monitoring pool subtotal:
+  bind_rows(working_strata %>% 
+              group_by(MONITORING) %>% 
+              summarize(SELECTION_POOL = 'All Pools',
+                        FMP_AREA = 'All Areas',
+                        FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
+  # Append an area subtotal:
+  bind_rows(working_strata %>% 
+              group_by(FMP_AREA) %>% 
+              summarize(MONITORING = 'All Monitoring',
+                        SELECTION_POOL = 'All Partial Coverage',
+                        FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
+  # Append a total:
+  bind_rows(working_strata %>% 
+              group_by(.) %>% 
+              summarise(MONITORING = 'All Monitoring',
+                        SELECTION_POOL = 'All Partial Coverage',
+                        FMP_AREA = 'All Areas',
+                        FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
+  # Translate into a wide format:
+  pivot_wider(names_from = "FMP_AREA", values_from = "FEE", values_fill = 0)  %>% 
+  # Sort:
+  mutate(SORTORDER1 = ifelse(MONITORING == 'At-Sea Observers', 1,
+                            ifelse(MONITORING == 'Electronic Monitoring', 2, 
+                                   ifelse(MONITORING == 'Other', 3, 4)))) %>%
+  mutate(SORTORDER2 = ifelse(SELECTION_POOL == 'Observer Trip Selection', 1,
+                             ifelse(SELECTION_POOL == 'No Selection', 2,
+                                    ifelse(SELECTION_POOL == 'Fixed-Gear EM', 3, 
+                                           ifelse(SELECTION_POOL == 'Trawl EM', 4, 
+                                                  ifelse(SELECTION_POOL == 'All Pools', 6, 5)))))) %>% 
+  arrange(SORTORDER1, SORTORDER2) %>% 
+  select(-SORTORDER1, -SORTORDER2)
+
+
+
+```
+
+
+**INSERT PAGE BREAK HERE:**
+
+Table 2-5. -- Observer fees[^9] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by monitoring type, selection pool, and area.[^10]
+
+
+```{r table4, echo=FALSE}
+
+# Create a table for the Fee Summaries by selection pool:
+
+flextable(pool_summary %>% select(MONITORING, SELECTION_POOL, GOA, BSAI, 'All Areas')) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(MONITORING = "Monitoring",
+                    SELECTION_POOL = "Selection Pool")  %>% 
+  # Format the currency columns:
+  colformat_double(j = c(3,4,5), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers and monitoring totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 7) %>%  #THIS SHOULD BE THE LAST ROW number 
+  # Merge the monitoring labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Add dashed horizontal lines before monitoring subtotals:
+  border(i = c(2,5), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal lines after monitoring subtotals and add "fix" needed because of cell merges:
+  border(i = c(3,6), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  fix_border_issues(part = "body") #%>% 
+  
+
+        
+
+```
+
+
+
+[^9]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
+
+[^10]:The Gulf of Alaska includes Pacific halibut regulatory areas 2C, 3A, and 3B; and sablefish regulatory areas Western GOA, Central GOA, West Yakutat, and Southeast Outside. The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
+
+
+
 ```{r export, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData file
-rm(list= ls()[!(ls() %in% c('fee_detail','fee_total', 'all_areas', 'goa', 'bsai'))])
+rm(list= ls()[!(ls() %in% c('fee_detail','fee_total', 'all_areas', 'goa', 'bsai', 'fee_strata', 'pool_summary'))])
 
 # Export data file:
 #save(fee_detail, fee_total, all_areas, goa, bsai,
