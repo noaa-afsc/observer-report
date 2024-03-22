@@ -52,7 +52,8 @@ OPS_number_rainplot <- {
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
     labs(x = 'OLE System',
-         y = 'Occurrences per Statement') +
+         y = 'Occurrences per Statement',
+         title = 'All Categories') +
     facet_grid(. ~ FIRST_VIOL_YEAR, 
                scales = 'free',) +
     force_panelsizes(cols = c(0.3, 0.5),) +
@@ -73,7 +74,8 @@ OPS_number_rainplot <- {
                     alpha = .25, 
                     show.legend = F,
                     size = 3,
-                    pch = 1) +
+                    pch = 1,
+                    transformation = position_jitter(height = 0)) +
     scale_fill_manual(values = colors[c(2, 1, 3)],
                       guide = 'none') +
     scale_color_manual(values = colors[c(2, 1, 3)],
@@ -84,6 +86,7 @@ OPS_number_rainplot <- {
           panel.grid.minor = element_blank(),
           strip.background = element_rect(fill = 'black'),
           strip.text = element_text(color = 'white'),
+          plot.title = element_text(hjust = 0.5),
           text = element_text(size = 20, family = 'Gill Sans MT'))
   
 } 
@@ -113,7 +116,8 @@ OLEPIP_number_rainplot <- {
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
     labs(x = 'OLE System',
-         y = 'OLE Priority: Inter-Personal\nOccurrences') +
+         y = 'Occurrences per Statement',
+         title = 'OLE Priority: Inter-Personal') +
     facet_grid(. ~ FIRST_VIOL_YEAR, 
                scales = 'free',) +
     force_panelsizes(cols = c(0.3, 0.5),) +
@@ -134,7 +138,8 @@ OLEPIP_number_rainplot <- {
                     alpha = .25, 
                     show.legend = F,
                     size = 3,
-                    pch = 1) +
+                    pch = 1,
+                    transformation = position_jitter(height = 0)) +
     scale_fill_manual(values = colors[c(2, 1, 3)],
                       guide = 'none') +
     scale_color_manual(values = colors[c(2, 1, 3)],
@@ -146,6 +151,7 @@ OLEPIP_number_rainplot <- {
           panel.grid.minor = element_blank(),
           strip.background = element_rect(fill = 'black'),
           strip.text = element_text(color = 'white'),
+          plot.title = element_text(hjust = 0.5),
           text = element_text(size = 20, family = 'Gill Sans MT'))
   
 } 
