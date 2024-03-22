@@ -244,6 +244,7 @@ partial <- odds.dat %>%
   mutate(Rate = ifelse(STRATA == "EM TRW EFP", 0.3333, Rate)) %>%
   distinct(YEAR, STRATA, Rate, GEAR) %>%
   mutate(formatted_strat = paste0("*", STRATA, "*"))
+partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
