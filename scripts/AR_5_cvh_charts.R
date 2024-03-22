@@ -22,6 +22,7 @@ library(gghalves)
 library(extrafont)
 library(nmfspalette)
 library(ggbeeswarm)
+library(ggridges)
 
 # clear environment
 rm(list = ls())
@@ -163,5 +164,42 @@ OLEPIP_number_rainplot
 ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
        plot = OLEPIP_number_rainplot,
        width = 9,
+       height = 8)
+
+
+# Ridge plot of sub category densities within OLE Priority IP ------------------
+# Set colors
+colors <- nmfs_palette('regional')(10)
+
+# Make the plot
+OLEPIP_subcat_ridge <- {
+  ggplot(data = statements_combined %>%
+           filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
+         aes(x = NUMBER_VIOLATIONS,
+             y = factor(STATEMENT_TYPE),
+             fill = STATEMENT_TYPE)) +
+    facet_grid(scales = 'free',
+               rows = vars(OLE_SYSTEM)) +
+    scale_x_continuous(breaks = c(0, 5, 10, 15, 20, 25, 50, 75, 100),
+                       limits = c(0, 100)) +
+    scale_y_discrete(expand = c(0.2, 0.2)) +
+    scale_color_manual(values = colors, guide = 'none') +
+    scale_fill_manual(values = colors, guide = 'none') +
+    geom_density_ridges(quantile_lines = T,
+                        quantiles = 2,
+                        color = 'black',
+                        alpha = 0.5) +
+    theme_bw() +
+    labs(x = 'Occurrences per Statement',
+         y = '')
+}
+
+# View the plot
+OLEPIP_subcat_ridge
+
+# Save the plot
+ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
+       plot = OLEPIP_subcat_ridge,
+       width = 16,
        height = 8)
 
