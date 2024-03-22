@@ -4,7 +4,6 @@
 #          (206) 526-4222
 
 # TODO's:
-  # Overplotting dot plots
   # Density of sub categories for OLE PIP only
   # River plots for:
     # OLD OLE CATEGORY -> NEW OLE CATEGORY -> STATEMENT TYPE (NEW DATA ONLY)
@@ -67,12 +66,14 @@ OPS_number_rainplot <- {
                  size = 0.9,
                  color = 'black',
                  show.legend = F,
-                 alpha = 0.6) +
+                 alpha = 0.6,
+                 outliers = F) +
     geom_half_point(side = 'l', 
                     range_scale = .3, 
-                    alpha = .4, 
+                    alpha = .25, 
                     show.legend = F,
-                    size = 3) +
+                    size = 3,
+                    pch = 1) +
     scale_fill_manual(values = colors[c(2, 1, 3)],
                       guide = 'none') +
     scale_color_manual(values = colors[c(2, 1, 3)],
@@ -126,12 +127,14 @@ OLEPIP_number_rainplot <- {
                  size = 0.9,
                  color = 'black',
                  show.legend = F,
-                 alpha = 0.6) +
+                 alpha = 0.6,
+                 outliers = F) +
     geom_half_point(side = 'l', 
                     range_scale = .3, 
-                    alpha = .4, 
+                    alpha = .25, 
                     show.legend = F,
-                    size = 3) +
+                    size = 3,
+                    pch = 1) +
     scale_fill_manual(values = colors[c(2, 1, 3)],
                       guide = 'none') +
     scale_color_manual(values = colors[c(2, 1, 3)],
