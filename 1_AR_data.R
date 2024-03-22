@@ -101,18 +101,16 @@ salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 
 # * ODDS ----
 
-#' *Note that odds.odds_monitor only has data for 2023 onward!*
-
 # Queries
 script <- paste("
   SELECT 
-  
     -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
     odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT,     
-    
+
     a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
-    a.original_embark_date, a.planned_embark_date, a.tender_trip_flag,
-    b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, b.inherit_trip_seq,
+    a.original_embark_date, a.planned_embark_date, a.tender_trip_flag, a.trip_plan_number,
+    b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, 
+    b.inherit_trip_seq,
     c.group_code, c.description AS STRATUM_DESCRIPTION,
     d.release_comment,
     e.description AS RELEASE_STATUS_DESCRIPTION,
@@ -133,10 +131,10 @@ script <- paste("
     LEFT JOIN odds.odds_trip_gear g
       ON a.trip_plan_log_seq = g.trip_plan_log_seq
   WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -2:-1, collapse = ","), ")
-    -- Just to make the code run for now until the package is fixed to deal with 2023 trip that should be in 2024
+    -- [2023 Annual report Only]
+    -- Exclude a 2024 trip with original embark date in 2023 that makes the ODDS_RANDOM_NUMBER package throw an error.
     AND a.trip_plan_log_seq != 202328923             
-"
-)
+")
 
 odds.dat <- dbGetQuery(channel_afsc, script)
 
@@ -152,8 +150,8 @@ nrow(odds.dat[!is.na(odds.dat$TRIP_SELECTED) & odds.dat$TRIP_STATUS_CODE=="CN", 
 table(odds.dat$TRIP_SELECTED, odds.dat$TRIP_STATUS_CODE, useNA = 'always')  
 
 #'*==============================================*
-#' FIXME * I FAIL THIS CHECK - NOW WHAT? *
-#' 
+#' FIXME * I FAIL THIS CHECK *
+
 if(F){
   
   
@@ -206,7 +204,7 @@ if(F){
   )))
   range(what[, CANCEL_DATE_TIME])  
   #' *ALL of these trips were cancelled on or after Dec 14 2022, the day ODDS 3.0 went live!*
-  #' Is it our wish to make ODDS 3.0 match the old data, re-work our analyses, or make the old match the new?
+  #' *Is it our wish to make ODDS 3.0 match the old data, re-work our analyses, or make the old match the new?*
 }
 #'*==============================================*
 
@@ -235,6 +233,17 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
 ))
 odds.dat %>% distinct(STRATA) %>% arrange(STRATA)
 if(any(is.na(odds.dat$STRATA))) stop("Some `STRATA` are not yet defined!")
+
+# Lookup table for strata in partial coverage category
+partial <- odds.dat %>%
+  filter(!(STRATA %like% "Compliance")) %>% 
+  group_by(YEAR, STRATA, GEAR_TYPE_CODE) %>%
+  distinct(Rate = ODDS_SELECTION_PCT / 100 ) %>%
+  ungroup() %>%
+  mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
+  mutate(Rate = ifelse(STRATA == "EM TRW EFP", 0.3333, Rate)) %>%
+  distinct(YEAR, STRATA, Rate, GEAR) %>%
+  mutate(formatted_strat = paste0("*", STRATA, "*"))
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
@@ -463,6 +472,7 @@ shp_centroids <- st_read("../shapefiles/NMFS_Area_Centroid.shp")
 # Format strata names -----------------------------------------------------
 
 # Format strata names in Valhalla
+#' TODO *Do this for observer strata as well, adding "OB "? *
 work.data <- mutate(work.data, STRATA = recode(STRATA,
                     "EM_POT" = "EM POT",
                     "EM_HAL" = "EM HAL",
@@ -471,40 +481,6 @@ work.data <- mutate(work.data, STRATA = recode(STRATA,
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
              mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
-
-# Lookup table for strata in partial coverage category
-partial_desc <- data.table(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TRW EFP"), 
-                      descriptions = c("hook-and-line gear", "pot gear", "trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring", "trawl gear with electronic monitoring")) 
-# Pull selection rates from norpac.odds_pct_trip_select table
-partial <- setDT(dbGetQuery(channel_afsc, paste(
-  "
-  SELECT DISTINCT 
-    a.percent / 100 as rate, a.effective_date, 
-    b.sample_plan_seq, 
-    c.description AS GEAR,
-    d.description AS SAMPLE_PLAN
-  FROM norpac.odds_pct_trip_select a
-    JOIN norpac.odds_vessel_to_rate_strata b
-      ON a.trip_rate_strata = b.trip_rate_strata
-    JOIN norpac.atl_lov_gear_type c
-      ON b.gear_type_code = c.gear_type_code
-    JOIN norpac.odds_lov_sample_plan d
-      ON b.sample_plan_seq = d.sample_plan_seq
-  WHERE EXTRACT(YEAR FROM a.effective_date) = ", year, "
-  "
-)))
-
-partial[, GEAR := ifelse(GEAR %like% "Pot", "POT", ifelse(GEAR %like% "Longline", "HAL", ifelse(GEAR %like% "Trawl", "TRW", GEAR)))] # Simplify gear types
-partial[, STRATA := ifelse(           # Define strata based on sample plan and gear type
-  SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
-    SAMPLE_PLAN %like% "EM EFP" & GEAR == "TRW", "EM TRW EFP", ifelse(
-      SAMPLE_PLAN %like% "Gear Type", GEAR, NA)))]
-partial <- unique(partial[, .(Effective_Date = as.Date(EFFECTIVE_DATE), STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
-partial[STRATA == "EM TRW EFP", Rate := 0.3000]   # Make the expected rate for partial coverage EM TRW EFP equal to the shoreside monitoring rate (not in ODDS)  
-partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    # Merge descriptions in 
-partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
-partial[, txt := paste0(formatC(round(Rate * 100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
-dcast(partial, STRATA ~ Effective_Date, value.var="Rate")   # Note that if the rates change for some strata and not others, 'NA' is returned
 
 # Save --------------------------------------------------------------------
 
