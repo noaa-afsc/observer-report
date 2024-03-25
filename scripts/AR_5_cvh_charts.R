@@ -225,44 +225,110 @@ repel_labels <- as.character(repel_labels$STATEMENT_TYPE)
 
 # break up strings of old ole categories to fit in boxes better
 # create a duplicate dataset
-rbs_copy <- rate_by_subcat
+sc_copy <- statements_combined
 
 # view strings to break into lines
-unique(rbs_copy$OLD_OLE_CATEGORY)
+unique(sc_copy$OLD_OLE_CATEGORY)
 
 # break up strings
-rbs_copy$OLD_OLE_CATEGORY[
-  which(rbs_copy$OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES')
+sc_copy$OLD_OLE_CATEGORY[
+  which(sc_copy$OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES')
                           ] <- 'ALL OTHER\nSTATEMENT TYPES'
 
-rbs_copy$OLD_OLE_CATEGORY[
-  which(rbs_copy$OLD_OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS')
+sc_copy$OLD_OLE_CATEGORY[
+  which(sc_copy$OLD_OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS')
                           ] <- 'LIMITED ACCESS\nPROGRAMS'
 
-rbs_copy$OLD_OLE_CATEGORY[
-  which(rbs_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
+sc_copy$OLD_OLE_CATEGORY[
+  which(sc_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
                           ] <- 'OLE PRIORITY:\nINTER-PERSONAL'
 
-rbs_copy$OLD_OLE_CATEGORY[
-  which(rbs_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
+sc_copy$OLD_OLE_CATEGORY[
+  which(sc_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
                           ] <- 'OLE PRIORITY:\nSAFETY AND DUTIES'
 
-rbs_copy$OLD_OLE_CATEGORY[
-  which(rbs_copy$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
+sc_copy$OLD_OLE_CATEGORY[
+  which(sc_copy$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
                           ] <- 'PROTECTED RESOURCE &\nPROHIBITED SPECIES'
 
 # Make the plot
 river_oldcat <- {
   
-  ggplot(data = rbs_copy %>%
+  ggplot(data = sc_copy %>%
            filter(OLE_SYSTEM == 'OLD'),
          aes(axis1 = STATEMENT_TYPE,
-             axis2 = OLD_OLE_CATEGORY,
-             y = TOTAL_STATEMENTS)) +
+             axis2 = OLD_OLE_CATEGORY)) +
     geom_alluvium(aes(fill = OLD_OLE_CATEGORY),
                   show.legend = F,
                   curve_type = 'sigmoid') +
     geom_stratum() +
+    geom_text_repel(aes(label = 
+                          ifelse(after_stat(x) == 1 & 
+                                   as.character(after_stat(stratum)) %in% 
+                                   repel_labels == T, 
+                                 as.character(after_stat(stratum)), 
+                                 NA)),
+                    stat = 'stratum', 
+                    size = 5.5,
+                    direction = 'y',
+                    nudge_x = -0.5,
+                    force = 4,
+                    family = 'Gill Sans MT') +
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.33,
+                  min.size = 7,
+                  family = 'Gill Sans MT') +
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 2,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.5,
+                  size = 15,
+                  family = 'Gill Sans MT') +
+    scale_x_discrete(limits = c('Statement Type', 'Old OLE Category'),
+                     expand = c(0.15, 0.05)) +
+    scale_fill_manual(values = colors[c(1, 3, 5, 6, 7, 9)]) +
+    theme_void() 
+  
+}
+
+# View the plot
+river_oldcat
+
+# Save the plot
+ggsave(filename = 'Plots/river_subcat.png',
+       plot = river_oldcat,
+       width = 14,
+       height = 10)
+
+
+
+
+
+
+# Alluvial plot of new data ----------------------------------------------------
+# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
+  # NEW OLE SYSTEM)
+
+# Set colors
+colors <- nmfs_palette('regional')(12)
+
+# Make the plot
+river_oldcat <- {
+  
+  ggplot(data = rate_by_subcat %>%
+           filter(OLE_SYSTEM == 'NEW'),
+         aes(axis1 = OLD_OLE_CATEGORY,
+             axis2 = NEW_OLE_CATEGORY,
+             axis3 = STATEMENT_TYPE,
+             y = TOTAL_STATEMENTS)) +
+    geom_alluvium(aes(fill = OLD_OLE_CATEGORY),
+                  show.legend = F,
+                  curve_type = 'sigmoid') +
+    geom_stratum() 
     geom_text_repel(aes(label = 
                           ifelse(after_stat(x) == 1 & 
                                    as.character(after_stat(stratum)) %in% 
