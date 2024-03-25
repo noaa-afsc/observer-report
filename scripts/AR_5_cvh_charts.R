@@ -4,7 +4,7 @@
 #          (206) 526-4222
 
 # TODO's:
-  # Density of sub categories for OLE PIP only
+  # Table of sub category values for OLE PIP only
   # River plots for:
     # OLD OLE CATEGORY -> NEW OLE CATEGORY -> STATEMENT TYPE (NEW DATA ONLY)
       # after filter by New, pivot_wider by statement type
@@ -23,6 +23,9 @@ library(extrafont)
 library(nmfspalette)
 library(ggbeeswarm)
 library(ggridges)
+library(ggalluvial)
+library(ggrepel)
+library(ggfittext)
 
 # clear environment
 rm(list = ls())
@@ -202,4 +205,107 @@ ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
        plot = OLEPIP_subcat_ridge,
        width = 16,
        height = 8)
+
+
+# Alluvial plot of old data ----------------------------------------------------
+# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+
+# Set colors
+colors <- nmfs_palette('regional')(12)
+
+# define statement types to label outside strata boxes
+repel_labels <- rate_by_subcat %>%
+  filter(OLE_SYSTEM == 'OLD') %>%
+  select(STATEMENT_TYPE, TOTAL_STATEMENTS) %>%
+  group_by(STATEMENT_TYPE) %>%
+  summarise(across(TOTAL_STATEMENTS, sum)) %>%
+  filter(TOTAL_STATEMENTS < 20) %>%
+  select(STATEMENT_TYPE)
+repel_labels <- as.character(repel_labels$STATEMENT_TYPE)
+
+# break up strings of old ole categories to fit in boxes better
+# create a duplicate dataset
+rbs_copy <- rate_by_subcat
+
+# view strings to break into lines
+unique(rbs_copy$OLD_OLE_CATEGORY)
+
+# break up strings
+rbs_copy$OLD_OLE_CATEGORY[
+  which(rbs_copy$OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES')
+                          ] <- 'ALL OTHER\nSTATEMENT TYPES'
+
+rbs_copy$OLD_OLE_CATEGORY[
+  which(rbs_copy$OLD_OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS')
+                          ] <- 'LIMITED ACCESS\nPROGRAMS'
+
+rbs_copy$OLD_OLE_CATEGORY[
+  which(rbs_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
+                          ] <- 'OLE PRIORITY:\nINTER-PERSONAL'
+
+rbs_copy$OLD_OLE_CATEGORY[
+  which(rbs_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
+                          ] <- 'OLE PRIORITY:\nSAFETY AND DUTIES'
+
+rbs_copy$OLD_OLE_CATEGORY[
+  which(rbs_copy$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
+                          ] <- 'PROTECTED RESOURCE &\nPROHIBITED SPECIES'
+
+# Make the plot
+river_oldcat <- {
+  
+  ggplot(data = rbs_copy %>%
+           filter(OLE_SYSTEM == 'OLD'),
+         aes(axis1 = STATEMENT_TYPE,
+             axis2 = OLD_OLE_CATEGORY,
+             y = TOTAL_STATEMENTS)) +
+    geom_alluvium(aes(fill = OLD_OLE_CATEGORY),
+                  show.legend = F,
+                  curve_type = 'sigmoid') +
+    geom_stratum() +
+    geom_text_repel(aes(label = 
+                          ifelse(after_stat(x) == 1 & 
+                                   as.character(after_stat(stratum)) %in% 
+                                   repel_labels == T, 
+                                 as.character(after_stat(stratum)), 
+                                 NA)),
+                    stat = 'stratum', 
+                    size = 5.5,
+                    direction = 'y',
+                    nudge_x = -0.5,
+                    force = 4,
+                    family = 'Gill Sans MT') +
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.33,
+                  min.size = 7,
+                  family = 'Gill Sans MT') +
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 2,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.5,
+                  size = 15,
+                  family = 'Gill Sans MT') +
+    scale_x_discrete(limits = c('Statement Type', 'Old OLE Category'),
+                     expand = c(0.15, 0.05)) +
+    scale_fill_manual(values = colors[c(1, 3, 5, 6, 7, 9)]) +
+    theme_void() 
+  
+}
+
+# View the plot
+river_oldcat
+
+# Save the plot
+ggsave(filename = 'Plots/river_subcat.png',
+       plot = river_oldcat,
+       width = 14,
+       height = 10)
+
+
+
+
 
