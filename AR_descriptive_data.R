@@ -354,12 +354,96 @@ export_format <- catch_tables %>%
 #write.csv(export_format,paste0("2013_", YEAR, "_catchtables_formatted.csv"), row.names = FALSE)
 
 
+# Read in TEM Video Review Data --------------------------------------------------------------
+
+# -------------------------------------------------------------------------------------------------------------------------------#
+# The 2023 Council motion says:
+#   "Future reports include data on the amount of catch monitored by electronic monitoring (EM) similar to data on 
+#     observed catch"
+#
+# My notes from June that says: this is referring to a table that summarizes catch in the TEM strata that was monitored by:
+#   1) sampled shoreside
+#   2) video was on for complaince review
+#   3) video was actually reviewed for complance
+# 
+# ------------------------------------------------------------------------------------------------------------------------------ #
+
+tem_video_query <- paste0("SELECT
+                          ps.year_pk AS year,
+                          ps.landing_report_id,
+                          'Y' AS video_review,
+                          ps.upload_account
+                          FROM
+                          akfish_report.v_trawl_em_pacstates_received ps
+                          WHERE
+                          ps.year_pk = 2023
+                          AND ps.expire_date IS NULL -- get current records  
+                          AND ps.report_type_code = 'TRIP' -- means video review?
+                          
+                          UNION ALL
+                          
+                          SELECT
+                          sw.year_pk AS year,
+                          sw.landing_report_id,
+                          'Y' AS video_review,
+                          sw.upload_account
+                          FROM
+                          akfish_report.v_trawl_em_saltwater_received sw
+                          WHERE sw.year_pk = 2023
+                          AND sw.expire_date IS NULL
+                          AND sw.report_type_code = 'TRIP'")
+tem_video <- dbGetQuery(channel_cas, tem_video_query) 
+
+tem_novideo_query <- paste0("SELECT distinct
+                            pso.year_pk AS year,
+                            pso.landing_report_id,
+                            'N' AS video_review,
+                            pso.upload_account
+                            FROM
+                            akfish_report.v_trawl_em_pacstates_outstanding pso
+                            WHERE pso.year_pk = 2023
+                            AND pso.expire_date IS NULL
+                            AND pso.status = 'MISSING VIDEO REVIEW'
+                            
+                            UNION ALL
+                            
+                            SELECT distinct 
+                            swo.year_pk AS year,
+                            swo.landing_report_id,
+                            'N' AS video_review,
+                            swo.upload_account
+                            FROM
+                            akfish_report.v_trawl_em_saltwater_outstanding swo
+                            WHERE swo.year_pk = 2023
+                            AND swo.expire_date IS NULL
+                            AND swo.status = 'MISSING VIDEO REVIEW'")
+tem_novideo <- dbGetQuery(channel_cas, tem_novideo_query) 
+
+
+# Add Video review information to Valhalla dataset:
+valhalla_tem <- work_data %>% 
+  filter(ORIGINAL_STRATA == 'EM_TRW_EFP') %>% 
+  # refine to groundfish (which includes directed halibut) OR psc halibut:
+  filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+  # Rename the Observed Flag the Shoreside sampling flag:
+  rename(SHORESIDE_SAMPLING = OBSERVED_FLAG) %>% 
+  # Append info on hardrives that have been reviewed:
+  left_join(tem_video, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
+  # Append info on video review that is still outstanding:
+  left_join(tem_novideo, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>%
+  # Consolidate some of the fields:
+  mutate(VIDEO_REVIEW = ifelse(is.na(VIDEO_REVIEW.x), VIDEO_REVIEW.y, VIDEO_REVIEW.x),
+         VIDEO_REVIEWER = ifelse(is.na(UPLOAD_ACCOUNT.x), UPLOAD_ACCOUNT.y, UPLOAD_ACCOUNT.x)) %>% 
+  # drop some fields:
+  select(-c(ends_with(".x"), ends_with(".y")))
+
 
 # Clean up workspace and save RData file --------------------------------------------------------------
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
+#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 
+#                             'addl_catch_table', 'catch_tables', 'valhalla_tem'))])
 
 #save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
 #     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
