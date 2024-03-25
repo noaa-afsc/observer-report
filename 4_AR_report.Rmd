@@ -346,10 +346,12 @@ In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark="
 The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
-# Calculate a test metric for the random number process in ODDS
-# Trips outside of trip-selection do not have random numbers in ODDS_MONITOR (e.g. voluntary 100%)
+# Calculate a test metric for the random number process in ODDS (flag for whether a trip was selected due to random selection or not)
+# Trips outside of trip-selection do not have random numbers in odds.odds_trip_stratas (e.g., voluntary 100%)
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
+
+#' *TODO UPDATE DESCRIPTION ABOVE*
 
 # Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  
 odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
@@ -364,14 +366,15 @@ odds.dat <- mutate(odds.dat, random.assign = NA) %>%
 # OA = Observed Trip (Observer Assigned)
 # RL = Not Observed (Provider Release)
 # NO = Not Observed Trip (Observer Not Required or Waiver Granted)
-# SAMPLE_PLAN_SEQ == 98 are EM trips that were marked "OA" only because they fished IFQ in more than one area 
+# STRATA_CODE == 98 are EM trips that were marked "OA" only because they fished IFQ in more than one area
+# STRATA_CODE == 96 are at-sea compliance trips that fished IFQ in more than one area
 odds.dat <- mutate(odds.dat, random.test = 0) %>% 
-            mutate(random.test = ifelse(TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & GROUP_CODE != 98, 1, random.test)) %>% 
+            mutate(random.test = ifelse(TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & !(STRATA_CODE %in% c(96, 98)), 1, random.test)) %>% 
             mutate(random.test = ifelse(!is.na(RELEASE_STATUS_DESCRIPTION), 1, random.test)) %>%  # Waived trips
             mutate(random.test = ifelse(!is.na(INHERIT_TRIP_SEQ), NA, random.test)) %>% # Inherited trips aren't truly 'selected'
             mutate(random.test = ifelse(TRIP_STATUS_CODE == "CC", NA, random.test)) %>% # CC = 'cascade cancel'
             mutate(random.test = ifelse(is.na(RANDOM_NUMBER_USED), NA, random.test))
-            
+          
 # Make NA all 1) RANDOM_NUMBER_USED = NA or 2) INHERIT_TRIP_SEQ is not an NA OR the trip was a 'cascade cancel'
 # odds.dat$random.test[is.na(odds.dat$RANDOM_NUMBER_USED) | !is.na(odds.dat$INHERIT_TRIP_SEQ) | odds.dat$TRIP_STATUS_CODE == "CC"] <- NA
 
