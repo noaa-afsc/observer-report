@@ -458,7 +458,7 @@ disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 # Then rename some columns for the table
 disposition.table <- 
   disposition %>%
-  arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
+  arrange(YEAR, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
          'Year' = YEAR,
          'Random number outcomes' = random.assign, 
@@ -478,31 +478,30 @@ disposition.table <-
 logged <-
   odds.dat %>% 
   # only pull in partial coverage
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%  
+  filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%  
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-  group_by(STRATA, PERIOD) %>%                                                 # 2020-ONLY: Added period to group
+  group_by(YEAR, STRATA) %>%                                                 # 2024-ONLY: Added YEAR to group
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
             Random.selected = sum(random.assign, na.rm = TRUE), 
             # Number of trips that are not selected by a random number but were 
             # selected by inherits instead and were not subsequently waived
             # (EXTRA TRIPS BEYOND RANDOM SELECTION DUE TO INHERITS)
             Inherit.selected = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 0 & 
-                                                               !is.na(INHERIT_OBS_TRIP_SEQ) &
-                                                                is.na(WAIVER_TYPE)])),
+                                                               !is.na(INHERIT_TRIP_SEQ) &
+                                                               is.na(RELEASE_STATUS_DESCRIPTION)])),
             # Randomly selected trips that were waived.
             Waivers.selected = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1 & 
-                                                               !is.na(WAIVER_TYPE)])),
+                                                               !is.na(RELEASE_STATUS_DESCRIPTION)])),
             # Below are the outcomes of inherits and waivers
-            Total.final.selected = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED_OBS == "Y"])),
+            Total.final.selected = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED == "Y"])),
             # Percent of total selected trips due to inherits
             Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
             # % Reduction in Selected Trips due to Waivers
-            Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1)) %>% 
-  arrange(match(STRATA, c("HAL", "EM HAL", "POT ", "EM POT", "TRW")))
+            Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))
 
 logged.table <- bind_rows(logged, 
                       logged %>% 
-                      group_by(PERIOD) %>%          # 2020-ONLY: Added period
+                      group_by(YEAR) %>%          # 2024-ONLY: Added YEAR
                       summarise(STRATA = "Total",
                                 Total.trips = sum(Total.trips),
                                 Random.selected = sum(Random.selected),
@@ -511,13 +510,14 @@ logged.table <- bind_rows(logged,
                                 Total.final.selected = sum(Total.final.selected)) %>% 
                       mutate(Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
                              Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))) %>% 
-                      select(`Strata`=STRATA, `Period`=PERIOD, `Total Trips`=Total.trips,
-                             `Random number selection (*r*)`=Random.selected, 
-                             `Inherited selection** (*i*)`=Inherit.selected,
-                             `Randomly selected but waived (*w*)`=Waivers.selected, 
-                             `Total final selected (*T*=*r*+*i*-*w*)`=Total.final.selected,
-                             `% Selected from inherits ((*i*/*T*)*100)`=Pct.selected.from.inherit, 
-                             `% Reduction of selected trips due to waivers (*w*/(*T*+*w*)*100)`=Pct.allselected.from.waiver)
+                      select(`Year` = YEAR, `Strata` = STRATA, `Total Trips` = Total.trips,
+                             `Random number selection (*r*)` = Random.selected, 
+                             `Inherited selection** (*i*)` = Inherit.selected,
+                             `Randomly selected but waived (*w*)` = Waivers.selected, 
+                             `Total final selected (*T*=*r*+*i*-*w*)` = Total.final.selected,
+                             `% Selected from inherits ((*i*/*T*)*100)` = Pct.selected.from.inherit, 
+                             `% Reduction of selected trips due to waivers (*w*/(*T*+*w*)*100)` = Pct.allselected.from.waiver) %>% 
+  arrange(Year, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total")))
 ```
 
 ```{r selection.tbl, warning=FALSE, include=FALSE}
