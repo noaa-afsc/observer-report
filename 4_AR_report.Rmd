@@ -526,7 +526,7 @@ logged.table <- bind_rows(logged,
 # under various assumptions
 for.p.wide <- merge(
   logged %>% 
-  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
+  group_by(YEAR, STRATA) %>%              # 2024-ONLY: Added YEAR to group
   summarize(random.n = Random.selected,
             inherit.n = Total.final.selected,
             inherit.butnowaiver.n = (Total.final.selected + Waivers.selected),
@@ -537,44 +537,52 @@ for.p.wide <- merge(
   odds.dat %>% 
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
   filter(!is.na(random.assign)) %>% 
-  group_by(STRATA, PERIOD) %>%              # 2020-ONLY: Added period to group
+  group_by(YEAR, STRATA) %>%              # 2024-ONLY: Added YEAR to group
   summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
             Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
             Source = "ODDS random number"), 
   all = TRUE) %>% 
-  arrange(Source, STRATA)
+  arrange(YEAR, Source, STRATA)
 
 # Need to merge in the selection rates for calculating p-values later
-for.p.wide <- merge(
-  for.p.wide, 
-  merge(partial_og %>%                             # 2020-ONLY: Replacing 'partial' object with this ugly mess
-        filter(STRATA != "EM TRW EFP") %>%
-        distinct(STRATA) %>%
-        crossing(data.frame(PERIOD = 1:3)),
-      partial_og %>% filter(STRATA != "EM TRW EFP") %>% 
-        distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
-        group_by(STRATA) %>%
-        mutate(PERIOD = seq_len(n())) %>%
-        mutate(PERIOD = ifelse(PERIOD==2, PERIOD+1, PERIOD)), all=T
-      )  %>% 
-  group_by(STRATA) %>%
-  mutate(ODDS_SELECTION_PCT = ifelse(PERIOD == 2, ODDS_SELECTION_PCT[PERIOD==1], 
-                                     ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[PERIOD==1], 
-                                            ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[PERIOD==1], ODDS_SELECTION_PCT)))), 
-  by=c("STRATA", "PERIOD"), all = TRUE)
+#for.p.wide_TEST <- merge(
+#  for.p.wide, 
+#  merge(partial %>%                             
+#        filter(STRATA != "EM TRW EFP") %>%
+#        distinct(STRATA) %>%
+#        crossing(data.frame(YEAR = 1:2)),
+#      partial %>% filter(STRATA != "EM TRW EFP") %>% 
+#        distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
+#        group_by(STRATA) %>%
+#        mutate(YEAR = seq_len(n()))  %>%
+#        mutate(YEAR = ifelse(YEAR == 1, YEAR + 1, YEAR)), all = T
+#      )  %>% 
+#  group_by(STRATA) %>%
+#  mutate(ODDS_SELECTION_PCT = ifelse(YEAR == 2, ODDS_SELECTION_PCT[YEAR == 1], 
+#                                     ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[YEAR == 1], 
+#                                            ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[YEAR == 1], ODDS_SELECTION_PCT)))), 
+#  by = c("STRATA", "YEAR"), all = TRUE)
+
+for.p.wide <-
+  for.p.wide %>%
+  left_join(partial, by = c("STRATA", "YEAR")) %>%
+  mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
+  select(., !c(GEAR, formatted_strat, Rate))
+
+
 
 # Put into long format
-p.table <- gather(data = for.p.wide, key, value, -STRATA, -PERIOD, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2020-ONLY: Adding period
+p.table <- gather(data = for.p.wide, key, value, -STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2024-ONLY: Adding YEAR
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
 
-p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1
-  group_by(STRATA) %>%
-  mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
-                                     ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
-                                     ODDS_SELECTION_PCT)) %>%
-  ungroup()
+#p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1
+#  group_by(STRATA) %>%
+#  mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
+#                                     ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
+#                                     ODDS_SELECTION_PCT)) %>%
+#  ungroup()
 
 for(i in 1:nrow(p.table)){
   p.table$pct[i] = round((p.table$value[i] / p.table$Total.n[i]) * 100, 2)
@@ -583,9 +591,10 @@ for(i in 1:nrow(p.table)){
                         p = p.table$ODDS_SELECTION_PCT[i] / 100, 
                         alternative = "two.sided")$p.value, 3), nsmall = 3)}
 
-# Format percentages with the same nuber of significant figures as 
+#' Format percentages with the same number of significant figures as
 p.table <- p.table %>% 
-           mutate(ODDS_SELECTION_PCT = format(ODDS_SELECTION_PCT, nsmall=1), pct = format(pct, nsmall=1))
+           mutate(ODDS_SELECTION_PCT = round(ODDS_SELECTION_PCT, 1), 
+                  pct = round(pct, 1))
 
 # Cleanup
 rm(for.p.wide)
@@ -598,16 +607,16 @@ p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 # Create table
 Selection.table <- p.table %>%
                    mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
-                   arrange( STRATA, Source, desc(key)) %>%
-                   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW"))) %>% 
+                   arrange(YEAR, STRATA, Source, desc(key)) %>%
+                   arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
                    mutate(new_trip_type = 
-                          derivedFactor('Initial Random Selection, *a*'= Source=="ODDS random number",
-                                        'After Cancellations, *b* (*a*-*b*)' = key=="Random Selection Only" & Source=="Valid trips only",
-                                        'With Inherits, *c* (*a*-*b*+*c*)' = key=="Expected if no waivers",
-                                        'After Waivers, *d* (*a*-*b*+*c*-*d*)' = key=="Expected",
-                                        .ordered=TRUE, .method="unique")) %>% 
-                   select("Strata" = STRATA, 
-                          "Period" = PERIOD,
+                          derivedFactor('Initial Random Selection, *a*'= Source == "ODDS random number",
+                                        'After Cancellations, *b* (*a*-*b*)' = key == "Random Selection Only" & Source == "Valid trips only",
+                                        'With Inherits, *c* (*a*-*b*+*c*)' = key == "Expected if no waivers",
+                                        'After Waivers, *d* (*a*-*b*+*c*-*d*)' = key == "Expected",
+                                        .ordered = TRUE, .method = "unique")) %>% 
+                   select("Year" = YEAR,
+                          "Strata" = STRATA, 
                           "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
                           "n" = value,  # "Selected trips"
                           "N" = Total.n,   # "Total trips"
