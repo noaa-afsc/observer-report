@@ -366,14 +366,14 @@ odds.dat <- mutate(odds.dat, random.assign = NA) %>%
 # NO = Not Observed Trip (Observer Not Required or Waiver Granted)
 # SAMPLE_PLAN_SEQ == 98 are EM trips that were marked "OA" only because they fished IFQ in more than one area 
 odds.dat <- mutate(odds.dat, random.test = 0) %>% 
-            mutate(random.test = ifelse(TRIP_OBS_CODE %in% c("ND", "RO", "OA", "RL") & SAMPLE_PLAN_SEQ != 98, 1, random.test)) %>% 
-            mutate(random.test = ifelse(!is.na(WAIVER_TYPE), 1, random.test)) %>%  # Waived trips
-            mutate(random.test = ifelse(!is.na(INHERIT_OBS_TRIP_SEQ), NA, random.test)) %>% # Inherited trips aren't truely 'selected'
+            mutate(random.test = ifelse(TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & GROUP_CODE != 98, 1, random.test)) %>% 
+            mutate(random.test = ifelse(!is.na(RELEASE_STATUS_DESCRIPTION), 1, random.test)) %>%  # Waived trips
+            mutate(random.test = ifelse(!is.na(INHERIT_TRIP_SEQ), NA, random.test)) %>% # Inherited trips aren't truly 'selected'
             mutate(random.test = ifelse(TRIP_STATUS_CODE == "CC", NA, random.test)) %>% # CC = 'cascade cancel'
             mutate(random.test = ifelse(is.na(RANDOM_NUMBER_USED), NA, random.test))
             
-# Make NA all 1) RANDOM_NUMBER_USED = NA or 2) INHERIT_OBS_TRIP_SEQ is not an NA OR the trip was a 'cascade cancel'
-# odds.dat$random.test[is.na(odds.dat$RANDOM_NUMBER_USED) | !is.na(odds.dat$INHERIT_OBS_TRIP_SEQ) | odds.dat$TRIP_STATUS_CODE == "CC"] <- NA
+# Make NA all 1) RANDOM_NUMBER_USED = NA or 2) INHERIT_TRIP_SEQ is not an NA OR the trip was a 'cascade cancel'
+# odds.dat$random.test[is.na(odds.dat$RANDOM_NUMBER_USED) | !is.na(odds.dat$INHERIT_TRIP_SEQ) | odds.dat$TRIP_STATUS_CODE == "CC"] <- NA
 
 #Perform the test
 odds.dat <- mutate(odds.dat, random.test = random.test - random.assign) %>% 
