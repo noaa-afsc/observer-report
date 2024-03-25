@@ -388,6 +388,8 @@ table(odds.dat$random.assign, useNA = "always")
 ```
 
 ```{r disposition.tbl, warning=FALSE, include=FALSE}
+#' *2024 AR only: split by year since we are reporting 2022 and 2023*
+
 # Table 3-2 ----
 # Disposition of trips in the ODDS. This table summarizes the frequency of trip activities.  
 # It does not represent the actual trips expected on the grounds. That is the next table.
@@ -395,17 +397,17 @@ disposition <- # Merging two elements:
   merge(
     # The first is by strata
     odds.dat %>%  
-      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, RELEASE_STATUS_DESCRIPTION, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(STRATA, PERIOD, random.assign) %>%
+      group_by(YEAR, STRATA, random.assign) %>%
       summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
-                Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
+                Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
                 Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
                 Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC")]),
-                # Trips.waived= length(TRIP_PLAN_LOG_SEQ[!is.na(WAIVER_TYPE)]),
+                Trips.waived= length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
                 Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) %>%
-      mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall=1)) %>% 
-                # Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall=1)) %>%
+      mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1), 
+             Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
       data.frame(),
      # The second is the grand total
      # odds.dat %>%
@@ -425,23 +427,23 @@ disposition <- # Merging two elements:
      #    select(-Trips.selected) %>% 
      #    data.frame(), 
     odds.dat %>%  
-      select(STRATA, PERIOD, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, WAIVER_TYPE, TRIP_PLAN_NUMBER) %>%
+      select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, RELEASE_STATUS_DESCRIPTION, TRIP_PLAN_NUMBER) %>%
       filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
-      group_by(PERIOD, random.assign) %>%
+      group_by(YEAR, random.assign) %>%
       summarize(STRATA = "Total",
                 Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
-                Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE=="CS"]),
+                Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
                 Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
                 Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC")]),
-                # Trips.waived= length(TRIP_PLAN_LOG_SEQ[!is.na(WAIVER_TYPE)]),
+                Trips.waived= length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
                 Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) %>%
-      mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall=1)) %>% 
-                # Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall=1)) %>%
+      mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1), 
+             Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
       data.frame(),
      # Merge type
-     all=T)
+     all = T)
 
-# Don't include Not Selected trips (random.assign==0) in cancellation summaries since its not required by user. 
+# Don't include Not Selected trips (random.assign == 0) in cancellation summaries since its not required by user. 
 disposition$Trips.cancelled.bysystem[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 disposition$Trips.remaining[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 disposition$Trips.cancelled.byusers[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
@@ -456,16 +458,16 @@ disposition.table <-
   disposition %>%
   arrange(match(STRATA, c("HAL", "EM HAL", "POT", "EM POT", "TRW", "Total"))) %>% 
   rename('Strata' = STRATA, 
-         'Period' = PERIOD,
+         'Year' = YEAR,
          'Random number outcomes' = random.assign, 
          'Logged (*a*)' = Trips.logged.ODDS, 
          'Cancelled by system (*b*)' = Trips.cancelled.bysystem,
          'Trips remaining (*c* = *a*-*b*)' = Trips.remaining, 
          'Cancelled by user (*d*)' = Trips.cancelled.byusers, 
-         #'Waived' = Trips.waived, 
+         'Waived' = Trips.waived, 
          'Paper' = Paper.tickets, 
-         '% User cancellation (*d*/*c* * 100)' = Cancellation.Pct)
-         #'Waiver (%)' = Waiver.Pct)
+         '% User cancellation (*d*/*c* * 100)' = Cancellation.Pct,
+         'Waiver (%)' = Waiver.Pct)
 ```
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
