@@ -354,13 +354,7 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 # Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  
 odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
 
-# 2020-ONLY: define time periods
-date_cuts <- c(as.Date(unique(partial_og$Effective_Date)), as.Date("2020-03-26"), max(odds.dat$PLANNED_EMBARK_DATE))
-date_cuts <- date_cuts[order(date_cuts)] 
-
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
-            mutate(PERIOD = cut(PLANNED_EMBARK_DATE, breaks=date_cuts, labels=F, ordered_result = T, right=F, include.lowest = T)) %>%  # 2020-ONLY: Adding period to odds.dat
-            mutate(PERIOD := ifelse(STRATA %like% "EM",1, PERIOD)) %>% # Don't split EM strata by period; make period = 1
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
             mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
 
