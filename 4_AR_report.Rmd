@@ -448,8 +448,10 @@ disposition$Trips.cancelled.bysystem[is.na(disposition$random.assign) | disposit
 disposition$Trips.remaining[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 disposition$Trips.cancelled.byusers[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 disposition$Cancellation.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
+disposition$Trips.waived[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
+disposition$Waiver.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 
-#define values in the random.assign  
+# Define values in the random.assign  
 disposition$random.assign[is.na(disposition$random.assign) | disposition$random.assign == 1] <- "Selected"
 disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 
