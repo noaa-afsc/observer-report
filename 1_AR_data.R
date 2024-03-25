@@ -143,8 +143,8 @@ odds.dat <- dbGetQuery(channel_afsc, script)
 # Check for duplicates - should be no records (= 0)
 sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ)) 
 
-# Database check - Should be no records where trip_selected is NA and trip was cancelled
-nrow(odds.dat[!is.na(odds.dat$TRIP_SELECTED) & odds.dat$TRIP_STATUS_CODE=="CN", ]) 
+# Database check - Should be no records where TRIP_SELECTED is NA and trip was cancelled
+nrow(odds.dat[!is.na(odds.dat$TRIP_SELECTED) & odds.dat$TRIP_STATUS_CODE == "CN", ]) 
 
 # This confirms the check
 table(odds.dat$TRIP_SELECTED, odds.dat$TRIP_STATUS_CODE, useNA = 'always')  
@@ -213,12 +213,12 @@ if(F){
 # Trip status codes: CS	= Cancel by System, PD = Pending, CN = Cancelled, CP = Completed, CC = Cancel Cascaded
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
-# The trip_selected_obs = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due 
+# The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due 
 # to fishing occurring in more than one area) but the random number generated was larger than the 
 # programmed rate, and so the video was not selected for review. Since these trips aren't truly
-# monitored, make trip_selected_obs = "N". 96 is used for at-sea observer compliance trips and 98 is used
+# monitored, make TRIP_SELECTED = "N". 96 is used for at-sea observer compliance trips and 98 is used
 # for at-sea fixed gear EM trips.
-odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96,98), "N", TRIP_SELECTED))
+odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96, 98), "N", TRIP_SELECTED))
 
 # Translate GROUP_CODE, STRATA_CODE, and GEAR_TYPE_CODE into STRATA
 odds.dat %>% select(GROUP_CODE, STRATA_CODE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% distinct() %>% arrange(GROUP_CODE, STRATA_CODE)
