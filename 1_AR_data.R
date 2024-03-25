@@ -210,7 +210,12 @@ if(F){
 
 # Summary of trip dispositions and observer assignments 
 # GROUP_CODE: 10 = at-sea observer, 13 = fixed gear EM, 14 = EM TRW EFP
-# Trip status codes: CS	= Cancel by System, PD = Pending, CN = Cancelled, CP = Completed, CC = Cancel Cascaded
+# Trip status codes: 
+# CS = Cancel by System 
+# PD = Pending
+# CN = Cancelled 
+# CP = Completed 
+# CC = Cancel Cascaded
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
 # The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due 
