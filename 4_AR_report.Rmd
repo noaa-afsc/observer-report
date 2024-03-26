@@ -689,26 +689,24 @@ for(i in 1:nrow(odds.ts.daily.cuml)){
 
 rm(i)
 
-#' *FIX THIS* Text to annotate figure *==================================*
 for.plot.text <- left_join(
                  odds.ts.daily.cuml %>% 
                  group_by(YEAR, STRATA, TYPE) %>%                  # 2024 only: separate by year
                  filter(Date == max(Date)) %>%
-                 group_by(STRATA) %>% 
+                 group_by(YEAR, STRATA) %>%                        # 2024 only: separate by year
                  mutate(label.original = format(running.pct[TYPE == "Original date: All logged trips"], digits = 4, nsmall = 2),
                         label.adjusted = format(running.pct[TYPE == "Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
-                 distinct(STRATA, label.original, label.adjusted)
+                 distinct(YEAR, STRATA, label.original, label.adjusted)   # 2024 only: separate by year
                  ,
                  partial %>% 
                  filter(STRATA != "EM TRW EFP") %>%
-                 select(STRATA, label.programmed = Rate) %>% 
+                 select(YEAR, STRATA, label.programmed = Rate) %>% # 2024 only: separate by year
                  mutate(STRATA = as.character(STRATA), 
+                        YEAR = as.factor(YEAR),                    # 2024 only: separate by year
                         label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
-                 , by = "STRATA")
+                 , by = c("STRATA", "YEAR"))                       # 2024 only: separate by year
 
-#' *=====================================================================*
-
-odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
+odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text) #' *Not needed for 2024*
 
 #ODDS by date plot (Cumulative coverage percent by strata over the year)
 odds.by.date.plot <- 
@@ -725,13 +723,24 @@ odds.by.date.plot <-
                  aes(x = rug_ni), length = unit(0.1, "npc"), sides = "b") +
      geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE != "Original date: All logged trips"),
                  aes(x = rug_ni), length = unit(0.1, "npc"), sides = "t") +
-     facet_grid(rows = vars(STRATA), cols = vars(YEAR), scales = "free") +                # 2024 only: separate by year
-     #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 60, 
-     #             label = paste("Programmed (%) = ", label.programmed, sep = "")), size = 3, color = "black") + 
+     facet_grid(rows = vars(STRATA), cols = vars(YEAR), scales = "free_x") +                # 2024 only: separate by year
+     geom_text(data = for.plot.text, aes(x = as.Date(Inf), y = 60, 
+                                         label = paste("Programmed (%) = ", label.programmed, sep = "")), 
+               hjust = 1, size = 3, color = "black") +
+     geom_text(data = for.plot.text, aes(x = as.Date(Inf), y = 54, 
+                                         label = paste("Original (%) = ", label.original, sep = "")), 
+               hjust = 1, size = 3, color = "gray70") +
+     geom_text(data = for.plot.text, aes(x = as.Date(Inf), y = 48, 
+                                         label = paste("Final (%) = ", label.adjusted, sep = "")), 
+               hjust = 1, size = 3, color = "black") +
+     #' *===================For single year analysis=================================*
+     #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = ""), y = 60, 
+     #              label = paste("Programmed (%) = ", label.programmed, sep = "")), size = 3, color = "black") + 
      #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 54, 
      #               label = paste("Original (%) = ", label.original, sep = "")), size = 3, color = "gray70") + 
      #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 48, 
      #               label = paste("Final (%) = ", label.adjusted, sep = "")), size = 3, color = "black") + 
+     #' *============================================================================*
      fig.theme + 
      theme_bw() +
      theme(axis.text.x = element_text(angle = 90),
