@@ -368,15 +368,18 @@ odds.dat <- mutate(odds.dat, random.assign = NA) %>%
 # NO = Not Observed Trip (Observer Not Required or Waiver Granted)
 # STRATA_CODE == 98 are EM trips that were marked "OA" only because they fished IFQ in more than one area
 # STRATA_CODE == 96 are at-sea compliance trips that fished IFQ in more than one area
+# Trip status codes: 
+# CS = Cancel by System 
+# PD = Pending
+# CN = Cancelled 
+# CP = Completed 
+# CC = Cancel Cascaded
 odds.dat <- mutate(odds.dat, random.test = 0) %>% 
             mutate(random.test = ifelse(TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & !(STRATA_CODE %in% c(96, 98)), 1, random.test)) %>% 
             mutate(random.test = ifelse(!is.na(RELEASE_STATUS_DESCRIPTION), 1, random.test)) %>%  # Waived trips
             mutate(random.test = ifelse(!is.na(INHERIT_TRIP_SEQ), NA, random.test)) %>% # Inherited trips aren't truly 'selected'
             mutate(random.test = ifelse(TRIP_STATUS_CODE == "CC", NA, random.test)) %>% # CC = 'cascade cancel'
             mutate(random.test = ifelse(is.na(RANDOM_NUMBER_USED), NA, random.test))
-          
-# Make NA all 1) RANDOM_NUMBER_USED = NA or 2) INHERIT_TRIP_SEQ is not an NA OR the trip was a 'cascade cancel'
-# odds.dat$random.test[is.na(odds.dat$RANDOM_NUMBER_USED) | !is.na(odds.dat$INHERIT_TRIP_SEQ) | odds.dat$TRIP_STATUS_CODE == "CC"] <- NA
 
 #Perform the test
 odds.dat <- mutate(odds.dat, random.test = random.test - random.assign) %>% 
@@ -391,18 +394,30 @@ filter(odds.dat, random.test.result == "FAIL")
 odds.dat <- 
   odds.dat %>%
   mutate(RELEASE_COMMENT = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-         ~ "Three Observerd Trips Release", TRUE ~ RELEASE_COMMENT),
+                                     ~ "Three Observerd Trips Release", TRUE ~ RELEASE_COMMENT),
          RELEASE_STATUS_DESCRIPTION = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-         ~ "Three in Row Release", TRUE ~ RELEASE_STATUS_DESCRIPTION),
+                                                ~ "Three in Row Release", TRUE ~ RELEASE_STATUS_DESCRIPTION),
          random.assign = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-         ~ 1, TRUE ~ random.assign),
+                                   ~ 1, TRUE ~ random.assign),
          random.test = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-         ~ 0, TRUE ~ random.test),
+                                 ~ 0, TRUE ~ random.test),
          random.test.result = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-         ~ "PASS", TRUE ~ random.test.result)
+                                        ~ "PASS", TRUE ~ random.test.result)
          )
 
 table(odds.dat$random.assign, useNA = "always")
+
+#' *================================================================*
+#' *Check records where trip was cancelled but selection is NA*
+cancel.check <- 
+  odds.dat %>%
+  filter(is.na(TRIP_SELECTED), TRIP_STATUS_CODE == "CN", STRATA != "EM TRW EFP")
+
+levels(as.factor(cancel.check$STRATA))
+levels(as.factor(cancel.check$YEAR))
+levels(as.factor(cancel.check$TRIP_MONITOR_CODE))
+
+table(cancel.check$TRIP_SELECTED, cancel.check$TRIP_MONITOR_CODE, useNA = 'always') 
 ```
 
 ```{r disposition.tbl, warning=FALSE, include=FALSE}
@@ -536,7 +551,7 @@ logged.table <- bind_rows(logged,
                              "Inherited selection** (*i*)" = Inherit.selected,
                              "Randomly selected but waived (*w*)" = Waivers.selected, 
                              "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
-                             "% Selected from inherits ((*i*/*T*)*100)" = Pct.selected.from.inherit, 
+                             "% Selected from inherits ((*i*/*T*) × 100)" = Pct.selected.from.inherit, 
                              "% Reduction of selected trips due to waivers (*w*/(*T*+*w*)*100)" = Pct.allselected.from.waiver) %>% 
   arrange(Year, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total")))
 ```
