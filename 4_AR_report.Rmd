@@ -353,7 +353,7 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 
 #' *TODO UPDATE DESCRIPTION ABOVE*
 
-# Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  
+#' Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  *Maybe no longer needed?*
 odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
 
 odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
@@ -384,6 +384,24 @@ odds.dat <- mutate(odds.dat, random.test = random.test - random.assign) %>%
 
 filter(odds.dat, random.test.result == "FAIL")
 
+#' `FOR 2024 ONLY`
+#' *Adjusted n = 2 trips that were waived b/c of 3-in-a-row rule (verified by Geoff 3/25/24)*
+#' *ODDS 3.0 not populating ODDS_STRATA_RELEASE tables with those trips*
+
+odds.dat <- 
+  odds.dat %>%
+  mutate(RELEASE_COMMENT = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
+         ~ "Three Observerd Trips Release", TRUE ~ RELEASE_COMMENT),
+         RELEASE_STATUS_DESCRIPTION = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
+         ~ "Three in Row Release", TRUE ~ RELEASE_STATUS_DESCRIPTION),
+         random.assign = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
+         ~ 1, TRUE ~ random.assign),
+         random.test = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
+         ~ 0, TRUE ~ random.test),
+         random.test.result = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
+         ~ "PASS", TRUE ~ random.test.result)
+         )
+
 table(odds.dat$random.assign, useNA = "always")
 ```
 
@@ -409,7 +427,7 @@ disposition <- # Merging two elements:
       mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1), 
              Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
       data.frame(),
-     # The second is the grand total
+     #' The second is the grand total *IS THIS STILL NEEDED?*
      # odds.dat %>%
      #   filter(STRATA %in% partial$STRATA) %>% 
      #   summarize(STRATA = "Total",
@@ -441,7 +459,7 @@ disposition <- # Merging two elements:
              Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
       data.frame(),
      # Merge type
-     all = T)
+     all = TRUE)
 
 # Don't include Not Selected trips (random.assign == 0) in cancellation summaries since its not required by user. 
 disposition$Trips.cancelled.bysystem[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
@@ -459,17 +477,17 @@ disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 disposition.table <- 
   disposition %>%
   arrange(YEAR, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total"))) %>% 
-  rename('Strata' = STRATA, 
-         'Year' = YEAR,
-         'Random number outcomes' = random.assign, 
-         'Logged (*a*)' = Trips.logged.ODDS, 
-         'Cancelled by system (*b*)' = Trips.cancelled.bysystem,
-         'Trips remaining (*c* = *a*-*b*)' = Trips.remaining, 
-         'Cancelled by user (*d*)' = Trips.cancelled.byusers, 
-         'Waived' = Trips.waived, 
-         'Paper' = Paper.tickets, 
-         '% User cancellation (*d*/*c* * 100)' = Cancellation.Pct,
-         'Waiver (%)' = Waiver.Pct)
+  rename("Strata" = STRATA, 
+         "Year" = YEAR,
+         "Random number outcomes" = random.assign, 
+         "Logged (*a*)" = Trips.logged.ODDS, 
+         "Cancelled by system (*b*)" = Trips.cancelled.bysystem,
+         "Trips remaining (*c* = *a*-*b*)" = Trips.remaining, 
+         "Cancelled by user (*d*)" = Trips.cancelled.byusers, 
+         "Waived" = Trips.waived, 
+         "Paper" = Paper.tickets, 
+         "% User cancellation (*d*/*c* * 100)" = Cancellation.Pct,
+         "Waiver (%)" = Waiver.Pct)
 ```
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
@@ -509,14 +527,17 @@ logged.table <- bind_rows(logged,
                                 Waivers.selected = sum(Waivers.selected),
                                 Total.final.selected = sum(Total.final.selected)) %>% 
                       mutate(Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
-                             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))) %>% 
-                      select(`Year` = YEAR, `Strata` = STRATA, `Total Trips` = Total.trips,
-                             `Random number selection (*r*)` = Random.selected, 
-                             `Inherited selection** (*i*)` = Inherit.selected,
-                             `Randomly selected but waived (*w*)` = Waivers.selected, 
-                             `Total final selected (*T*=*r*+*i*-*w*)` = Total.final.selected,
-                             `% Selected from inherits ((*i*/*T*)*100)` = Pct.selected.from.inherit, 
-                             `% Reduction of selected trips due to waivers (*w*/(*T*+*w*)*100)` = Pct.allselected.from.waiver) %>% 
+                             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), 
+                                                                  nsmall = 1))) %>% 
+                      select("Year" = YEAR, 
+                             "Strata" = STRATA, 
+                             "Total Trips" = Total.trips,
+                             "Random number selection (*r*)" = Random.selected, 
+                             "Inherited selection** (*i*)" = Inherit.selected,
+                             "Randomly selected but waived (*w*)" = Waivers.selected, 
+                             "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
+                             "% Selected from inherits ((*i*/*T*)*100)" = Pct.selected.from.inherit, 
+                             "% Reduction of selected trips due to waivers (*w*/(*T*+*w*)*100)" = Pct.allselected.from.waiver) %>% 
   arrange(Year, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total")))
 ```
 
@@ -545,44 +566,17 @@ for.p.wide <- merge(
   arrange(YEAR, Source, STRATA)
 
 # Need to merge in the selection rates for calculating p-values later
-#for.p.wide_TEST <- merge(
-#  for.p.wide, 
-#  merge(partial %>%                             
-#        filter(STRATA != "EM TRW EFP") %>%
-#        distinct(STRATA) %>%
-#        crossing(data.frame(YEAR = 1:2)),
-#      partial %>% filter(STRATA != "EM TRW EFP") %>% 
-#        distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100) %>%
-#        group_by(STRATA) %>%
-#        mutate(YEAR = seq_len(n()))  %>%
-#        mutate(YEAR = ifelse(YEAR == 1, YEAR + 1, YEAR)), all = T
-#      )  %>% 
-#  group_by(STRATA) %>%
-#  mutate(ODDS_SELECTION_PCT = ifelse(YEAR == 2, ODDS_SELECTION_PCT[YEAR == 1], 
-#                                     ifelse(STRATA %like% "EM", ODDS_SELECTION_PCT[YEAR == 1], 
-#                                            ifelse(is.na(ODDS_SELECTION_PCT), ODDS_SELECTION_PCT[YEAR == 1], ODDS_SELECTION_PCT)))), 
-#  by = c("STRATA", "YEAR"), all = TRUE)
-
 for.p.wide <-
   for.p.wide %>%
   left_join(partial, by = c("STRATA", "YEAR")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
   select(., !c(GEAR, formatted_strat, Rate))
 
-
-
 # Put into long format
 p.table <- gather(data = for.p.wide, key, value, -STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source)   # 2024-ONLY: Adding YEAR
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
-
-#p.table <- p.table %>%            # 2020-ONLY: Making programmed rates for Periods 3 match those of period 1
-#  group_by(STRATA) %>%
-#  mutate(ODDS_SELECTION_PCT = ifelse(!(STRATA %like% "EM") & key=="inherit.n", 
-#                                     ODDS_SELECTION_PCT[PERIOD==1 & key=="inherit.butnowaiver.n"], 
-#                                     ODDS_SELECTION_PCT)) %>%
-#  ungroup()
 
 for(i in 1:nrow(p.table)){
   p.table$pct[i] = round((p.table$value[i] / p.table$Total.n[i]) * 100, 2)
@@ -610,10 +604,10 @@ Selection.table <- p.table %>%
                    arrange(YEAR, STRATA, Source, desc(key)) %>%
                    arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
                    mutate(new_trip_type = 
-                          derivedFactor('Initial Random Selection, *a*'= Source == "ODDS random number",
-                                        'After Cancellations, *b* (*a*-*b*)' = key == "Random Selection Only" & Source == "Valid trips only",
-                                        'With Inherits, *c* (*a*-*b*+*c*)' = key == "Expected if no waivers",
-                                        'After Waivers, *d* (*a*-*b*+*c*-*d*)' = key == "Expected",
+                          derivedFactor("Initial Random Selection, *a*"= Source == "ODDS random number",
+                                        "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
+                                        "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
+                                        "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
                                         .ordered = TRUE, .method = "unique")) %>% 
                    select("Year" = YEAR,
                           "Strata" = STRATA, 
@@ -628,29 +622,29 @@ Selection.table <- p.table %>%
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, eval=FALSE}
 odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
      filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
-     transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format="%Y-%m-%d")) %>% 
+     transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
      filter(STRATA %in% partial$STRATA) %>% 
-     group_by(STRATA, Date) %>%
-     summarize(n = sum(random.assign, na.rm=TRUE),
-               ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])),
+     group_by(YEAR, STRATA, Date) %>%                                # 2024 only: separate by year
+     summarize(n = sum(random.assign, na.rm = TRUE),
+               ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
                N = length(unique(TRIP_PLAN_LOG_SEQ)),
-               TYPE="Original date: All logged trips") %>% 
+               TYPE = "Original date: All logged trips") %>% 
      arrange(Date) %>% 
      ungroup() %>% 
      bind_rows(
           odds.dat %>% # These are the 'valid trips' only
-               filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED_OBS)) %>%
-               transform(Date = as.Date(PLANNED_EMBARK_DATE, format="%Y-%m-%d")) %>% 
+               filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%
+               transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
                filter(STRATA %in% partial$STRATA) %>% 
-               group_by(STRATA, Date) %>%
-               summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED_OBS == "Y"])),
-                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_OBS_TRIP_SEQ)])),
+               group_by(YEAR, STRATA, Date) %>%                       # 2024 only: separate by year
+               summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED == "Y"])),
+                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
                          N = length(unique(TRIP_PLAN_LOG_SEQ)),
                          TYPE = "Adjusted date: Valid trips only") %>% 
                arrange(Date) %>% 
                ungroup()) %>% 
      mutate(TYPE = as.factor(TYPE)) %>% 
-     group_by(STRATA, TYPE) %>%
+     group_by(YEAR, STRATA, TYPE) %>%                                   # 2024 only: separate by year
      mutate(running.n = order_by(Date, cumsum(n)),
             running.N = order_by(Date, cumsum(N)), 
             rug_ni = if_else(ni != 0, Date, as.Date(NA)),
@@ -658,25 +652,26 @@ odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
      arrange(STRATA, TYPE, Date) %>%
      right_join(
           partial %>%
-          filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>% 
-          distinct(STRATA, ODDS_SELECTION_PCT = Rate * 100), 
-          by = "STRATA") %>% 
+          filter(STRATA != "EM TRW EFP") %>%
+          distinct(YEAR, STRATA, ODDS_SELECTION_PCT = Rate * 100),  # 2024 only: separate by year
+          by = c("STRATA", "YEAR")) %>%  # 2024 only: separate by year
      ungroup()
 
 # reorder strata for plot
 odds.ts.daily.cuml <- transform(odds.ts.daily.cuml,
-                                STRATA = factor(STRATA, levels=c("HAL", "EM HAL", "POT", "EM POT", "TRW")))
+                                STRATA = factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")),
+                                YEAR = factor(YEAR, levels = c("2022", "2023"))) # 2024 only: separate by year
 
 # Generate data for ribbon plots for the random data only.
 odds.ts.daily.cuml$L95 <- ifelse(
-                          odds.ts.daily.cuml$TYPE=="Adjusted date: Valid trips only", 
+                          odds.ts.daily.cuml$TYPE == "Adjusted date: Valid trips only", 
                           NA, 
                           round((qbinom(0.025, 
                                         odds.ts.daily.cuml$running.N, 
                                         odds.ts.daily.cuml$ODDS_SELECTION_PCT / 100)) / odds.ts.daily.cuml$running.N, 3))
 
 odds.ts.daily.cuml$H95 <- ifelse(
-                          odds.ts.daily.cuml$TYPE=="Adjusted date: Valid trips only", 
+                          odds.ts.daily.cuml$TYPE == "Adjusted date: Valid trips only", 
                           NA, 
                           round((qbinom(0.975,
                                         odds.ts.daily.cuml$running.N,
@@ -689,54 +684,54 @@ for(i in 1:nrow(odds.ts.daily.cuml)){
     round(binom.test(odds.ts.daily.cuml$running.n[i],
                      odds.ts.daily.cuml$running.N[i],
                      odds.ts.daily.cuml$ODDS_SELECTION_PCT[i] / 100,
-                     alternative='two.sided')$p.value, 3))
+                     alternative = "two.sided")$p.value, 3))
 }
 
 rm(i)
 
-# Text to annotage figure
+#' *FIX THIS* Text to annotate figure *==================================*
 for.plot.text <- left_join(
                  odds.ts.daily.cuml %>% 
-                 group_by(STRATA, TYPE) %>% 
+                 group_by(YEAR, STRATA, TYPE) %>%                  # 2024 only: separate by year
                  filter(Date == max(Date)) %>%
                  group_by(STRATA) %>% 
-                 mutate(label.original = format(running.pct[TYPE=="Original date: All logged trips"], digits = 4, nsmall = 2),
-                        label.adjusted = format(running.pct[TYPE=="Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
+                 mutate(label.original = format(running.pct[TYPE == "Original date: All logged trips"], digits = 4, nsmall = 2),
+                        label.adjusted = format(running.pct[TYPE == "Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
                  distinct(STRATA, label.original, label.adjusted)
                  ,
                  partial %>% 
-                 filter(Effective_Date == min(Effective_Date) & STRATA != "EM TRW EFP") %>%
+                 filter(STRATA != "EM TRW EFP") %>%
                  select(STRATA, label.programmed = Rate) %>% 
                  mutate(STRATA = as.character(STRATA), 
                         label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
-                 , by="STRATA")
+                 , by = "STRATA")
+
+#' *=====================================================================*
 
 odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 
 #ODDS by date plot (Cumulative coverage percent by strata over the year)
 odds.by.date.plot <- 
-  ggplot(odds.ts.daily.cuml, aes(Date, running.pct, col=TYPE)) +
-      # Add waiver period
-     geom_rect(data=filter(odds.ts.daily.cuml, STRATA %in% c("HAL", "POT", "TRW")), aes(xmin=as.Date("2020-03-26"), xmax = as.Date("2020-07-01"), ymin=0, ymax=Inf), alpha = 0.005, col = "gray") +
+  ggplot(odds.ts.daily.cuml, aes(Date, running.pct, col = TYPE)) +
      # Add lines for selection rates  
-     geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty=3, size=1) +
-     geom_ribbon(aes(ymin=L95 * 100, ymax=H95 * 100), alpha=0.1) +
+     geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, size = 1) +
+     geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
      geom_line(size = 1.5) +
-     scale_color_manual(name="Rate Type", values=c("black", "gray70")) +
-     ylab('Cumulative Coverage Percent\n') +
-     coord_cartesian(ylim=c(0, 70)) +
-     xlab('\nDate') +
-     geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE=="Original date: All logged trips"),
+     scale_color_manual(name = "Rate Type", values = c("black", "gray70")) +
+     ylab("Cumulative Coverage Percent\n") +
+     coord_cartesian(ylim = c(0, 70)) +
+     xlab("\nDate") +
+     geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE == "Original date: All logged trips"),
                  aes(x = rug_ni), length = unit(0.1, "npc"), sides = "b") +
-     geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE!="Original date: All logged trips"),
+     geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE != "Original date: All logged trips"),
                  aes(x = rug_ni), length = unit(0.1, "npc"), sides = "t") +
-     facet_wrap(~ STRATA, ncol = 2) +
-     geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 60, 
-                   label = paste("Programmed (%) = ", label.programmed, sep = "")), size = 3, color = "black") + 
-     geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 54, 
-                   label = paste("Original (%) = ", label.original, sep = "")), size = 3, color = "gray70") + 
-     geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 48, 
-                   label = paste("Final (%) = ", label.adjusted, sep = "")), size = 3, color = "black") + 
+     facet_grid(rows = vars(STRATA), cols = vars(YEAR), scales = "free") +                # 2024 only: separate by year
+     #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 60, 
+     #             label = paste("Programmed (%) = ", label.programmed, sep = "")), size = 3, color = "black") + 
+     #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 54, 
+     #               label = paste("Original (%) = ", label.original, sep = "")), size = 3, color = "gray70") + 
+     #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 48, 
+     #               label = paste("Final (%) = ", label.adjusted, sep = "")), size = 3, color = "black") + 
      fig.theme + 
      theme_bw() +
      theme(axis.text.x = element_text(angle = 90),
