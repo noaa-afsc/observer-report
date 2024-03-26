@@ -752,37 +752,67 @@ odds.by.date.plot <-
 # Objects that help increase readability of in-text calcs in the following paragraphs
 
 #Total cancelled trips (both by ODDS or by users)
-totl.canc <- disposition %>% 
-             filter(STRATA=="Total" & random.assign == "Selected") %>% 
-             summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
-             as.numeric()
-
-#Percent of total trips cancelled by the ODDS system
-perc.syst.canc <- disposition %>% 
-                  filter(STRATA=="Total" & random.assign == "Selected") %>% 
-                  summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
+totl.canc.2022 <- disposition %>% 
+                  filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>%
+                  summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
                   as.numeric()
 
+totl.canc.2023 <- disposition %>% 
+                  filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>%
+                  summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
+                  as.numeric()
+
+#Percent of total trips cancelled by the ODDS system
+perc.syst.canc.2022 <- disposition %>% 
+                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
+                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
+                       as.numeric()
+
+perc.syst.canc.2023 <- disposition %>% 
+                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
+                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
+                       as.numeric()
+
 #Percent of total trips cancelled by users
-perc.user.canc <- disposition %>% 
-                  filter(STRATA=="Total" & random.assign == "Selected") %>% 
-                  summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits=1, nsmall=1)) %>% 
-                  as.character()
+perc.user.canc.2022 <- disposition %>% 
+                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
+                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits = 1, nsmall = 1)) %>% 
+                       as.character()
+
+perc.user.canc.2023 <- disposition %>% 
+                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
+                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits = 1, nsmall = 1)) %>% 
+                       as.character()
 
 # Lowest and highest cancellation rate/stratum for selected trips by strata
-sel.min.canc <- disposition %>% 
-                filter(STRATA!="Total" & random.assign == "Selected") %>%
-                group_by(STRATA) %>% 
-                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
-                slice_min(as.numeric(Cancellation.Pct)) %>% 
-                mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
+sel.min.canc.2022 <- disposition %>% 
+                     filter(STRATA != "Total" & random.assign == "Selected", YEAR == "2022") %>%
+                     group_by(STRATA) %>% 
+                     summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
+                     slice_min(as.numeric(Cancellation.Pct)) %>% 
+                     mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 
-sel.max.canc <- disposition %>% 
-                filter(STRATA!="Total" & random.assign == "Selected") %>%
-                group_by(STRATA) %>% 
-                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
-                slice_max(as.numeric(Cancellation.Pct)) %>% 
-                mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
+sel.max.canc.2022 <- disposition %>% 
+                     filter(STRATA != "Total" & random.assign == "Selected", YEAR == "2022") %>%
+                     group_by(STRATA) %>% 
+                     summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
+                     slice_max(as.numeric(Cancellation.Pct)) %>% 
+                     mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
+
+sel.min.canc.2023 <- disposition %>% 
+                     filter(STRATA != "Total" & random.assign == "Selected", YEAR == "2023") %>%
+                     group_by(STRATA) %>% 
+                     summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
+                     slice_min(as.numeric(Cancellation.Pct)) %>% 
+                     mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
+
+sel.max.canc.2023 <- disposition %>% 
+                     filter(STRATA != "Total" & random.assign == "Selected", YEAR == "2023") %>%
+                     group_by(STRATA) %>% 
+                     summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
+                     slice_max(as.numeric(Cancellation.Pct)) %>% 
+                     mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
+
 ```
 
 Logged trips have different dispositions. When initially logged, trips are considered pending, subsequently have two dispositions: closed or cancelled.  A trip can be closed by selecting landing reports from a menu or manually entering the end of the trip information for observed trips or cancelled. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year+1` ADP.  Trips that were selected to be monitored by ODDS and are subsequently cancelled trigger the next logged trip to automatically inherit the selected status.  These trips are termed inherited trips.  
@@ -791,43 +821,83 @@ The number of trips logged in the ODDS in `r year` and their dispositions is sum
 
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process. 
-inherit.min <- logged %>% 
-               group_by(STRATA) %>% 
-               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
-               ungroup() %>% 
-               slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
-               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(STRATA, Pct.selected.from.inherit)
+inherit.min.2022 <- logged %>%
+                    filter(YEAR == "2022") %>%
+                    group_by(STRATA) %>% 
+                    summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+                    ungroup() %>% 
+                    slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
+                    mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
+                    select(STRATA, Pct.selected.from.inherit)
 
-inherit.max <- logged %>% 
-               group_by(STRATA) %>% 
-               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
-               ungroup() %>% 
-               slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
-               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(STRATA, Pct.selected.from.inherit)
+inherit.max.2022 <- logged %>%
+                    filter(YEAR == "2022") %>%
+                    group_by(STRATA) %>% 
+                    summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+                    ungroup() %>% 
+                    slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
+                    mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
+                    select(STRATA, Pct.selected.from.inherit)
+
+inherit.min.2023 <- logged %>%
+                    filter(YEAR == "2023") %>%
+                    group_by(STRATA) %>% 
+                    summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+                    ungroup() %>% 
+                    slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
+                    mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
+                    select(STRATA, Pct.selected.from.inherit)
+
+inherit.max.2023 <- logged %>%
+                    filter(YEAR == "2023") %>%
+                    group_by(STRATA) %>% 
+                    summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
+                    ungroup() %>% 
+                    slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
+                    mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
+                    select(STRATA, Pct.selected.from.inherit)
 
 
 # Waiver impact
-waiver.min <- logged %>% 
-              group_by(STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
-              ungroup() %>% 
-              slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
-              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(STRATA, Pct.allselected.from.waiver)
+waiver.min.2022 <- logged %>% 
+                   filter(YEAR == "2022") %>%
+                   group_by(STRATA) %>% 
+                   summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+                   ungroup() %>% 
+                   slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
+                   mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+                   select(STRATA, Pct.allselected.from.waiver)
 
-waiver.max <- logged %>% 
-              group_by(STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
-              ungroup() %>% 
-              slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
-              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(STRATA, Pct.allselected.from.waiver)
+waiver.max.2022 <- logged %>% 
+                   filter(YEAR == "2022") %>%
+                   group_by(STRATA) %>% 
+                   summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+                   ungroup() %>% 
+                   slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
+                   mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+                   select(STRATA, Pct.allselected.from.waiver)
+
+waiver.min.2023 <- logged %>% 
+                   filter(YEAR == "2023") %>%
+                   group_by(STRATA) %>% 
+                   summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+                   ungroup() %>% 
+                   slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
+                   mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+                   select(STRATA, Pct.allselected.from.waiver)
+
+waiver.max.2023 <- logged %>% 
+                   filter(YEAR == "2023") %>%
+                   group_by(STRATA) %>% 
+                   summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+                   ungroup() %>% 
+                   slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
+                   mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
+                   select(STRATA, Pct.allselected.from.waiver)
 ```
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
-#Text strings for reporting on the observered initial selection rates by strata
+#Text strings for reporting on the observer initial selection rates by strata
 pct_txt <- p.table %>% 
            filter(Source=="ODDS random number") %>% 
            mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>% 
