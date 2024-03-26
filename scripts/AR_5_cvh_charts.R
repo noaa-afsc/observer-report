@@ -81,6 +81,18 @@ sc_copy$OLD_OLE_CATEGORY[
   which(sc_copy$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
 ] <- 'PROTECTED RESOURCE &\nPROHIBITED SPECIES'
 
+
+# create ordered factors for OLD OLE CATEGORY
+sc_copy$OLD_OLE_CATEGORY <- 
+  factor(sc_copy$OLD_OLE_CATEGORY, 
+         levels = c('OLE PRIORITY:\nINTER-PERSONAL',
+                    'OLE PRIORITY:\nSAFETY AND DUTIES',
+                    'COAST GUARD',
+                    'LIMITED ACCESS\nPROGRAMS',
+                    'PROTECTED RESOURCE &\nPROHIBITED SPECIES',
+                    'ALL OTHER\nSTATEMENT TYPES'))
+
+
 # Formatting new data (filtered by OLE SYSTEM) ---------------------------------
 # break up strings (UNCOMMENT IF NOT MAKING ALLUVIAL PLOT OF OLD DATA)
 # sc_copy$OLD_OLE_CATEGORY[
@@ -205,6 +217,22 @@ repel_labels_newcat <- repel_labels_newcat %>%
   filter(TOTAL_STATEMENTS < 9)
 
 
+# create ordered factors for NEW OLE CATEGORY
+sc_copy$NEW_OLE_CATEGORY <- 
+  factor(sc_copy$NEW_OLE_CATEGORY,
+         levels = 
+           c('OBSERVER SAFETY\nAND\nWORK ENVIRONMENT',
+             'INTERFERENCE WITH DUTIES',
+             'MARPOL/OIL SPILL',
+             'SAFETY-USCG-EQUIPMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS\nAND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG:\nMARINE CASUALTY',
+             'GEAR/EQUIPMENT\nREQUIREMENTS',
+             'OPERATIONAL REQUIREMENTS',
+             'PROHIBITED SPECIES,\nMARINE MAMMALS,\nSEABIRDS',
+             'PERMITS, DOCUMENTS,\nRECORD KEEPING\nAND REPORTING',
+             'SUSTAINABLE FISHERIES',
+             'CONTRACTOR REQUIREMENTS'))
 
 #####################
 ##### ALL PLOTS #####
