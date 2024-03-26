@@ -392,6 +392,18 @@ river_oldcat <- {
                   show.legend = F,
                   curve_type = 'sigmoid') +
     geom_stratum() +
+    annotate(geom = 'text',
+             label = 'Old Statement Type',
+             x = 1,
+             y = 1415,
+             size = 7,
+             family = 'Gill Sans MT') +
+    annotate(geom = 'text',
+             label = 'Old OLE Category',
+             x = 2,
+             y = 1415,
+             size = 7,
+             family = 'Gill Sans MT') +
     geom_text_repel(aes(label = 
                           ifelse(after_stat(x) == 1 & 
                                    as.character(after_stat(stratum)) %in% 
@@ -459,6 +471,24 @@ river_newcat <- {
                   show.legend = F,
                   curve_type = 'sigmoid') +
     geom_stratum() +
+    annotate(geom = 'text',
+             label = 'Old OLE Category',
+             x = 1,
+             y = -7, # 430 for the top of plot
+             size = 6,
+             family = 'Gill Sans MT') +
+    annotate(geom = 'text',
+             label = 'New OLE Category',
+             x = 2,
+             y = -7, # 430 for the top of plot
+             size = 6,
+             family = 'Gill Sans MT') +
+    annotate(geom = 'text',
+             label = 'New Statement Type',
+             x = 3,
+             y = -7, # 430 for the top of plot
+             size = 6,
+             family = 'Gill Sans MT') +
     geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
                                      as.character(after_stat(stratum)),
                                      NA)),
