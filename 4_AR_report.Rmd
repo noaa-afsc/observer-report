@@ -346,12 +346,11 @@ In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark="
 The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
-# Calculate a test metric for the random number process in ODDS (flag for whether a trip was selected due to random selection or not)
+# Perform a check on the random number process in ODDS (flag for whether a trip was selected due to random selection or not)
 # Trips outside of trip-selection do not have random numbers in odds.odds_trip_stratas (e.g., voluntary 100%)
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
-
-#' *TODO UPDATE DESCRIPTION ABOVE*
+# Use output table to assess any flagged trips and make corrections as necessary
 
 #' Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  *Maybe no longer needed?*
 odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
@@ -381,15 +380,17 @@ odds.dat <- mutate(odds.dat, random.test = 0) %>%
             mutate(random.test = ifelse(TRIP_STATUS_CODE == "CC", NA, random.test)) %>% # CC = 'cascade cancel'
             mutate(random.test = ifelse(is.na(RANDOM_NUMBER_USED), NA, random.test))
 
-#Perform the test
+#Perform the check
 odds.dat <- mutate(odds.dat, random.test = random.test - random.assign) %>% 
             mutate(random.test.result = ifelse(random.test == 0, "PASS", "FAIL"))
 
+# Assess discrepancies
 filter(odds.dat, random.test.result == "FAIL")
 
+# Address discrepancies
 #' `FOR 2024 ONLY`
 #' *Adjusted n = 2 trips that were waived b/c of 3-in-a-row rule (verified by Geoff 3/25/24)*
-#' *ODDS 3.0 not populating ODDS_STRATA_RELEASE tables with those trips*
+#' *ODDS 3.0 not populating ODDS_STRATA_RELEASE tables with those trips so they are missing release information in data pull*
 
 odds.dat <- 
   odds.dat %>%
@@ -405,6 +406,7 @@ odds.dat <-
                                         ~ "PASS", TRUE ~ random.test.result)
          )
 
+# How many selected (1) versus not-selected (0) trips
 table(odds.dat$random.assign, useNA = "always")
 
 #' *================================================================*
@@ -416,6 +418,9 @@ cancel.check <-
 levels(as.factor(cancel.check$STRATA))
 levels(as.factor(cancel.check$YEAR))
 levels(as.factor(cancel.check$TRIP_MONITOR_CODE))
+levels(as.factor(cancel.check$STRATA_CODE))
+levels(as.factor(cancel.check$ODDS_SELECTION_PCT))
+levels(as.factor(cancel.check$random.assign))
 
 table(cancel.check$TRIP_SELECTED, cancel.check$TRIP_MONITOR_CODE, useNA = 'always') 
 ```
@@ -481,8 +486,8 @@ disposition$Trips.cancelled.bysystem[is.na(disposition$random.assign) | disposit
 disposition$Trips.remaining[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 disposition$Trips.cancelled.byusers[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
 disposition$Cancellation.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
-disposition$Trips.waived[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
-disposition$Waiver.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
+disposition$Trips.waived[is.na(disposition$random.assign) | disposition$random.assign == 0] <- "" #' *NEW ADD*
+disposition$Waiver.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- "" #' *NEW ADD*
 
 # Define values in the random.assign  
 disposition$random.assign[is.na(disposition$random.assign) | disposition$random.assign == 1] <- "Selected"
@@ -501,7 +506,7 @@ disposition.table <-
          "Cancelled by user (*d*)" = Trips.cancelled.byusers, 
          "Waived" = Trips.waived, 
          "Paper" = Paper.tickets, 
-         "% User cancellation (*d*/*c* * 100)" = Cancellation.Pct,
+         "% User cancellation (*d*/*c* × 100)" = Cancellation.Pct,
          "Waiver (%)" = Waiver.Pct)
 ```
 
@@ -511,7 +516,7 @@ disposition.table <-
 logged <-
   odds.dat %>% 
   # only pull in partial coverage
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%  
+  filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%  #' *LOSING ALL THOSE CN TRIPS WITH NA?*
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
   group_by(YEAR, STRATA) %>%                                                 # 2024-ONLY: Added YEAR to group
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
@@ -552,7 +557,7 @@ logged.table <- bind_rows(logged,
                              "Randomly selected but waived (*w*)" = Waivers.selected, 
                              "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
                              "% Selected from inherits ((*i*/*T*) × 100)" = Pct.selected.from.inherit, 
-                             "% Reduction of selected trips due to waivers (*w*/(*T*+*w*)*100)" = Pct.allselected.from.waiver) %>% 
+                             "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) × 100)" = Pct.allselected.from.waiver) %>% 
   arrange(Year, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total")))
 ```
 
@@ -600,7 +605,7 @@ for(i in 1:nrow(p.table)){
                         p = p.table$ODDS_SELECTION_PCT[i] / 100, 
                         alternative = "two.sided")$p.value, 3), nsmall = 3)}
 
-#' Format percentages with the same number of significant figures as
+#' Format percentages with the same number of significant figures as *(as what?)*
 p.table <- p.table %>% 
            mutate(ODDS_SELECTION_PCT = round(ODDS_SELECTION_PCT, 1), 
                   pct = round(pct, 1))
@@ -792,12 +797,14 @@ perc.syst.canc.2023 <- disposition %>%
 #Percent of total trips cancelled by users
 perc.user.canc.2022 <- disposition %>% 
                        filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
-                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits = 1, nsmall = 1)) %>% 
+                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
+                                                         digits = 1, nsmall = 1)) %>% 
                        as.character()
 
 perc.user.canc.2023 <- disposition %>% 
                        filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
-                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits = 1, nsmall = 1)) %>% 
+                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
+                                                         digits = 1, nsmall = 1)) %>% 
                        as.character()
 
 # Lowest and highest cancellation rate/stratum for selected trips by strata
