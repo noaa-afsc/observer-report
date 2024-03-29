@@ -10,6 +10,7 @@
   # Filter out statement types in river plots that are under 3 total occurrences []
   # Refacet raincloud plots to Old/New with Year on bottom [X]
     # Investigate in data where higher Inc/Statements are from []
+  # CHANGE 'Inadequate Accomodations' to 'Inadequate Accommodations' in STATEMENT_TYPE
 
 ##################################
 ##### LOAD PACKAGES AND DATA #####
@@ -486,7 +487,31 @@ river_oldcat_23 <- {
   ggplot(data = statements_combined %>%
            filter(OLE_SYSTEM == 'OLD',
                   MANUAL_YEAR == 2023),
-         aes(axis1 = STATEMENT_TYPE_LABEL,
+         aes(axis1 = factor(STATEMENT_TYPE_LABEL,
+                            levels = c('Disruptive/Bothersome Behavior - Conflict Resolved',
+                                       'Harassment-Assault', 'Harassment - Sexual',
+                                       'Intimidation, coercion, hostile work environment',
+                                       'Interference/Sample Biasing', 'Safety-NMFS',
+                                       'MARPOL/Oil Spill', 'Safety-USCG-Equipment',
+                                       'Safety-USCG-Fail to Conduct Drills',
+                                       'Safety-USCG-Marine Casualty', 'AFA',
+                                       'Amendment 80', 'Catcher Processer Longline',
+                                       'IFQ Retention', 'Amendment 91 salmon',
+                                       'Gulf of Alaska Salmon', 
+                                       'Halibut Deck Sorting',
+                                       'Marine Mammal-Feeding', 
+                                       'Marine Mammal-Harassment',
+                                       'Prohibited Species - Mishandling',
+                                       'Prohibited Species - Retaining',
+                                       'Sample Bias-Marine Mammals',
+                                       'Seabird-Harassment', 
+                                       'Restricted Access',
+                                       'Contractor Problems', 
+                                       'Failure to Notify', 
+                                       'Inadequate Accomodations', 'IR/IU',
+                                       'Miscellaneous Violations',
+                                       'Reasonable Assistance', 
+                                       'Record Keeping and Reporting')),
              axis2 = OLD_OLE_CATEGORY_LABEL)) +
     river2_theme(labels = river_oldcat_labels_23,
                  axis1_label = 'Old Statement Type',
