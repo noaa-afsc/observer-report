@@ -17,8 +17,8 @@
     # STATEMENT_TYPE -> OLD_OLE 2022 [X]
     # STATEMENT_TYPE -> OLD_OLE 2023 [X]
   # Assign labels properly to these plots [X]
-  # Find color scheme that works (Sexual Harrassment == RED) []
-  # Order the 3rd axis by Frequency AND 1:1 matches []
+  # Find color scheme that works (Sexual Harrassment  + Assault == strong color) []
+  # Order the 3rd axis by 1:1 matches []
   # Filter out statement types that are under 3 total occurrences []
   # Refacet raincloud plots to Old/New with Year on bottom []
 
@@ -479,110 +479,6 @@ ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
        height = 8)
 
 
-# Ridge plot of sub category densities within OLE Priority IP ------------------
-# Set colors
-colors <- nmfs_palette('regional')(10)
-
-# Make the plot
-OLEPIP_subcat_ridge <- {
-  ggplot(data = statements_combined %>%
-           filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
-         aes(x = NUMBER_VIOLATIONS,
-             y = factor(STATEMENT_TYPE),
-             fill = STATEMENT_TYPE)) +
-    facet_grid(scales = 'free',
-               rows = vars(OLE_SYSTEM)) +
-    scale_x_continuous(breaks = c(0, 5, 10, 15, 20, 25, 50, 75, 100),
-                       limits = c(0, 100)) +
-    scale_y_discrete(expand = c(0.2, 0.2)) +
-    scale_color_manual(values = colors, guide = 'none') +
-    scale_fill_manual(values = colors, guide = 'none') +
-    geom_density_ridges(quantile_lines = T,
-                        quantiles = 2,
-                        color = 'black',
-                        alpha = 0.5) +
-    theme_bw() +
-    labs(x = 'Occurrences per Statement',
-         y = '')
-}
-
-# View the plot
-OLEPIP_subcat_ridge
-
-# Save the plot
-ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
-       plot = OLEPIP_subcat_ridge,
-       width = 16,
-       height = 8)
-
-
-# Alluvial plot of old data, 2022 ----------------------------------------------
-# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
-
-# Set labels
-river_oldcat_labels <- statements_combined %>%
-  filter(OLE_SYSTEM == 'OLD') %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 26)
-
-# Make the plot
-river_oldcat <- {
-  ggplot(data = statements_combined %>%
-           filter(OLE_SYSTEM == 'OLD'),
-         aes(axis1 = STATEMENT_TYPE_LABEL,
-             axis2 = OLD_OLE_CATEGORY_LABEL)) +
-    river2_theme(labels = river_oldcat_labels,
-                 axis1_label = 'Old Statement Type',
-                 axis2_label = 'Old OLE Category',
-                 axis1_min_text_size = 9,
-                 axis1_text_size = 18)
-}
-
-# View the plot
-river_oldcat
-
-# Save the plot
-ggsave(filename = 'Plots/river_oldcat.png',
-       plot = river_oldcat,
-       width = 14,
-       height = 10)
-
-
-# Alluvial plot of old data, 2022 ----------------------------------------------
-# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
-
-# Set labels
-river_oldcat_labels_22 <- statements_combined %>%
-  filter(OLE_SYSTEM == 'OLD',
-         MANUAL_YEAR == 2022) %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 22)
-
-# Make the plot
-river_oldcat_22 <- {
-  ggplot(data = statements_combined %>%
-           filter(OLE_SYSTEM == 'OLD',
-                  MANUAL_YEAR == 2022),
-         aes(axis1 = STATEMENT_TYPE_LABEL,
-             axis2 = OLD_OLE_CATEGORY_LABEL)) +
-    river2_theme(labels = river_oldcat_labels_22,
-                 axis1_label = 'Old Statement Type',
-                 axis2_label = 'Old OLE Category',
-                 axis1_min_text_size = 9)
-}
-
-# View the plot
-river_oldcat_22
-
-# Save the plot
-ggsave(filename = 'Plots/river_oldcat_22.png',
-       plot = river_oldcat_22,
-       width = 14,
-       height = 10)
-
-
 # Alluvial plot of old data, 2023 ----------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
 
@@ -615,41 +511,6 @@ river_oldcat_23
 ggsave(filename = 'Plots/river_oldcat_23.png',
        plot = river_oldcat_23,
        width = 14,
-       height = 10)
-
-
-# Alluvial plot of new data ----------------------------------------------------
-# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
-  # NEW OLE SYSTEM)
-
-# Set labels
-river_newcat_labels <- statements_combined %>%
-  filter(OLE_SYSTEM == 'NEW') %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 9) 
-
-# Make the plot
-river_newcat <- {
-  ggplot(data = statements_combined %>%
-           filter(OLE_SYSTEM == 'NEW'),
-         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
-             axis2 = NEW_OLE_CATEGORY_LABEL,
-             axis3 = STATEMENT_TYPE_LABEL)) +
-    river3_theme(labels = river_newcat_labels$STATEMENT_TYPE_LABEL, 
-                 axis1_label = 'Old OLE Category',
-                 axis2_label = 'New OLE Category',
-                 axis3_label = 'New Statement Type',
-                 size_label = 3)
-}
-
-# View the plot
-river_newcat
-
-# Save the plot
-ggsave(filename = 'Plots/river_newcat.png',
-       plot = river_newcat,
-       width = 20,
        height = 10)
 
 
@@ -750,6 +611,113 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
        width = 20,
        height = 10)
 
+#####################
+##### OLD PLOTS #####
+#####################
+# Ridge plot of sub category densities within OLE Priority IP ------------------
+# Set colors
+colors <- nmfs_palette('regional')(10)
+
+# Make the plot
+OLEPIP_subcat_ridge <- {
+  ggplot(data = statements_combined %>%
+           filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
+         aes(x = NUMBER_VIOLATIONS,
+             y = factor(STATEMENT_TYPE),
+             fill = STATEMENT_TYPE)) +
+    facet_grid(scales = 'free',
+               rows = vars(OLE_SYSTEM)) +
+    scale_x_continuous(breaks = c(0, 5, 10, 15, 20, 25, 50, 75, 100),
+                       limits = c(0, 100)) +
+    scale_y_discrete(expand = c(0.2, 0.2)) +
+    scale_color_manual(values = colors, guide = 'none') +
+    scale_fill_manual(values = colors, guide = 'none') +
+    geom_density_ridges(quantile_lines = T,
+                        quantiles = 2,
+                        color = 'black',
+                        alpha = 0.5) +
+    theme_bw() +
+    labs(x = 'Occurrences per Statement',
+         y = '')
+}
+
+# View the plot
+OLEPIP_subcat_ridge
+
+# Save the plot
+ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
+       plot = OLEPIP_subcat_ridge,
+       width = 16,
+       height = 8)
+
+
+# Alluvial plot of old data ----------------------------------------------------
+# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+
+# Set labels
+river_oldcat_labels <- statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD') %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 26)
+
+# Make the plot
+river_oldcat <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'OLD'),
+         aes(axis1 = STATEMENT_TYPE_LABEL,
+             axis2 = OLD_OLE_CATEGORY_LABEL)) +
+    river2_theme(labels = river_oldcat_labels,
+                 axis1_label = 'Old Statement Type',
+                 axis2_label = 'Old OLE Category',
+                 axis1_min_text_size = 9,
+                 axis1_text_size = 18)
+}
+
+# View the plot
+river_oldcat
+
+# Save the plot
+ggsave(filename = 'Plots/river_oldcat.png',
+       plot = river_oldcat,
+       width = 14,
+       height = 10)
+
+
+# Alluvial plot of old data, 2022 ----------------------------------------------
+# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+
+# Set labels
+river_oldcat_labels_22 <- statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD',
+         MANUAL_YEAR == 2022) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 22)
+
+# Make the plot
+river_oldcat_22 <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'OLD',
+                  MANUAL_YEAR == 2022),
+         aes(axis1 = STATEMENT_TYPE_LABEL,
+             axis2 = OLD_OLE_CATEGORY_LABEL)) +
+    river2_theme(labels = river_oldcat_labels_22,
+                 axis1_label = 'Old Statement Type',
+                 axis2_label = 'Old OLE Category',
+                 axis1_min_text_size = 9)
+}
+
+# View the plot
+river_oldcat_22
+
+# Save the plot
+ggsave(filename = 'Plots/river_oldcat_22.png',
+       plot = river_oldcat_22,
+       width = 14,
+       height = 10)
+
+
 # Alluvial plot of all data, only from ALL OTHER STATEMENTS --------------------
 # define statements to repel
 river_newcat_AOST_labels <- statements_combined %>%
@@ -782,10 +750,46 @@ ggsave(filename = 'Plots/river_all_other_statement_types.png',
        width = 20,
        height = 10)
 
+# Alluvial plot of new data ----------------------------------------------------
+# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
+# NEW OLE SYSTEM)
+
+# Set labels
+river_newcat_labels <- statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW') %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 9) 
+
+# Make the plot
+river_newcat <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'NEW'),
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = STATEMENT_TYPE_LABEL)) +
+    river3_theme(labels = river_newcat_labels$STATEMENT_TYPE_LABEL, 
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type',
+                 size_label = 3)
+}
+
+# View the plot
+river_newcat
+
+# Save the plot
+ggsave(filename = 'Plots/river_newcat.png',
+       plot = river_newcat,
+       width = 20,
+       height = 10)
+
+
 # Facet of rates of occurrences across OLE System/Year and subcat in SASHI -----
+### UNFINISHED ###
 ggplot(data = rate_by_subcat %>%
          filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL' |
-                OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'),
+                  OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'),
        aes(x = 1,
            y = 1,
            fill = INCIDENTS_PER_1000_DEPLOYED_DAYS)) +
@@ -803,7 +807,4 @@ ggplot(data = rate_by_subcat %>%
 
 
 
-
-
-# LEFTOVER NOTES ---------------------------------------------------------------
 
