@@ -5,10 +5,20 @@
 
 # TODO's:
   # Table of sub category values for OLE PIP only
-  # River plots for:
-    # OLD OLE CATEGORY -> NEW OLE CATEGORY -> STATEMENT TYPE (NEW DATA ONLY)
-      # after filter by New, pivot_wider by statement type
-    # STATEMENT TYPE -> OLD OLE CATEGORY (OLD DATA ONLY)
+  # Faceted plots for rates per 1000 DD and Assignment for ONLY OLEPIP & SAD
+    # Wrap 1: heat map of rates by category (vertical) and OLESYS/Year (hor.)
+    # Wrap 2: horizontal boxplot of these rates by OLESYS/Year
+  # Clean alluvial plots to be the following:
+    # OLD_OLE -> NEW_OLE -> STATEMENT_TYPE
+      # one filtered by new data [X]
+      # one filtered by new data & all other statement types [X]
+      # one filtered by only safety related new categories [X]
+      # one filtered by all other new categories [X]
+    # STATEMENT_TYPE -> OLD_OLE [X]
+  # Assign labels properly to these plots [X]
+  # Find color scheme that works (Sexual Harrassment == RED) []
+  # Order the 3rd axis by Frequency AND 1:1 matches []
+  # Filter out statement types that are under 3 total occurrences []
 
 ##################################
 ##### LOAD PACKAGES AND DATA #####
@@ -39,52 +49,170 @@ loadfonts()
 # see list of fonts
 # fonts()
 
-##############################################
-##### FORMATTING DATA FOR ALLUVIAL PLOTS #####
-##############################################
-# Formatting old data (filtered by OLE SYSTEM) ---------------------------------
-# define statement types to label outside strata boxes
-repel_labels <- rate_by_subcat %>%
-  filter(OLE_SYSTEM == 'OLD') %>%
-  select(STATEMENT_TYPE, TOTAL_STATEMENTS) %>%
-  group_by(STATEMENT_TYPE) %>%
-  summarise(across(TOTAL_STATEMENTS, sum)) %>%
-  filter(TOTAL_STATEMENTS < 20) %>%
-  select(STATEMENT_TYPE)
-repel_labels <- as.character(repel_labels$STATEMENT_TYPE)
+########################################
+##### CREATING FUNCTIONS FOR PLOTS #####
+########################################
+# this source explains how to add geom function calls to a ggplot within a fxn
+# https://rstats-tips.net/2021/07/11/adding-lines-or-other-geoms-to-a-ggplot-by-calling-a-custom-function/
 
+# Alluvial plots of THREE columns ----------------------------------------------
+river3_theme <- function(labels, axis3_text_size = 12, axis3_min_text_size = 10,
+                        size_label = 5, axis1_label, axis2_label, axis3_label) {
+  list(
+    geom_alluvium(aes(fill = STATEMENT_TYPE),
+                  show.legend = F,
+                  curve_type = 'sigmoid'),
+    geom_stratum(width = 0.4),
+    annotate(geom = 'text',
+             label = axis1_label,
+             x = 1,
+             y = -7,
+             size = 6,
+             family = 'Gill Sans MT'),
+    annotate(geom = 'text',
+             label = axis2_label,
+             x = 2,
+             y = -7,
+             size = 6,
+             family = 'Gill Sans MT'),
+    annotate(geom = 'text',
+             label = axis3_label,
+             x = 3,
+             y = -7,
+             size = 6,
+             family = 'Gill Sans MT'),
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.4,
+                  min.size = 7,
+                  size = 18,
+                  family = 'Gill Sans MT'),
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 2,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.4,
+                  size = 15,
+                  family = 'Gill Sans MT'),
+    geom_label_repel(aes(label = 
+                           ifelse(after_stat(x) == 3 &
+                                    as.character(after_stat(stratum)) %in%
+                                    labels,
+                                  as.character(after_stat(stratum)),
+                                  NA)),
+                     stat = 'stratum',
+                     size = size_label,
+                     direction = 'y',
+                     nudge_x = 0.5,
+                     force = 3,
+                     max.overlaps = 40,
+                     family = 'Gill Sans MT'),
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 3,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.4,
+                  size = axis3_text_size,
+                  min.size = axis3_min_text_size,
+                  family = 'Gill Sans MT'),
+    scale_x_discrete(expand = c(0.15, 0.05)),
+    theme_void(),
+    theme(panel.background = element_rect(fill = 'white'))
+  )
+}
+
+# Alluvial plots of TWO columns ------------------------------------------------
+river2_theme <- function(labels, axis1_text_size = 12, axis1_min_text_size = 10,
+                         size_label = 5, axis1_label, axis2_label) {
+  list(
+    geom_alluvium(aes(fill = STATEMENT_TYPE),
+                  show.legend = F,
+                  curve_type = 'sigmoid'),
+    geom_stratum(width = 0.5),
+    annotate(geom = 'text',
+             label = axis1_label,
+             x = 1,
+             y = 1430,
+             size = 6,
+             family = 'Gill Sans MT'),
+    annotate(geom = 'text',
+             label = axis2_label,
+             x = 2,
+             y = 1430,
+             size = 6,
+             family = 'Gill Sans MT'),
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.5,
+                  min.size = axis1_min_text_size,
+                  size = axis1_text_size,
+                  family = 'Gill Sans MT'),
+    geom_fit_text(aes(label = ifelse(after_stat(x) == 2,
+                                     as.character(after_stat(stratum)),
+                                     NA)),
+                  stat = 'stratum',
+                  width = 0.5,
+                  size = 18,
+                  min.size = 7,
+                  family = 'Gill Sans MT'),
+    geom_label_repel(aes(label = 
+                           ifelse(after_stat(x) == 1 &
+                                    as.character(after_stat(stratum)) %in%
+                                    labels$STATEMENT_TYPE_LABEL,
+                                  as.character(after_stat(stratum)),
+                                  NA)),
+                     stat = 'stratum',
+                     size = size_label,
+                     direction = 'y',
+                     nudge_x = -0.5,
+                     force = 3,
+                     max.overlaps = 30,
+                     family = 'Gill Sans MT'),
+    scale_x_discrete(expand = c(0.15, 0.05)),
+    theme_void(),
+    theme(panel.background = element_rect(fill = 'white'))
+  )
+}
+
+###########################################
+##### CREATING LABELS FOR RIVER PLOTS #####
+###########################################
+# Create labels for OLD_OLE_CATEGORY -------------------------------------------
 # break up strings of old ole categories to fit in boxes better
-# create a duplicate dataset
-sc_copy <- statements_combined
-
 # view strings to break into lines
-unique(sc_copy$OLD_OLE_CATEGORY)
+unique(statements_combined$OLD_OLE_CATEGORY)
 
+# create new column of labels that match OLD_OLE_CATEGORY
+statements_combined$OLD_OLE_CATEGORY_LABEL <- statements_combined$OLD_OLE_CATEGORY
 # break up strings
-sc_copy$OLD_OLE_CATEGORY[
-  which(sc_copy$OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES')
+statements_combined$OLD_OLE_CATEGORY_LABEL[
+  which(statements_combined$OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES')
 ] <- 'ALL OTHER\nSTATEMENT TYPES'
 
-sc_copy$OLD_OLE_CATEGORY[
-  which(sc_copy$OLD_OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS')
+statements_combined$OLD_OLE_CATEGORY_LABEL[
+  which(statements_combined$OLD_OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS')
 ] <- 'LIMITED ACCESS\nPROGRAMS'
 
-sc_copy$OLD_OLE_CATEGORY[
-  which(sc_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
+statements_combined$OLD_OLE_CATEGORY_LABEL[
+  which(statements_combined$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
 ] <- 'OLE PRIORITY:\nINTER-PERSONAL'
 
-sc_copy$OLD_OLE_CATEGORY[
-  which(sc_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
+statements_combined$OLD_OLE_CATEGORY_LABEL[
+  which(statements_combined$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
 ] <- 'OLE PRIORITY:\nSAFETY AND DUTIES'
 
-sc_copy$OLD_OLE_CATEGORY[
-  which(sc_copy$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
+statements_combined$OLD_OLE_CATEGORY_LABEL[
+  which(statements_combined$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
 ] <- 'PROTECTED RESOURCE &\nPROHIBITED SPECIES'
 
 
 # create ordered factors for OLD OLE CATEGORY
-sc_copy$OLD_OLE_CATEGORY <- 
-  factor(sc_copy$OLD_OLE_CATEGORY, 
+statements_combined$OLD_OLE_CATEGORY_LABEL <- 
+  factor(statements_combined$OLD_OLE_CATEGORY_LABEL, 
          levels = c('OLE PRIORITY:\nINTER-PERSONAL',
                     'OLE PRIORITY:\nSAFETY AND DUTIES',
                     'COAST GUARD',
@@ -92,113 +220,97 @@ sc_copy$OLD_OLE_CATEGORY <-
                     'PROTECTED RESOURCE &\nPROHIBITED SPECIES',
                     'ALL OTHER\nSTATEMENT TYPES'))
 
-
-# Formatting new data (filtered by OLE SYSTEM) ---------------------------------
-# break up strings (UNCOMMENT IF NOT MAKING ALLUVIAL PLOT OF OLD DATA)
-# sc_copy$OLD_OLE_CATEGORY[
-#   which(sc_copy$OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES')
-# ] <- 'ALL OTHER\nSTATEMENT TYPES'
-# 
-# sc_copy$OLD_OLE_CATEGORY[
-#   which(sc_copy$OLD_OLE_CATEGORY == 'LIMITED ACCESS PROGRAMS')
-# ] <- 'LIMITED ACCESS\nPROGRAMS'
-# 
-# sc_copy$OLD_OLE_CATEGORY[
-#   which(sc_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
-# ] <- 'OLE PRIORITY:\nINTER-PERSONAL'
-# 
-# sc_copy$OLD_OLE_CATEGORY[
-#   which(sc_copy$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
-# ] <- 'OLE PRIORITY:\nSAFETY AND DUTIES'
-# 
-# sc_copy$OLD_OLE_CATEGORY[
-#   which(sc_copy$OLD_OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES')
-# ] <- 'PROTECTED RESOURCE &\nPROHIBITED SPECIES'
-
+# Create labels for NEW_OLE_CATEGORY -------------------------------------------
 # define which strings to break into lines
 # NEW OLE CATEGORY
-unique(sc_copy$NEW_OLE_CATEGORY)
+unique(statements_combined$NEW_OLE_CATEGORY)
 
-sc_copy$NEW_OLE_CATEGORY[
-  which(sc_copy$NEW_OLE_CATEGORY == 'GEAR/EQUIPMENT REQUIREMENTS')
+# create new column of labels that match NEW_OLE_CATEGORY
+statements_combined$NEW_OLE_CATEGORY_LABEL <- statements_combined$NEW_OLE_CATEGORY
+
+# break up the strings
+statements_combined$NEW_OLE_CATEGORY_LABEL[
+  which(statements_combined$NEW_OLE_CATEGORY == 'GEAR/EQUIPMENT REQUIREMENTS')
 ] <- 'GEAR/EQUIPMENT\nREQUIREMENTS'
 
-sc_copy$NEW_OLE_CATEGORY[
-  which(sc_copy$NEW_OLE_CATEGORY == 'OBSERVER SAFETY AND WORK ENVIRONMENT')
+statements_combined$NEW_OLE_CATEGORY_LABEL[
+  which(statements_combined$NEW_OLE_CATEGORY == 'OBSERVER SAFETY AND WORK ENVIRONMENT')
 ] <- 'OBSERVER SAFETY\nAND\nWORK ENVIRONMENT'
 
-sc_copy$NEW_OLE_CATEGORY[
+statements_combined$NEW_OLE_CATEGORY_LABEL[
   which(
-    sc_copy$NEW_OLE_CATEGORY == 'PERMITS/DOCUMENTS/RECORD KEEPING AND REPORTING'
+    statements_combined$NEW_OLE_CATEGORY == 'PERMITS/DOCUMENTS/RECORD KEEPING AND REPORTING'
         )
 ] <- 'PERMITS, DOCUMENTS,\nRECORD KEEPING\nAND REPORTING'
 
-sc_copy$NEW_OLE_CATEGORY[
+statements_combined$NEW_OLE_CATEGORY_LABEL[
   which(
-    sc_copy$NEW_OLE_CATEGORY == 'PROHIBITED SPECIES/MARINE MAMMALS/SEABIRDS')
+    statements_combined$NEW_OLE_CATEGORY == 'PROHIBITED SPECIES/MARINE MAMMALS/SEABIRDS')
 ] <- 'PROHIBITED SPECIES,\nMARINE MAMMALS,\nSEABIRDS'
 
-sc_copy$NEW_OLE_CATEGORY[
-  which(sc_copy$NEW_OLE_CATEGORY == 'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION')
+statements_combined$NEW_OLE_CATEGORY_LABEL[
+  which(statements_combined$NEW_OLE_CATEGORY == 'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION')
 ] <- 'SAFETY-USCG-FAIL TO CONDUCT DRILLS\nAND/OR SAFETY ORIENTATION'
 
-sc_copy$NEW_OLE_CATEGORY[
-  which(sc_copy$NEW_OLE_CATEGORY == 'SAFETY-USCG-MARINE CASUALTY')
+statements_combined$NEW_OLE_CATEGORY_LABEL[
+  which(statements_combined$NEW_OLE_CATEGORY == 'SAFETY-USCG-MARINE CASUALTY')
 ] <- 'SAFETY-USCG:\nMARINE CASUALTY'
 
-# STATEMENT TYPES
-sort(unique(sc_copy$STATEMENT_TYPE[which(sc_copy$OLE_SYSTEM == 'NEW')]))
+# Create labels for STATEMENT_TYPES --------------------------------------------
+# create column of labels that match STATEMENT TYPES (first: NEW system)
+statements_combined$STATEMENT_TYPE_LABEL <- statements_combined$STATEMENT_TYPE
+sort(unique(statements_combined$STATEMENT_TYPE[which(statements_combined$OLE_SYSTEM == 'NEW')]))
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS')
 ] <- 'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'FOOD AND ACCOMMODATIONS')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'FOOD AND ACCOMMODATIONS')
 ] <- 'FOOD AND\nACCOMMODATIONS'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'FORCED TO PERFORM CREW DUTIES')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'FORCED TO PERFORM CREW DUTIES')
 ] <- 'FORCED TO\nPERFORM CREW DUTIES'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'ADMINISTRATIVE RESPONSIBILITIES')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'ADMINISTRATIVE RESPONSIBILITIES')
 ] <- 'ADMINISTRATIVE\nRESPONSIBILITIES'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'BELT AND FLOW OPERATIONS')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'BELT AND FLOW OPERATIONS')
 ] <- 'BELT AND\nFLOW OPERATIONS'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'DISCHARGE OF GARBAGE OR PLASTIC, OR LOSS OF FISHING GEAR')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'DISCHARGE OF GARBAGE OR PLASTIC, OR LOSS OF FISHING GEAR')
 ] <- 'DISCHARGE OF GARBAGE\nOR PLASTIC, OR LOSS\nOF FISHING GEAR'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'MARINE CASUALTY')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'MARINE CASUALTY')
 ] <- 'MARINE\nCASUALTY'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'PROHIBITED SPECIES MISHANDLING')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'PROHIBITED SPECIES MISHANDLING')
 ] <- 'PROHIBITED SPECIES\nMISHANDLING'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'PROHIBITED SPECIES RETENTION')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'PROHIBITED SPECIES RETENTION')
 ] <- 'PROHIBITED SPECIES\nRETENTION'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'GENERAL REPORTING REQUIREMENTS')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'GENERAL REPORTING REQUIREMENTS')
 ] <- 'GENERAL REPORTING\nREQUIREMENTS'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'INTIMIDATION/BRIBERY/COERCION')
-] <- 'INTIMIDATION,\nBRIBERY,\nCOERCION'
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'INTIMIDATION/BRIBERY/COERCION')
+] <- 'INTIMIDATION, BRIBERY,\nCOERCION'
 
-sc_copy$STATEMENT_TYPE[
-  which(sc_copy$STATEMENT_TYPE == 'MONITORING THE FLOW OF FISH')
+statements_combined$STATEMENT_TYPE_LABEL[
+  which(statements_combined$STATEMENT_TYPE == 'MONITORING THE FLOW OF FISH')
 ] <- 'MONITORING THE\nFLOW OF FISH'
 
 # define statement types to label outside strata boxes
-repel_labels_newcat <- sc_copy %>%
+repel_labels_newcat <- statements_combined %>%
   filter(OLE_SYSTEM == 'NEW') %>%
   select(STATEMENT_TYPE)
 
@@ -218,8 +330,8 @@ repel_labels_newcat <- repel_labels_newcat %>%
 
 
 # create ordered factors for NEW OLE CATEGORY
-sc_copy$NEW_OLE_CATEGORY <- 
-  factor(sc_copy$NEW_OLE_CATEGORY,
+statements_combined$NEW_OLE_CATEGORY_LABEL <- 
+  factor(statements_combined$NEW_OLE_CATEGORY_LABEL,
          levels = 
            c('OBSERVER SAFETY\nAND\nWORK ENVIRONMENT',
              'INTERFERENCE WITH DUTIES',
@@ -405,65 +517,23 @@ ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
 # Alluvial plot of old data ----------------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
 
-# Set colors
-colors <- nmfs_palette('regional')(12)
-
+# Set labels
+river_oldcat_labels <- statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD') %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 20) 
 
 # Make the plot
 river_oldcat <- {
-  
-  ggplot(data = sc_copy %>%
+  ggplot(data = statements_combined %>%
            filter(OLE_SYSTEM == 'OLD'),
-         aes(axis1 = STATEMENT_TYPE,
-             axis2 = OLD_OLE_CATEGORY)) +
-    geom_alluvium(aes(fill = OLD_OLE_CATEGORY),
-                  show.legend = F,
-                  curve_type = 'sigmoid') +
-    geom_stratum() +
-    annotate(geom = 'text',
-             label = 'Old Statement Type',
-             x = 1,
-             y = 1415,
-             size = 7,
-             family = 'Gill Sans MT') +
-    annotate(geom = 'text',
-             label = 'Old OLE Category',
-             x = 2,
-             y = 1415,
-             size = 7,
-             family = 'Gill Sans MT') +
-    geom_text_repel(aes(label = 
-                          ifelse(after_stat(x) == 1 & 
-                                   as.character(after_stat(stratum)) %in% 
-                                   repel_labels == T, 
-                                 as.character(after_stat(stratum)), 
-                                 NA)),
-                    stat = 'stratum', 
-                    size = 5.5,
-                    direction = 'y',
-                    nudge_x = -0.5,
-                    force = 4,
-                    family = 'Gill Sans MT') +
-    geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
-                                     as.character(after_stat(stratum)),
-                                     NA)),
-                  stat = 'stratum',
-                  width = 0.33,
-                  min.size = 7,
-                  family = 'Gill Sans MT') +
-    geom_fit_text(aes(label = ifelse(after_stat(x) == 2,
-                                     as.character(after_stat(stratum)),
-                                     NA)),
-                  stat = 'stratum',
-                  width = 0.5,
-                  size = 15,
-                  family = 'Gill Sans MT') +
-    scale_x_discrete(limits = c('Statement Type', 'Old OLE Category'),
-                     expand = c(0.15, 0.05)) +
-    scale_fill_manual(values = colors[c(1, 3, 5, 6, 7, 9)]) +
-    theme_void() +
-    theme(panel.background = element_rect(fill = 'white'))
-  
+         aes(axis1 = STATEMENT_TYPE_LABEL,
+             axis2 = OLD_OLE_CATEGORY_LABEL)) +
+    river2_theme(labels = river_oldcat_labels,
+                 axis1_label = 'Old Statement Type',
+                 axis2_label = 'Old OLE Category',
+                 axis1_min_text_size = 4)
 }
 
 # View the plot
@@ -476,88 +546,29 @@ ggsave(filename = 'Plots/river_oldcat.png',
        height = 10)
 
 
-
-
-
-
 # Alluvial plot of new data ----------------------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
   # NEW OLE SYSTEM)
 
-# Set colors
-colors <- nmfs_palette('regional')(12)
+# Set labels
+river_newcat_labels <- statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW') %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 9) 
 
 # Make the plot
 river_newcat <- {
-  
-  ggplot(data = sc_copy %>%
+  ggplot(data = statements_combined %>%
            filter(OLE_SYSTEM == 'NEW'),
-         aes(axis1 = OLD_OLE_CATEGORY,
-             axis2 = NEW_OLE_CATEGORY,
-             axis3 = STATEMENT_TYPE)) +
-    geom_alluvium(aes(fill = OLD_OLE_CATEGORY),
-                  show.legend = F,
-                  curve_type = 'sigmoid') +
-    geom_stratum() +
-    annotate(geom = 'text',
-             label = 'Old OLE Category',
-             x = 1,
-             y = -7, # 430 for the top of plot
-             size = 6,
-             family = 'Gill Sans MT') +
-    annotate(geom = 'text',
-             label = 'New OLE Category',
-             x = 2,
-             y = -7, # 430 for the top of plot
-             size = 6,
-             family = 'Gill Sans MT') +
-    annotate(geom = 'text',
-             label = 'New Statement Type',
-             x = 3,
-             y = -7, # 430 for the top of plot
-             size = 6,
-             family = 'Gill Sans MT') +
-    geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
-                                     as.character(after_stat(stratum)),
-                                     NA)),
-                  stat = 'stratum',
-                  width = 0.33,
-                  min.size = 7,
-                  family = 'Gill Sans MT',
-                  size = 18) +
-    geom_fit_text(aes(label = ifelse(after_stat(x) == 2,
-                                     as.character(after_stat(stratum)),
-                                     NA)),
-                  stat = 'stratum',
-                  width = 0.3,
-                  size = 15,
-                  family = 'Gill Sans MT') +
-    geom_text_repel(aes(label = 
-                          ifelse(after_stat(x) == 3 &
-                                   as.character(after_stat(stratum)) %in%
-                                   repel_labels_newcat$STATEMENT_TYPE, 
-                                 as.character(after_stat(stratum)), 
-                                 NA)),
-                    stat = 'stratum', 
-                    size = 4,
-                    direction = 'y',
-                    nudge_x = 0.5,
-                    force = 3,
-                    family = 'Gill Sans MT') +
-    geom_fit_text(aes(label = ifelse(after_stat(x) == 3,
-                                     as.character(after_stat(stratum)),
-                                     NA)),
-                  stat = 'stratum',
-                  width = 0.5,
-                  size = 12,
-                  min.size = 10,
-                  family = 'Gill Sans MT') +
-    scale_x_discrete(limits = c('OLD OLE CATEGORY', 'STATEMENT TYPE'),
-                     expand = c(0.15, 0.05)) +
-    scale_fill_manual(values = colors[c(1, 3, 5, 6, 7, 9)]) +
-    theme_void() +
-    theme(panel.background = element_rect(fill = 'white'))
-  
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = STATEMENT_TYPE_LABEL)) +
+    river3_theme(labels = river_newcat_labels$STATEMENT_TYPE_LABEL, 
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type',
+                 size_label = 3)
 }
 
 # View the plot
@@ -570,6 +581,157 @@ ggsave(filename = 'Plots/river_newcat.png',
        height = 10)
 
 
+# Alluvial plot of new data, by safety -----------------------------------------
+# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
+# NEW OLE SYSTEM)
+
+# Set labels
+river_newcat_safety_labels <- statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW',
+         NEW_OLE_CATEGORY %in%
+           c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG-MARINE CASUALTY',
+             'SAFETY-USCG-EQUIPMENT',
+             'INTERFERENCE WITH DUTIES')) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 6) 
+
+# Make the plot
+river_newcat_safety <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'NEW',
+                  NEW_OLE_CATEGORY %in% 
+                    c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+                      'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+                      'SAFETY-USCG-MARINE CASUALTY',
+                      'SAFETY-USCG-EQUIPMENT',
+                      'INTERFERENCE WITH DUTIES')),
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = STATEMENT_TYPE_LABEL)) +
+    river3_theme(labels = river_newcat_safety_labels$STATEMENT_TYPE_LABEL,
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type',
+                 size_label = 5,
+                 axis3_text_size = 18,
+                 axis3_min_text_size = 10)
+}
+
+# View the plot
+river_newcat_safety
+
+# Save the plot
+ggsave(filename = 'Plots/river_newcat_safety.png',
+       plot = river_newcat_safety,
+       width = 20,
+       height = 10)
 
 
+# Alluvial plot of new data, by nonsafety --------------------------------------
+# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
+# NEW OLE SYSTEM)
+
+# Set labels
+river_newcat_nonsafety_labels <- statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW',
+         !NEW_OLE_CATEGORY %in%
+           c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG-MARINE CASUALTY',
+             'SAFETY-USCG-EQUIPMENT',
+             'INTERFERENCE WITH DUTIES')) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 6)
+
+# Make the plot
+river_newcat_nonsafety <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'NEW',
+                  !NEW_OLE_CATEGORY %in% 
+                    c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+                      'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+                      'SAFETY-USCG-MARINE CASUALTY',
+                      'SAFETY-USCG-EQUIPMENT',
+                      'INTERFERENCE WITH DUTIES')),
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = STATEMENT_TYPE_LABEL)) +
+    river3_theme(labels = river_newcat_nonsafety_labels$STATEMENT_TYPE_LABEL,
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type',
+                 size_label = 5,
+                 axis3_text_size = 18,
+                 axis3_min_text_size = 10)
+}
+
+# View the plot
+river_newcat_nonsafety
+
+# Save the plot
+ggsave(filename = 'Plots/river_newcat_nonsafety.png',
+       plot = river_newcat_nonsafety,
+       width = 20,
+       height = 10)
+
+# Alluvial plot of all data, only from ALL OTHER STATEMENTS --------------------
+# define statements to repel
+river_newcat_AOST_labels <- statements_combined %>%
+  filter(OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES',
+         OLE_SYSTEM == 'NEW') %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 6)
+
+# Make the plot
+river_all_other_statements <- {
+  ggplot(data = statements_combined %>%
+           filter(OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES',
+                  OLE_SYSTEM == 'NEW'),
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = STATEMENT_TYPE_LABEL)) +
+    river3_theme(labels = river_newcat_AOST_labels$STATEMENT_TYPE_LABEL,
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type')
+}
+
+# View the plot
+river_all_other_statements
+
+# Save the plot
+ggsave(filename = 'Plots/river_all_other_statement_types.png',
+       plot = river_all_other_statements,
+       width = 20,
+       height = 10)
+
+# Facet of rates of occurrences across OLE System/Year and subcat in SASHI -----
+ggplot(data = rate_by_subcat %>%
+         filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL' |
+                OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'),
+       aes(x = 1,
+           y = 1,
+           fill = INCIDENTS_PER_1000_DEPLOYED_DAYS)) +
+  geom_tile() +
+  facet_nested(OLE_SYSTEM + CALENDAR_YEAR ~ OLD_OLE_CATEGORY + STATEMENT_TYPE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# LEFTOVER NOTES ---------------------------------------------------------------
 
