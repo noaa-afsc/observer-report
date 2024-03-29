@@ -346,18 +346,24 @@ In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark="
 The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
+#' FIXME - *Make this annotation more clear what it's doing*
 # Perform a check on the random number process in ODDS (flag for whether a trip was selected due to random selection or not)
 # Trips outside of trip-selection do not have random numbers in odds.odds_trip_stratas (e.g., voluntary 100%)
 # There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
 # This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
 # Use output table to assess any flagged trips and make corrections as necessary
-
-#' Convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct  *Maybe no longer needed?*
-odds.dat <- mutate(odds.dat, PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE))
-
-odds.dat <- mutate(odds.dat, random.assign = NA) %>% 
-            mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED), 0, random.assign)) %>% 
-            mutate(random.assign = ifelse(!is.na(RANDOM_NUMBER_USED) & RANDOM_NUMBER_USED < (ODDS_SELECTION_PCT / 100), 1, random.assign)) 
+# Also convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct
+# FIXME   There was a trip in 2023 with RANDOM_NUMBER_USED == 1 with ODDS_SELECTION_PCT == 100 that appears to have been 
+# monitored in spite of technically failing the RN check. Added | (ODDS_SELECTION_PCT == 100) to handle this until ODDS
+# logic can remedy this. 2024-Mar-29 Geoff Mayhew sent e-mail to Andy Kingham to address this issue.
+odds.dat <- odds.dat %>% mutate(
+  PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE),
+  random.assign = case_when(
+    is.na(RANDOM_NUMBER_USED) ~ NA,
+    !is.na(RANDOM_NUMBER_USED) & (RANDOM_NUMBER_USED < ODDS_SELECTION_PCT / 100) | (ODDS_SELECTION_PCT == 100) ~ 1,
+    !is.na(RANDOM_NUMBER_USED) & (RANDOM_NUMBER_USED >= ODDS_SELECTION_PCT / 100) ~ 0
+  )
+)
 
 # Are assignments being performed as programmed?
 # ND = Not observed (Provider Defaulted)
@@ -380,6 +386,11 @@ odds.dat <- mutate(odds.dat, random.test = 0) %>%
             mutate(random.test = ifelse(TRIP_STATUS_CODE == "CC", NA, random.test)) %>% # CC = 'cascade cancel'
             mutate(random.test = ifelse(is.na(RANDOM_NUMBER_USED), NA, random.test))
 
+if(F){
+  odds.dat %>% group_by(random.test, STRATA_CODE, TRIP_MONITOR_CODE)
+  
+  
+}
 #Perform the check
 odds.dat <- mutate(odds.dat, random.test = random.test - random.assign) %>% 
             mutate(random.test.result = ifelse(random.test == 0, "PASS", "FAIL"))
