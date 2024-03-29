@@ -54,8 +54,8 @@ spatiotemp_data_prep <- function(valhalla){
   pc_effort_dt <- unique(
     pc_effort_dt[, .(
       PERMIT, TARGET = TRIP_TARGET_CODE, AREA = as.integer(REPORTING_AREA_CODE), AGENCY_GEAR_CODE, 
-      GEAR = ifelse(AGENCY_GEAR_CODE %in% c("PTR", "NPT"), "TRW", AGENCY_GEAR_CODE), STRATA,
-      TRIP_TARGET_DATE, LANDING_DATE, ADFG_STAT_AREA_CODE = as.integer(ADFG_STAT_AREA_CODE), wd_TRIP_ID), 
+      GEAR = ifelse(AGENCY_GEAR_CODE %in% c("PTR", "NPT"), "TRW", AGENCY_GEAR_CODE), STRATA, OBSERVED_FLAG,
+      TRIP_TARGET_DATE, LANDING_DATE, ADFG_STAT_AREA_CODE = as.integer(ADFG_STAT_AREA_CODE), wd_TRIP_ID),
       keyby = .(ADP = as.integer(ADP), TRIP_ID)])
   
   # Merge in FMP classifications
@@ -84,7 +84,7 @@ spatiotemp_data_prep <- function(valhalla){
   # Set the order of columns
   setcolorder(pc_effort_dt, neworder = c(
     "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", "AREA", 
-    "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID"
+    "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG"
   ))
   setorder(pc_effort_dt, ADP, POOL, PERMIT, TRIP_TARGET_DATE)
   
@@ -98,6 +98,7 @@ spatiotemp_data_prep <- function(valhalla){
   # Output the results
   pc_effort_dt
 }
+
 
 #======================================================================================================================#
 # Space/Time Box Definition  -------------------------------------------------------------------------------------------
