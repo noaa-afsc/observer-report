@@ -14,12 +14,13 @@
       # one filtered by new data & all other statement types [X]
       # one filtered by only safety related new categories [X]
       # one filtered by all other new categories [X]
-    # STATEMENT_TYPE -> OLD_OLE 2022 []
-    # STATEMENT_TYPE -> OLD_OLE 2023 []
+    # STATEMENT_TYPE -> OLD_OLE 2022 [X]
+    # STATEMENT_TYPE -> OLD_OLE 2023 [X]
   # Assign labels properly to these plots [X]
   # Find color scheme that works (Sexual Harrassment == RED) []
   # Order the 3rd axis by Frequency AND 1:1 matches []
   # Filter out statement types that are under 3 total occurrences []
+  # Refacet raincloud plots to Old/New with Year on bottom []
 
 ##################################
 ##### LOAD PACKAGES AND DATA #####
@@ -135,13 +136,13 @@ river2_theme <- function(labels, axis1_text_size = 12, axis1_min_text_size = 10,
     annotate(geom = 'text',
              label = axis1_label,
              x = 1,
-             y = 1430,
+             y = -15,
              size = 6,
              family = 'Gill Sans MT'),
     annotate(geom = 'text',
              label = axis2_label,
              x = 2,
-             y = 1430,
+             y = -15,
              size = 6,
              family = 'Gill Sans MT'),
     geom_fit_text(aes(label = ifelse(after_stat(x) == 1,
@@ -515,7 +516,7 @@ ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
        height = 8)
 
 
-# Alluvial plot of old data ----------------------------------------------------
+# Alluvial plot of old data, 2022 ----------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
 
 # Set labels
@@ -523,7 +524,7 @@ river_oldcat_labels <- statements_combined %>%
   filter(OLE_SYSTEM == 'OLD') %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
-  filter(FREQ < 20) 
+  filter(FREQ < 26)
 
 # Make the plot
 river_oldcat <- {
@@ -534,7 +535,8 @@ river_oldcat <- {
     river2_theme(labels = river_oldcat_labels,
                  axis1_label = 'Old Statement Type',
                  axis2_label = 'Old OLE Category',
-                 axis1_min_text_size = 4)
+                 axis1_min_text_size = 9,
+                 axis1_text_size = 18)
 }
 
 # View the plot
@@ -543,6 +545,75 @@ river_oldcat
 # Save the plot
 ggsave(filename = 'Plots/river_oldcat.png',
        plot = river_oldcat,
+       width = 14,
+       height = 10)
+
+
+# Alluvial plot of old data, 2022 ----------------------------------------------
+# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+
+# Set labels
+river_oldcat_labels_22 <- statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD',
+         MANUAL_YEAR == 2022) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 22)
+
+# Make the plot
+river_oldcat_22 <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'OLD',
+                  MANUAL_YEAR == 2022),
+         aes(axis1 = STATEMENT_TYPE_LABEL,
+             axis2 = OLD_OLE_CATEGORY_LABEL)) +
+    river2_theme(labels = river_oldcat_labels_22,
+                 axis1_label = 'Old Statement Type',
+                 axis2_label = 'Old OLE Category',
+                 axis1_min_text_size = 9)
+}
+
+# View the plot
+river_oldcat_22
+
+# Save the plot
+ggsave(filename = 'Plots/river_oldcat_22.png',
+       plot = river_oldcat_22,
+       width = 14,
+       height = 10)
+
+
+# Alluvial plot of old data, 2023 ----------------------------------------------
+# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+
+# Set labels
+river_oldcat_labels_23 <- statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD',
+         MANUAL_YEAR == 2023) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 10)
+
+# Make the plot
+river_oldcat_23 <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'OLD',
+                  MANUAL_YEAR == 2023),
+         aes(axis1 = STATEMENT_TYPE_LABEL,
+             axis2 = OLD_OLE_CATEGORY_LABEL)) +
+    river2_theme(labels = river_oldcat_labels_23,
+                 axis1_label = 'Old Statement Type',
+                 axis2_label = 'Old OLE Category',
+                 axis1_min_text_size = 9,
+                 axis1_text_size = 18)
+}
+
+# View the plot
+river_oldcat_23
+
+# Save the plot
+ggsave(filename = 'Plots/river_oldcat_23.png',
+       plot = river_oldcat_23,
        width = 14,
        height = 10)
 
