@@ -9,6 +9,7 @@
   # Order the 3rd axis by 1:1 matches []
   # Filter out statement types in river plots that are under 3 total occurrences []
   # Refacet raincloud plots to Old/New with Year on bottom []
+    # Investigate in data where higher Inc/Statements are from []
 
 ##################################
 ##### LOAD PACKAGES AND DATA #####
@@ -347,17 +348,18 @@ colors <- nmfs_palette('regional')(6)
 OPS_number_rainplot <- {
   
   ggplot(data = statements_combined,
-         aes(x = factor(OLE_SYSTEM,
-                        levels = c('OLD', 'NEW')),
-             y = (NUMBER_VIOLATIONS),
+         aes(x = factor(FIRST_VIOL_YEAR,
+                        levels = c(2022, 2023)),
+             y = NUMBER_VIOLATIONS,
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'OLE System',
+    labs(x = 'Year of First Violation',
          y = 'Occurrences per Statement',
          title = 'All Categories') +
-    facet_grid(. ~ FIRST_VIOL_YEAR, 
+    facet_grid(. ~ factor(OLE_SYSTEM,
+                          levels = c('OLD', 'NEW')), 
                scales = 'free',) +
-    force_panelsizes(cols = c(0.3, 0.5),) +
+    force_panelsizes(cols = c(0.5, 0.3),) +
     stat_halfeye(adjust = .5,
                  width = .3,
                  .width = 0,
@@ -377,9 +379,9 @@ OPS_number_rainplot <- {
                     size = 3,
                     pch = 1,
                     transformation = position_jitter(height = 0)) +
-    scale_fill_manual(values = colors[c(2, 1, 3)],
+    scale_fill_manual(values = colors[c(2, 3, 1)],
                       guide = 'none') +
-    scale_color_manual(values = colors[c(2, 1, 3)],
+    scale_color_manual(values = colors[c(2, 3, 1)],
                        guide = 'none') +
     scale_y_log10() +
     theme_bw() +
@@ -411,17 +413,18 @@ OLEPIP_number_rainplot <- {
   
   ggplot(data = statements_combined %>%
            filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
-         aes(x = factor(OLE_SYSTEM,
-                        levels = c('OLD', 'NEW')),
+         aes(x = factor(FIRST_VIOL_YEAR,
+                        levels = c(2022, 2023)),
              y = NUMBER_VIOLATIONS,
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'OLE System',
+    labs(x = 'Year of First Violation',
          y = 'Occurrences per Statement',
          title = 'OLE Priority: Inter-Personal') +
-    facet_grid(. ~ FIRST_VIOL_YEAR, 
+    facet_grid(. ~ factor(OLE_SYSTEM,
+                          levels = c('OLD', 'NEW')), 
                scales = 'free',) +
-    force_panelsizes(cols = c(0.3, 0.5),) +
+    force_panelsizes(cols = c(0.5, 0.3),) +
     stat_halfeye(adjust = .5,
                  width = .3,
                  .width = 0,
@@ -441,9 +444,9 @@ OLEPIP_number_rainplot <- {
                     size = 3,
                     pch = 1,
                     transformation = position_jitter(height = 0)) +
-    scale_fill_manual(values = colors[c(2, 1, 3)],
+    scale_fill_manual(values = colors[c(2, 3, 1)],
                       guide = 'none') +
-    scale_color_manual(values = colors[c(2, 1, 3)],
+    scale_color_manual(values = colors[c(2, 3, 1)],
                        guide = 'none') +
     scale_y_log10(breaks = c(1:5, 10, 100),
                   limits = c(1, 100)) +
@@ -796,3 +799,52 @@ ggplot(data = rate_by_subcat %>%
 
 
 
+
+# Rain cloud plot of violations, facet by system -------------------------------
+OPS_number_rainplot_system <- {
+  
+  ggplot(data = statements_combined,
+         aes(x = factor(OLE_SYSTEM,
+                        levels = c('OLD', 'NEW')),
+             y = (NUMBER_VIOLATIONS),
+             fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
+             color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
+    labs(x = 'OLE System',
+         y = 'Occurrences per Statement',
+         title = 'All Categories') +
+    facet_grid(. ~ FIRST_VIOL_YEAR, 
+               scales = 'free',) +
+    force_panelsizes(cols = c(0.3, 0.5),) +
+    stat_halfeye(adjust = .5,
+                 width = .3,
+                 .width = 0,
+                 justification = -0.6,
+                 point_color = NA,
+                 show.legend = F) +
+    geom_boxplot(width = 0.2, 
+                 size = 0.9,
+                 color = 'black',
+                 show.legend = F,
+                 alpha = 0.6,
+                 outliers = F) +
+    geom_half_point(side = 'l', 
+                    range_scale = .3, 
+                    alpha = .25, 
+                    show.legend = F,
+                    size = 3,
+                    pch = 1,
+                    transformation = position_jitter(height = 0)) +
+    scale_fill_manual(values = colors[c(2, 1, 3)],
+                      guide = 'none') +
+    scale_color_manual(values = colors[c(2, 1, 3)],
+                       guide = 'none') +
+    scale_y_log10() +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = 'black'),
+          strip.text = element_text(color = 'white'),
+          plot.title = element_text(hjust = 0.5),
+          text = element_text(size = 20, family = 'Gill Sans MT'))
+  
+} 
