@@ -4,11 +4,11 @@
 #          (206) 526-4222
 
 # TODO's:
-  # Assign labels properly to these plots []
+  # Assign labels properly to river plots []
   # Find color scheme that works (Sexual Harrassment  + Assault == strong color) []
   # Order the 3rd axis by 1:1 matches []
   # Filter out statement types in river plots that are under 3 total occurrences []
-  # Refacet raincloud plots to Old/New with Year on bottom []
+  # Refacet raincloud plots to Old/New with Year on bottom [X]
     # Investigate in data where higher Inc/Statements are from []
 
 ##################################
@@ -53,7 +53,7 @@ river3_theme <- function(labels, axis3_text_size = 12, axis3_min_text_size = 10,
     geom_alluvium(aes(fill = STATEMENT_TYPE),
                   show.legend = F,
                   curve_type = 'sigmoid'),
-    geom_stratum(width = 0.4),
+    geom_stratum(width = 0.5),
     annotate(geom = 'text',
              label = axis1_label,
              x = 1,
@@ -76,7 +76,7 @@ river3_theme <- function(labels, axis3_text_size = 12, axis3_min_text_size = 10,
                                      as.character(after_stat(stratum)),
                                      NA)),
                   stat = 'stratum',
-                  width = 0.4,
+                  width = 0.5,
                   min.size = 7,
                   size = 18,
                   family = 'Gill Sans MT'),
@@ -84,7 +84,7 @@ river3_theme <- function(labels, axis3_text_size = 12, axis3_min_text_size = 10,
                                      as.character(after_stat(stratum)),
                                      NA)),
                   stat = 'stratum',
-                  width = 0.4,
+                  width = 0.5,
                   size = 15,
                   family = 'Gill Sans MT'),
     geom_label_repel(aes(label = 
@@ -104,7 +104,7 @@ river3_theme <- function(labels, axis3_text_size = 12, axis3_min_text_size = 10,
                                      as.character(after_stat(stratum)),
                                      NA)),
                   stat = 'stratum',
-                  width = 0.4,
+                  width = 0.5,
                   size = axis3_text_size,
                   min.size = axis3_min_text_size,
                   family = 'Gill Sans MT'),
@@ -534,14 +534,27 @@ river_newcat_safety <- {
                       'INTERFERENCE WITH DUTIES')),
          aes(axis1 = OLD_OLE_CATEGORY_LABEL,
              axis2 = NEW_OLE_CATEGORY_LABEL,
-             axis3 = STATEMENT_TYPE_LABEL)) +
+             axis3 = factor(STATEMENT_TYPE_LABEL,
+                            levels = c('ASSAULT', 'FOOD AND\nACCOMMODATIONS',
+                                       'FORCED TO\nPERFORM CREW DUTIES',
+                                       'HOSTILE WORK ENVIRONMENT', 'IMPEDIMENT',
+                                       'INTIMIDATION, BRIBERY,\nCOERCION',
+                                       'SAFETY', 'SEXUAL HARASSMENT', 
+                                       'ACCESS', 
+                                       'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS',
+                                       'NOTIFICATION', 'REASONABLE ASSISTANCE', 
+                                       'SAMPLING INTERFERENCE', 'EPIRB', 
+                                       'GENERAL SAFETY EQUIPMENT', 
+                                       'SURVIVAL CRAFT', 
+                                       'FAILURE TO CONDUCT DRILLS',
+                                       'MARINE\nCASUALTY')))) +
     river3_theme(labels = river_newcat_safety_labels$STATEMENT_TYPE_LABEL,
                  axis1_label = 'Old OLE Category',
                  axis2_label = 'New OLE Category',
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 10)
+                 axis3_min_text_size = 7)
 }
 
 # View the plot
@@ -569,7 +582,7 @@ river_newcat_nonsafety_labels <- statements_combined %>%
              'INTERFERENCE WITH DUTIES')) %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
-  filter(FREQ < 6)
+  filter(FREQ < 9)
 
 # Make the plot
 river_newcat_nonsafety <- {
@@ -583,14 +596,35 @@ river_newcat_nonsafety <- {
                       'INTERFERENCE WITH DUTIES')),
          aes(axis1 = OLD_OLE_CATEGORY_LABEL,
              axis2 = NEW_OLE_CATEGORY_LABEL,
-             axis3 = STATEMENT_TYPE_LABEL)) +
+             axis3 = factor(STATEMENT_TYPE_LABEL,
+                            levels = c('DISCHARGE OF GARBAGE\nOR PLASTIC, OR LOSS\nOF FISHING GEAR',
+                                       'DISCHARGE OF OIL', 'BIN MONITORING', 
+                                       'OBSERVER SAMPLING STATION', 'SCALES',
+                                       'VIDEO MONITORING SYSTEM', 
+                                       'BELT AND\nFLOW OPERATIONS', 
+                                       'CATCH WEIGHING', 'CMCP', 
+                                       'DATA TRANSMISSION',
+                                       'MONITORING THE\nFLOW OF FISH', 
+                                       'OBSERVER COVERAGE', 'OPERATIONAL LINE',
+                                       'TIMELY NOTIFICATION', 
+                                       'BSAI SALMON BYCATCH', 
+                                       'GOA SALMON BYCATCH', 
+                                       'HALIBUT DECK SORTING', 'MARINE MAMMAL',
+                                       'PROHIBITED SPECIES\nMISHANDLING',
+                                       'PROHIBITED SPECIES\nRETENTION',
+                                       'FALSE REPORTING', 
+                                       'GENERAL REPORTING\nREQUIREMENTS', 
+                                       'IFQ PERMIT', 'INSPECTION REPORTS',
+                                       'UNLAWFUL DISCARD', 
+                                       'ADMINISTRATIVE\nRESPONSIBILITIES',
+                                       'DEPLOYMENT LOGISTICS')))) +
     river3_theme(labels = river_newcat_nonsafety_labels$STATEMENT_TYPE_LABEL,
                  axis1_label = 'Old OLE Category',
                  axis2_label = 'New OLE Category',
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 10)
+                 axis3_min_text_size = 8)
 }
 
 # View the plot
