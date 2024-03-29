@@ -4,22 +4,10 @@
 #          (206) 526-4222
 
 # TODO's:
-  # Table of sub category values for OLE PIP only
-  # Faceted plots for rates per 1000 DD and Assignment for ONLY OLEPIP & SAD
-    # Wrap 1: heat map of rates by category (vertical) and OLESYS/Year (hor.)
-    # Wrap 2: horizontal boxplot of these rates by OLESYS/Year
-  # Clean alluvial plots to be the following:
-    # OLD_OLE -> NEW_OLE -> STATEMENT_TYPE
-      # one filtered by new data [X]
-      # one filtered by new data & all other statement types [X]
-      # one filtered by only safety related new categories [X]
-      # one filtered by all other new categories [X]
-    # STATEMENT_TYPE -> OLD_OLE 2022 [X]
-    # STATEMENT_TYPE -> OLD_OLE 2023 [X]
-  # Assign labels properly to these plots [X]
+  # Assign labels properly to these plots []
   # Find color scheme that works (Sexual Harrassment  + Assault == strong color) []
   # Order the 3rd axis by 1:1 matches []
-  # Filter out statement types that are under 3 total occurrences []
+  # Filter out statement types in river plots that are under 3 total occurrences []
   # Refacet raincloud plots to Old/New with Year on bottom []
 
 ##################################
