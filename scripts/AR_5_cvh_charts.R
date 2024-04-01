@@ -171,9 +171,9 @@ river2_theme <- function(labels, axis1_text_size = 12, axis1_min_text_size = 10,
   )
 }
 
-###########################################
-##### CREATING LABELS FOR RIVER PLOTS #####
-###########################################
+################################################################
+##### CREATING LABELS AND ASSIGNING COLORS FOR RIVER PLOTS #####
+################################################################
 # Create labels for OLD_OLE_CATEGORY -------------------------------------------
 # break up strings of old ole categories to fit in boxes better
 # view strings to break into lines
@@ -339,6 +339,213 @@ statements_combined$NEW_OLE_CATEGORY_LABEL <-
              'SUSTAINABLE FISHERIES',
              'CONTRACTOR REQUIREMENTS'))
 
+# Assign colors for old statements ---------------------------------------------
+# use the factored level for alluvial plot of old data
+old_statements <- {
+  c('Disruptive/Bothersome Behavior - Conflict Resolved', #1
+    'Harassment-Assault', #2
+    'Harassment - Sexual', #3
+    'Intimidation, coercion, hostile work environment', #4
+    'Interference/Sample Biasing', #5
+    'Safety-NMFS', #6
+    'MARPOL/Oil Spill', #7
+    'Safety-USCG-Equipment', #8
+    'Safety-USCG-Fail to Conduct Drills', #9
+    'Safety-USCG-Marine Casualty', #10
+    'AFA', #11
+    'Amendment 80', #12
+    'Catcher Processer Longline', #13
+    'IFQ Retention', #14
+    'Amendment 91 salmon', #15
+    'Gulf of Alaska Salmon', #16
+    'Halibut Deck Sorting', #17
+    'Marine Mammal-Feeding', #18
+    'Marine Mammal-Harassment', #19
+    'Prohibited Species - Mishandling', #20
+    'Prohibited Species - Retaining', #21
+    'Sample Bias-Marine Mammals', #22
+    'Seabird-Harassment', #23
+    'Restricted Access', #24
+    'Contractor Problems', #25
+    'Failure to Notify', #26
+    'Inadequate Accomodations', #27
+    'IR/IU', #28
+    'Miscellaneous Violations', #29
+    'Reasonable Assistance', #30
+    'Record Keeping and Reporting' #31
+  )
+}
+
+# assign colors to corresponding number in old_statements above
+old_statement_colors <- {
+  c('orangered', #1
+    'red2', #2
+    'red3', #3
+    'tomato', #4
+    'orange', #5
+    'coral', #6
+    'tan4', #7
+    'yellow', #8
+    'gold', #9
+    'khaki', #10
+    'green', #11
+    'darkgreen', #12
+    'greenyellow', #13
+    'olivedrab', #14
+    'blue', #15
+    'cadetblue1', #16
+    'royalblue', #17
+    'turquoise', #18
+    'midnightblue', #19
+    'cyan', #20
+    'deepskyblue', #21
+    'darkturquoise', #22
+    'navy', #23
+    'blueviolet', #24
+    'darkorchid4', #25
+    'darkviolet', #26
+    'purple4', #27
+    'orchid4', #28
+    'mediumpurple', #29
+    'darkmagenta', #30
+    'purple'#31
+  )
+}
+
+# create column for colors and attach
+statements_combined$OLD_STATEMENT_COLOR <- NA
+for (i in 1:length(old_statements)) {
+  rows <- which(statements_combined$STATEMENT_TYPE == old_statements[i])
+  statements_combined$OLD_STATEMENT_COLOR[rows] <- old_statement_colors[i]
+}
+
+
+# Assign colors for new statements (safety) ------------------------------------
+# use the factored level for alluvial plot of old data
+new_statements_safety <- {
+  c('ASSAULT', #1
+    'FOOD AND\nACCOMMODATIONS', #2
+    'FORCED TO\nPERFORM CREW DUTIES', #3
+    'HOSTILE WORK ENVIRONMENT', #4
+    'IMPEDIMENT', #5
+    'INTIMIDATION, BRIBERY,\nCOERCION', #6
+    'SAFETY', #7
+    'SEXUAL HARASSMENT', #8
+    'ACCESS', #9
+    'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS', #10
+    'NOTIFICATION', #11
+    'REASONABLE ASSISTANCE', #12
+    'SAMPLING INTERFERENCE', #13
+    'EPIRB', #14
+    'GENERAL SAFETY EQUIPMENT', #15
+    'SURVIVAL CRAFT', #16
+    'FAILURE TO CONDUCT DRILLS', #17
+    'MARINE\nCASUALTY'# 18
+    )
+}
+
+# assign colors to corresponding number in new_statements_safety above
+new_statement_safety_colors <- {
+  c('red', #1
+    'tomato', #2
+    'indianred', #3
+    'firebrick', #4
+    'orangered', #5
+    'darkred', #6
+    'orange', #7
+    'red2', #8
+    'green', #9
+    'blue', #10
+    'seagreen', #11
+    'turquoise', #12
+    'palegreen', #13
+    'royalblue', #14
+    'yellow', #15
+    'gold', #16
+    'khaki', #17
+    'navy' #18
+  )
+}
+
+# create column for colors and attach
+statements_combined$NEW_STATEMENT_SAFETY_COLOR <- NA
+for (i in 1:length(new_statements_safety)) {
+  rows <- which(statements_combined$STATEMENT_TYPE_LABEL == new_statements_safety[i])
+  statements_combined$NEW_STATEMENT_SAFETY_COLOR[rows] <- new_statement_safety_colors[i]
+}
+
+# Assign colors for new statements (non-safety) --------------------------------
+# use the factored level for alluvial plot of old data
+new_statements_nonsafety <- {
+  c('DISCHARGE OF GARBAGE\nOR PLASTIC, OR LOSS\nOF FISHING GEAR', #1
+    'DISCHARGE OF OIL', #2
+    'BIN MONITORING', #3
+    'OBSERVER SAMPLING STATION', #4 
+    'SCALES', #5
+    'VIDEO MONITORING SYSTEM', #6
+    'BELT AND\nFLOW OPERATIONS', #7
+    'CATCH WEIGHING', #8
+    'CMCP', #9
+    'DATA TRANSMISSION', #10
+    'MONITORING THE\nFLOW OF FISH', #11
+    'OBSERVER COVERAGE', #12 
+    'OPERATIONAL LINE', #13
+    'TIMELY NOTIFICATION', #14
+    'BSAI SALMON BYCATCH', #15
+    'GOA SALMON BYCATCH', #16
+    'HALIBUT DECK SORTING', #17
+    'MARINE MAMMAL', #18
+    'PROHIBITED SPECIES\nMISHANDLING', #19
+    'PROHIBITED SPECIES\nRETENTION', #20
+    'FALSE REPORTING', #21
+    'GENERAL REPORTING\nREQUIREMENTS', #22
+    'IFQ PERMIT', #23
+    'INSPECTION REPORTS', #24
+    'UNLAWFUL DISCARD', #25
+    'ADMINISTRATIVE\nRESPONSIBILITIES', #26
+    'DEPLOYMENT LOGISTICS' #27
+    )
+}
+
+# assign colors to corresponding number in new_statements_nonsafety above
+new_statement_nonsafety_colors <- {
+  c('brown', #1
+    'chocolate', #2
+    'green', #3
+    'forestgreen', #4
+    'lawngreen', #5
+    'darkgreen', #6
+    'yellow', #7
+    'orange', #8
+    'orangered', #9
+    'gold', #10
+    'darkorange', #11
+    'khaki', #12
+    'coral', #13
+    'goldenrod', #14
+    'blue', #15
+    'turquoise', #16
+    'seagreen', #17
+    'navy', #18
+    'cyan', #19
+    'royalblue4', #20
+    'blueviolet', #21
+    'darkorchid4', #22
+    'purple', #23
+    'magenta3', #24
+    'turquoise3', #25
+    'wheat', #26
+    'tan' #27
+    )
+}
+
+# create column for colors and attach
+statements_combined$NEW_STATEMENT_NONSAFETY_COLOR <- NA
+for (i in 1:length(new_statements_nonsafety)) {
+  rows <- which(statements_combined$STATEMENT_TYPE_LABEL == new_statements_nonsafety[i])
+  statements_combined$NEW_STATEMENT_NONSAFETY_COLOR[rows] <- new_statement_nonsafety_colors[i]
+}
+
 #####################
 ##### ALL PLOTS #####
 #####################
@@ -483,6 +690,18 @@ river_oldcat_labels_23 <- statements_combined %>%
   summarize(FREQ = n()) %>%
   filter(FREQ < 10)
 
+# get colors
+old_colors <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'OLD',
+           MANUAL_YEAR == 2023) %>% 
+    group_by(STATEMENT_TYPE, OLD_STATEMENT_COLOR) %>%
+    summarize() %>%
+    ungroup() %>%
+    mutate(STATEMENT_TYPE = tolower(STATEMENT_TYPE)) %>%
+    arrange(STATEMENT_TYPE)
+}
+
 # Make the plot
 river_oldcat_23 <- {
   ggplot(data = statements_combined %>%
@@ -518,7 +737,8 @@ river_oldcat_23 <- {
                  axis1_label = 'Old Statement Type',
                  axis2_label = 'Old OLE Category',
                  axis1_min_text_size = 9,
-                 axis1_text_size = 18)
+                 axis1_text_size = 18) +
+    scale_fill_manual(values = old_colors$OLD_STATEMENT_COLOR)
 }
 
 # View the plot
@@ -547,6 +767,23 @@ river_newcat_safety_labels <- statements_combined %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
   filter(FREQ < 6) 
+
+# get colors
+safety_colors <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'NEW',
+           NEW_OLE_CATEGORY %in%
+             c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+               'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+               'SAFETY-USCG-MARINE CASUALTY',
+               'SAFETY-USCG-EQUIPMENT',
+               'INTERFERENCE WITH DUTIES')) %>% 
+    group_by(STATEMENT_TYPE_LABEL, NEW_STATEMENT_SAFETY_COLOR) %>%
+    summarize() %>%
+    ungroup() %>%
+    mutate(STATEMENT_TYPE_LABEL = tolower(STATEMENT_TYPE_LABEL)) %>%
+    arrange(STATEMENT_TYPE_LABEL)
+}
 
 # Make the plot
 river_newcat_safety <- {
@@ -580,7 +817,8 @@ river_newcat_safety <- {
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 7)
+                 axis3_min_text_size = 7) +
+    scale_fill_manual(values = safety_colors$NEW_STATEMENT_SAFETY_COLOR)
 }
 
 # View the plot
@@ -609,6 +847,24 @@ river_newcat_nonsafety_labels <- statements_combined %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
   filter(FREQ < 9)
+
+# get colors
+nonsafety_colors <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'NEW',
+           !NEW_OLE_CATEGORY %in%
+             c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+               'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+               'SAFETY-USCG-MARINE CASUALTY',
+               'SAFETY-USCG-EQUIPMENT',
+               'INTERFERENCE WITH DUTIES')) %>% 
+    group_by(STATEMENT_TYPE_LABEL, NEW_STATEMENT_NONSAFETY_COLOR) %>%
+    summarize() %>%
+    ungroup() %>%
+    mutate(STATEMENT_TYPE_LABEL = tolower(STATEMENT_TYPE_LABEL)) %>%
+    arrange(STATEMENT_TYPE_LABEL)
+}
+
 
 # Make the plot
 river_newcat_nonsafety <- {
@@ -650,7 +906,8 @@ river_newcat_nonsafety <- {
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 8)
+                 axis3_min_text_size = 8) +
+    scale_fill_manual(values = nonsafety_colors$NEW_STATEMENT_NONSAFETY_COLOR)
 }
 
 # View the plot
