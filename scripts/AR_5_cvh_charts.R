@@ -5,7 +5,7 @@
 
 # TODO's:
   # Assign labels properly to river plots [X]
-  # Find color scheme that works (Sexual Harassment  + Assault == strong color) []
+  # Find color scheme that works (Sexual Harassment  + Assault == strong color) [X]
   # Order the 3rd axis by 1:1 matches [X]
   # Filter out statement types in river plots that are under 3 total occurrences []
   # Refacet raincloud plots to Old/New with Year on bottom [X]
