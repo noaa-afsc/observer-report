@@ -286,7 +286,9 @@ rate_by_subcat_priority <-
   ungroup() %>% 
   filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
                                  'OLE PRIORITY: INTER-PERSONAL')
-  ) %>%
+         | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
+                                                                       'MARINE CASUALTY') 
+         ) %>%
   mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
          OLD_OLE_CATEGORY = gsub("OLE PRIORITY: ","", OLD_OLE_CATEGORY),
          OLD_OLE_CATEGORY = paste0(OLD_OLE_CATEGORY, ' categories'),
@@ -301,6 +303,9 @@ rate_by_subcat_priority <-
                                     STATEMENT_TYPE),
          STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Interference/Sample Biasing',
                                     'SAMPLING INTERFERENCE',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-USCG-Marine Casualty',
+                                    'MARINE CASUALTY',
                                     STATEMENT_TYPE),
          STATEMENT_TYPE   = toupper(STATEMENT_TYPE)
          
@@ -422,7 +427,8 @@ rate_by_subcat_cruise <-
 rate_by_subcat_cruise_priority <-
   rate_by_subcat_cruise  %>%
   filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
-                                 'OLE PRIORITY: INTER-PERSONAL')
+                                 'OLE PRIORITY: INTER-PERSONAL',
+                                 'COAST GUARD')
          ) %>%
   mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
          OLD_OLE_CATEGORY = gsub("OLE PRIORITY: ","", OLD_OLE_CATEGORY),
@@ -439,11 +445,12 @@ rate_by_subcat_cruise_priority <-
          STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Interference/Sample Biasing',
                                     'SAMPLING INTERFERENCE',
                                     STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-USCG-Marine Casualty',
+                                    'MARINE CASUALTY',
+                                    STATEMENT_TYPE),
          STATEMENT_TYPE   = toupper(STATEMENT_TYPE)
          
   )
-
-
 
 
 
