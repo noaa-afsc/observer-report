@@ -233,11 +233,12 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
   case_when(
     GROUP_CODE %in% 10:11 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
     GROUP_CODE == 13 ~ case_match(GEAR_TYPE_CODE, 6 ~ "EM POT", 8 ~ "EM HAL"),
-    GROUP_CODE == 14 ~ "EM TRW EFP"
+    GROUP_CODE == 14 ~ "EM TRW EFP",
+    .default = "Unknown"
   )
 ))
 odds.dat %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(is.na(odds.dat$STRATA))) stop("Some `STRATA` are not yet defined!")
+if(any(odds.dat$STRATA == "Unknown")) stop("Some `STRATA` are not yet defined!")
 
 # Lookup table for strata in partial coverage category
 partial <- odds.dat %>%
