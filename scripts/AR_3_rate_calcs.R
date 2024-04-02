@@ -332,6 +332,37 @@ rate_by_old_ole_category <-
   )
 
 
+
+
+
+# calculate rate by NEW_OLE_CATEGORY for NO GROUPINGS
+# (2023 NEW data only)
+rate_by_new_ole_category <-
+  statements_combined %>%
+  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_SYSTEM,
+           NEW_OLE_CATEGORY) %>%
+  summarize(TOTAL_INCIDENTS  = sum(if_else(is.na(NUMBER_VIOLATIONS) | NUMBER_VIOLATIONS == 0, 1, NUMBER_VIOLATIONS)),
+            TOTAL_STATEMENTS = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(depl_days_summ_all) %>%
+  mutate(AFFIS_PER_DAY         = TOTAL_STATEMENTS/DAYS,
+         INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/DAYS,
+         STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*1000,
+         INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*1000,
+         STATEMENTS_PER_90_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*90,
+         INCIDENTS_PER_90_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*90,
+         STATEMENTS_PER_OBSERVER     = TOTAL_STATEMENTS/OBSERVERS,
+         INCIDENTS_PER_OBSERVER      = TOTAL_INCIDENTS/OBSERVERS,
+         STATEMENTS_PER_CRUISE       = TOTAL_STATEMENTS/CRUISES,
+         INCIDENTS_PER_CRUISE        = TOTAL_INCIDENTS/CRUISES,
+         STATEMENTS_PER_ASSIGNMENT   = TOTAL_STATEMENTS/ASSIGNMENTS,
+         INCIDENTS_PER_ASSIGNMENT    = TOTAL_INCIDENTS/ASSIGNMENTS
+  )
+
+
+
+
 # calculate the rate of occurrences per assnmt and per deployed day for EACH CRUISE.
 # Can be used in distribution plots???
 rate_by_subcat_cruise <-
