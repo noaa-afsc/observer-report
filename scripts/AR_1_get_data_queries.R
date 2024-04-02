@@ -334,7 +334,8 @@ df_fishery_dates <-
                WHERE vp.cruise > ", first_cruise, sep = ''))
 
 
-
+# ADd new code
+ test <- 'TEST'
 
 ###################
 # hauls
