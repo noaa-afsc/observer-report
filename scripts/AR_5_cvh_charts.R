@@ -847,10 +847,13 @@ river_newcat_nonsafety_labels <- statements_combined %>%
              'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
              'SAFETY-USCG-MARINE CASUALTY',
              'SAFETY-USCG-EQUIPMENT',
-             'INTERFERENCE WITH DUTIES')) %>%
+             'INTERFERENCE WITH DUTIES'),
+         !STATEMENT_TYPE_LABEL == 'DISCHARGE OF OIL',
+         !STATEMENT_TYPE_LABEL == 'BIN MONITORING',
+         !STATEMENT_TYPE_LABEL == 'GOA SALMON BYCATCH') %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
-  filter(FREQ < 9)
+  filter(FREQ < 8)
 
 # get colors
 nonsafety_colors <- {
@@ -910,7 +913,7 @@ river_newcat_nonsafety <- {
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 8) +
+                 axis3_min_text_size = 10) +
     scale_fill_manual(values = nonsafety_colors$NEW_STATEMENT_NONSAFETY_COLOR)
 }
 
