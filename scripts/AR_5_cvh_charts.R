@@ -4,14 +4,8 @@
 #          (206) 526-4222
 
 # TODO's:
-  # Assign labels properly to river plots [X]
-  # Find color scheme that works (Sexual Harassment  + Assault == strong color) [X]
-  # Order the 3rd axis by 1:1 matches [X]
   # Filter out statement types in river plots that are under 3 total occurrences []
-  # Refacet raincloud plots to Old/New with Year on bottom [X]
-    # Investigate in data where higher Inc/Statements are from []
-  # CHANGE 'Inadequate Accomodations' to 'Inadequate Accommodations' in STATEMENT_TYPE []
-  # CHANGE 'Catcher Processer Longline' to 'Catcher Processor Longline' in STATEMENT_TYPE []
+
 
 ##################################
 ##### LOAD PACKAGES AND DATA #####
@@ -174,6 +168,10 @@ river2_theme <- function(labels, axis1_text_size = 12, axis1_min_text_size = 10,
 ################################################################
 ##### CREATING LABELS AND ASSIGNING COLORS FOR RIVER PLOTS #####
 ################################################################
+# Correct spelling -------------------------------------------------------------
+statements_combined$STATEMENT_TYPE[which(statements_combined$STATEMENT_TYPE == 'Inadequate Accomodations')] <- 'Inadequate Accommodations'
+statements_combined$STATEMENT_TYPE[which(statements_combined$STATEMENT_TYPE == 'Catcher Processer Longline')] <- 'Catcher Processor Longline'
+
 # Create labels for OLD_OLE_CATEGORY -------------------------------------------
 # break up strings of old ole categories to fit in boxes better
 # view strings to break into lines
@@ -354,7 +352,7 @@ old_statements <- {
     'Safety-USCG-Marine Casualty', #10
     'AFA', #11
     'Amendment 80', #12
-    'Catcher Processer Longline', #13
+    'Catcher Processor Longline', #13
     'IFQ Retention', #14
     'Amendment 91 salmon', #15
     'Gulf of Alaska Salmon', #16
@@ -368,7 +366,7 @@ old_statements <- {
     'Restricted Access', #24
     'Contractor Problems', #25
     'Failure to Notify', #26
-    'Inadequate Accomodations', #27
+    'Inadequate Accommodations', #27
     'IR/IU', #28
     'Miscellaneous Violations', #29
     'Reasonable Assistance', #30
@@ -517,8 +515,8 @@ new_statement_nonsafety_colors <- {
     'darkgreen', #6
     'yellow', #7
     'orange', #8
-    'orangered', #9
-    'gold', #10
+    'gold', #9
+    'orangered', #10
     'darkorange', #11
     'khaki', #12
     'coral', #13
@@ -562,7 +560,7 @@ OPS_number_rainplot <- {
              y = NUMBER_VIOLATIONS,
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'Year of First Violation',
+    labs(x = 'Year',
          y = 'Occurrences per Statement',
          title = 'All Categories') +
     facet_grid(. ~ factor(OLE_SYSTEM,
@@ -627,7 +625,7 @@ OLEPIP_number_rainplot <- {
              y = NUMBER_VIOLATIONS,
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'Year of First Violation',
+    labs(x = 'Year',
          y = 'Occurrences per Statement',
          title = 'OLE Priority: Inter-Personal') +
     facet_grid(. ~ factor(OLE_SYSTEM,
@@ -715,7 +713,7 @@ river_oldcat_23 <- {
                                        'MARPOL/Oil Spill', 'Safety-USCG-Equipment',
                                        'Safety-USCG-Fail to Conduct Drills',
                                        'Safety-USCG-Marine Casualty', 'AFA',
-                                       'Amendment 80', 'Catcher Processer Longline',
+                                       'Amendment 80', 'Catcher Processor Longline',
                                        'IFQ Retention', 'Amendment 91 salmon',
                                        'Gulf of Alaska Salmon', 
                                        'Halibut Deck Sorting',
@@ -728,7 +726,7 @@ river_oldcat_23 <- {
                                        'Restricted Access',
                                        'Contractor Problems', 
                                        'Failure to Notify', 
-                                       'Inadequate Accomodations', 'IR/IU',
+                                       'Inadequate Accommodations', 'IR/IU',
                                        'Miscellaneous Violations',
                                        'Reasonable Assistance', 
                                        'Record Keeping and Reporting')),
@@ -817,7 +815,7 @@ river_newcat_safety <- {
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 7) +
+                 axis3_min_text_size = 8) +
     scale_fill_manual(values = safety_colors$NEW_STATEMENT_SAFETY_COLOR)
 }
 
@@ -843,10 +841,13 @@ river_newcat_nonsafety_labels <- statements_combined %>%
              'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
              'SAFETY-USCG-MARINE CASUALTY',
              'SAFETY-USCG-EQUIPMENT',
-             'INTERFERENCE WITH DUTIES')) %>%
+             'INTERFERENCE WITH DUTIES'),
+         !STATEMENT_TYPE_LABEL == 'DISCHARGE OF OIL',
+         !STATEMENT_TYPE_LABEL == 'BIN MONITORING',
+         !STATEMENT_TYPE_LABEL == 'GOA SALMON BYCATCH') %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
-  filter(FREQ < 9)
+  filter(FREQ < 8)
 
 # get colors
 nonsafety_colors <- {
@@ -906,7 +907,7 @@ river_newcat_nonsafety <- {
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 8) +
+                 axis3_min_text_size = 10) +
     scale_fill_manual(values = nonsafety_colors$NEW_STATEMENT_NONSAFETY_COLOR)
 }
 
@@ -918,6 +919,61 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
        plot = river_newcat_nonsafety,
        width = 20,
        height = 10)
+
+######################################
+##### CREATE TABLES OF PLOT DATA #####
+######################################
+# Table of high incidents per statement (>75) ----------------------------------
+high_viol <- statements_combined %>% 
+               filter(NUMBER_VIOLATIONS > 75)
+
+write.csv(high_viol, 'high_violations_per_statement.csv')
+
+# Table of Occurrences per Statement (aggregated by Statement Type) ------------
+ops_proport <- {
+  statements_combined %>%
+    group_by(NUMBER_VIOLATIONS, OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    summarize(FREQ = n()) %>%
+    group_by(OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    mutate(TOTAL = sum(FREQ),
+           PROPORT_STATEMENTS = FREQ / TOTAL)
+}
+
+write.csv(ops_proport, 'ops_proportions.csv')
+
+# Table of Occurrences per Statement (by Statement Type, OLEPIP cats only) -----
+olepip_ops_proport <- {
+  statements_combined %>%
+    filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL') %>%
+    group_by(NUMBER_VIOLATIONS, OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    summarize(FREQ = n()) %>%
+    group_by(OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    mutate(TOTAL = sum(FREQ),
+           PROPORT_STATEMENTS = FREQ / TOTAL)
+}
+
+write.csv(olepip_ops_proport, 'ops_olepip_proportions.csv')
+
+# Table of Old OLE System, 2023 data -------------------------------------------
+oldole_2023_data <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'OLD',
+           FIRST_VIOL_YEAR == 2023) %>%
+    group_by(OLD_OLE_CATEGORY, STATEMENT_TYPE) %>%
+    summarize(FREQ = n())
+}
+
+write.csv(oldole_2023_data, 'Old_OLE_2023_summary.csv')
+
+# Table of New OLE System, 2023 data -------------------------------------------
+newole_2023_data <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'NEW') %>%
+    group_by(NEW_OLE_CATEGORY, STATEMENT_TYPE) %>%
+    summarize(FREQ = n())
+}
+
+write.csv(newole_2023_data, 'New_OLE_2023_summary.csv')
 
 #####################
 ##### OLD PLOTS #####
