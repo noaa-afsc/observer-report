@@ -72,6 +72,15 @@ load(file = paste0(Rdata_files_path, "AR_3_rate_output.rdata"))
 
 
 
+write.csv(file =  paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
+                         adp_yr,
+                         "_rate_by_subcat_priority.csv"
+                        ),
+          x    = rate_by_subcat_priority
+          )
+
+
+
 
 
 ###############
@@ -80,7 +89,9 @@ load(file = paste0(Rdata_files_path, "AR_3_rate_output.rdata"))
 # Useful to make because it is used in multiple places later.
 cnt_incis_by_factor_group_all_categs <-
   rate_all_groupings_ole_category %>%
-  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, DISTINCT_OBSERVER_ASSIGNMENTS, CONFI_FLAG
+  group_by(CALENDAR_YEAR, OLE_SYSTEM, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, 
+           MANAGEMENT_PROGRAM_CODE, NMFS_REGION, TOTAL_DAYS, TOTAL_CRUISES, TOTAL_OBSERVERS, 
+           DISTINCT_OBSERVER_ASSIGNMENTS, CONFI_FLAG
   ) %>% 
   summarize(TOTAL_STATEMENTS = sum(if_else(is.na(TOTAL_STATEMENTS), 0, TOTAL_STATEMENTS)), # There are 0 statements if it is NA for the category.
             TOTAL_INCIDENTS  = sum(if_else(is.na(TOTAL_INCIDENTS), 0, TOTAL_INCIDENTS)) # There are 0 incidents if it is NA for the category.
@@ -95,8 +106,8 @@ cnt_incis_by_factor_group_all_categs <-
 # CASTed table per 1000 days
 rate_all_groupings_ole_category_cast_1000 <- 
   merge(reshape2::dcast(data = rate_all_groupings_ole_category  %>% 
-                      filter(!is.na(OLE_CATEGORY)),  # for the report, ONLY show factor groups that had statement occurrences.
-                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
+                      filter(!is.na(OLD_OLE_CATEGORY)),  # for the report, ONLY show factor groups that had statement occurrences.
+                    formula   = CALENDAR_YEAR + OLE_SYSTEM + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLD_OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_1000_DEPLOYED_DAYS"),
         cnt_incis_by_factor_group_all_categs,
         all=TRUE)
@@ -108,8 +119,8 @@ rate_all_groupings_ole_category_cast_1000 <-
 rate_all_groupings_ole_category_cast_per_assnmt <- 
   merge(
     reshape2::dcast(data      = rate_all_groupings_ole_category
-                    %>% filter(!is.na(OLE_CATEGORY)), 
-                    formula   = CALENDAR_YEAR + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLE_CATEGORY,
+                    %>% filter(!is.na(OLD_OLE_CATEGORY)), 
+                    formula   = CALENDAR_YEAR + OLE_SYSTEM + COVERAGE_TYPE + VESSEL_TYPE + GEAR_TYPE + MANAGEMENT_PROGRAM_CODE + NMFS_REGION + CONFI_FLAG ~ OLD_OLE_CATEGORY,
                     value.var = "INCIDENTS_PER_ASSIGNMENT") ,
     cnt_incis_by_factor_group_all_categs, all=TRUE)
 
@@ -149,7 +160,7 @@ rate_all_groupings_ole_category_cast_per_assnmt <-
 rate_all_groupings_ole_category_all <-
   rate_all_groupings_ole_category_cast_1000 %>%
   inner_join(rate_all_groupings_ole_category_cast_per_assnmt %>%
-               select(CALENDAR_YEAR, FACTOR_GROUP,
+               select(CALENDAR_YEAR, OLE_SYSTEM, FACTOR_GROUP,
                       `OLE PRIORITY: INTER-PERSONAL per ASSNMT` = `OLE PRIORITY: INTER-PERSONAL`)
   ) 
 
@@ -163,7 +174,7 @@ rate_all_groupings_ole_category_all <-
 
 
 # save this summary table as CSV for output to a report
-# THIS BECOMES THE FINAL PRODUCT FOR TABLE 5.2
+# THIS BECOMES THE FINAL PRODUCT FOR TABLE 4.2
 # Use XL to format for final output:
 #    # Remove rows where  CONFI_FLAG = 1, for confidentiality.
 #        # (these are left here, so the the annual report team can review them, but should be omitted from the final product to protect observers)
@@ -182,6 +193,7 @@ write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
                        `Management Program` = MANAGEMENT_PROGRAM_CODE, 
                        `NMFS Region`   = NMFS_REGION, 
                        `Confi Flag`    = CONFI_FLAG,
+                       `OLE System`    = OLE_SYSTEM,
                        `Vessel/Plant Assignments` = DISTINCT_OBSERVER_ASSIGNMENTS,
                        `Deployed Days` = TOTAL_DAYS,
                        `Statements (all categories)`  = TOTAL_STATEMENTS, 
@@ -426,6 +438,8 @@ write.csv(file =  paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
                          QUANT_25_INCIS_PER, QUANT_75_INCIS_PER)
                          
             )
+
+
 
 
 
