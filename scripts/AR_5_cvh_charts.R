@@ -9,7 +9,7 @@
   # Order the 3rd axis by 1:1 matches [X]
   # Filter out statement types in river plots that are under 3 total occurrences []
   # Refacet raincloud plots to Old/New with Year on bottom [X]
-    # Investigate in data where higher Inc/Statements are from []
+    # Investigate in data where higher Inc/Statements are from [X]
   # CHANGE 'Inadequate Accomodations' to 'Inadequate Accommodations' in STATEMENT_TYPE []
   # CHANGE 'Catcher Processer Longline' to 'Catcher Processor Longline' in STATEMENT_TYPE []
 
@@ -919,7 +919,61 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
        width = 20,
        height = 10)
 
-#####################
+######################################
+##### CREATE TABLES OF PLOT DATA #####
+######################################
+# Table of high incidents per statement (>75) ----------------------------------
+high_viol <- statements_combined %>% 
+               filter(NUMBER_VIOLATIONS > 75)
+
+write.csv(inv, 'high_violations_per_statement.csv')
+
+# Table of Occurrences per Statement (aggregated by Statement Type) ------------
+ops_proport <- {
+  statements_combined %>%
+    group_by(NUMBER_VIOLATIONS, OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    summarize(FREQ = n()) %>%
+    group_by(OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    mutate(TOTAL = sum(FREQ),
+           PROPORT_STATEMENTS = FREQ / TOTAL)
+}
+
+write.csv(ops_proport, 'ops_proportions.csv')
+
+# Table of Occurrences per Statement (by Statement Type, OLEPIP cats only) -----
+olepip_ops_proport <- {
+  statements_combined %>%
+    filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL') %>%
+    group_by(NUMBER_VIOLATIONS, OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    summarize(FREQ = n()) %>%
+    group_by(OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
+    mutate(TOTAL = sum(FREQ),
+           PROPORT_STATEMENTS = FREQ / TOTAL)
+}
+
+write.csv(olepip_ops_proport, 'ops_olepip_proportions.csv')
+
+# Table of Old OLE System, 2023 data -------------------------------------------
+oldole_2023_data <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'OLD',
+           FIRST_VIOL_YEAR == 2023) %>%
+    group_by(OLD_OLE_CATEGORY, STATEMENT_TYPE) %>%
+    summarize(FREQ = n())
+}
+
+write.csv(oldole_2023_data, 'Old_OLE_2023_summary.csv')
+
+# Table of New OLE System, 2023 data -------------------------------------------
+newole_2023_data <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'NEW') %>%
+    group_by(NEW_OLE_CATEGORY, STATEMENT_TYPE) %>%
+    summarize(FREQ = n())
+}
+
+write.csv(newole_2023_data, 'New_OLE_2023_summary.csv')
+
 ##### OLD PLOTS #####
 #####################
 # Ridge plot of sub category densities within OLE Priority IP ------------------
