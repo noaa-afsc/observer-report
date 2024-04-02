@@ -562,7 +562,7 @@ OPS_number_rainplot <- {
              y = NUMBER_VIOLATIONS,
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'Year of First Violation',
+    labs(x = 'Year',
          y = 'Occurrences per Statement',
          title = 'All Categories') +
     facet_grid(. ~ factor(OLE_SYSTEM,
@@ -627,7 +627,7 @@ OLEPIP_number_rainplot <- {
              y = NUMBER_VIOLATIONS,
              fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'Year of First Violation',
+    labs(x = 'Year',
          y = 'Occurrences per Statement',
          title = 'OLE Priority: Inter-Personal') +
     facet_grid(. ~ factor(OLE_SYSTEM,
