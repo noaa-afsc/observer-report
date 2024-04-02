@@ -231,7 +231,7 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
   # Tag on "compliance" if the trip was a multi-area IFQ trip
   ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
   case_when(
-    GROUP_CODE == 10 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
+    GROUP_CODE %in% 10:11 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
     GROUP_CODE == 13 ~ case_match(GEAR_TYPE_CODE, 6 ~ "EM POT", 8 ~ "EM HAL"),
     GROUP_CODE == 14 ~ "EM TRW EFP"
   )
