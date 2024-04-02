@@ -174,6 +174,10 @@ river2_theme <- function(labels, axis1_text_size = 12, axis1_min_text_size = 10,
 ################################################################
 ##### CREATING LABELS AND ASSIGNING COLORS FOR RIVER PLOTS #####
 ################################################################
+# Correct spelling -------------------------------------------------------------
+statements_combined$STATEMENT_TYPE[which(statements_combined$STATEMENT_TYPE == 'Inadequate Accomodations')] <- 'Inadequate Accommodations'
+statements_combined$STATEMENT_TYPE[which(statements_combined$STATEMENT_TYPE == 'Catcher Processer Longline')] <- 'Catcher Processor Longline'
+
 # Create labels for OLD_OLE_CATEGORY -------------------------------------------
 # break up strings of old ole categories to fit in boxes better
 # view strings to break into lines
@@ -354,7 +358,7 @@ old_statements <- {
     'Safety-USCG-Marine Casualty', #10
     'AFA', #11
     'Amendment 80', #12
-    'Catcher Processer Longline', #13
+    'Catcher Processor Longline', #13
     'IFQ Retention', #14
     'Amendment 91 salmon', #15
     'Gulf of Alaska Salmon', #16
@@ -368,7 +372,7 @@ old_statements <- {
     'Restricted Access', #24
     'Contractor Problems', #25
     'Failure to Notify', #26
-    'Inadequate Accomodations', #27
+    'Inadequate Accommodations', #27
     'IR/IU', #28
     'Miscellaneous Violations', #29
     'Reasonable Assistance', #30
@@ -715,7 +719,7 @@ river_oldcat_23 <- {
                                        'MARPOL/Oil Spill', 'Safety-USCG-Equipment',
                                        'Safety-USCG-Fail to Conduct Drills',
                                        'Safety-USCG-Marine Casualty', 'AFA',
-                                       'Amendment 80', 'Catcher Processer Longline',
+                                       'Amendment 80', 'Catcher Processor Longline',
                                        'IFQ Retention', 'Amendment 91 salmon',
                                        'Gulf of Alaska Salmon', 
                                        'Halibut Deck Sorting',
@@ -728,7 +732,7 @@ river_oldcat_23 <- {
                                        'Restricted Access',
                                        'Contractor Problems', 
                                        'Failure to Notify', 
-                                       'Inadequate Accomodations', 'IR/IU',
+                                       'Inadequate Accommodations', 'IR/IU',
                                        'Miscellaneous Violations',
                                        'Reasonable Assistance', 
                                        'Record Keeping and Reporting')),
@@ -926,7 +930,7 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
 high_viol <- statements_combined %>% 
                filter(NUMBER_VIOLATIONS > 75)
 
-write.csv(inv, 'high_violations_per_statement.csv')
+write.csv(high_viol, 'high_violations_per_statement.csv')
 
 # Table of Occurrences per Statement (aggregated by Statement Type) ------------
 ops_proport <- {
