@@ -517,8 +517,8 @@ new_statement_nonsafety_colors <- {
     'darkgreen', #6
     'yellow', #7
     'orange', #8
-    'orangered', #9
-    'gold', #10
+    'gold', #9
+    'orangered', #10
     'darkorange', #11
     'khaki', #12
     'coral', #13
@@ -817,7 +817,7 @@ river_newcat_safety <- {
                  axis3_label = 'New Statement Type',
                  size_label = 5,
                  axis3_text_size = 18,
-                 axis3_min_text_size = 7) +
+                 axis3_min_text_size = 8) +
     scale_fill_manual(values = safety_colors$NEW_STATEMENT_SAFETY_COLOR)
 }
 
