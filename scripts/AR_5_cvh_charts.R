@@ -923,9 +923,11 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
 ######################################
 ##### CREATE TABLES OF PLOT DATA #####
 ######################################
-# Table of high incidents per statement (>75) ----------------------------------
+# Table of upper 1% incidents per statement  -----------------------------------
 high_viol <- statements_combined %>% 
-               filter(NUMBER_VIOLATIONS > 75)
+               filter(NUMBER_VIOLATIONS >= 
+                        quantile(statements_combined$NUMBER_VIOLATIONS, 0.99),
+                      FIRST_VIOL_YEAR == 2023)
 
 write.csv(high_viol, 'high_violations_per_statement.csv')
 
