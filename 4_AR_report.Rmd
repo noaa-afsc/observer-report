@@ -1012,7 +1012,7 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
          `Upper limit` = max.expected, 
          `Realized meets expected?` = meets.expected)
 
-#Create an empty factor level so that you can get rid of NAs in the table.
+# Create an empty factor level so that you can get rid of NAs in the table.
 Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels = c(levels(Coverage.Table$Coverage), " "))
 Coverage.Table$Strata = factor(Coverage.Table$Strata, levels = c(levels(Coverage.Table$Strata), " "))
 Coverage.Table <- replace(Coverage.Table, is.na(Coverage.Table), " ")
@@ -1023,7 +1023,7 @@ rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Co
 ```{r coverage_paragraph, message=FALSE, warning=FALSE, include=FALSE}
 # Objects referenced in-text:
 
-#Coverage trip and vessel totals (including EM)
+# Coverage trip and vessel totals (including EM)
 totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*n*`) %>% as.numeric()
 
 perc_trips_obs <- Coverage.Table %>% 
