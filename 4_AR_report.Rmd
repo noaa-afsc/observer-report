@@ -953,9 +953,9 @@ Coverage.Table.zero <- #' plyr::rbind.fill(Coverage.Table.zero <- `DO WE NEED TH
 # Totals with EM (number of vessels is not additive)
 Coverage.Table.TOTALS <- work.data %>%
   summarize(V = length(unique(VESSEL_ID)),
-                   v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
-                   N = length(unique(TRIP_ID)),
-                   n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))
+            v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+            N = length(unique(TRIP_ID)),
+            n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))
   ) %>%
   mutate(COVERAGE_TYPE = "Total",
          STRATA = "Total",
