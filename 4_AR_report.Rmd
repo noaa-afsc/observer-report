@@ -873,8 +873,8 @@ Coverage.Table.full <- bind_rows(
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 1,
-           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes"),
-           Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *had to move for logic to work*
+           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%#,
+           #Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *had to move for logic to work*
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
     arrange(desc(STRATA))
@@ -887,7 +887,7 @@ Coverage.Table.full <- bind_rows(
                 N = length(unique(TRIP_ID)),
                 n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
       mutate(COVERAGE_TYPE = "Full coverage total",
-             Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
+             #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
              deployment.method = "Trip-Selection")
 )
 
@@ -903,7 +903,8 @@ Coverage.Table.partial <- bind_rows(
               N = length(unique(TRIP_ID)),
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"])),
               Rate = unique(Rate)) %>%
-    mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
+    mutate(Pct.obs = (n/N) * 100,
+      #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") %>% 
     # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
     group_by(COVERAGE_TYPE, STRATA) %>%
@@ -915,8 +916,8 @@ Coverage.Table.partial <- bind_rows(
         stats::binom.test(x = n, n = N, p = Rate,
                           alternative = "two.sided")$conf.int[2], digits = 3) * 100,
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
-                                Rate * 100 < min.expected ~ "No - higher than expected",
-                                Rate * 100 > max.expected ~ "No - lower than expected")) %>%
+                                 Rate * 100 < min.expected ~ "No - higher than expected",
+                                 Rate * 100 > max.expected ~ "No - lower than expected")) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
     arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
@@ -929,7 +930,8 @@ Coverage.Table.partial <- bind_rows(
               N = length(unique(TRIP_ID)),
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
     mutate(COVERAGE_TYPE = "Partial coverage total",
-           Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
+           Pct.obs = (n/N) * 100,
+           #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") 
 )
 
@@ -947,8 +949,8 @@ Coverage.Table.zero <- #' plyr::rbind.fill(Coverage.Table.zero <- `DO WE NEED TH
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 0,
-           meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes"),
-           Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
+           meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%#,
+           #Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
 
@@ -969,9 +971,11 @@ Coverage.Table.TOTALS <- work.data %>%
 Coverage.Table <- bind_rows(Coverage.Table.full, 
                             Coverage.Table.partial,
                             Coverage.Table.zero,
-                            Coverage.Table.TOTALS # ,
+                            #'Coverage.Table.TOTALS # , *THIS TABLE HAS Pct.obs as character*
                             #' Coverage.Table.TOTALS.sansEM *THIS TABLE NO LONGER EXISTS*
-                            ) %>% 
+                            ) %>%
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *CAN ELIMINATE ALL THE OTHER format() OF Pct.obs*
+  bind_rows(Coverage.Table.TOTALS) %>%
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
   mutate(V = as.character(V),
@@ -1013,7 +1017,7 @@ Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels = c(levels(Cove
 Coverage.Table$Strata = factor(Coverage.Table$Strata, levels = c(levels(Coverage.Table$Strata), " "))
 Coverage.Table <- replace(Coverage.Table, is.na(Coverage.Table), " ")
 
-rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.TOTALS, Coverage.Table.zero)
+rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Coverage.Table.TOTALS, Coverage.Table.zero)
 ```
 
 ```{r coverage_paragraph, message=FALSE, warning=FALSE, include=FALSE}
