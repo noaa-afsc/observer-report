@@ -859,7 +859,6 @@ This section compares the coverage rate achieved against the expected coverage r
 ```{r Coverage.tbl, message=FALSE, warning=FALSE, include=FALSE}
 # Coverage table has number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n), and percent observed by deployment method (trip vs. vessel-selection):
 
-
 #' *FULL COVERAGE*
 Coverage.Table.full <- plyr::rbind.fill(
   # Coverage rates for vessels in the full coverage category (both regulatory
@@ -868,9 +867,9 @@ Coverage.Table.full <- plyr::rbind.fill(
     filter(COVERAGE_TYPE == "FULL") %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
-                     v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
-                     N = length(unique(TRIP_ID)),
-                     n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
     mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection",
            Rate = 1,
@@ -886,7 +885,7 @@ Coverage.Table.full <- plyr::rbind.fill(
                 v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
                 N = length(unique(TRIP_ID)),
                 n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
-      mutate(COVERAGE_TYPE = "Full Coverage Total",
+      mutate(COVERAGE_TYPE = "Full coverage total",
              Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
              deployment.method = "Trip-Selection")
 )
@@ -927,7 +926,7 @@ Coverage.Table.partial <- plyr::rbind.fill(
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
-    mutate(COVERAGE_TYPE = "Gear-based Total",
+    mutate(COVERAGE_TYPE = "Partial coverage total",
            Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") 
 )
@@ -937,7 +936,7 @@ Coverage.Table.zero <- #' plyr::rbind.fill(Coverage.Table.zero <- `DO WE NEED TH
   work.data %>%
     filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #' *NO ZERO EM Research in 2023*
     mutate(STRATA = as.character(STRATA)) %>% 
-    mutate(STRATA = ifelse(STRATA == "ZERO", "Zero Coverage", STRATA)) %>% 
+    mutate(STRATA = ifelse(STRATA == "ZERO", "Zero coverage", STRATA)) %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
@@ -961,7 +960,7 @@ Coverage.Table.TOTALS <- work.data %>%
          STRATA = "Total",
          Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
          Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
-         Pct.obs = paste0( Pct.obs.trips, "% Trips; ", Pct.obs.vessels, "% Vessels")) 
+         Pct.obs = paste0( Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
 
 #' *Combine all the coverage tables*
 Coverage.Table <- plyr::rbind.fill(Coverage.Table.full, 
@@ -991,11 +990,12 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
                                ifelse(deployment.method == "Trip-Selection", 
                                       format(max.expected, digits = 1, nsmall = 1),
                                       format(max.expected, digits = 0, nsmall = 0))),
-         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
-                                    Full = "FULL",
-                                    Partial = "PARTIAL"),
          STRATA = fct_recode(factor(STRATA),
-                             Full = "FULL")) %>%
+                             Full = "FULL"),
+         COVERAGE_TYPE = case_when(STRATA == "Zero coverage" ~ "Zero coverage", TRUE ~ COVERAGE_TYPE),
+         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
+                                    "Full coverage" = "FULL",
+                                    "Partial coverage" = "PARTIAL")) %>%
   select(`Coverage` = COVERAGE_TYPE, 
          Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
