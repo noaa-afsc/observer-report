@@ -143,11 +143,18 @@ odds.dat <- dbGetQuery(channel_afsc, script)
 # Check for duplicates - should be no records (= 0)
 sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ)) 
 
-# Database check - Should be no records where TRIP_SELECTED is not NA (="Y" or "N") and trip was cancelled
-nrow(odds.dat[!is.na(odds.dat$TRIP_SELECTED) & odds.dat$TRIP_STATUS_CODE == "CN", ]) 
+#' *TENTATIVELY REMOVING THIS CHECK* - ODDS behavior changed with 3.0 where all trips have `TRIP_SELECTED` as Y or N
+#' whereas previously, all cancelled trips received NA for `TRIP_SELECTED`. Thjs seemed to only affect tables 
+#' 3-2 and 3-3 from the 2019 Annual Report which were discontinued in 2020
 
-# This confirms the check
-table(odds.dat$TRIP_SELECTED, odds.dat$TRIP_STATUS_CODE, useNA = 'always')  
+if(F){
+    
+  # Database check - Should be no records where TRIP_SELECTED is not NA (="Y" or "N") and trip was cancelled
+  nrow(odds.dat[!is.na(odds.dat$TRIP_SELECTED) & odds.dat$TRIP_STATUS_CODE == "CN", ]) 
+  
+  # This confirms the check
+  table(odds.dat$TRIP_SELECTED, odds.dat$TRIP_STATUS_CODE, useNA = 'always')  
+}
 
 #'*==============================================*
 #' FIXME * I FAIL THIS CHECK *
