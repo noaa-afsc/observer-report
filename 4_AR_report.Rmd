@@ -860,10 +860,10 @@ This section compares the coverage rate achieved against the expected coverage r
 # Coverage table has number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n), and percent observed by deployment method (trip vs. vessel-selection):
 
 
-#FULL COVERAGE
+#' *FULL COVERAGE*
 Coverage.Table.full <- plyr::rbind.fill(
-  #Coverage rates for vessels in the full coverage category (both regulator full
-  #cov or voluntary)
+  # Coverage rates for vessels in the full coverage category (both regulatory full
+  # coverage and voluntary)
   work.data %>%
     filter(COVERAGE_TYPE == "FULL") %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
@@ -871,7 +871,7 @@ Coverage.Table.full <- plyr::rbind.fill(
                      v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
                      N = length(unique(TRIP_ID)),
                      n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
-    mutate(Pct.obs= format((n/N) * 100, digits = 1, nsmall = 1),
+    mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection",
            Rate = 1,
            meets.expected = "") %>% 
@@ -891,21 +891,22 @@ Coverage.Table.full <- plyr::rbind.fill(
              deployment.method = "Trip-Selection")
 )
 
-#PARTIAL COVERAGE TRIP-SELECTION
+# PARTIAL COVERAGE TRIP-SELECTION
 Coverage.Table.partial <- plyr::rbind.fill(
-  #By strata for vessels in the partial coverage category (trip-selection)
-  work.data %>% 
+  # By strata for vessels in the partial coverage category (trip-selection)
+test <-  work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    group_by(TRIP_ID) %>% 
-    mutate(START = min(TRIP_TARGET_DATE)) %>% 
-    ungroup() %>% 
-    left_join(partial_time[, .(STRATA, Effective_Date, Expire_After, Rate)], on = "STRATA") %>% 
-    filter(START >= Effective_Date & START <= Expire_After) %>% 
-    group_by(COVERAGE_TYPE, STRATA, Effective_Date, Expire_After) %>%
-    summarize(V = length(unique(VESSEL_ID[START >= Effective_Date & START <= Expire_After])),
-              v = length(unique(VESSEL_ID[START >= Effective_Date & START <= Expire_After & OBSERVED_FLAG == "Y"])),
-              N = length(unique(TRIP_ID[START >= Effective_Date & START <= Expire_After])),
-              n = length(unique(TRIP_ID[START >= Effective_Date & START <= Expire_After & OBSERVED_FLAG == "Y"])),
+    #group_by(TRIP_ID) %>% 
+    #mutate(START = min(TRIP_TARGET_DATE)) %>% 
+    #ungroup() %>% 
+    #left_join(partial[, .(STRATA, Rate)], on = "STRATA") %>% 
+    left_join(select(partial, c(STRATA, Rate)), by = "STRATA") %>%
+    #filter(START >= Effective_Date & START <= Expire_After) %>% 
+    group_by(COVERAGE_TYPE, STRATA) %>%#, Effective_Date, Expire_After) %>%
+    summarize(V = length(unique(VESSEL_ID)), #[START >= Effective_Date & START <= Expire_After])),
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])), #[START >= Effective_Date & START <= Expire_After & OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)), #[START >= Effective_Date & START <= Expire_After])),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"])), #[START >= Effective_Date & START <= Expire_After & OBSERVED_FLAG == "Y"])),
               Rate = unique(Rate)) %>%
     mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") %>% 
@@ -919,9 +920,9 @@ Coverage.Table.partial <- plyr::rbind.fill(
                           alternative = "two.sided")$conf.int[2], 3) * 100,
       meets.expected = ifelse(Rate * 100 > min.expected & Rate * 100 < max.expected,
                               "Yes", "No")) %>% 
-    select(COVERAGE_TYPE, STRATA, Effective_Date, Expire_After, deployment.method, 
+    select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
-    arrange(Effective_Date, match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")), Expire_After)
+    arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
   ,
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
@@ -933,11 +934,11 @@ Coverage.Table.partial <- plyr::rbind.fill(
     mutate(COVERAGE_TYPE = "Gear-based Total",
            Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") 
-) %>% 
+) #%>% 
 # Nullify hypothesis test for any time periods with a programmed rate of 0  
-  mutate(min.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, min.expected),
-         max.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, max.expected),
-         meets.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, meets.expected))
+  #mutate(min.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, min.expected),
+   #      max.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, max.expected),
+    #     meets.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, meets.expected))
 
 #ZERO COVERAGE 
 Coverage.Table.zero <- # plyr::rbind.fill(Coverage.Table.zero <-
@@ -984,7 +985,7 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
          N = as.character(N),
          n = as.character(n),
          #*FLAG* binom.test method
-         #Rate = ifelse(is.na(Rate), NA, format(Rate*100, digits=1, nsmall=1)),
+         #Rate = ifelse(is.na(Rate), NA, format(Rate * 100, digits = 1, nsmall = 1)),
          
          #*FLAG* qbinom method
          Rate = ifelse(is.na(Rate), NA, 
@@ -1005,8 +1006,8 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
                                     Partial = "PARTIAL"),
          STRATA = fct_recode(factor(STRATA),
                              Full = "FULL"),
-         Effective_Date = ifelse(is.na(Effective_Date) & !is.na(Rate), format(as.Date("2020-01-01"), "%b-%d"), format(Effective_Date, "%b-%d")),
-         Expire_After = ifelse(is.na(Expire_After) & !is.na(Rate), format(as.Date("2020-12-31"), "%b-%d"), format(Expire_After, "%b-%d"))) %>% 
+         #Effective_Date = ifelse(is.na(Effective_Date) & !is.na(Rate), format(as.Date("2020-01-01"), "%b-%d"), format(Effective_Date, "%b-%d")),
+         #Expire_After = ifelse(is.na(Expire_After) & !is.na(Rate), format(as.Date("2020-12-31"), "%b-%d"), format(Expire_After, "%b-%d"))) %>% 
   select(`Coverage` = COVERAGE_TYPE, Strata = STRATA, 
          `Start date` = Effective_Date, `End date` = Expire_After,
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
