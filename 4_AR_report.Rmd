@@ -860,7 +860,7 @@ This section compares the coverage rate achieved against the expected coverage r
 # Coverage table has number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n), and percent observed by deployment method (trip vs. vessel-selection):
 
 #' *FULL COVERAGE*
-Coverage.Table.full <- plyr::rbind.fill(
+Coverage.Table.full <- bind_rows(
   # Coverage rates for vessels in the full coverage category (both regulatory
   # and voluntary full coverage)
   work.data %>%
@@ -870,10 +870,11 @@ Coverage.Table.full <- plyr::rbind.fill(
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
-    mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
+    mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 1,
-           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%
+           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes"),
+           Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *had to move for logic to work*
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
     arrange(desc(STRATA))
@@ -891,7 +892,7 @@ Coverage.Table.full <- plyr::rbind.fill(
 )
 
 #' *PARTIAL COVERAGE TRIP-SELECTION*
-Coverage.Table.partial <- plyr::rbind.fill(
+Coverage.Table.partial <- bind_rows(
   # By strata for vessels in the partial coverage category (trip-selection)
   work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
@@ -913,7 +914,7 @@ Coverage.Table.partial <- plyr::rbind.fill(
       max.expected = round(
         stats::binom.test(x = n, n = N, p = Rate,
                           alternative = "two.sided")$conf.int[2], digits = 3) * 100,
-     meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
+      meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                 Rate * 100 < min.expected ~ "No - higher than expected",
                                 Rate * 100 > max.expected ~ "No - lower than expected")) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
@@ -943,10 +944,11 @@ Coverage.Table.zero <- #' plyr::rbind.fill(Coverage.Table.zero <- `DO WE NEED TH
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
-    mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
+    mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 0,
-           meets.expected = "") %>%  
+           meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes"),
+           Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
 
@@ -964,12 +966,12 @@ Coverage.Table.TOTALS <- work.data %>%
          Pct.obs = paste0( Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
 
 #' *Combine all the coverage tables*
-Coverage.Table <- plyr::rbind.fill(Coverage.Table.full, 
-                                   Coverage.Table.partial,
-                                   Coverage.Table.zero,
-                                   Coverage.Table.TOTALS # ,
-                                   #' Coverage.Table.TOTALS.sansEM *THIS TABLE NO LONGER EXISTS*
-                                   ) %>% 
+Coverage.Table <- bind_rows(Coverage.Table.full, 
+                            Coverage.Table.partial,
+                            Coverage.Table.zero,
+                            Coverage.Table.TOTALS # ,
+                            #' Coverage.Table.TOTALS.sansEM *THIS TABLE NO LONGER EXISTS*
+                            ) %>% 
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
   mutate(V = as.character(V),
