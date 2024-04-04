@@ -891,10 +891,10 @@ Coverage.Table.full <- plyr::rbind.fill(
              deployment.method = "Trip-Selection")
 )
 
-# PARTIAL COVERAGE TRIP-SELECTION
+#' *PARTIAL COVERAGE TRIP-SELECTION*
 Coverage.Table.partial <- plyr::rbind.fill(
   # By strata for vessels in the partial coverage category (trip-selection)
-test <-  work.data %>% 
+  work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
     #group_by(TRIP_ID) %>% 
     #mutate(START = min(TRIP_TARGET_DATE)) %>% 
@@ -910,14 +910,15 @@ test <-  work.data %>%
               Rate = unique(Rate)) %>%
     mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") %>% 
+    group_by(COVERAGE_TYPE, STRATA) %>%
     # Add binomial distribution upper and lower 95th percentiles to for each partial coverage stratum
     mutate(
       min.expected = round(
         stats::binom.test(x = n, n = N, p = Rate, 
-                          alternative = "two.sided")$conf.int[1], 3) * 100,
+                          alternative = "two.sided")$conf.int[1], digits = 3) * 100,
       max.expected = round(
         stats::binom.test(x = n, n = N, p = Rate,
-                          alternative = "two.sided")$conf.int[2], 3) * 100,
+                          alternative = "two.sided")$conf.int[2], digits = 3) * 100,
       meets.expected = ifelse(Rate * 100 > min.expected & Rate * 100 < max.expected,
                               "Yes", "No")) %>% 
     select(COVERAGE_TYPE, STRATA, deployment.method, 
