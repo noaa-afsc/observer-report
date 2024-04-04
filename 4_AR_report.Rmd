@@ -873,7 +873,7 @@ Coverage.Table.full <- plyr::rbind.fill(
     mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection",
            Rate = 1,
-           meets.expected = "") %>% 
+           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
     arrange(desc(STRATA))
@@ -904,7 +904,7 @@ Coverage.Table.partial <- plyr::rbind.fill(
               Rate = unique(Rate)) %>%
     mutate(Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") %>% 
-    # Add binomial distribution upper and lower 95th percentiles to for each partial coverage stratum
+    # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
     group_by(COVERAGE_TYPE, STRATA) %>%
     mutate(
       min.expected = round(
@@ -913,8 +913,9 @@ Coverage.Table.partial <- plyr::rbind.fill(
       max.expected = round(
         stats::binom.test(x = n, n = N, p = Rate,
                           alternative = "two.sided")$conf.int[2], digits = 3) * 100,
-      meets.expected = ifelse(Rate * 100 > min.expected & Rate * 100 < max.expected,
-                              "Yes", "No")) %>% 
+     meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
+                                Rate * 100 < min.expected ~ "No - higher than expected",
+                                Rate * 100 > max.expected ~ "No - lower than expected")) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
     arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
