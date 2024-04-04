@@ -963,23 +963,22 @@ Coverage.Table.TOTALS <- work.data %>%
          Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
          Pct.obs = paste0( Pct.obs.trips, "% Trips; ", Pct.obs.vessels, "% Vessels")) 
 
-#Combine all the coverage tables
+#' *Combine all the coverage tables*
 Coverage.Table <- plyr::rbind.fill(Coverage.Table.full, 
                                    Coverage.Table.partial,
                                    Coverage.Table.zero,
                                    Coverage.Table.TOTALS # ,
-                                   # Coverage.Table.TOTALS.sansEM
+                                   #' Coverage.Table.TOTALS.sansEM *THIS TABLE NO LONGER EXISTS*
                                    ) %>% 
-  #Formatting (change things to characters so they knit to Word without weird
-  #formatting issues)
+  # Formatting (change things to characters so they knit to Word without weird
+  # formatting issues)
   mutate(V = as.character(V),
          v = as.character(v),
          N = as.character(N),
          n = as.character(n),
-         #*FLAG* binom.test method
+         #' *FLAG* binom.test method
          #Rate = ifelse(is.na(Rate), NA, format(Rate * 100, digits = 1, nsmall = 1)),
-         
-         #*FLAG* qbinom method
+         #' *FLAG* qbinom method
          Rate = ifelse(is.na(Rate), NA, 
                        ifelse(deployment.method == "Trip-Selection", 
                               format(Rate * 100, digits = 1, nsmall = 1),
@@ -992,16 +991,13 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
                                ifelse(deployment.method == "Trip-Selection", 
                                       format(max.expected, digits = 1, nsmall = 1),
                                       format(max.expected, digits = 0, nsmall = 0))),
-          # 
          COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
                                     Full = "FULL",
                                     Partial = "PARTIAL"),
          STRATA = fct_recode(factor(STRATA),
-                             Full = "FULL"),
-         #Effective_Date = ifelse(is.na(Effective_Date) & !is.na(Rate), format(as.Date("2020-01-01"), "%b-%d"), format(Effective_Date, "%b-%d")),
-         #Expire_After = ifelse(is.na(Expire_After) & !is.na(Rate), format(as.Date("2020-12-31"), "%b-%d"), format(Expire_After, "%b-%d"))) %>% 
-  select(`Coverage` = COVERAGE_TYPE, Strata = STRATA, 
-         `Start date` = Effective_Date, `End date` = Expire_After,
+                             Full = "FULL")) %>%
+  select(`Coverage` = COVERAGE_TYPE, 
+         Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
