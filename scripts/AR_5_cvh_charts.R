@@ -679,6 +679,10 @@ ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
 
 # Alluvial plot of old data, 2023 ----------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+# LABELS WITH < 3 STATEMENTS:
+  # Contractor Problems, Harassment-Assault, Marine Mammal-Feeding,
+  # Marine Mammal-Harassment, Prohibited Species - Retaining, 
+  # Sample Bias-Marine Mammals, Seabird-Harassment
 
 # Set labels
 river_oldcat_labels_23 <- statements_combined %>%
@@ -752,6 +756,8 @@ ggsave(filename = 'Plots/river_oldcat_23.png',
 # Alluvial plot of new data, by safety -----------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
 # NEW OLE SYSTEM)
+# LABELS WITH < 3 STATEMENTS:
+  # ACCESS, ASSAULT, FORCED TO PERFORM CREW DUTIES, EPIRB
 
 # Set labels
 river_newcat_safety_labels <- statements_combined %>%
@@ -832,7 +838,10 @@ ggsave(filename = 'Plots/river_newcat_safety.png',
 # Alluvial plot of new data, by nonsafety --------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
 # NEW OLE SYSTEM)
-
+# LABELS WITH < 3 STATEMENTS:
+  # ADMINISTRATIVE RESPONSIBILITIES, DATA TRANSMISSION, OBSERVER COVERAGE,
+  # OPERATIONAL LINE, TIMELY NOTIFICATION, IFQ PERMIT, INSPECTION REPORTS,
+  # HALIBUT DECK SORTING
 # Set labels
 river_newcat_nonsafety_labels <- statements_combined %>%
   filter(OLE_SYSTEM == 'NEW',
