@@ -346,10 +346,9 @@ In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark="
 The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
-#' Perform a check on the random number process in ODDs. `random.assign` is a flag for whether a trip's random number 
-#' was less than the trip's selection rate. Since ODDS 3.0 starting in 2023, all trips have `RANDOM_NUMBER_USED` 
+#' Perform a check on the random number process in ODDS. `random.assign` is a flag for whether a trip's random number 
+#' was less than the trip's selection rate. Since ODDS 3.0 was online in 2023, all trips have `RANDOM_NUMBER_USED` 
 #' assigned and will therefore not have NA values. `PLANNED_EMBARK_DATE` is also changed from POSIX.ct to Date class.
-
 odds.dat <- odds.dat %>% mutate(
   # Convert to Date class
   PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE),
@@ -365,14 +364,13 @@ odds.dat <- odds.dat %>% mutate(
 )
 if(nrow(odds.dat %>% filter(random.assign == -99))) stop("Some records with undefined 'random.assign'")
 
-
 # Are assignments being performed as programmed?
 # TRIP_MONITOR_CODE
-# ND = Not observed (Provider Defaulted)
-# RO = Observer Trip (Require Observer)
-# OA = Observed Trip (Observer Assigned)
-# RL = Not Observed (Provider Release)
-# NO = Not Observed Trip (Observer Not Required or Waiver Granted)
+#   ND = Not observed (Provider Defaulted)
+#   RO = Observer Trip (Require Observer)
+#   OA = Observed Trip (Observer Assigned)
+#   RL = Not Observed (Provider Release)
+#   NO = Not Observed Trip (Observer Not Required or Waiver Granted)
 # STRATA_CODE == 98 are EM trips that were marked "OA" only because they fished IFQ in more than one area
 # STRATA_CODE == 96 are at-sea compliance trips that fished IFQ in more than one area
 # Trip status codes: 
@@ -380,14 +378,15 @@ if(nrow(odds.dat %>% filter(random.assign == -99))) stop("Some records with unde
 #   PD = Pending
 #   CN = Cancelled 
 #   CP = Completed 
-#   CC = Cancel Cascaded
+#   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
+#   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
 
-#' Based on a trip's stratum and the outcome of the trip, flag trips that should have its monitored/unmonitored status 
-#' determined by random selection with the `random.test` flag. Trips whose fate was predetermined by prior trips, e.g., 
-#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, are excluded with a value of NA. Use 
-#' `TRIP_MONITOR_CODE` to identify trips in non-100% compliance monitoring strata that were slated for monitoring, 
-#' whether it was realized or not, including those where the trip was waived. Finally, trips in strata without random
-#' selection and trips marked as not monitored are identified.
+#' Based on a trip's stratum and the outcome of the trip, flag trips trips that were either monitored or intended to be
+#' monitored as a result of random selection in `random.test`. Trips whose fate was predetermined by prior trips, e.g., 
+#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, are excluded with a value of [`NA`]. 
+#' Use `TRIP_MONITOR_CODE` to identify trips in non-100% compliance monitoring strata that were slated for monitoring, 
+#' whether it was realized or not, including those where the trip was waived [`1`]. Finally, trips in strata without 
+#' random selection and trips marked as not monitored are identified [`0`].
 odds.dat <- odds.dat %>% mutate(
   random.test = case_when(
     # Exclude trips that inherited other trips (selection of this record was not random)
@@ -409,7 +408,8 @@ odds.dat <- odds.dat %>% mutate(
 )
 if(nrow(odds.dat %>% filter(random.test == -99))) stop("Some records with undefined 'random.test'")
 
-# Check whether the monitoring outcome matches what was determined by random selection
+#' Check whether the monitoring outcome matches what was determined by random selection, i.e., trips that were not 
+#' monitored when they were supposed to be or vice versa.
 odds.dat <- odds.dat %>% mutate(random.test.result = ifelse(random.test - random.assign == 0, "PASS", "FAIL"))
 if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
   stop(paste0("There are trips that failed `random.test.result`!"))
@@ -450,7 +450,7 @@ disposition <- # Merging two elements:
                 Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
                 Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
                 Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-                Trips.waived= length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
+                Trips.waived = length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
                 Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) %>%
       mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
              Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
