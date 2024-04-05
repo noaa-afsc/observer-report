@@ -346,26 +346,28 @@ In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark="
 The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
-#' FIXME - *Make this annotation more clear what it's doing*
-# Perform a check on the random number process in ODDS (flag for whether a trip was selected due to random selection or not)
-# Trips outside of trip-selection do not have random numbers in odds.odds_trip_stratas (e.g., voluntary 100%)
-# There may or may not be NAs in RANDOM_NUMBER_USED, depending on the stratification used
-# This analysis needs to be done regardless of whether there are NAs in RANDOM_NUMBER_USED
-# Use output table to assess any flagged trips and make corrections as necessary
-# Also convert PLANNED_EMBARK_DATE to as.Date(), which is easier to work with than POSIXct
-# FIXME   There was a trip in 2023 with RANDOM_NUMBER_USED == 1 with ODDS_SELECTION_PCT == 100 that appears to have been 
-# monitored in spite of technically failing the RN check. Added | (ODDS_SELECTION_PCT == 100) to handle this until ODDS
-# logic can remedy this. 2024-Mar-29 Geoff Mayhew sent e-mail to Andy Kingham to address this issue.
+#' Perform a check on the random number process in ODDs. `random.assign` is a flag for whether a trip's random number 
+#' was less than the trip's selection rate. Since ODDS 3.0 starting in 2023, all trips have `RANDOM_NUMBER_USED` 
+#' assigned and will therefore not have NA values. `PLANNED_EMBARK_DATE` is also changed from POSIX.ct to Date class.
+
 odds.dat <- odds.dat %>% mutate(
+  # Convert to Date class
   PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE),
+  # Compare random number to selection rate
   random.assign = case_when(
     is.na(RANDOM_NUMBER_USED) ~ NA,
-    !is.na(RANDOM_NUMBER_USED) & (RANDOM_NUMBER_USED < ODDS_SELECTION_PCT / 100) | (ODDS_SELECTION_PCT == 100) ~ 1,
-    !is.na(RANDOM_NUMBER_USED) & (RANDOM_NUMBER_USED >= ODDS_SELECTION_PCT / 100) ~ 0
+    # Trip was randomly selected to NOT be monitored OR not randomly selected (e.g., 100% compliance)
+    (RANDOM_NUMBER_USED >= ODDS_SELECTION_PCT / 100) | (ODDS_SELECTION_PCT == 100) ~ 0,
+    # Trip was randomly selected to be monitored
+    RANDOM_NUMBER_USED < ODDS_SELECTION_PCT / 100 ~ 1,
+    .default = -99
   )
 )
+if(nrow(odds.dat %>% filter(random.assign == -99))) stop("Some records with undefined 'random.assign'")
+
 
 # Are assignments being performed as programmed?
+# TRIP_MONITOR_CODE
 # ND = Not observed (Provider Defaulted)
 # RO = Observer Trip (Require Observer)
 # OA = Observed Trip (Observer Assigned)
@@ -374,70 +376,52 @@ odds.dat <- odds.dat %>% mutate(
 # STRATA_CODE == 98 are EM trips that were marked "OA" only because they fished IFQ in more than one area
 # STRATA_CODE == 96 are at-sea compliance trips that fished IFQ in more than one area
 # Trip status codes: 
-# CS = Cancel by System 
-# PD = Pending
-# CN = Cancelled 
-# CP = Completed 
-# CC = Cancel Cascaded
-odds.dat <- mutate(odds.dat, random.test = 0) %>% 
-            mutate(random.test = ifelse(TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & !(STRATA_CODE %in% c(96, 98)), 1, random.test)) %>% 
-            mutate(random.test = ifelse(!is.na(RELEASE_STATUS_DESCRIPTION), 1, random.test)) %>%  # Waived trips
-            mutate(random.test = ifelse(!is.na(INHERIT_TRIP_SEQ), NA, random.test)) %>% # Inherited trips aren't truly 'selected'
-            mutate(random.test = ifelse(TRIP_STATUS_CODE == "CC", NA, random.test)) %>% # CC = 'cascade cancel'
-            mutate(random.test = ifelse(is.na(RANDOM_NUMBER_USED), NA, random.test))
+#   CS = Cancel by System 
+#   PD = Pending
+#   CN = Cancelled 
+#   CP = Completed 
+#   CC = Cancel Cascaded
 
-if(F){
-  odds.dat %>% group_by(random.test, STRATA_CODE, TRIP_MONITOR_CODE)
-  
-  
+#' Based on a trip's stratum and the outcome of the trip, flag trips that should have its monitored/unmonitored status 
+#' determined by random selection with the `random.test` flag. Trips whose fate was predetermined by prior trips, e.g., 
+#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, are excluded with a value of NA. Use 
+#' `TRIP_MONITOR_CODE` to identify trips in non-100% compliance monitoring strata that were slated for monitoring, 
+#' whether it was realized or not, including those where the trip was waived. Finally, trips in strata without random
+#' selection and trips marked as not monitored are identified.
+odds.dat <- odds.dat %>% mutate(
+  random.test = case_when(
+    # Exclude trips that inherited other trips (selection of this record was not random)
+    !is.na(INHERIT_TRIP_SEQ) ~ NA, 
+    # Exclude trips missing random numbers or cancel cascaded (both instances removed with ODDS 3.0 in 2023)
+    TRIP_STATUS_CODE == "CC" | is.na(RANDOM_NUMBER_USED) ~ NA,
+    # Exclude trips canceled by system, which have an unknown monitoring outcome and do not become inherits
+    TRIP_STATUS_CODE == "CS" ~ NA,
+
+    # Trip was intended to be monitored but was waived OR
+    !is.na(RELEASE_STATUS_DESCRIPTION) ~ 1,
+    # Trip was monitored or supposed to be monitored due to random selection (not within compliance monitoring)
+    TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & ODDS_SELECTION_PCT != 100 ~ 1,
+    
+    # Trip was not monitored because it was not selected OR the trip was not randomly selected because it had 100% compliance monitoring
+    (TRIP_MONITOR_CODE == "NO") | ODDS_SELECTION_PCT == 100 ~ 0,  
+    .default = -99
+  )
+)
+if(nrow(odds.dat %>% filter(random.test == -99))) stop("Some records with undefined 'random.test'")
+
+# Check whether the monitoring outcome matches what was determined by random selection
+odds.dat <- odds.dat %>% mutate(random.test.result = ifelse(random.test - random.assign == 0, "PASS", "FAIL"))
+if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
+  stop(paste0("There are trips that failed `random.test.result`!"))
+} else{
+  odds.dat <- odds.dat %>% select(-c(random.test, random.test.result))
 }
-#Perform the check
-odds.dat <- mutate(odds.dat, random.test = random.test - random.assign) %>% 
-            mutate(random.test.result = ifelse(random.test == 0, "PASS", "FAIL"))
-
-# Assess discrepancies
-filter(odds.dat, random.test.result == "FAIL")
-
-# Address discrepancies
-#' `FOR 2024 ONLY`
-#' *Adjusted n = 2 trips that were waived b/c of 3-in-a-row rule (verified by Geoff 3/25/24)*
-#' *ODDS 3.0 not populating ODDS_STRATA_RELEASE tables with those trips so they are missing release information in data pull*
-
-odds.dat <- 
-  odds.dat %>%
-  mutate(RELEASE_COMMENT = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-                                     ~ "Three Observerd Trips Release", TRUE ~ RELEASE_COMMENT),
-         RELEASE_STATUS_DESCRIPTION = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-                                                ~ "Three in Row Release", TRUE ~ RELEASE_STATUS_DESCRIPTION),
-         random.assign = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-                                   ~ 1, TRUE ~ random.assign),
-         random.test = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-                                 ~ 0, TRUE ~ random.test),
-         random.test.result = case_when(TRIP_PLAN_LOG_SEQ == 202322990 | TRIP_PLAN_LOG_SEQ == 202317623 
-                                        ~ "PASS", TRUE ~ random.test.result)
-         )
-
-# How many selected (1) versus not-selected (0) trips
-table(odds.dat$random.assign, useNA = "always")
-
-#' *================================================================*
-#' *Check records where trip was cancelled but selection is NA*
-cancel.check <- 
-  odds.dat %>%
-  filter(is.na(TRIP_SELECTED), TRIP_STATUS_CODE == "CN", STRATA != "EM TRW EFP")
-
-levels(as.factor(cancel.check$STRATA))
-levels(as.factor(cancel.check$YEAR))
-levels(as.factor(cancel.check$TRIP_MONITOR_CODE))
-levels(as.factor(cancel.check$STRATA_CODE))
-levels(as.factor(cancel.check$ODDS_SELECTION_PCT))
-levels(as.factor(cancel.check$random.assign))
-
-table(cancel.check$TRIP_SELECTED, cancel.check$TRIP_MONITOR_CODE, useNA = 'always') 
 ```
 
 ```{r disposition.tbl, warning=FALSE, include=FALSE}
 #' *2024 AR only: split by year since we are reporting 2022 and 2023*
+
+#' *GM - I think we can omit this chunk because these tables were last created in 2019*
 
 # Table 3-2 ----
 # Disposition of trips in the ODDS. This table summarizes the frequency of trip activities.  
@@ -522,12 +506,41 @@ disposition.table <-
 ```
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
-# Table 3-3 ---- 
-#Disposition of trips - showing only valid trips and categories are exclusive
+# *In this document, tables 3-2 and 3-3 are from the 2019 Annual Report! The 2020 version of 3-2 is created in chunk selection.tbl, aka 3-4*
+
+#' Before ODDS 3.0, all cancelled (CN or CC) trips had NA for TRIP_SELECTED
+#' In 2019, It doesn't look like CS trips were excluded from this table?
+#' *NEW*
+logged <-
+  odds.dat %>% 
+    # Exclude 100% compliance trips and cancelled trips
+    filter(!ODDS_SELECTION_PCT %in% c(0, 100), !(TRIP_STATUS_CODE %in% c("CN", "CC", "CS", "CR"))) %>%
+    group_by(YEAR, STRATA) %>%                                                 # 2024-ONLY: Added YEAR to group
+    summarize(
+      Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
+      Random.selected = sum(random.assign, na.rm = TRUE), 
+      # Number of trips that are not selected by a random number but were 
+      # selected by inherits instead and were not subsequently waived
+      # (EXTRA TRIPS BEYOND RANDOM SELECTION DUE TO INHERITS)
+      Inherit.selected = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 0 & 
+                                                         !is.na(INHERIT_TRIP_SEQ) &
+                                                         is.na(RELEASE_STATUS_DESCRIPTION)])),
+      # Randomly selected trips that were waived.
+      Waivers.selected = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1 & 
+                                                         !is.na(RELEASE_STATUS_DESCRIPTION)])),
+      # Below are the outcomes of inherits and waivers
+      Total.final.selected = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED == "Y"])),
+      # Percent of total selected trips due to inherits
+      Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
+      # % Reduction in Selected Trips due to Waivers
+      Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))
+  
+
+#' *ORIGINAL*
 logged <-
   odds.dat %>% 
   # only pull in partial coverage
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%  #' *LOSING ALL THOSE CN TRIPS WITH NA?*
+  filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%  #' *LOSING ALL THOSE CN TRIPS WITH NA? (GM thinks we are actually INCLUDING cancelled trips that were previously excluded.*
   filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>% 
   group_by(YEAR, STRATA) %>%                                                 # 2024-ONLY: Added YEAR to group
   summarize(Total.trips = length(unique(TRIP_PLAN_LOG_SEQ)),
@@ -547,6 +560,14 @@ logged <-
             Pct.selected.from.inherit = format(round((Inherit.selected / Total.final.selected) * 100, 1), nsmall = 1),
             # % Reduction in Selected Trips due to Waivers
             Pct.allselected.from.waiver = format(round((Waivers.selected / (Total.final.selected + Waivers.selected)) * 100, 1), nsmall = 1))
+
+#' *GM - I think we can omit the rest of this chunk because these tables were last created in 2019. Logged is used in 3-4 though*
+
+
+# Table 3-3 ---- 
+#' *The 2020 document didnt have equivalent 3-2, or 3-3, so we can skip these? They tell us with more granularity how many selected trips were cancelled or waived*
+#Disposition of trips - showing only valid trips and categories are exclusive
+
 
 logged.table <- bind_rows(logged, 
                       logged %>% 
@@ -578,27 +599,26 @@ logged.table <- bind_rows(logged,
 # under various assumptions
 for.p.wide <- merge(
   logged %>% 
-  group_by(YEAR, STRATA) %>%              # 2024-ONLY: Added YEAR to group
-  summarize(random.n = Random.selected,
-            inherit.n = Total.final.selected,
-            inherit.butnowaiver.n = (Total.final.selected + Waivers.selected),
-            Total.n = Total.trips,
-            Source = "Valid trips only"
-            ),
+    group_by(YEAR, STRATA) %>%              # 2024-ONLY: Added YEAR to group
+    summarize(random.n = Random.selected,
+              inherit.n = Total.final.selected,
+              inherit.butnowaiver.n = (Total.final.selected + Waivers.selected),
+              Total.n = Total.trips,
+              Source = "Valid trips only"
+              ),
   # Now add in the total trips for the random number only
   odds.dat %>% 
-  filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
-  filter(!is.na(random.assign)) %>% 
-  group_by(YEAR, STRATA) %>%              # 2024-ONLY: Added YEAR to group
-  summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
-            Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
-            Source = "ODDS random number"), 
+    filter(STRATA %in% partial$STRATA & STRATA != "EM TRW EFP") %>%
+    filter(!is.na(random.assign)) %>% 
+    group_by(YEAR, STRATA) %>%              # 2024-ONLY: Added YEAR to group
+    summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
+              Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
+              Source = "ODDS random number"), 
   all = TRUE) %>% 
   arrange(YEAR, Source, STRATA)
 
 # Need to merge in the selection rates for calculating p-values later
-for.p.wide <-
-  for.p.wide %>%
+for.p.wide <- for.p.wide %>%
   left_join(partial, by = c("STRATA", "YEAR")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
   select(., !c(GEAR, formatted_strat, Rate))
