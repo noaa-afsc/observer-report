@@ -611,7 +611,7 @@ ggsave(filename = 'Plots/OPS_number_rainplot.png',
        height = 8)
 
 
-# Rain cloud plots of OLE Priority IP from rate_by_subcat ----------------------
+# Rain cloud plots of OLE Priority IP ------------------------------------------
 # Set colors
 colors <- nmfs_palette('regional')(6)
 
@@ -685,18 +685,20 @@ ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
   # Sample Bias-Marine Mammals, Seabird-Harassment
 
 # Set labels
-river_oldcat_labels_23 <- statements_combined %>%
+river_oldcat_labels_23 <- {
+  statements_combined %>%
   filter(OLE_SYSTEM == 'OLD',
-         MANUAL_YEAR == 2023) %>%
+         FIRST_VIOL_YEAR == 2023) %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
   filter(FREQ < 10)
+}
 
 # get colors
 old_colors <- {
   statements_combined %>%
     filter(OLE_SYSTEM == 'OLD',
-           MANUAL_YEAR == 2023) %>% 
+           FIRST_VIOL_YEAR == 2023) %>% 
     group_by(STATEMENT_TYPE, OLD_STATEMENT_COLOR) %>%
     summarize() %>%
     ungroup() %>%
@@ -708,7 +710,7 @@ old_colors <- {
 river_oldcat_23 <- {
   ggplot(data = statements_combined %>%
            filter(OLE_SYSTEM == 'OLD',
-                  MANUAL_YEAR == 2023),
+                  FIRST_VIOL_YEAR == 2023),
          aes(axis1 = factor(STATEMENT_TYPE_LABEL,
                             levels = c('Disruptive/Bothersome Behavior - Conflict Resolved',
                                        'Harassment-Assault', 'Harassment - Sexual',
@@ -760,7 +762,8 @@ ggsave(filename = 'Plots/river_oldcat_23.png',
   # ACCESS, ASSAULT, FORCED TO PERFORM CREW DUTIES, EPIRB
 
 # Set labels
-river_newcat_safety_labels <- statements_combined %>%
+river_newcat_safety_labels <- {
+  statements_combined %>%
   filter(OLE_SYSTEM == 'NEW',
          NEW_OLE_CATEGORY %in%
            c('OBSERVER SAFETY AND WORK ENVIRONMENT',
@@ -771,6 +774,7 @@ river_newcat_safety_labels <- statements_combined %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
   filter(FREQ < 6) 
+}
 
 # get colors
 safety_colors <- {
@@ -844,7 +848,8 @@ ggsave(filename = 'Plots/river_newcat_safety.png',
   # OPERATIONAL LINE, TIMELY NOTIFICATION, IFQ PERMIT, INSPECTION REPORTS,
   # HALIBUT DECK SORTING
 # Set labels
-river_newcat_nonsafety_labels <- statements_combined %>%
+river_newcat_nonsafety_labels <- {
+  statements_combined %>%
   filter(OLE_SYSTEM == 'NEW',
          !NEW_OLE_CATEGORY %in%
            c('OBSERVER SAFETY AND WORK ENVIRONMENT',
@@ -858,6 +863,7 @@ river_newcat_nonsafety_labels <- statements_combined %>%
   group_by(STATEMENT_TYPE_LABEL) %>%
   summarize(FREQ = n()) %>%
   filter(FREQ < 8)
+}
 
 # get colors
 nonsafety_colors <- {
@@ -927,6 +933,311 @@ river_newcat_nonsafety
 # Save the plot
 ggsave(filename = 'Plots/river_newcat_nonsafety.png',
        plot = river_newcat_nonsafety,
+       width = 20,
+       height = 10)
+
+#####################################
+##### CONFIDENTIAL DATA REMOVED #####
+#####################################
+# Alluvial plot of old data, 2023 ----------------------------------------------
+# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
+# LABELS WITH < 3 STATEMENTS:
+# Contractor Problems, Harassment-Assault, Marine Mammal-Feeding,
+# Marine Mammal-Harassment, Prohibited Species - Retaining, 
+# Sample Bias-Marine Mammals, Seabird-Harassment
+
+# Set labels
+river_oldcat_labels_noconfid_23 <- {
+  statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD',
+         FIRST_VIOL_YEAR == 2023) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 10, 
+         FREQ > 2)
+}
+
+# Set aside names of statements that we are removing
+confid_statements_old_23 <- {
+  statements_combined %>%
+  filter(OLE_SYSTEM == 'OLD',
+         FIRST_VIOL_YEAR == 2023) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 3) %>%
+  select(STATEMENT_TYPE_LABEL)
+}
+
+# get colors
+old_colors_noconfid <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'OLD',
+           FIRST_VIOL_YEAR == 2023,
+           !STATEMENT_TYPE_LABEL %in% 
+             confid_statements_old_23$STATEMENT_TYPE_LABEL) %>% 
+    group_by(STATEMENT_TYPE, OLD_STATEMENT_COLOR) %>%
+    summarize() %>%
+    ungroup() %>%
+    mutate(STATEMENT_TYPE = tolower(STATEMENT_TYPE)) %>%
+    arrange(STATEMENT_TYPE)
+}
+
+# Make the plot
+river_oldcat_noconfid_23 <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'OLD',
+                  FIRST_VIOL_YEAR == 2023,
+                  !STATEMENT_TYPE_LABEL %in%
+                    confid_statements_old_23$STATEMENT_TYPE_LABEL),
+         aes(axis1 = factor(STATEMENT_TYPE_LABEL,
+                            levels = c('Disruptive/Bothersome Behavior - Conflict Resolved',
+                                       'Harassment - Sexual',
+                                       'Intimidation, coercion, hostile work environment',
+                                       'Interference/Sample Biasing', 'Safety-NMFS',
+                                       'MARPOL/Oil Spill', 'Safety-USCG-Equipment',
+                                       'Safety-USCG-Fail to Conduct Drills',
+                                       'Safety-USCG-Marine Casualty', 'AFA',
+                                       'Amendment 80', 'Catcher Processor Longline',
+                                       'IFQ Retention', 'Amendment 91 salmon',
+                                       'Gulf of Alaska Salmon', 
+                                       'Halibut Deck Sorting',
+                                       'Prohibited Species - Mishandling',
+                                       'Restricted Access',
+                                       'Failure to Notify', 
+                                       'Inadequate Accommodations', 'IR/IU',
+                                       'Miscellaneous Violations',
+                                       'Reasonable Assistance', 
+                                       'Record Keeping and Reporting')),
+             axis2 = OLD_OLE_CATEGORY_LABEL)) +
+    river2_theme(labels = river_oldcat_labels_noconfid_23,
+                 axis1_label = 'Old Statement Type',
+                 axis2_label = 'Old OLE Category',
+                 axis1_min_text_size = 9,
+                 axis1_text_size = 18) +
+    scale_fill_manual(values = old_colors_noconfid$OLD_STATEMENT_COLOR)
+}
+
+# View the plot
+river_oldcat_noconfid_23
+
+# Save the plot
+ggsave(filename = 'Plots/river_oldcat_confid_removed_23.png',
+       plot = river_oldcat_noconfid_23,
+       width = 14,
+       height = 10)
+
+
+# Alluvial plot of new data, by safety -----------------------------------------
+# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
+# NEW OLE SYSTEM)
+# LABELS WITH < 3 STATEMENTS:
+# ACCESS, ASSAULT, FORCED TO PERFORM CREW DUTIES, EPIRB
+
+# Set labels
+river_newcat_safety_labels_noconfid <- {
+  statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW',
+         NEW_OLE_CATEGORY %in%
+           c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG-MARINE CASUALTY',
+             'SAFETY-USCG-EQUIPMENT',
+             'INTERFERENCE WITH DUTIES')) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 6,
+         FREQ > 2) 
+}
+
+# set aside confidential statements that we are removing
+confid_statements_safety_23 <- {
+  statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW',
+         NEW_OLE_CATEGORY %in%
+           c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG-MARINE CASUALTY',
+             'SAFETY-USCG-EQUIPMENT',
+             'INTERFERENCE WITH DUTIES')) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 3) %>%
+  select(STATEMENT_TYPE_LABEL)
+}
+
+# get colors
+safety_colors_noconfid <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'NEW',
+           NEW_OLE_CATEGORY %in%
+             c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+               'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+               'SAFETY-USCG-MARINE CASUALTY',
+               'SAFETY-USCG-EQUIPMENT',
+               'INTERFERENCE WITH DUTIES'),
+           !STATEMENT_TYPE_LABEL %in%
+             confid_statements_safety_23$STATEMENT_TYPE_LABEL) %>% 
+    group_by(STATEMENT_TYPE_LABEL, NEW_STATEMENT_SAFETY_COLOR) %>%
+    summarize() %>%
+    ungroup() %>%
+    mutate(STATEMENT_TYPE_LABEL = tolower(STATEMENT_TYPE_LABEL)) %>%
+    arrange(STATEMENT_TYPE_LABEL)
+}
+
+# Make the plot
+river_newcat_safety_noconfid <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'NEW',
+                  NEW_OLE_CATEGORY %in% 
+                    c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+                      'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+                      'SAFETY-USCG-MARINE CASUALTY',
+                      'SAFETY-USCG-EQUIPMENT',
+                      'INTERFERENCE WITH DUTIES'),
+                  !STATEMENT_TYPE_LABEL %in%
+                    confid_statements_safety_23$STATEMENT_TYPE_LABEL),
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = factor(STATEMENT_TYPE_LABEL,
+                            levels = c('HOSTILE WORK ENVIRONMENT', 'IMPEDIMENT',
+                                       'INTIMIDATION, BRIBERY,\nCOERCION',
+                                       'SEXUAL HARASSMENT', 
+                                       'SAFETY', 'FOOD AND\nACCOMMODATIONS',
+                                       'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS',
+                                       'SAMPLING INTERFERENCE', 'NOTIFICATION', 
+                                       'REASONABLE ASSISTANCE',
+                                       'GENERAL SAFETY EQUIPMENT', 
+                                       'SURVIVAL CRAFT', 
+                                       'FAILURE TO CONDUCT DRILLS',
+                                       'MARINE\nCASUALTY')))) +
+    river3_theme(labels = river_newcat_safety_labels_noconfid$STATEMENT_TYPE_LABEL,
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type',
+                 size_label = 5,
+                 axis3_text_size = 18,
+                 axis3_min_text_size = 8) +
+    scale_fill_manual(values = safety_colors_noconfid$NEW_STATEMENT_SAFETY_COLOR)
+}
+
+# View the plot
+river_newcat_safety_noconfid
+
+# Save the plot
+ggsave(filename = 'Plots/river_newcat_safety_confid_removed.png',
+       plot = river_newcat_safety_noconfid,
+       width = 20,
+       height = 10)
+
+
+# Alluvial plot of new data, by nonsafety --------------------------------------
+# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
+# NEW OLE SYSTEM)
+# LABELS WITH < 3 STATEMENTS:
+# ADMINISTRATIVE RESPONSIBILITIES, DATA TRANSMISSION, OBSERVER COVERAGE,
+# OPERATIONAL LINE, TIMELY NOTIFICATION, IFQ PERMIT, INSPECTION REPORTS,
+# HALIBUT DECK SORTING
+# Set labels
+river_newcat_nonsafety_labels_noconfid <- {
+  statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW',
+         !NEW_OLE_CATEGORY %in%
+           c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG-MARINE CASUALTY',
+             'SAFETY-USCG-EQUIPMENT',
+             'INTERFERENCE WITH DUTIES'),
+         !STATEMENT_TYPE_LABEL == 'DISCHARGE OF OIL',
+         !STATEMENT_TYPE_LABEL == 'BIN MONITORING',
+         !STATEMENT_TYPE_LABEL == 'GOA SALMON BYCATCH') %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 8,
+         FREQ > 2)
+}
+
+# set aside confidential statements that we are removing
+confid_statements_nonsafety_23 <-  {
+  statements_combined %>%
+  filter(OLE_SYSTEM == 'NEW',
+         !NEW_OLE_CATEGORY %in%
+           c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+             'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+             'SAFETY-USCG-MARINE CASUALTY',
+             'SAFETY-USCG-EQUIPMENT',
+             'INTERFERENCE WITH DUTIES')) %>%
+  group_by(STATEMENT_TYPE_LABEL) %>%
+  summarize(FREQ = n()) %>%
+  filter(FREQ < 3) %>%
+  select(STATEMENT_TYPE_LABEL)
+}
+
+# get colors
+nonsafety_colors_noconfid <- {
+  statements_combined %>%
+    filter(OLE_SYSTEM == 'NEW',
+           !NEW_OLE_CATEGORY %in%
+             c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+               'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+               'SAFETY-USCG-MARINE CASUALTY',
+               'SAFETY-USCG-EQUIPMENT',
+               'INTERFERENCE WITH DUTIES'),
+           !STATEMENT_TYPE_LABEL %in%
+             confid_statements_nonsafety_23$STATEMENT_TYPE_LABEL) %>% 
+    group_by(STATEMENT_TYPE_LABEL, NEW_STATEMENT_NONSAFETY_COLOR) %>%
+    summarize() %>%
+    ungroup() %>%
+    mutate(STATEMENT_TYPE_LABEL = tolower(STATEMENT_TYPE_LABEL)) %>%
+    arrange(STATEMENT_TYPE_LABEL)
+}
+
+
+# Make the plot
+river_newcat_nonsafety_noconfid <- {
+  ggplot(data = statements_combined %>%
+           filter(OLE_SYSTEM == 'NEW',
+                  !NEW_OLE_CATEGORY %in% 
+                    c('OBSERVER SAFETY AND WORK ENVIRONMENT',
+                      'SAFETY-USCG-FAIL TO CONDUCT DRILLS AND/OR SAFETY ORIENTATION',
+                      'SAFETY-USCG-MARINE CASUALTY',
+                      'SAFETY-USCG-EQUIPMENT',
+                      'INTERFERENCE WITH DUTIES'),
+                  !STATEMENT_TYPE_LABEL %in%
+                    confid_statements_nonsafety_23$STATEMENT_TYPE_LABEL),
+         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
+             axis2 = NEW_OLE_CATEGORY_LABEL,
+             axis3 = factor(STATEMENT_TYPE_LABEL,
+                            levels = c('DISCHARGE OF GARBAGE\nOR PLASTIC, OR LOSS\nOF FISHING GEAR',
+                                       'DISCHARGE OF OIL', 'BIN MONITORING', 
+                                       'OBSERVER SAMPLING STATION', 'SCALES',
+                                       'VIDEO MONITORING SYSTEM', 
+                                       'BELT AND\nFLOW OPERATIONS', 
+                                       'CATCH WEIGHING', 'CMCP', 
+                                       'MONITORING THE\nFLOW OF FISH', 
+                                       'BSAI SALMON BYCATCH', 
+                                       'GOA SALMON BYCATCH', 'MARINE MAMMAL',
+                                       'PROHIBITED SPECIES\nMISHANDLING',
+                                       'PROHIBITED SPECIES\nRETENTION',
+                                       'FALSE REPORTING', 
+                                       'GENERAL REPORTING\nREQUIREMENTS', 
+                                       'UNLAWFUL DISCARD', 
+                                       'DEPLOYMENT LOGISTICS')))) +
+    river3_theme(labels = river_newcat_nonsafety_labels_noconfid$STATEMENT_TYPE_LABEL,
+                 axis1_label = 'Old OLE Category',
+                 axis2_label = 'New OLE Category',
+                 axis3_label = 'New Statement Type',
+                 size_label = 5,
+                 axis3_text_size = 18,
+                 axis3_min_text_size = 10) +
+    scale_fill_manual(values = nonsafety_colors_noconfid$NEW_STATEMENT_NONSAFETY_COLOR)
+}
+
+# View the plot
+river_newcat_nonsafety_noconfid
+
+# Save the plot
+ggsave(filename = 'Plots/river_newcat_nonsafety_confid_removed.png',
+       plot = river_newcat_nonsafety_noconfid,
        width = 20,
        height = 10)
 
