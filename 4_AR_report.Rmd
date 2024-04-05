@@ -887,6 +887,7 @@ Coverage.Table.full <- bind_rows(
                 N = length(unique(TRIP_ID)),
                 n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
       mutate(COVERAGE_TYPE = "Full coverage total",
+             Pct.obs = (n/N) * 100,
              #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
              deployment.method = "Trip-Selection")
 )
@@ -904,22 +905,27 @@ Coverage.Table.partial <- bind_rows(
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"])),
               Rate = unique(Rate)) %>%
     mutate(Pct.obs = (n/N) * 100,
-      #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
+           #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") %>% 
     # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
     group_by(COVERAGE_TYPE, STRATA) %>%
     mutate(
       min.expected = round(
-        stats::binom.test(x = n, n = N, p = Rate, 
+        stats::binom.test(x = n, 
+                          n = N, 
+                          p = Rate, 
                           alternative = "two.sided")$conf.int[1], digits = 3) * 100,
       max.expected = round(
-        stats::binom.test(x = n, n = N, p = Rate,
+        stats::binom.test(x = n, 
+                          n = N, 
+                          p = Rate,
                           alternative = "two.sided")$conf.int[2], digits = 3) * 100,
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                  Rate * 100 < min.expected ~ "No - higher than expected",
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
+           V, v, N, n, Pct.obs, Rate, 
+           min.expected, max.expected, meets.expected) %>% 
     arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
   ,
   # Totals for partial coverage category
@@ -936,7 +942,7 @@ Coverage.Table.partial <- bind_rows(
 )
 
 #' *ZERO COVERAGE* 
-Coverage.Table.zero <- #' plyr::rbind.fill(Coverage.Table.zero <- `DO WE NEED THIS LINE?`
+Coverage.Table.zero <-
   work.data %>%
     filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #' *NO ZERO EM Research in 2023*
     mutate(STRATA = as.character(STRATA)) %>% 
@@ -965,7 +971,7 @@ Coverage.Table.TOTALS <- work.data %>%
          STRATA = "Total",
          Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
          Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
-         Pct.obs = paste0( Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
+         Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
 
 #' *Combine all the coverage tables*
 Coverage.Table <- bind_rows(Coverage.Table.full, 
@@ -974,7 +980,7 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                             #'Coverage.Table.TOTALS # , *THIS TABLE HAS Pct.obs as character*
                             #' Coverage.Table.TOTALS.sansEM *THIS TABLE NO LONGER EXISTS*
                             ) %>%
-  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *CAN ELIMINATE ALL THE OTHER format() OF Pct.obs*
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *CAN ELIMINATE ALL THE OTHER format() OF Pct.obs WITH THIS*
   bind_rows(Coverage.Table.TOTALS) %>%
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
@@ -1028,8 +1034,8 @@ totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Tot
 
 perc_trips_obs <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total") %>% 
-    transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, 
-                                   digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, 
+                                 digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
 totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*v*`) %>% as.numeric()
