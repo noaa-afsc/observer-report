@@ -157,24 +157,23 @@ odds.dat <- as.data.frame(odds.dat)
 #'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
-# GROUP_CODE: 10 = at-sea observer, 13 = fixed gear EM, 14 = EM TRW EFP
-# Trip status codes: 
-# CS = Cancel by System 
-# PD = Pending
-# CN = Cancelled 
-# CP = Completed 
-# CC = Cancel Cascaded
+# GROUP_CODE: 10:11 = at-sea observer, 13 = Fixed-gear EM, 14 = Trawl EM
+# TRIP_STATUS_CODE: 
+#   CS = Cancel by System 
+#   PD = Pending
+#   CN = Cancelled 
+#   CP = Completed 
+#   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
+#   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
-# The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due 
-# to fishing occurring in more than one area) but the random number generated was larger than the 
-# programmed rate, and so the video was not selected for review. Since these trips aren't truly
-# monitored, make TRIP_SELECTED = "N". 96 is used for at-sea observer compliance trips and 98 is used
-# for at-sea fixed gear EM trips.
+#' The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due to fishing occurring in 
+#' more than one area) but the random number generated was larger than the programmed rate, and so the video was not 
+#' selected for review. Since these trips aren't truly monitored, make TRIP_SELECTED = "N". 96 is used for at-sea 
+#' observer compliance trips and 98 is used for at-sea fixed gear EM trips.
 odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96, 98), "N", TRIP_SELECTED))
 
 # Translate GROUP_CODE, STRATA_CODE, and GEAR_TYPE_CODE into STRATA
-odds.dat %>% select(GROUP_CODE, STRATA_CODE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% distinct() %>% arrange(GROUP_CODE, STRATA_CODE)
 odds.dat <- mutate(odds.dat, STRATA = paste0(
   # Tag on "compliance" if the trip was a multi-area IFQ trip
   ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
@@ -188,7 +187,7 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
 odds.dat %>% distinct(STRATA) %>% arrange(STRATA)
 if(any(odds.dat$STRATA == "Unknown")) stop("Some `STRATA` are not yet defined!")
 
-# Lookup table for strata in partial coverage category
+# Create a lookup table for strata in partial coverage category
 partial <- odds.dat %>%
   filter(!(STRATA %like% "Compliance")) %>% 
   group_by(YEAR, STRATA, GEAR_TYPE_CODE) %>%
