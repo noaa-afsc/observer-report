@@ -143,17 +143,18 @@ odds.dat <- dbGetQuery(channel_afsc, script)
 # Data checks and clean up
 
 # Check for duplicates - should be no records (= 0)
-sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ)) 
+if(sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ))) stop("Some 'TRIP_PLAN_LOG_SEQ' are duplicated!")
 
 #'*====================================================================================================================*
 #' FIXME `ODDS 3.0 is not creating records in odds.odds_strata_release for trips auto-released by the three-in-a-row`
-#' `rule. Andy Kingham has been notified to remedy this, but we will hardcode 2 identified instances here`
+#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code 2 identified instances here`
 
 setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
   RELEASE_COMMENT = "Three Observerd Trips Release",
   RELEASE_STATUS_DESCRIPTION = "Three in Row Release"
 )]
 odds.dat <- as.data.frame(odds.dat)
+#'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
 # GROUP_CODE: 10 = at-sea observer, 13 = fixed gear EM, 14 = EM TRW EFP
