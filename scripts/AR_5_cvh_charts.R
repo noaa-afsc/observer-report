@@ -422,18 +422,18 @@ for (i in 1:length(old_statements)) {
 # use the factored level for alluvial plot of old data
 new_statements_safety <- {
   c('ASSAULT', #1
-    'FOOD AND\nACCOMMODATIONS', #2
-    'FORCED TO\nPERFORM CREW DUTIES', #3
-    'HOSTILE WORK ENVIRONMENT', #4
-    'IMPEDIMENT', #5
-    'INTIMIDATION, BRIBERY,\nCOERCION', #6
+    'FORCED TO\nPERFORM CREW DUTIES', #2
+    'HOSTILE WORK ENVIRONMENT', #3
+    'IMPEDIMENT', #4
+    'INTIMIDATION, BRIBERY,\nCOERCION', #5
+    'SEXUAL HARASSMENT', #6
     'SAFETY', #7
-    'SEXUAL HARASSMENT', #8
-    'ACCESS', #9
-    'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS', #10
-    'NOTIFICATION', #11
-    'REASONABLE ASSISTANCE', #12
-    'SAMPLING INTERFERENCE', #13
+    'FOOD AND\nACCOMMODATIONS', #8
+    'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS', #9
+    'SAMPLING INTERFERENCE', #10
+    'ACCESS', #11
+    'NOTIFICATION', #12
+    'REASONABLE ASSISTANCE', #13
     'EPIRB', #14
     'GENERAL SAFETY EQUIPMENT', #15
     'SURVIVAL CRAFT', #16
@@ -449,11 +449,11 @@ new_statement_safety_colors <- {
     'indianred', #3
     'firebrick', #4
     'orangered', #5
-    'darkred', #6
+    'red2', #6
     'orange', #7
-    'red2', #8
-    'green', #9
-    'blue', #10
+    'darkred', #8
+    'blue', #9
+    'green', #10
     'seagreen', #11
     'turquoise', #12
     'palegreen', #13
@@ -802,15 +802,16 @@ river_newcat_safety <- {
          aes(axis1 = OLD_OLE_CATEGORY_LABEL,
              axis2 = NEW_OLE_CATEGORY_LABEL,
              axis3 = factor(STATEMENT_TYPE_LABEL,
-                            levels = c('ASSAULT', 'FOOD AND\nACCOMMODATIONS',
+                            levels = c('ASSAULT', 
                                        'FORCED TO\nPERFORM CREW DUTIES',
                                        'HOSTILE WORK ENVIRONMENT', 'IMPEDIMENT',
                                        'INTIMIDATION, BRIBERY,\nCOERCION',
-                                       'SAFETY', 'SEXUAL HARASSMENT', 
-                                       'ACCESS', 
+                                       'SEXUAL HARASSMENT', 
+                                       'SAFETY', 'FOOD AND\nACCOMMODATIONS',
                                        'DESTRUCTION OF\nSAMPLE, WORK,\nPERSONAL EFFECTS',
-                                       'NOTIFICATION', 'REASONABLE ASSISTANCE', 
-                                       'SAMPLING INTERFERENCE', 'EPIRB', 
+                                       'SAMPLING INTERFERENCE', 
+                                       'ACCESS', 'NOTIFICATION', 
+                                       'REASONABLE ASSISTANCE', 'EPIRB', 
                                        'GENERAL SAFETY EQUIPMENT', 
                                        'SURVIVAL CRAFT', 
                                        'FAILURE TO CONDUCT DRILLS',
@@ -936,7 +937,10 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
 high_viol <- statements_combined %>% 
                filter(NUMBER_VIOLATIONS >= 
                         quantile(statements_combined$NUMBER_VIOLATIONS, 0.99),
-                      FIRST_VIOL_YEAR == 2023)
+                      FIRST_VIOL_YEAR == 2023) %>%
+               select(FIRST_VIOL_YEAR, NUMBER_VIOLATIONS, STATEMENT_TYPE,
+                      OLD_OLE_CATEGORY, NEW_OLE_CATEGORY, OLE_SYSTEM, 
+                      VESSEL_PLANT)
 
 write.csv(high_viol, 'high_violations_per_statement.csv')
 
