@@ -424,49 +424,35 @@ if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
 #' It does not represent the actual trips expected on the grounds. That is the next table.
 #' This was Table 3-2 in the 2019 Annual Report, but has not been generated since then. The data.frame is still 
 #' referenced in the text.
-disposition <- # Merging two elements:
-  merge(
-    # The first is by strata
-    odds.dat %>%
-      filter(ODDS_SELECTION_PCT != 100) %>%
-      select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, RELEASE_STATUS_DESCRIPTION, TRIP_PLAN_NUMBER) %>%
-      group_by(YEAR, STRATA, random.assign) %>%
-      summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
-                Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
-                Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
-                Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-                Trips.waived = length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
-                Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) %>%
-      mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
-             Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
-      data.frame(),
-    # Totals by year across strata
-    odds.dat %>%
-      filter(ODDS_SELECTION_PCT != 100) %>%
-      select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, RELEASE_STATUS_DESCRIPTION, TRIP_PLAN_NUMBER) %>%
-      group_by(YEAR, random.assign) %>%
-      summarize(STRATA = "Total",
-                Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
-                Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
-                Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
-                Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-                Trips.waived = length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
-                Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) %>%
-      mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
-             Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) %>%
-      data.frame(),
-     # Merge type
-     all = TRUE)
+
+# Summarize by stratum and random.assign
+disposition <- odds.dat %>%
+  filter(ODDS_SELECTION_PCT != 100) %>%
+  select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, RELEASE_STATUS_DESCRIPTION, TRIP_PLAN_NUMBER) %>%
+  group_by(YEAR, STRATA, random.assign) %>%
+  summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
+            Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
+            Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
+            Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
+            Trips.waived = length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
+            Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
+# Add yearly totals and summary statistics
+disposition <- merge(
+  disposition,
+  disposition %>% 
+    group_by(YEAR, random.assign) %>% 
+    summarise(STRATA = "Total", across(where(is.integer), sum)) %>%
+    data.frame(),
+  all = TRUE) %>%
+    mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
+           Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) 
 
 # Don't include Not Selected trips (random.assign == 0) in cancellation summaries since its not required by user.
-disposition$Trips.cancelled.bysystem[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
-disposition$Trips.remaining[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
-disposition$Trips.cancelled.byusers[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
-disposition$Cancellation.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- ""
-disposition$Trips.waived[is.na(disposition$random.assign) | disposition$random.assign == 0] <- "" #' *NEW ADD*
-disposition$Waiver.Pct[is.na(disposition$random.assign) | disposition$random.assign == 0] <- "" #' *NEW ADD*
+disposition %>% mutate(across(
+  c((starts_with("Trips.") | ends_with(".Pct")), -"Trips.logged.ODDS"), 
+  \(x) replace(x, is.na(random.assign) | random.assign == 0, "")))
 
-# Define values in the random.assign
+# Redefine values in the random.assign
 disposition$random.assign[is.na(disposition$random.assign) | disposition$random.assign == 1] <- "Selected"
 disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 
