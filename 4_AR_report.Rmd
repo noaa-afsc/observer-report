@@ -448,7 +448,7 @@ disposition <- merge(
            Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) 
 
 # Don't include Not Selected trips (random.assign == 0) in cancellation summaries since its not required by user.
-disposition %>% mutate(across(
+disposition <- disposition %>% mutate(across(
   c((starts_with("Trips.") | ends_with(".Pct")), -"Trips.logged.ODDS"), 
   \(x) replace(x, is.na(random.assign) | random.assign == 0, "")))
 
@@ -457,6 +457,7 @@ disposition$random.assign[is.na(disposition$random.assign) | disposition$random.
 disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
 
 # Then rename some columns for the table
+# Table 3-2 (2019, cancellation rates AFTER random selection) ---- 
 disposition.table <-
   disposition %>%
   arrange(YEAR, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total"))) %>%
@@ -474,8 +475,10 @@ disposition.table <-
 ```
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
-# *In this document, tables 3-2 and 3-3 are from the 2019 Annual Report! The 2020 version of 3-2 is created in chunk selection.tbl, aka 3-4*
 
+#' Summary of ODDS trip disposition by stratum, with totals trip totals of completed trips, subdivided by mutually 
+#' exclusive categories of randomly selected monitored trips, inherited monitored trips, released randomly selected 
+#' trips, and released inherited trips.
 #' *In the 2023 AR* : GM added the 'Waivers.inherited' category, which were previously uncategorized.
 
 logged <- odds.dat %>% 
@@ -502,9 +505,9 @@ logged <- odds.dat %>%
       Pct.allselected.from.waiver = format(round(((Waivers.selected + Waivers.inherited) / (Total.final.selected + Waivers.selected + Waivers.inherited)) * 100, 1), nsmall = 1))
 
 
-# Table 3-3 ---- 
-#' *The 2020 document did not have equivalent 3-2, or 3-3, so we can skip these?*
-#' They do tell us with more granularity how many selected trips were cancelled or waived
+# Table 3-3 (2019, inherits and release rates AFTER random selection and cancellation)---- 
+#' *Not including in the AR since 2019, kept for posterity*, but they tells us with more granularity how many selected 
+#' trips were cancelled or waived. 
 
 # Disposition of trips - showing only valid trips and categories are exclusive
 logged.table <- bind_rows(
@@ -537,10 +540,10 @@ logged.table <- bind_rows(
 ```
 
 ```{r selection.tbl, warning=FALSE, include=FALSE}
-# Table 3-4 ----
-# This table will show probabilities that selection rates = programmed rates
-# under various assumptions
+# Table 3-4 (2019) or Table 3-2 (2020) (Full ODDS summary, realized versus expected rates) ----
+# This table will show probabilities that selection rates = programmed rates under various assumptions
 for.p.wide <- merge(
+  # Completed non-100% monitored trips only
   logged %>% 
     #' *2023 AR ONLY: Added YEAR to group*
     group_by(YEAR, STRATA) %>%
@@ -548,29 +551,9 @@ for.p.wide <- merge(
               inherit.n = Total.final.selected,
               inherit.butnowaiver.n = (Total.final.selected + Waivers.selected + Waivers.inherited),
               Total.n = Total.trips,
-              #' TODO [By Valid trips do we mean completed trips?]
               Source = "Valid trips only"
               ),
   # Now add in the total trips for the random number only
-  
-  #' TODO [CHECK THAT WE WANT ALL random.assign in here, which includes waived and inherited trips!]
-  #' random.n should be the count of rips that were selected randomly by RN, (excluding trips inheriting monitoring!)
-  
-  
-  #' *NEW*
-  # odds.dat %>% 
-  #   filter(ODDS_SELECTION_PCT != 100) %>%
-  #   filter(!is.na(random.assign)) %>%
-  #   #' *2023 AR ONLY: Added YEAR to group*
-  #   group_by(YEAR, STRATA) %>%              
-  #   summarize(random.n = length(TRIP_PLAN_LOG_SEQ[random.assign == 1 & !is.na(INHERIT_TRIP_SEQ)]),
-  #             Total.n = length(TRIP_PLAN_LOG_SEQ),
-  #             Source = "ODDS random number"),
-  # all = TRUE) %>% 
-  # arrange(YEAR, Source, STRATA)
-  
-  
-  #' *Original*
   odds.dat %>%
     filter(ODDS_SELECTION_PCT != 100) %>%
     filter(!is.na(random.assign)) %>%
@@ -582,16 +565,16 @@ for.p.wide <- merge(
   all = TRUE) %>%
   arrange(YEAR, Source, STRATA)
 
-# Need to merge in the selection rates for calculating p-values later
+# Merge in the selection rates of each stratum for calculating p-values later
 for.p.wide <- for.p.wide %>%
   left_join(partial, by = c("STRATA", "YEAR")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
   select(., !c(GEAR, formatted_strat, Rate))
 
 # Put into long format
-#' *2023 AR only: designate year*
-#' TODO *dplyr::gather has been superceded by pivot_longer()*
-p.table <- gather(data = for.p.wide, key, value, -STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source)
+p.table <- for.p.wide %>%
+  pivot_longer(cols = c(-STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source), names_to = "key", values_to = "value")
+
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
@@ -1971,7 +1954,7 @@ kbl(
 
 ```{r disposition.table, echo=FALSE, include=FALSE}
 # Table 2 from 2019 Annual Report
-#' *NOT INCLUDED SINCE 2019*
+#' *NOT INCLUDED SINCE 2019 - This chunk has not been updated for the 2023 AR*
 if(F){
   ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
   
@@ -1989,7 +1972,7 @@ if(F){
 
 ```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
 # Table 3 from 2019 Annual Report
-#' *NOT INCLUDED SINCE 2019*
+#' *NOT INCLUDED SINCE 2019 - This chunk has not been updated for the 2023 AR**
 if(F){
   ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
   
