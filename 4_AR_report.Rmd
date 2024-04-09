@@ -575,21 +575,22 @@ for.p.wide <- for.p.wide %>%
 p.table <- for.p.wide %>%
   pivot_longer(cols = c(-STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source), names_to = "key", values_to = "value")
 
-
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
 
+# Run the binomial test for each  row to see if realized rates met expectation
 for(i in 1:nrow(p.table)){
+  # Realized monitoring rate
   p.table$pct[i] = round((p.table$value[i] / p.table$Total.n[i]) * 100, 2)
   # Check out this format - forces digits even if zero value!
   p.table$p[i] = format(round(stats::binom.test(p.table$value[i], p.table$Total.n[i], 
                         p = p.table$ODDS_SELECTION_PCT[i] / 100, 
                         alternative = "two.sided")$p.value, 3), nsmall = 3)}
 
-#' Format percentages with the same number of significant figures as *(as what?)*
+#' Format programmed and realized monitoring rates as percentages to 2 decimal places.
 p.table <- p.table %>% 
-           mutate(ODDS_SELECTION_PCT = round(ODDS_SELECTION_PCT, 1), 
-                  pct = round(pct, 1))
+  mutate(ODDS_SELECTION_PCT = round(ODDS_SELECTION_PCT, 2), 
+         pct = round(pct, 2))
 
 # Cleanup
 rm(for.p.wide)
@@ -1989,21 +1990,14 @@ if(F){
 
 ```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
 Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
-# For the period when waivers were in place, remove p-values for 'After Waivers'
-Selection.table <- Selection.table %>%
-  mutate(`*p*` = ifelse(Period==2 & !(Strata %like% "EM") & `Trip disposition` %like% "After Waivers", "", `*p*`))   
 Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
 
-kable(Selection.table %>% 
-        arrange(Period, Strata, `Trip disposition`) %>%
-        select(-Period), 
-      col.names=c("Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
-      escape=F, align="llrrrrr") %>%
-  kable_paper() %>%
-  pack_rows(index = c("Fixed-gear EM strata : full year"=8, 
-                      "Observer strata : Jan. 1 - Mar. 25"=12,
-                      "Observer strata : Mar. 25 - Jun. 30"=12,
-                      "Observer strata : Jul. 1 - Dec. 31"=12), indent=F) 
+kable(
+  Selection.table %>% arrange(Year, Strata, `Trip disposition`),
+  col.names=c("Year" , "Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
+  escape=F, align="lllrrrrr"
+) %>% kable_paper() 
+
 ```
 
 #####
