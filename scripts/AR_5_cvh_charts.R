@@ -10,6 +10,7 @@
 ##################################
 ##### LOAD PACKAGES AND DATA #####
 ##################################
+# Libraries --------------------------------------------------------------------
 library(dplyr)
 library(ggplot2)
 library(ggh4x)
@@ -24,11 +25,29 @@ library(ggalluvial)
 library(ggrepel)
 library(ggfittext)
 library(scales)
+library(readxl)
+library(tidyverse)
+library(patchwork)
+
+# Data -------------------------------------------------------------------------
 # clear environment
 rm(list = ls())
 
-# load data
+# load data from 'AR_3' script
 load(file = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/AR_3_rate_output.rdata')
+
+# load odds data issues from google sheet
+# TODO: this is currently a sheet downloaded from drive as of 4/10/2024
+  # once this sheet is housed in an accessible drive, update to download from 
+  # google drive
+# the map function allows for multiple sheets to be clumped into one list
+odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
+  map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
+
+# create dataset for 2023
+odds_2023 <- odds_data[[2]]
+# create dataset for 2022
+odds_2022 <- odds_data[[3]]
 
 # load fonts
 # font_import() # return y or n
@@ -935,6 +954,136 @@ ggsave(filename = 'Plots/river_newcat_nonsafety.png',
        plot = river_newcat_nonsafety,
        width = 20,
        height = 10)
+
+# Pareto plot of ODDS trips not logged / logged incorrectly: 2022 --------------
+# Format the data
+summarized_odds_2022 <- odds_2022 %>%
+  rename(ISSUE_CATEGORY = `Issue Category`) %>%
+  group_by(ISSUE_CATEGORY) %>%
+  summarize(FREQ = n()) %>%
+  arrange(desc(FREQ)) %>%
+  mutate(PROPORT_FREQ = FREQ / nrow(odds_2022),
+         CUMULATIVE_PROPORT = cumsum(PROPORT_FREQ),
+         CUMULATIVE_SUM = cumsum(FREQ),
+         ISSUE_CATEGORY = str_wrap(ISSUE_CATEGORY, width = 20),
+         YEAR = 2022)
+
+
+# get colors
+colors <- nmfs_palette('oceans')(6)
+
+# Plot the data
+pareto_2022 <- {
+  ggplot(data = summarized_odds_2022,
+         aes(x = factor(ISSUE_CATEGORY,
+                        levels = ISSUE_CATEGORY))) +
+    labs(x = 'Issue Category',
+         y = 'Proportion of All Issues',
+         title = 'ODDS Trips Not Logged or Logged Incorrectly (2022)') +
+    geom_bar(aes(y = PROPORT_FREQ),
+             stat = 'identity',
+             fill = colors[1],
+             color = colors[6]) +
+    geom_point(aes(y = CUMULATIVE_PROPORT),
+               color = colors[5],
+               size = 3) +
+    geom_path(aes(y = CUMULATIVE_PROPORT,
+                  group = 1),
+              color = colors[5],
+              lty = 9,
+              linewidth = 1) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = 'black'),
+          strip.text = element_text(color = 'white'),
+          plot.title = element_text(hjust = 0.5),
+          text = element_text(size = 20, family = 'Gill Sans MT')) 
+}
+
+# View the plot
+pareto_2022
+
+# Save the plot
+ggsave(filename = 'Plots/ODDS_pareto_2022.png',
+       plot = pareto_2022,
+       width = 12,
+       height = 7)
+
+
+# Pareto plot of ODDS trips not logged / logged incorrectly: 2023 --------------
+# Format the data
+summarized_odds_2023 <- odds_2023 %>%
+  rename(ISSUE_CATEGORY = `Issue Category`) %>%
+  group_by(ISSUE_CATEGORY) %>%
+  summarize(FREQ = n()) %>%
+  arrange(desc(FREQ)) %>%
+  mutate(PROPORT_FREQ = FREQ / nrow(odds_2023),
+         CUMULATIVE_PROPORT = cumsum(PROPORT_FREQ),
+         CUMULATIVE_SUM = cumsum(FREQ),
+         ISSUE_CATEGORY = str_wrap(ISSUE_CATEGORY, width = 20),
+         YEAR = 2023)
+
+
+# get colors
+colors <- nmfs_palette('oceans')(6)
+
+# Plot the data
+pareto_2023 <- {
+  ggplot(data = summarized_odds_2023,
+         aes(x = factor(ISSUE_CATEGORY,
+                        levels = ISSUE_CATEGORY))) +
+    labs(x = 'Issue Category',
+         y = 'Proportion of All Issues',
+         title = 'ODDS Trips Not Logged or Logged Incorrectly (2023)') +
+    geom_bar(aes(y = PROPORT_FREQ),
+             stat = 'identity',
+             fill = colors[1],
+             color = colors[6]) +
+    geom_point(aes(y = CUMULATIVE_PROPORT),
+               color = colors[5],
+               size = 3) +
+    geom_path(aes(y = CUMULATIVE_PROPORT,
+                  group = 1),
+              color = colors[5],
+              lty = 9,
+              linewidth = 1) +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.background = element_rect(fill = 'black'),
+          strip.text = element_text(color = 'white'),
+          plot.title = element_text(hjust = 0.5),
+          text = element_text(size = 20, family = 'Gill Sans MT')) 
+}
+
+# View the plot
+pareto_2023
+
+# Save the plot
+ggsave(filename = 'Plots/ODDS_pareto_2023.png',
+       plot = pareto_2023,
+       width = 12,
+       height = 7)
+
+# Facet Pareto plots by year ---------------------------------------------------
+# get colors
+colors <- nmfs_palette('oceans')(6)
+
+# Plot the data
+pareto_facet <- 
+  (pareto_2022 + facet_grid(. ~ '2022') + ggtitle('')) / 
+  (pareto_2023 + facet_grid(. ~ '2023') + ggtitle('')) + 
+  plot_layout(axis_titles = 'collect')
+
+# View the plot
+pareto_facet
+
+# Save the plot
+ggsave(filename = 'Plots/ODDS_pareto_facet_year.png',
+       plot = pareto_facet,
+       width = 11,
+       height = 13)
 
 #####################################
 ##### CONFIDENTIAL DATA REMOVED #####
