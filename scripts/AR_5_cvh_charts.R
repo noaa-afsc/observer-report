@@ -984,6 +984,11 @@ pareto_2022 <- {
              stat = 'identity',
              fill = colors[1],
              color = colors[6]) +
+    geom_text(aes(label = FREQ,
+                  y = PROPORT_FREQ),
+              vjust = -1,
+              family = 'Gill Sans MT',
+              size = 5) +
     geom_point(aes(y = CUMULATIVE_PROPORT),
                color = colors[5],
                size = 3) +
@@ -1040,6 +1045,11 @@ pareto_2023 <- {
              stat = 'identity',
              fill = colors[1],
              color = colors[6]) +
+    geom_text(aes(label = FREQ,
+                  y = PROPORT_FREQ),
+              vjust = -1,
+              family = 'Gill Sans MT',
+              size = 5) +
     geom_point(aes(y = CUMULATIVE_PROPORT),
                color = colors[5],
                size = 3) +
@@ -1067,23 +1077,84 @@ ggsave(filename = 'Plots/ODDS_pareto_2023.png',
        height = 7)
 
 # Facet Pareto plots by year ---------------------------------------------------
-# get colors
-colors <- nmfs_palette('oceans')(6)
-
-# Plot the data
+# Wrap the plots
 pareto_facet <- 
   (pareto_2022 + facet_grid(. ~ '2022') + ggtitle('')) / 
   (pareto_2023 + facet_grid(. ~ '2023') + ggtitle('')) + 
   plot_layout(axis_titles = 'collect')
 
-# View the plot
+# View the wrap
 pareto_facet
 
-# Save the plot
+# Save the wrap
 ggsave(filename = 'Plots/ODDS_pareto_facet_year.png',
        plot = pareto_facet,
        width = 11,
        height = 13)
+
+# Heat map of ODDS trips not logged / logged incorrectly: year groups -------
+# Format the data
+# first create empty data frame to loop data into
+odds_df <- data.frame()
+
+# start from 2 because of incomplete 2024 data, and subtract 1 to avoid using
+  # the empty sheet attached at the end
+for (i in 2:(length(odds_data) - 1)) {
+  data <- odds_data[[i]] %>%
+    select(contains('Date'), `Issue Category`)
+  odds_df <- bind_rows(odds_df, data)
+  print(i)
+}
+
+# rename columns, combine date columns, summarize data
+odds_df <- odds_df %>%
+  rename(ISSUE_CATEGORY = `Issue Category`) %>%
+  mutate(YEAR = as.numeric(format(coalesce(Date, # add columns if necessary
+                                           `Date OLE Notified`), '%Y')),
+         ISSUE_CATEGORY = str_wrap(ISSUE_CATEGORY, width = 20)) %>%
+  select(YEAR, ISSUE_CATEGORY) %>%
+  group_by(YEAR, ISSUE_CATEGORY) %>%
+  summarise(FREQ = n()) %>%
+  filter(YEAR < 2024) %>%
+  ungroup()
+
+# Make the plot
+odds_heatmap <- {
+  ggplot(data = odds_df %>%
+           filter(YEAR > 2015),
+         aes(x = 1,
+             y = 1)) +
+    facet_nested(ISSUE_CATEGORY ~ YEAR,
+                 switch = 'y') +
+    labs(y = 'Issue Category',
+         fill = 'Occurrences',
+         x = '') +
+    geom_tile(aes(fill = FREQ)) +
+    geom_text(aes(label = FREQ),
+              color = 'white',
+              family = 'Gill Sans MT') +
+    theme_minimal() +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_discrete(expand = c(0, 0)) +
+    theme(strip.text.y.left = element_text(angle = 0),
+          strip.background = element_rect(fill = 'black'),
+          strip.text = element_text(color = 'white'),
+          text = element_text(size = 20, family = 'Gill Sans MT'),
+          axis.ticks = element_blank(),
+          axis.text = element_blank(),
+          panel.grid = element_blank(),
+          panel.background = element_rect(color = 'black',
+                                          fill = 'gray'))
+}
+
+# View the plot
+odds_heatmap
+
+# Save the plot
+ggsave(file = 'Plots/odds_issues_heatmap.png',
+       plot = odds_heatmap,
+       width = 14,
+       height = 12)
 
 #####################################
 ##### CONFIDENTIAL DATA REMOVED #####
