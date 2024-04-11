@@ -353,40 +353,98 @@ outcomes.plot.2023 <-
 ```
 
 ```{r costs.plot, include=FALSE}
+
+#' `------------2022--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
+options(scipen = 999) # Remove scientific notation
+#'*----------------------------------------------------------------------------*
+
 # Get the budget used in the ADP
-BUDGET <- dp_res$BUD$BUD
+BUDGET.2022 <- bud_scen_lst$bud_TYFCPN$BUD$BUD #dp_res$BUD$BUD
 
 # Get total costs
-days_paid_sum <- days_paid %>% 
-                 summarise(Total.Base.Dollars = sum(Base.Dollars, na.rm = TRUE),
-                           Total.Option.Dollars = sum(Option.Dollars, na.rm = TRUE),
-                           Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE),
-                           Total.Quarantine.Dollars = sum(Quarantine..Dollars, na.rm = TRUE),
-                           Total.Plant.Dollars = sum(Plant..Dollars, na.rm = TRUE)) %>% 
-                 mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
+days_paid_sum.2022 <- 
+  days_paid.2022 %>% 
+  summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
+            Total.Option.Dollars = sum(Option_Dollars, na.rm = TRUE),
+            Total.Travel.Dollars = sum(Travel_Dollars, na.rm = TRUE),
+            Total.Quarantine.Dollars = sum(Quarantine_Dollars, na.rm = TRUE),
+            Total.Plant.Dollars = sum(Plant_Dollars, na.rm = TRUE)) %>% 
+  mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot <- ggplot(sample_budget_out, aes(x = ADP_C)) +
-              geom_histogram(aes(y = ..density..), binwidth = 20000, alpha=0.2, 
-                             fill="green", col="darkseagreen2") +
-              geom_vline(xintercept = BUDGET, lty=2, col="black") +
-              geom_vline(xintercept = days_paid_sum$Total.Dollars, lty=1, col="darkgreen") +
-              annotate("text", x=BUDGET + 30000, y=0.000001, 
-                       label=paste("Available Contract Budget: $", prettyNum(BUDGET, big.mark=","), sep=""), col="black", angle = 90) +
-              annotate("text", x=days_paid_sum$Total.Dollars - 30000, y=0.000001, 
-                       label=paste("Actual Contract Cost: $", prettyNum(days_paid_sum$Total.Dollars, big.mark=","), sep=""), 
-                       col="darkgreen", angle = 90) +
-              theme_bw() +
-              theme(text = element_text(size=14),
-                    axis.title.x = element_text(size=12),
-                    axis.title.y = element_text(size=12),
-                    axis.line=element_line(size=.5, color="black"),
-                    panel.grid.major = element_blank(),
-                    panel.grid.minor = element_blank()) +
-              scale_x_continuous(limits = c(2600000, 4250000), breaks=c(3000000, 4000000, 5000000),
-                                 labels = dollar) +
-              labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""), 
-                   x=paste("\nTotal contract costs in ", year, sep = ""))
+costs.plot.2022 <- 
+  #ggplot(sample_budget_out, aes(x = ADP_C)) +
+  ggplot(bud_tbl, aes(x = ADP_C)) + #' *NEW DATA CALL*
+  geom_histogram(aes(y = ..density..), binwidth = 20000, alpha = 0.2, 
+                 fill = "green", col = "darkseagreen2") +
+  geom_vline(xintercept = BUDGET.2022, lty = 2, col = "black") +
+  geom_vline(xintercept = days_paid_sum.2022$Total.Dollars, lty = 1, col = "darkgreen") +
+  annotate("text", x = BUDGET.2022 - 45000, y = 0.0000015, 
+           label = paste("Available Contract Budget: $", prettyNum(BUDGET.2022, big.mark = ","), sep = ""), 
+           col = "black", angle = 90) +
+  annotate("text", x = days_paid_sum.2022$Total.Dollars - 45000, y = 0.0000015, 
+           label = paste("Actual Contract Cost: $", prettyNum(days_paid_sum.2022$Total.Dollars, big.mark = ","), sep = ""), 
+           col = "darkgreen", angle = 90) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.line = element_line(size = 0.5, color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = seq(3750000, 4750000, 500000),
+                     labels = dollar) +
+  labs(#y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
+       y = paste("Density of simulated outcomes (2022 ADP)\n"),
+       x = paste("\nTotal contract costs in 2022"))
+       #x = paste("\nTotal contract costs in ", year, sep = ""))
+
+#' `------------2023--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
+#'*----------------------------------------------------------------------------*
+
+# Get the budget used in the ADP
+BUDGET.2023 <- bud_scen_lst$bud_TYFCPN$BUD$BUD #dp_res$BUD$BUD
+
+# Get total costs
+days_paid_sum.2023 <- 
+  days_paid.2023 %>% 
+  summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
+            Total.Option.Dollars = sum(Option_Dollars, na.rm = TRUE),
+            Total.Travel.Dollars = sum(Travel_Dollars, na.rm = TRUE),
+            Total.Quarantine.Dollars = sum(Quarantine_Dollars, na.rm = TRUE),
+            Total.Plant.Dollars = sum(Plant_Dollars, na.rm = TRUE)) %>% 
+  mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
+
+# Plot
+costs.plot.2023 <- 
+  ggplot(bud_tbl, aes(x = ADP_C)) +
+  geom_histogram(aes(y = ..density..), binwidth = 20000, alpha = 0.2, 
+                 fill = "green", col = "darkseagreen2") +
+  geom_vline(xintercept = BUDGET.2023, lty = 2, col = "black") +
+  geom_vline(xintercept = days_paid_sum.2023$Total.Dollars, lty = 1, col = "darkgreen") +
+  annotate("text", x = BUDGET.2023 - 45000, y = 0.00000125, 
+           label = paste("Available Contract Budget: $", prettyNum(BUDGET.2023, big.mark = ","), sep = ""), 
+           col = "black", angle = 90) +
+  annotate("text", x = days_paid_sum.2023$Total.Dollars - 45000, y = 0.00000125, 
+           label = paste("Actual Contract Cost: $", prettyNum(days_paid_sum.2023$Total.Dollars, big.mark = ","), sep = ""), 
+           col = "darkgreen", angle = 90) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.line = element_line(size = 0.5, color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = seq(4000000, 6000000, 500000),
+                     labels = dollar) +
+  scale_y_continuous(breaks = seq(0, 0.0000025, 0.000001)) +
+  labs(y = paste("Density of simulated outcomes (2023 ADP)\n"),
+       x = paste("\nTotal contract costs in 2023"))
+
 ```
 
 ```{r budget_eval, include=FALSE}
