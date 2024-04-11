@@ -1092,7 +1092,10 @@ ggsave(filename = 'Plots/ODDS_pareto_facet_year.png',
        width = 11,
        height = 13)
 
-# Heat map of ODDS trips not logged / logged incorrectly: year groups -------
+# Heat map of ODDS trips not logged / logged incorrectly: year groups ----------
+# get colors
+colors <- nmfs_palette('oceans')(12)
+
 # Format the data
 # first create empty data frame to loop data into
 odds_df <- data.frame()
@@ -1115,6 +1118,9 @@ odds_df <- odds_df %>%
   select(YEAR, ISSUE_CATEGORY) %>%
   group_by(YEAR, ISSUE_CATEGORY) %>%
   summarise(FREQ = n()) %>%
+  group_by(YEAR) %>%
+  mutate(YEAR_SUM = sum(FREQ),
+         PROPORT_FREQ = round(FREQ / YEAR_SUM, digits = 4)) %>%
   filter(YEAR < 2024) %>%
   ungroup()
 
@@ -1129,13 +1135,17 @@ odds_heatmap <- {
     labs(y = 'Issue Category',
          fill = 'Occurrences',
          x = '') +
-    geom_tile(aes(fill = FREQ)) +
-    geom_text(aes(label = FREQ),
+    geom_tile(aes(fill = PROPORT_FREQ)) +
+    geom_text(aes(label = PROPORT_FREQ),
               color = 'white',
               family = 'Gill Sans MT') +
     theme_minimal() +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_discrete(expand = c(0, 0)) +
+    scale_fill_gradientn(name = 'Proportion of\nOccurrences Within\na Year',
+                         colors = rev(colors),
+                         limits = c(0, 1.000),
+                         breaks = c(0, 0.250, 0.500, 0.750, 1.000)) +
     theme(strip.text.y.left = element_text(angle = 0),
           strip.background = element_rect(fill = 'black'),
           strip.text = element_text(color = 'white'),
