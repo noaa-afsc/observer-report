@@ -1009,12 +1009,6 @@ pareto_2022 <- {
 # View the plot
 pareto_2022
 
-# Save the plot
-ggsave(filename = 'Plots/ODDS_pareto_2022.png',
-       plot = pareto_2022,
-       width = 12,
-       height = 7)
-
 
 # Pareto plot of ODDS trips not logged / logged incorrectly: 2023 --------------
 # Format the data
@@ -1070,12 +1064,6 @@ pareto_2023 <- {
 # View the plot
 pareto_2023
 
-# Save the plot
-ggsave(filename = 'Plots/ODDS_pareto_2023.png',
-       plot = pareto_2023,
-       width = 12,
-       height = 7)
-
 # Facet Pareto plots by year ---------------------------------------------------
 # Wrap the plots
 pareto_facet <- 
@@ -1107,6 +1095,7 @@ for (i in 2:(length(odds_data) - 1)) {
     select(contains('Date'), `Issue Category`)
   odds_df <- bind_rows(odds_df, data)
   print(i)
+  rm(data, i)
 }
 
 # rename columns, combine date columns, summarize data
@@ -1120,7 +1109,7 @@ odds_df <- odds_df %>%
   summarise(FREQ = n()) %>%
   group_by(YEAR) %>%
   mutate(YEAR_SUM = sum(FREQ),
-         PROPORT_FREQ = round(FREQ / YEAR_SUM, digits = 4)) %>%
+         PROPORT_FREQ = FREQ / YEAR_SUM) %>%
   filter(YEAR < 2024) %>%
   ungroup()
 
@@ -1136,7 +1125,7 @@ odds_heatmap <- {
          fill = 'Occurrences',
          x = '') +
     geom_tile(aes(fill = PROPORT_FREQ)) +
-    geom_text(aes(label = PROPORT_FREQ),
+    geom_text(aes(label = FREQ),
               color = 'white',
               family = 'Gill Sans MT') +
     theme_minimal() +
