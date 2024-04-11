@@ -133,45 +133,100 @@ More information on the sampling design used by observers and the relationship b
 The following items from the `r year` ADP have been identified as objectives for evaluation in this report:  
 
 ```{r actual_observerdays_paid, include=FALSE}
-# Available budget for the year (in days)
-AvailableYR <- adp_out$ADJ %>% 
-               filter(ALLO == "min_plus_opt") %>% 
-               group_by(SIM_ITER, STEP) %>% 
-               summarise(OB_D = sum(OB_D)) %>% 
-               ungroup() %>% 
-               summarise(OB_D = mean(OB_D)) %>% 
-               unlist() %>% 
-               as.vector()
-  
-# Predicted cost for the year (in days)
-PredictedYR <- adp_out$BUD %>% 
-               filter(ALLO == "min_plus_opt") %>% 
-               summarise(ADP_D = mean(ADP_D)) %>% 
-               unlist() %>% 
-               as.vector()
 
 # Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!)
-days_paid <- read.csv("data/FMA Days Paid.csv")
-days_paid <- filter(days_paid, Calendar == year)
+days_paid <- read.csv("source_data/FMA Days Paid.csv") #' *PLACEHOLDER LOAD LOCATION (changed from "data/..."*
+days_paid.2022 <- filter(days_paid, Calendar == 2022)
+days_paid.2023 <- filter(days_paid, Calendar == 2023)
+
+#' `------------2022--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
+#'*----------------------------------------------------------------------------*
+
+# Available budget for the year (in days)
+AvailableYR.2022 <- 
+  adj_tbl %>% 
+  #filter(ALLO == "min_plus_opt") %>% 
+  group_by(SIM_ITER, STEP) %>% 
+  summarise(OB_D = sum(OB_D)) %>% 
+  ungroup() %>% 
+  summarise(OB_D = mean(OB_D)) %>% 
+  unlist() %>%
+  as.vector()
+  
+# Predicted cost for the year (in days)
+PredictedYR.2022 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D #%>% 
+               #filter(ALLO == "min_plus_opt") %>% 
+               #summarise(ADP_D = mean(ADP_D)) %>% 
+               #unlist() %>% 
+               #as.vector()
 
 # Actual number of observer days paid for
-ActualYR <- days_paid %>% 
-            replace(is.na(.), 0) %>%
-            summarise(Total.Days = sum(Base.Days + na.omit(Option.Days))) %>% 
-            unlist() %>% 
-            as.vector()
+ActualYR.2022 <- 
+  days_paid.2022 %>% 
+  replace(is.na(.), 0) %>%
+  summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
+  unlist() %>% 
+  as.vector()
 
 # Percent of budget predicted to be spent
-eval <- data.frame(ActualYR, PredictedYR) %>%
-        mutate(
-        #Percent of the budget used
-        pct.budget.spent = round(ActualYR/PredictedYR,3)*100,
-        #Percent of budget remaining
-        pct.budget.remain = round(100 - pct.budget.spent, 3),
-        #Was it more, less, or equal to the predicted budget?
-        more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
-                       ifelse(pct.budget.remain == 0, "equal to",
+eval.2022 <- 
+  data.frame(ActualYR.2022, PredictedYR.2022) %>%
+  mutate(
+    # Percent of the budget used
+    pct.budget.spent = round(ActualYR.2022/PredictedYR.2022, digits = 3) * 100,
+    # Percent of budget remaining
+    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
+    # Was it more, less, or equal to the predicted budget?
+    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+                          ifelse(pct.budget.remain == 0, "equal to",
                                  " greater than ")))
+
+#' `------------2023--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
+#'*----------------------------------------------------------------------------*
+
+# Available budget for the year (in days)
+AvailableYR.2023 <- 
+  adj_tbl %>% 
+  #filter(ALLO == "min_plus_opt") %>% 
+  group_by(SIM_ITER, STEP) %>% 
+  summarise(OB_D = sum(OB_D)) %>% 
+  ungroup() %>% 
+  summarise(OB_D = mean(OB_D)) %>% 
+  unlist() %>%
+  as.vector()
+  
+# Predicted cost for the year (in days)
+PredictedYR.2023 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D #%>% 
+               #filter(ALLO == "min_plus_opt") %>% 
+               #summarise(ADP_D = mean(ADP_D)) %>% 
+               #unlist() %>% 
+               #as.vector()
+
+# Actual number of observer days paid for
+ActualYR.2023 <- 
+  days_paid.2023 %>% 
+  replace(is.na(.), 0) %>%
+  summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
+  unlist() %>% 
+  as.vector()
+
+# Percent of budget predicted to be spent
+eval.2023 <- 
+  data.frame(ActualYR.2023, PredictedYR.2023) %>%
+  mutate(
+    # Percent of the budget used
+    pct.budget.spent = round(ActualYR.2023/PredictedYR.2023, digits = 3) * 100,
+    # Percent of budget remaining
+    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
+    # Was it more, less, or equal to the predicted budget?
+    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+                          ifelse(pct.budget.remain == 0, "equal to",
+                                 " greater than ")))
+
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
