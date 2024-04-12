@@ -148,11 +148,20 @@ days_paid.2023 <- filter(days_paid, Calendar == 2023)
 #' `------------2022--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
+
+Nnd_tbl.2022 <- Nnd_tbl
+adj_tbl.2022 <- adj_tbl
+bud_scen_lst.2022 <- bud_scen_lst
+bud_tbl.2022 <- bud_tbl
+
+
+options(scipen = 999) # Remove scientific notation
+
 #'*----------------------------------------------------------------------------*
 
 # Available budget for the year (in days)
 AvailableYR.2022 <- 
-  adj_tbl %>% 
+  adj_tbl.2022 %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -161,7 +170,7 @@ AvailableYR.2022 <-
   as.vector()
   
 #' Predicted cost for the year (in days) *Break by stratum? - Need to think about - other calculations here are getting total, strata are presented in budget_eval*
-PredictedYR.2022 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D
+PredictedYR.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
 ActualYR.2022 <- 
@@ -173,7 +182,7 @@ ActualYR.2022 <-
 
 # Percent of budget predicted to be spent
 eval.2022 <- 
-  data.frame(ActualYR.2022, PredictedYR.2022) %>%
+  data.frame(ActualYR.2022, AvailableYR.2022) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
   mutate(
     # Percent of the budget used
     pct.budget.spent = round(ActualYR.2022/AvailableYR.2022, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
@@ -187,11 +196,17 @@ eval.2022 <-
 #' `------------2023--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
+
+Nnd_tbl.2023 <- Nnd_tbl
+adj_tbl.2023 <- adj_tbl
+bud_scen_lst.2023 <- bud_scen_lst
+bud_tbl.2023 <- bud_tbl
+
 #'*----------------------------------------------------------------------------*
 
 # Available budget for the year (in days)
 AvailableYR.2023 <- 
-  adj_tbl %>% 
+  adj_tbl.2023 %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -200,7 +215,7 @@ AvailableYR.2023 <-
   as.vector()
   
 # Predicted cost for the year (in days)
-PredictedYR.2023 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D #%>% 
+PredictedYR.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$AFF_D #%>% 
                #filter(ALLO == "min_plus_opt") %>% 
                #summarise(ADP_D = mean(ADP_D)) %>% 
                #unlist() %>% 
@@ -216,7 +231,7 @@ ActualYR.2023 <-
 
 # Percent of budget predicted to be spent
 eval.2023 <- 
-  data.frame(ActualYR.2023, PredictedYR.2023) %>%
+  data.frame(ActualYR.2023, AvailableYR.2023) %>%
   mutate(
     # Percent of the budget used
     pct.budget.spent = round(ActualYR.2023/AvailableYR.2023, digits = 3) * 100,
@@ -227,6 +242,8 @@ eval.2023 <-
                           ifelse(pct.budget.remain == 0, "equal to",
                                  " greater than ")))
 
+
+rm(bud_scen_lst, Nnd_tbl, adj_tbl, bud_tbl, days_paid)
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
@@ -292,18 +309,14 @@ The deployment of observers into the `r year` Federal fisheries in Alaska is pri
 ```{r outcomes.plot, include=FALSE}
 
 #' `------------2022--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
-#'*----------------------------------------------------------------------------*
-
 # Isolate ADP budget predictions for the chosen design
-#'sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"] *I think this can be called directly from bud_tbl now*
+#'sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"] *Called directly from bud_tbl now*
 
 # Plot effort predictions against actual
 outcomes.plot.2022 <-
   #'ggplot(sample_budget_out, aes(x = ADP_D)) + *OLD CALL*
-  ggplot(bud_tbl, aes(x = ADP_D)) + #' *NEW DATA CALL*
-  geom_histogram(aes(y = ..density..), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
+  ggplot(bud_tbl.2022, aes(x = ADP_D)) + #' *NEW DATA CALL*
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
   geom_vline(xintercept = AvailableYR.2022, lty = 2, col = "black") +
   geom_vline(xintercept = ActualYR.2022, lty = 1, col = "blue") +
   annotate("text", x = AvailableYR.2022 - 35, y = 0.002,
@@ -319,20 +332,17 @@ outcomes.plot.2022 <-
         axis.line = element_line(size = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(limits = c(2000, 3500), breaks = seq(2000, 3500, 500)) +
+  scale_x_continuous(breaks = seq(2000, 3500, 500)) +
   labs(y = paste("Density of simulated outcomes (2022 ADP)\n"),
        #y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
        x = paste("\nTotal days used in 2022"))
        #x = paste("\nTotal days used in ", year, sep = ""))
 
 #' `------------2023--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
-#'*----------------------------------------------------------------------------*
 
 outcomes.plot.2023 <-
-  ggplot(bud_tbl, aes(x = ADP_D)) +
-  geom_histogram(aes(y = ..density..), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
+  ggplot(bud_tbl.2023, aes(x = ADP_D)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
   geom_vline(xintercept = AvailableYR.2023, lty = 2, col = "black") +
   geom_vline(xintercept = ActualYR.2023, lty = 1, col = "blue") +
   annotate("text", x = AvailableYR.2023 + 35, y = 0.002,
@@ -356,13 +366,9 @@ outcomes.plot.2023 <-
 ```{r costs.plot, include=FALSE}
 
 #' `------------2022--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
-options(scipen = 999) # Remove scientific notation
-#'*----------------------------------------------------------------------------*
 
 # Get the budget used in the ADP
-BUDGET.2022 <- bud_scen_lst$bud_TYFCPN$BUD$BUD #'dp_res$BUD$BUD *OLD CALL*
+BUDGET.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$BUD #'dp_res$BUD$BUD *OLD CALL*
 
 # Get total costs
 days_paid_sum.2022 <- 
@@ -377,7 +383,7 @@ days_paid_sum.2022 <-
 # Plot
 costs.plot.2022 <- 
   #ggplot(sample_budget_out, aes(x = ADP_C)) +
-  ggplot(bud_tbl, aes(x = ADP_C)) + #' *NEW DATA CALL*
+  ggplot(bud_tbl.2022, aes(x = ADP_C)) + #' *NEW DATA CALL*
   geom_histogram(aes(y = ..density..), binwidth = 20000, alpha = 0.2, 
                  fill = "green", col = "darkseagreen2") +
   geom_vline(xintercept = BUDGET.2022, lty = 2, col = "black") +
@@ -403,12 +409,9 @@ costs.plot.2022 <-
        #x = paste("\nTotal contract costs in ", year, sep = ""))
 
 #' `------------2023--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
-#'*----------------------------------------------------------------------------*
 
 # Get the budget used in the ADP
-BUDGET.2023 <- bud_scen_lst$bud_TYFCPN$BUD$BUD
+BUDGET.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$BUD
 
 # Get total costs
 days_paid_sum.2023 <- 
@@ -422,7 +425,7 @@ days_paid_sum.2023 <-
 
 # Plot
 costs.plot.2023 <- 
-  ggplot(bud_tbl, aes(x = ADP_C)) +
+  ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   geom_histogram(aes(y = ..density..), binwidth = 20000, alpha = 0.2, 
                  fill = "green", col = "darkseagreen2") +
   geom_vline(xintercept = BUDGET.2023, lty = 2, col = "black") +
@@ -452,7 +455,6 @@ costs.plot.2023 <-
 
 #' `------------2022--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
 load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
 
 work.data.2022 <- filter(work.data, ADP == 2022)
@@ -488,7 +490,7 @@ partial.2022 <- tibble(
 #'*----------------------------------------------------------------------------*
 
 # Isolate ADP rate predictions for the chosen design
-predicted.2022 <- Nnd_tbl[, lapply(.SD, mean), keyby = .(POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
+predicted.2022 <- Nnd_tbl.2022[, lapply(.SD, mean), keyby = .(POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
 
 predicted.2022 <- predicted.2022 %>%
   mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
@@ -542,7 +544,6 @@ trip.budget.table.2022 <-
 
 #' `------------2023--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
 
 library(data.table)
 (load("source_data/2024-02-20cas_valhalla.RData"))
@@ -583,7 +584,7 @@ partial.2023 <- tibble(
 #'*----------------------------------------------------------------------------*
 
 # Isolate ADP rate predictions for the chosen design
-predicted.2023 <- Nnd_tbl[, lapply(.SD, mean), keyby = .(POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
+predicted.2023 <- Nnd_tbl.2023[, lapply(.SD, mean), keyby = .(POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
 
 predicted.2023 <- predicted.2023 %>%
   mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
