@@ -540,7 +540,7 @@ odds.ts.ni.real <- odds.dat %>%
 #' trips, total inherited trips, and waived trips,where waived trips are not mutually exclusive from the randomly selected
 #' or inherited trips and should be subtracted.
 
-logged <- ts.cp %>%
+logged <- odds.ts.cp %>%
   group_by(YEAR, STRATA) %>%
   summarize(Total.trips = sum(N), Random.selected = sum(n), Inherit.selected = sum(ni), Waived = sum(nr)) %>%
   mutate(
@@ -584,28 +584,24 @@ logged.table <- bind_rows(
 ```{r selection.tbl, warning=FALSE, include=FALSE}
 # Table 3-4 (2019) or Table 3-2 (2020) (Full ODDS summary, realized versus expected rates) ----
 # This table will show probabilities that selection rates = programmed rates under various assumptions
+
 for.p.wide <- merge(
-  # Completed non-100% monitored trips only
+  # Completed non-100% monitored trips only (after cancellations)
   logged %>% 
-    #' *2023 AR ONLY: Added YEAR to group*
     group_by(YEAR, STRATA) %>%
     summarize(random.n = Random.selected,
+              # after inherits
               inherit.n = Total.final.selected,
-              inherit.butnowaiver.n = (Total.final.selected + Waivers.selected + Waivers.inherited),            #' *total before waivers*
+              #'total before waivers*
+              inherit.butnowaiver.n = (Total.final.selected + Waived),
               Total.n = Total.trips,
-              Source = "Valid trips only"
-              ),
+              Source = "Valid trips only"),
   #' Now add in the total trips for the random number only. This includes every trip logged in ODDS (excluding those in 
   #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
   #' inherits, cancellations, and waivers
-  odds.dat %>%
-    filter(ODDS_SELECTION_PCT != 100) %>%
-    filter(!is.na(random.assign)) %>%
-    #' *2023 AR ONLY: Added YEAR to group*
+  ts.all %>%
     group_by(YEAR, STRATA) %>%
-    summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),                                #' *
-              Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
-              Source = "ODDS random number"),
+    summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
   all = TRUE) %>%
   arrange(YEAR, Source, STRATA)
 
@@ -646,75 +642,53 @@ p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 
 # Create table
 Selection.table <- p.table %>%
-                   mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
-                   arrange(YEAR, STRATA, Source, desc(key)) %>%
-                   arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
-                   mutate(new_trip_type = 
-                          derivedFactor("Initial Random Selection, *a*"= Source == "ODDS random number",
-                                        "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
-                                        "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
-                                        "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
-                                        .ordered = TRUE, .method = "unique")) %>% 
-                   select("Year" = YEAR,
-                          "Strata" = STRATA, 
-                          "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
-                          "n" = value,  # "Selected trips"
-                          "N" = Total.n,   # "Total trips"
-                          "Actu" = pct,   # "Actual selection (%)"
-                          "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
-                          "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
+  mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
+  arrange(YEAR, STRATA, Source, desc(key)) %>%
+  arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
+  mutate(new_trip_type = 
+        derivedFactor("Initial Random Selection, *a*"= Source == "ODDS random number",
+                      "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
+                      "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
+                      "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
+                      .ordered = TRUE, .method = "unique")) %>% 
+  select("Year" = YEAR,
+        "Strata" = STRATA, 
+        "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
+        "n" = value,  # "Selected trips"
+        "N" = Total.n,   # "Total trips"
+        "Actu" = pct,   # "Actual selection (%)"
+        "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
+        "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, eval=FALSE}
 
-#' TODO *FIXME* These 'final' rates should coincide with our Table 3-4 (a-b-c-d) - I'm not sure how in the 2019 AR that
-#' these rates matched up when the logic below is not accounting for waived trips at all! It used to filter on
-#' TRIP_SELECTED, which may have not only removed cancelled trips but also waived trips??
-
-odds.ts.daily.cuml <- odds.dat %>% 
-     # These are all logged trips
-     filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
-     transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
-     filter(STRATA %in% partial$STRATA) %>% 
-     #' *2023 AR only: separate by year*
-     group_by(YEAR, STRATA, Date) %>%
-     summarize(
-       n = sum(random.assign, na.rm = TRUE),
-       ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
-       N = length(unique(TRIP_PLAN_LOG_SEQ)),
-       TYPE = "Original date: All logged trips") %>% 
-     arrange(Date) %>% 
-     ungroup() %>% 
-     bind_rows(
-          # These are the 'valid trips', i.e., completed trips, only
-          odds.dat %>% 
-               filter(!ODDS_SELECTION_PCT %in% c(0, 100), !(TRIP_STATUS_CODE %in% c("CN", "CC", "CS", "CR"))) %>%  #'* Before had !is.na(TRIP_SELECTED_OBS), which removed waived trips? *
-               transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
-               filter(STRATA %in% partial$STRATA) %>% 
-               #' *2023 AR only: separate by year*
-               group_by(YEAR, STRATA, Date) %>%
-               summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED == "Y"])),          #' *FIXME reference to trip_selected*
-                         ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
-                         N = length(unique(TRIP_PLAN_LOG_SEQ)),
-                         TYPE = "Adjusted date: Valid trips only") %>% 
-               arrange(Date) %>% 
-               ungroup()) %>% 
-     mutate(TYPE = as.factor(TYPE)) %>% 
-     #' *2023 AR only: separate by year*
-     group_by(YEAR, STRATA, TYPE) %>%
-     mutate(running.n = order_by(Date, cumsum(n)),                                           # cumulative totals of n an N by type
-            running.N = order_by(Date, cumsum(N)), 
-            rug_ni = if_else(ni != 0, Date, as.Date(NA)),                                    # if there is an inherited trip, copy the date, otherwise NA
-            running.pct = round((running.n / running.N) * 100, 2)) %>%     # TODO So is this test ONLY looking at RN before and after cancellations? waivers excluded?
-     arrange(STRATA, TYPE, Date) %>%                                       # Then why are the rates in 2019 Fig 3-2 matching Table 3-4 (d) after waivers?
-     right_join(
-          partial %>%
-            filter(STRATA != "EM TRW EFP") %>%
-            #' *2023 AR only: separate by year*
-            distinct(YEAR, STRATA, ODDS_SELECTION_PCT = Rate * 100),
-          #' *2023 AR only: separate by year*
-          by = c("STRATA", "YEAR")) %>%
-     ungroup()
+#' Use the ODDS time series to plot if and when the realized monitoring rates are within the expected range given the
+#' programmed rates and the binomial distribution. Calculate running totals of trips and monitored trips.
+odds.ts.daily.cuml <- bind_rows(
+  # Initial random selection
+  odds.ts.all, 
+  # Final after cancellations, inherits, and waivers
+  odds.ts.cp %>% 
+    group_by(YEAR, STRATA, Date, TYPE) %>%
+    summarise(n = n + ni - nr, N = N)
+  ) %>% 
+  group_by(YEAR, STRATA, TYPE) %>%
+  mutate(
+    TYPE = as.factor(TYPE),
+    running.n = order_by(Date, cumsum(n)),
+    running.N = order_by(Date, cumsum(N)),
+    running.pct = round((running.n / running.N) * 100, 2)
+  ) %>%
+  arrange(STRATA, TYPE, Date) %>%
+  right_join(
+    partial %>%
+      filter(STRATA != "EM TRW EFP") %>%
+      #' *2023 AR only: separate by year*
+      distinct(YEAR, STRATA, ODDS_SELECTION_PCT = Rate * 100),
+    #' *2023 AR only: separate by year*
+    by = c("STRATA", "YEAR")) %>%
+  ungroup()
 
 # reorder strata for plot
 odds.ts.daily.cuml <- transform(odds.ts.daily.cuml,
@@ -738,6 +712,7 @@ odds.ts.daily.cuml$H95 <- ifelse(
                                         odds.ts.daily.cuml$ODDS_SELECTION_PCT / 100)) /
                                         odds.ts.daily.cuml$running.N, 3))
 
+# Calculate the p-values that the realized rates are different from the expected (programmed) rate
 for(i in 1:nrow(odds.ts.daily.cuml)){
   odds.ts.daily.cuml$test_stat_random[i] <- ifelse(
     odds.ts.daily.cuml$running.n[i] < 1, NA,
@@ -750,44 +725,41 @@ for(i in 1:nrow(odds.ts.daily.cuml)){
 rm(i)
 
 for.plot.text <- left_join(
-                 odds.ts.daily.cuml %>% 
-                 #' *2023 AR only: separate by year*
-                 group_by(YEAR, STRATA, TYPE) %>%
-                 filter(Date == max(Date)) %>%
-                 #' *2023 AR only: separate by year*
-                 group_by(YEAR, STRATA) %>%
-                 mutate(label.original = format(running.pct[TYPE == "Original date: All logged trips"], digits = 4, nsmall = 2),
-                        label.adjusted = format(running.pct[TYPE == "Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
-                 #' *2023 AR only: separate by year*
-                 distinct(YEAR, STRATA, label.original, label.adjusted)
-                 ,
-                 partial %>% 
-                 filter(STRATA != "EM TRW EFP") %>%
-                 #' *2023 AR only: separate by year*
-                 select(YEAR, STRATA, label.programmed = Rate) %>%
-                 #' *2023 AR only: separate by year*
-                 mutate(STRATA = as.character(STRATA), 
-                        YEAR = as.factor(YEAR),
-                        label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
-                 #' *2023 AR only: separate by year*
-                 , by = c("STRATA", "YEAR"))
+  odds.ts.daily.cuml %>% 
+    #' *2023 AR only: separate by year*
+    group_by(YEAR, STRATA, TYPE) %>%
+    filter(Date == max(Date)) %>%
+    #' *2023 AR only: separate by year*
+    group_by(YEAR, STRATA) %>%
+    mutate(label.original = format(running.pct[TYPE == "Original date: All logged trips"], digits = 4, nsmall = 2),
+          label.adjusted = format(running.pct[TYPE == "Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
+    #' *2023 AR only: separate by year*
+    distinct(YEAR, STRATA, label.original, label.adjusted),
+  partial %>% 
+    filter(STRATA != "EM TRW EFP") %>%
+    #' *2023 AR only: separate by year*
+    select(YEAR, STRATA, label.programmed = Rate) %>%
+    #' *2023 AR only: separate by year*
+    mutate(STRATA = as.character(STRATA), 
+          YEAR = as.factor(YEAR),
+          label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
+  #' *2023 AR only: separate by year*
+  , by = c("STRATA", "YEAR"))
 
 odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 
 #ODDS by date plot (Cumulative coverage percent by strata over the year)
-odds.by.date.plot <- ggplot(odds.ts.daily.cuml, aes(Date, running.pct, col = TYPE)) +
+odds.by.date.plot <- ggplot(odds.ts.daily.cuml, aes(x = Date,  col = TYPE)) +
      # Add lines for selection rates  
      geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, size = 1) +
      geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
-     geom_line(size = 1.5) +
+     geom_line(aes(y = running.pct), size = 1.5) +
      scale_color_manual(name = "Rate Type", values = c("black", "gray70")) +
      ylab("Cumulative Coverage Percent\n") +
      coord_cartesian(ylim = c(0, 70)) +
      xlab("\nDate") +
-     geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE == "Original date: All logged trips"),
-                 aes(x = rug_ni), length = unit(0.1, "npc"), sides = "b") +
-     geom_rug(data = odds.ts.daily.cuml %>% filter(TYPE != "Original date: All logged trips"),
-                 aes(x = rug_ni), length = unit(0.1, "npc"), sides = "t") +
+     geom_rug(data = odds.inh %>% filter(ni.create > 0), sides = "b", color = "gray") + 
+     geom_rug(data = odds.inh.real %>% filter(ni.real > 0), sides = "t") + 
      #' *==================For multi-year plotting==================================*
      facet_grid(STRATA ~ YEAR, scales = "free_x") +
      geom_text(aes(x = as.Date(Inf), y = 60, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
@@ -890,14 +862,14 @@ inherit.max <- logged %>%
 #' Waiver impact *2023 AR only: separate by year*
 waiver.min <- logged %>% 
               group_by(YEAR, STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+              summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
               slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
               mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
               select(YEAR, STRATA, Pct.allselected.from.waiver)
 
 waiver.max <- logged %>% 
               group_by(YEAR, STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waivers.selected) / (sum(Total.final.selected) + sum(Waivers.selected))) * 100) %>% 
+              summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
               slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
               mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
               select(YEAR, STRATA, Pct.allselected.from.waiver)
