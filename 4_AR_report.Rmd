@@ -874,7 +874,6 @@ Coverage.Table.full <- bind_rows(
            deployment.method = "Trip-Selection",
            Rate = 1,
            meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%#,
-           #Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *had to move for logic to work*
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
     arrange(desc(STRATA))
@@ -888,7 +887,6 @@ Coverage.Table.full <- bind_rows(
                 n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
       mutate(COVERAGE_TYPE = "Full coverage total",
              Pct.obs = (n/N) * 100,
-             #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
              deployment.method = "Trip-Selection")
 )
 
