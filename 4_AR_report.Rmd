@@ -364,6 +364,10 @@ odds.dat <- odds.dat %>% mutate(
 )
 if(nrow(odds.dat %>% filter(random.assign == -99))) stop("Some records with undefined 'random.assign'")
 
+#' Add a flag for trips that were released (waived) from monitoring
+odds.dat <- odds.dat %>%
+  mutate(released = ifelse(!is.na(RELEASE_STATUS_DESCRIPTION) & RELEASE_STATUS_DESCRIPTION != "Release Denied", 1, 0))
+
 # Are assignments being performed as programmed?
 # TRIP_MONITOR_CODE
 #   ND = Not observed (Provider Defaulted)
@@ -397,7 +401,7 @@ odds.dat <- odds.dat %>% mutate(
     TRIP_STATUS_CODE == "CS" ~ NA,
 
     # Trip was intended to be monitored but was waived OR
-    !is.na(RELEASE_STATUS_DESCRIPTION) ~ 1,
+    released == 1 ~ 1,
     # Trip was monitored or supposed to be monitored due to random selection (not within compliance monitoring)
     TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & ODDS_SELECTION_PCT != 100 ~ 1,
     
@@ -452,7 +456,7 @@ disposition <- disposition %>% mutate(across(
   c((starts_with("Trips.") | ends_with(".Pct")), -"Trips.logged.ODDS"), 
   \(x) replace(x, is.na(random.assign) | random.assign == 0, "")))
 
-# Redefine values in the random.assign
+# Redefine values in random.assign
 disposition <- disposition %>% mutate(random.assign = case_when(
   is.na(random.assign) | random.assign == 1 ~ "Selected",
   random.assign == 0 ~ "Not Selected"
@@ -481,7 +485,7 @@ disposition.table <-
 #' Summary of ODDS [completed trips] disposition by stratum, with total completed trips, subdivided by mutually 
 #' exclusive categories of randomly selected monitored trips, inherited monitored trips, released randomly selected 
 #' trips, and released inherited trips.
-#' *In the 2023 AR* : GM added the 'Waivers.inherited' category, which were previously uncategorized.
+
 
 logged <- odds.dat %>% 
     # Exclude 100% compliance strata and cancelled trips (only completed or pending trips remain)
