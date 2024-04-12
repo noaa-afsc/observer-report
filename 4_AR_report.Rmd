@@ -413,7 +413,7 @@ if(nrow(odds.dat %>% filter(random.test == -99))) stop("Some records with undefi
 odds.dat <- odds.dat %>% mutate(random.test.result = ifelse(random.test - random.assign == 0, "PASS", "FAIL"))
 if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
   stop(paste0("There are trips that failed `random.test.result`!"))
-} else{
+} else {
   odds.dat <- odds.dat %>% select(-c(random.test, random.test.result))
 }
 ```
@@ -453,8 +453,10 @@ disposition <- disposition %>% mutate(across(
   \(x) replace(x, is.na(random.assign) | random.assign == 0, "")))
 
 # Redefine values in the random.assign
-disposition$random.assign[is.na(disposition$random.assign) | disposition$random.assign == 1] <- "Selected"
-disposition$random.assign[disposition$random.assign == 0] <- "Not Selected"
+disposition <- disposition %>% mutate(random.assign = case_when(
+  is.na(random.assign) | random.assign == 1 ~ "Selected",
+  random.assign == 0 ~ "Not Selected"
+))
 
 # Then rename some columns for the table
 # Table 3-2 (2019, cancellation rates AFTER random selection) ---- 
@@ -476,7 +478,7 @@ disposition.table <-
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
 
-#' Summary of ODDS trip disposition by stratum, with totals trip totals of completed trips, subdivided by mutually 
+#' Summary of ODDS [completed trips] disposition by stratum, with total completed trips, subdivided by mutually 
 #' exclusive categories of randomly selected monitored trips, inherited monitored trips, released randomly selected 
 #' trips, and released inherited trips.
 #' *In the 2023 AR* : GM added the 'Waivers.inherited' category, which were previously uncategorized.
@@ -496,7 +498,7 @@ logged <- odds.dat %>%
       # Count of randomly selected trips that were waived.
       Waivers.selected = length(TRIP_PLAN_LOG_SEQ[random.assign == 1 & is.na(INHERIT_TRIP_SEQ) & !is.na(RELEASE_STATUS_DESCRIPTION)]),
       # Count of trips that inherited monitoring but were then waived.
-      Waivers.inherited = length(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ) & !is.na(RELEASE_STATUS_DESCRIPTION)]),
+      Waivers.inherited = length(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ) & !is.na(RELEASE_STATUS_DESCRIPTION)]),                          # FIXME Could be different if the same trip was inherited multiple times?
       # Total count of monitored trips
       Total.final.selected = (Random.selected + Inherit.selected) - (Waivers.selected + Waivers.inherited),
       # Percent of total monitored trips due to inherits
@@ -549,17 +551,19 @@ for.p.wide <- merge(
     group_by(YEAR, STRATA) %>%
     summarize(random.n = Random.selected,
               inherit.n = Total.final.selected,
-              inherit.butnowaiver.n = (Total.final.selected + Waivers.selected + Waivers.inherited),
+              inherit.butnowaiver.n = (Total.final.selected + Waivers.selected + Waivers.inherited),            #' *total before waivers*
               Total.n = Total.trips,
               Source = "Valid trips only"
               ),
-  # Now add in the total trips for the random number only
+  #' Now add in the total trips for the random number only. This includes every trip logged in ODDS (excluding those in 
+  #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
+  #' inherits, cancellations, and waivers
   odds.dat %>%
     filter(ODDS_SELECTION_PCT != 100) %>%
     filter(!is.na(random.assign)) %>%
     #' *2023 AR ONLY: Added YEAR to group*
     group_by(YEAR, STRATA) %>%
-    summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),
+    summarize(random.n = length(unique(TRIP_PLAN_LOG_SEQ[random.assign == 1])),                                #' *
               Total.n = length(unique(TRIP_PLAN_LOG_SEQ)),
               Source = "ODDS random number"),
   all = TRUE) %>%
@@ -622,26 +626,34 @@ Selection.table <- p.table %>%
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, eval=FALSE}
-odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
+
+#' TODO *FIXME* These 'final' rates should coincide with our Table 3-4 (a-b-c-d) - I'm not sure how in the 2019 AR that
+#' these rates matched up when the logic below is not accounting for waived trips at all! It used to filter on
+#' TRIP_SELECTED, which may have not only removed cancelled trips but also waived trips??
+
+odds.ts.daily.cuml <- odds.dat %>% 
+     # These are all logged trips
      filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
      transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
      filter(STRATA %in% partial$STRATA) %>% 
      #' *2023 AR only: separate by year*
      group_by(YEAR, STRATA, Date) %>%
-     summarize(n = sum(random.assign, na.rm = TRUE),
-               ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
-               N = length(unique(TRIP_PLAN_LOG_SEQ)),
-               TYPE = "Original date: All logged trips") %>% 
+     summarize(
+       n = sum(random.assign, na.rm = TRUE),
+       ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
+       N = length(unique(TRIP_PLAN_LOG_SEQ)),
+       TYPE = "Original date: All logged trips") %>% 
      arrange(Date) %>% 
      ungroup() %>% 
      bind_rows(
-          odds.dat %>% # These are the 'valid trips' only
-               filter(!ODDS_SELECTION_PCT %in% c(0, 100), !is.na(TRIP_SELECTED)) %>%
+          # These are the 'valid trips', i.e., completed trips, only
+          odds.dat %>% 
+               filter(!ODDS_SELECTION_PCT %in% c(0, 100), !(TRIP_STATUS_CODE %in% c("CN", "CC", "CS", "CR"))) %>%  #'* Before had !is.na(TRIP_SELECTED_OBS), which removed waived trips? *
                transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
                filter(STRATA %in% partial$STRATA) %>% 
                #' *2023 AR only: separate by year*
                group_by(YEAR, STRATA, Date) %>%
-               summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED == "Y"])),
+               summarize(n = length(unique(TRIP_PLAN_LOG_SEQ[TRIP_SELECTED == "Y"])),          #' *FIXME reference to trip_selected*
                          ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
                          N = length(unique(TRIP_PLAN_LOG_SEQ)),
                          TYPE = "Adjusted date: Valid trips only") %>% 
@@ -650,16 +662,16 @@ odds.ts.daily.cuml <- odds.dat %>% # These are all logged trips
      mutate(TYPE = as.factor(TYPE)) %>% 
      #' *2023 AR only: separate by year*
      group_by(YEAR, STRATA, TYPE) %>%
-     mutate(running.n = order_by(Date, cumsum(n)),
+     mutate(running.n = order_by(Date, cumsum(n)),                                           # cumulative totals of n an N by type
             running.N = order_by(Date, cumsum(N)), 
-            rug_ni = if_else(ni != 0, Date, as.Date(NA)),
-            running.pct = round((running.n / running.N) * 100, 2)) %>% 
-     arrange(STRATA, TYPE, Date) %>%
+            rug_ni = if_else(ni != 0, Date, as.Date(NA)),                                    # if there is an inherited trip, copy the date, otherwise NA
+            running.pct = round((running.n / running.N) * 100, 2)) %>%     # TODO So is this test ONLY looking at RN before and after cancellations? waivers excluded?
+     arrange(STRATA, TYPE, Date) %>%                                       # Then why are the rates in 2019 Fig 3-2 matching Table 3-4 (d) after waivers?
      right_join(
           partial %>%
-          filter(STRATA != "EM TRW EFP") %>%
-          #' *2023 AR only: separate by year*
-          distinct(YEAR, STRATA, ODDS_SELECTION_PCT = Rate * 100),
+            filter(STRATA != "EM TRW EFP") %>%
+            #' *2023 AR only: separate by year*
+            distinct(YEAR, STRATA, ODDS_SELECTION_PCT = Rate * 100),
           #' *2023 AR only: separate by year*
           by = c("STRATA", "YEAR")) %>%
      ungroup()
@@ -2036,6 +2048,7 @@ kbl(Coverage.Table, escape = FALSE) %>%
 # Table 6 from 2019 Annual Report
 ####`r tbl_nums('em.summary.table', caption = "The number of EM hard drives received and reviewed by gear type and month.")`    
 # FIXME - disabled this chunk since some months are missing 
+#' TODO *2023 AR - exclude? No longer reporting EM hard drive review by month?*'
 for.em.summary.table <- EM.review %>% 
                         filter(TRIP_STATUS == "COMPLETED" & 
                                (year(ACTUAL_EM_TRIP_START_DATE_TIME) != 2020 | #Excluding 2019 data trips
