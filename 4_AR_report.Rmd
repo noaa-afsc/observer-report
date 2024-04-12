@@ -859,22 +859,21 @@ This section compares the coverage rate achieved against the expected coverage r
 ```{r Coverage.tbl, message=FALSE, warning=FALSE, include=FALSE}
 # Coverage table has number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n), and percent observed by deployment method (trip vs. vessel-selection):
 
-
-#FULL COVERAGE
-Coverage.Table.full <- plyr::rbind.fill(
-  #Coverage rates for vessels in the full coverage category (both regulator full
-  #cov or voluntary)
+#' *FULL COVERAGE*
+Coverage.Table.full <- bind_rows(
+  # Coverage rates for vessels in the full coverage category (both regulatory
+  # and voluntary full coverage)
   work.data %>%
     filter(COVERAGE_TYPE == "FULL") %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
-    summarize(V=length(unique(VESSEL_ID)),
-                     v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-                     N=length(unique(TRIP_ID)),
-                     n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
-    mutate(Pct.obs= format((n/N)*100, digits=1, nsmall=1),
+    summarize(V = length(unique(VESSEL_ID)),
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
+    mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 1,
-           meets.expected = "") %>% 
+           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%#,
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
     arrange(desc(STRATA))
@@ -882,133 +881,129 @@ Coverage.Table.full <- plyr::rbind.fill(
     # Totals for vessels in the full coverage category
     work.data %>%
       filter(COVERAGE_TYPE == "FULL") %>%
-      summarize(V=length(unique(VESSEL_ID)),
-                v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-                N=length(unique(TRIP_ID)),
-                n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
-      mutate(COVERAGE_TYPE = "Full Coverage Total",
-             Pct.obs=format((n/N)*100, digits=1, nsmall=1),
+      summarize(V = length(unique(VESSEL_ID)),
+                v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+                N = length(unique(TRIP_ID)),
+                n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
+      mutate(COVERAGE_TYPE = "Full coverage total",
+             Pct.obs = (n/N) * 100,
              deployment.method = "Trip-Selection")
 )
 
-#PARTIAL COVERAGE TRIP-SELECTION
-Coverage.Table.partial <- plyr::rbind.fill(
-  #By strata for vessels in the partial coverage category (trip-selection)
+#' *PARTIAL COVERAGE TRIP-SELECTION*
+Coverage.Table.partial <- bind_rows(
+  # By strata for vessels in the partial coverage category (trip-selection)
   work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    group_by(TRIP_ID) %>% 
-    mutate(START = min(TRIP_TARGET_DATE)) %>% 
-    ungroup() %>% 
-    left_join(partial_time[, .(STRATA, Effective_Date, Expire_After, Rate)], on = "STRATA") %>% 
-    filter(START >= Effective_Date & START <= Expire_After) %>% 
-    group_by(COVERAGE_TYPE, STRATA, Effective_Date, Expire_After) %>%
-    summarize(V=length(unique(VESSEL_ID[START >= Effective_Date & START <= Expire_After])),
-              v=length(unique(VESSEL_ID[START >= Effective_Date & START <= Expire_After & OBSERVED_FLAG=="Y"])),
-              N=length(unique(TRIP_ID[START >= Effective_Date & START <= Expire_After])),
-              n=length(unique(TRIP_ID[START >= Effective_Date & START <= Expire_After & OBSERVED_FLAG=="Y"])),
+    left_join(select(partial, c(STRATA, Rate)), by = "STRATA") %>%
+    group_by(COVERAGE_TYPE, STRATA) %>%
+    summarize(V = length(unique(VESSEL_ID)),
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"])),
               Rate = unique(Rate)) %>%
-    mutate(Pct.obs = format((n/N)*100, digits=1, nsmall=1),
+    mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") %>% 
-    # Add binomial distribution upper and lower 95th percentiles to for each partial coverage stratum
+    # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
+    group_by(COVERAGE_TYPE, STRATA) %>%
     mutate(
       min.expected = round(
-        stats::binom.test(x = n, n = N, p = Rate, 
-                          alternative = "two.sided")$conf.int[1], 3)*100,
+        stats::binom.test(x = n, 
+                          n = N, 
+                          p = Rate, 
+                          alternative = "two.sided")$conf.int[1], digits = 3) * 100,
       max.expected = round(
-        stats::binom.test(x = n, n = N, p = Rate,
-                          alternative = "two.sided")$conf.int[2], 3)*100,
-      meets.expected = ifelse(Rate*100 > min.expected & Rate*100 < max.expected,
-                              "Yes", "No")) %>% 
-    select(COVERAGE_TYPE, STRATA, Effective_Date, Expire_After, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, min.expected, max.expected, meets.expected) %>% 
-    arrange(Effective_Date, match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "HAL", "POT", "TRW")), Expire_After)
+        stats::binom.test(x = n, 
+                          n = N, 
+                          p = Rate,
+                          alternative = "two.sided")$conf.int[2], digits = 3) * 100,
+      meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
+                                 Rate * 100 < min.expected ~ "No - higher than expected",
+                                 Rate * 100 > max.expected ~ "No - lower than expected")) %>%
+    select(COVERAGE_TYPE, STRATA, deployment.method, 
+           V, v, N, n, Pct.obs, Rate, 
+           min.expected, max.expected, meets.expected) %>% 
+    arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
   ,
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>% 
-    summarize(V=length(unique(VESSEL_ID)),
-              v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-              N=length(unique(TRIP_ID)),
-              n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
-    mutate(COVERAGE_TYPE = "Gear-based Total",
-           Pct.obs=format((n/N)*100, digits=1, nsmall=1),
+    summarize(V = length(unique(VESSEL_ID)),
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
+    mutate(COVERAGE_TYPE = "Partial coverage total",
+           Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") 
-) %>% 
-# Nullify hypothesis test for any time periods with a programmed rate of 0  
-  mutate(min.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, min.expected),
-         max.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, max.expected),
-         meets.expected = ifelse(Effective_Date == as.Date("2020-03-26"), NA, meets.expected))
+)
 
-#ZERO COVERAGE 
-Coverage.Table.zero <- # plyr::rbind.fill(Coverage.Table.zero <-
-    work.data %>%
-    filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% 
-    mutate(STRATA=as.character(STRATA)) %>% 
-    mutate(STRATA=ifelse(STRATA=="ZERO", "Zero Coverage", STRATA)) %>% 
+#' *ZERO COVERAGE* 
+Coverage.Table.zero <-
+  work.data %>%
+    filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #' *NO ZERO EM Research in 2023*
+    mutate(STRATA = as.character(STRATA)) %>% 
+    mutate(STRATA = ifelse(STRATA == "ZERO", "Zero coverage", STRATA)) %>% 
     group_by(COVERAGE_TYPE, STRATA) %>%
-    summarize(V=length(unique(VESSEL_ID)),
-                     v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-                     N=length(unique(TRIP_ID)),
-                     n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>%
-    mutate(Pct.obs=format((n/N)*100, digits=1, nsmall=1),
+    summarize(V = length(unique(VESSEL_ID)),
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
+    mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 0,
-           meets.expected = "") %>%  
+           meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%#,
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
 
 # Totals with EM (number of vessels is not additive)
 Coverage.Table.TOTALS <- work.data %>%
-  summarize(V=length(unique(VESSEL_ID)),
-                   v=length(unique(VESSEL_ID[OBSERVED_FLAG=="Y"])),
-                   N=length(unique(TRIP_ID)),
-                   n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))
+  summarize(V = length(unique(VESSEL_ID)),
+            v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+            N = length(unique(TRIP_ID)),
+            n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))
   ) %>%
   mutate(COVERAGE_TYPE = "Total",
          STRATA = "Total",
-         Pct.obs.trips = format((n/N)*100, digits=1, nsmall=1),
-         Pct.obs.vessels = format((v/V)*100, digits=1, nsmall=1),
-         Pct.obs = paste0( Pct.obs.trips, "% Trips; ", Pct.obs.vessels, "% Vessels")) 
+         Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
+         Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
+         Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
 
-#Combine all the coverage tables
-Coverage.Table <- plyr::rbind.fill(Coverage.Table.full, 
-                                   Coverage.Table.partial,
-                                   Coverage.Table.zero,
-                                   Coverage.Table.TOTALS # ,
-                                   # Coverage.Table.TOTALS.sansEM
-                                   ) %>% 
-  #Formatting (change things to characters so they knit to Word without weird
-  #formatting issues)
+#' *Combine all the coverage tables*
+Coverage.Table <- bind_rows(Coverage.Table.full, 
+                            Coverage.Table.partial,
+                            Coverage.Table.zero,
+                            ) %>%
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #'
+  bind_rows(Coverage.Table.TOTALS) %>%
+  # Formatting (change things to characters so they knit to Word without weird
+  # formatting issues)
   mutate(V = as.character(V),
          v = as.character(v),
          N = as.character(N),
          n = as.character(n),
-         #*FLAG* binom.test method
-         #Rate = ifelse(is.na(Rate), NA, format(Rate*100, digits=1, nsmall=1)),
-         
-         #*FLAG* qbinom method
+         #' *FLAG* binom.test method
+         #Rate = ifelse(is.na(Rate), NA, format(Rate * 100, digits = 1, nsmall = 1)),
+         #' *FLAG* qbinom method
          Rate = ifelse(is.na(Rate), NA, 
-                       ifelse(deployment.method=="Trip-Selection", 
-                              format(Rate*100, digits=1, nsmall=1),
-                              format(Rate, digits=0, nsmall=0))),
+                       ifelse(deployment.method == "Trip-Selection", 
+                              format(Rate * 100, digits = 1, nsmall = 1),
+                              format(Rate, digits = 0, nsmall = 0))),
          min.expected = ifelse(is.na(min.expected), NA, 
-                               ifelse(deployment.method=="Trip-Selection", 
-                                      format(min.expected, digits=1, nsmall=1),
-                                      format(min.expected, digits=0, nsmall=0))),
+                               ifelse(deployment.method == "Trip-Selection", 
+                                      format(min.expected, digits = 1, nsmall = 1),
+                                      format(min.expected, digits = 0, nsmall = 0))),
          max.expected = ifelse(is.na(max.expected), NA, 
-                               ifelse(deployment.method=="Trip-Selection", 
-                                      format(max.expected, digits=1, nsmall=1),
-                                      format(max.expected, digits=0, nsmall=0))),
-          # 
-         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
-                                    Full = "FULL",
-                                    Partial = "PARTIAL"),
+                               ifelse(deployment.method == "Trip-Selection", 
+                                      format(max.expected, digits = 1, nsmall = 1),
+                                      format(max.expected, digits = 0, nsmall = 0))),
          STRATA = fct_recode(factor(STRATA),
                              Full = "FULL"),
-         Effective_Date = ifelse(is.na(Effective_Date) & !is.na(Rate), format(as.Date("2020-01-01"), "%b-%d"), format(Effective_Date, "%b-%d")),
-         Expire_After = ifelse(is.na(Expire_After) & !is.na(Rate), format(as.Date("2020-12-31"), "%b-%d"), format(Expire_After, "%b-%d"))) %>% 
-  select(`Coverage` = COVERAGE_TYPE, Strata = STRATA, 
-         `Start date` = Effective_Date, `End date` = Expire_After,
+         COVERAGE_TYPE = case_when(STRATA == "Zero coverage" ~ "Zero coverage", TRUE ~ COVERAGE_TYPE),
+         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
+                                    "Full coverage" = "FULL",
+                                    "Partial coverage" = "PARTIAL")) %>%
+  select(`Coverage` = COVERAGE_TYPE, 
+         Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
@@ -1016,32 +1011,30 @@ Coverage.Table <- plyr::rbind.fill(Coverage.Table.full,
          `Upper limit` = max.expected, 
          `Realized meets expected?` = meets.expected)
 
-#Create an empty factor level so that you can get rid of NAs in the table.
-Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels=c(levels(Coverage.Table$Coverage), " "))
-Coverage.Table$Strata = factor(Coverage.Table$Strata, levels=c(levels(Coverage.Table$Strata), " "))
+# Create an empty factor level so that you can get rid of NAs in the table.
+Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels = c(levels(Coverage.Table$Coverage), " "))
+Coverage.Table$Strata = factor(Coverage.Table$Strata, levels = c(levels(Coverage.Table$Strata), " "))
 Coverage.Table <- replace(Coverage.Table, is.na(Coverage.Table), " ")
 
-rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.TOTALS, Coverage.Table.zero)
+rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Coverage.Table.TOTALS, Coverage.Table.zero)
 ```
 
 ```{r coverage_paragraph, message=FALSE, warning=FALSE, include=FALSE}
 # Objects referenced in-text:
 
-#Coverage trip and vessel totals (including EM)
+# Coverage trip and vessel totals (including EM)
 totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*n*`) %>% as.numeric()
 
 perc_trips_obs <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total") %>% 
-    transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, 
-                                   digits=1, nsmall=1)) %>% 
+  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
 totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*v*`) %>% as.numeric()
 
 perc_vessels_obs <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total") %>%
-  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, 
-                                 digits=1, nsmall=1)) %>% 
+  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
 ```
