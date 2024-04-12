@@ -4,8 +4,12 @@
 #          (206) 526-4222
 
 # TODO's:
-  # Filter out statement types in river plots that are under 3 total occurrences []
-
+  # Fix label wraps (ultimately reduces lines) []
+  # Separate script for unused materials? []
+  # add google drive script for downloading data []
+    # currently ODDS data is not housed in an accessible drive
+  # delete tables from repo []
+  # remove unused libraries []
 
 ##################################
 ##### LOAD PACKAGES AND DATA #####
@@ -30,11 +34,56 @@ library(tidyverse)
 library(patchwork)
 
 # Data -------------------------------------------------------------------------
-# clear environment
+# * chng wd filepath as needed *
 rm(list = ls())
 
-# load data from 'AR_3' script
-load(file = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/AR_3_rate_output.rdata')
+# adp_yr is the year of the annual report we are doing this time 
+  # (annual_deployment_year)
+# NOTE: we need this to ensure we load the CORRECT YEAR.  
+  # Each year has it's own directory and Rdata files.
+adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
+
+# Set the filepath, change to your own local as needed AND COMMENT OUT FILE PATH
+  # OF OTHER RESEARCHERS ATTACHED TO THE PROJECT
+# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
+# Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
+Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
+
+
+# Pull Rdata file from google drive.
+# NOTE: if the google drive file has not changed, the next 2 steps are not 
+  # necessary: you can just load from your local.
+
+# Identify the g-drive file to download
+# MAKE SURE IT IS CORRECT GOOGLE PATH
+
+# Folder name is below, commented out, because it is slow.as.eff. when executed 
+  # this way.
+# MUCH faster to use the hard-coded drive ID (see below)
+
+# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
+#                                                 adp_yr))
+
+
+
+## BEGIN UNCOMMENT BELOW IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+
+# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# 
+# data_dribble <-
+#   drive_ls(project_dribble) %>%
+#   filter(name == "AR_3_rate_output.rdata")
+# 
+# # Download the file from g-drive into local
+# drive_download(
+#   data_dribble,
+#   path = paste0(Rdata_files_path, "AR_3_rate_output.rdata"),
+#   overwrite = T
+# )
+
+## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+
+load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
 
 # load odds data issues from google sheet
 # TODO: this is currently a sheet downloaded from drive as of 4/10/2024
@@ -698,10 +747,6 @@ ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
 
 # Alluvial plot of old data, 2023 ----------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
-# LABELS WITH < 3 STATEMENTS:
-  # Contractor Problems, Harassment-Assault, Marine Mammal-Feeding,
-  # Marine Mammal-Harassment, Prohibited Species - Retaining, 
-  # Sample Bias-Marine Mammals, Seabird-Harassment
 
 # Set labels
 river_oldcat_labels_23 <- {
@@ -777,8 +822,6 @@ ggsave(filename = 'Plots/river_oldcat_23.png',
 # Alluvial plot of new data, by safety -----------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
 # NEW OLE SYSTEM)
-# LABELS WITH < 3 STATEMENTS:
-  # ACCESS, ASSAULT, FORCED TO PERFORM CREW DUTIES, EPIRB
 
 # Set labels
 river_newcat_safety_labels <- {
@@ -862,10 +905,7 @@ ggsave(filename = 'Plots/river_newcat_safety.png',
 # Alluvial plot of new data, by nonsafety --------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
 # NEW OLE SYSTEM)
-# LABELS WITH < 3 STATEMENTS:
-  # ADMINISTRATIVE RESPONSIBILITIES, DATA TRANSMISSION, OBSERVER COVERAGE,
-  # OPERATIONAL LINE, TIMELY NOTIFICATION, IFQ PERMIT, INSPECTION REPORTS,
-  # HALIBUT DECK SORTING
+
 # Set labels
 river_newcat_nonsafety_labels <- {
   statements_combined %>%
@@ -1459,310 +1499,3 @@ ggsave(filename = 'Plots/river_newcat_nonsafety_confid_removed.png',
        plot = river_newcat_nonsafety_noconfid,
        width = 20,
        height = 10)
-
-######################################
-##### CREATE TABLES OF PLOT DATA #####
-######################################
-# Table of upper 1% incidents per statement  -----------------------------------
-high_viol <- statements_combined %>% 
-               filter(NUMBER_VIOLATIONS >= 
-                        quantile(statements_combined$NUMBER_VIOLATIONS, 0.99),
-                      FIRST_VIOL_YEAR == 2023) %>%
-               select(FIRST_VIOL_YEAR, NUMBER_VIOLATIONS, STATEMENT_TYPE,
-                      OLD_OLE_CATEGORY, NEW_OLE_CATEGORY, OLE_SYSTEM, 
-                      VESSEL_PLANT)
-
-write.csv(high_viol, 'high_violations_per_statement.csv')
-
-# Table of Occurrences per Statement (aggregated by Statement Type) ------------
-ops_proport <- {
-  statements_combined %>%
-    group_by(NUMBER_VIOLATIONS, OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
-    summarize(FREQ = n()) %>%
-    group_by(OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
-    mutate(TOTAL = sum(FREQ),
-           PROPORT_STATEMENTS = FREQ / TOTAL)
-}
-
-write.csv(ops_proport, 'ops_proportions.csv')
-
-# Table of Occurrences per Statement (by Statement Type, OLEPIP cats only) -----
-olepip_ops_proport <- {
-  statements_combined %>%
-    filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL') %>%
-    group_by(NUMBER_VIOLATIONS, OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
-    summarize(FREQ = n()) %>%
-    group_by(OLE_SYSTEM, FIRST_VIOL_YEAR) %>%
-    mutate(TOTAL = sum(FREQ),
-           PROPORT_STATEMENTS = FREQ / TOTAL)
-}
-
-write.csv(olepip_ops_proport, 'ops_olepip_proportions.csv')
-
-# Table of Old OLE System, 2023 data -------------------------------------------
-oldole_2023_data <- {
-  statements_combined %>%
-    filter(OLE_SYSTEM == 'OLD',
-           FIRST_VIOL_YEAR == 2023) %>%
-    group_by(OLD_OLE_CATEGORY, STATEMENT_TYPE) %>%
-    summarize(FREQ = n())
-}
-
-write.csv(oldole_2023_data, 'Old_OLE_2023_summary.csv')
-
-# Table of New OLE System, 2023 data -------------------------------------------
-newole_2023_data <- {
-  statements_combined %>%
-    filter(OLE_SYSTEM == 'NEW') %>%
-    group_by(NEW_OLE_CATEGORY, STATEMENT_TYPE) %>%
-    summarize(FREQ = n())
-}
-
-write.csv(newole_2023_data, 'New_OLE_2023_summary.csv')
-
-#####################
-##### OLD PLOTS #####
-#####################
-# Ridge plot of sub category densities within OLE Priority IP ------------------
-# Set colors
-colors <- nmfs_palette('regional')(10)
-
-# Make the plot
-OLEPIP_subcat_ridge <- {
-  ggplot(data = statements_combined %>%
-           filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
-         aes(x = NUMBER_VIOLATIONS,
-             y = factor(STATEMENT_TYPE),
-             fill = STATEMENT_TYPE)) +
-    facet_grid(scales = 'free',
-               rows = vars(OLE_SYSTEM)) +
-    scale_x_continuous(breaks = c(0, 5, 10, 15, 20, 25, 50, 75, 100),
-                       limits = c(0, 100)) +
-    scale_y_discrete(expand = c(0.2, 0.2)) +
-    scale_color_manual(values = colors, guide = 'none') +
-    scale_fill_manual(values = colors, guide = 'none') +
-    geom_density_ridges(quantile_lines = T,
-                        quantiles = 2,
-                        color = 'black',
-                        alpha = 0.5) +
-    theme_bw() +
-    labs(x = 'Occurrences per Statement',
-         y = '')
-}
-
-# View the plot
-OLEPIP_subcat_ridge
-
-# Save the plot
-ggsave(filename = 'Plots/OLEPIP_subcat_ridge.png',
-       plot = OLEPIP_subcat_ridge,
-       width = 16,
-       height = 8)
-
-
-# Alluvial plot of old data ----------------------------------------------------
-# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
-
-# Set labels
-river_oldcat_labels <- statements_combined %>%
-  filter(OLE_SYSTEM == 'OLD') %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 26)
-
-# Make the plot
-river_oldcat <- {
-  ggplot(data = statements_combined %>%
-           filter(OLE_SYSTEM == 'OLD'),
-         aes(axis1 = STATEMENT_TYPE_LABEL,
-             axis2 = OLD_OLE_CATEGORY_LABEL)) +
-    river2_theme(labels = river_oldcat_labels,
-                 axis1_label = 'Old Statement Type',
-                 axis2_label = 'Old OLE Category',
-                 axis1_min_text_size = 9,
-                 axis1_text_size = 18)
-}
-
-# View the plot
-river_oldcat
-
-# Save the plot
-ggsave(filename = 'Plots/river_oldcat.png',
-       plot = river_oldcat,
-       width = 14,
-       height = 10)
-
-
-# Alluvial plot of old data, 2022 ----------------------------------------------
-# flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
-
-# Set labels
-river_oldcat_labels_22 <- statements_combined %>%
-  filter(OLE_SYSTEM == 'OLD',
-         MANUAL_YEAR == 2022) %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 22)
-
-# Make the plot
-river_oldcat_22 <- {
-  ggplot(data = statements_combined %>%
-           filter(OLE_SYSTEM == 'OLD',
-                  MANUAL_YEAR == 2022),
-         aes(axis1 = STATEMENT_TYPE_LABEL,
-             axis2 = OLD_OLE_CATEGORY_LABEL)) +
-    river2_theme(labels = river_oldcat_labels_22,
-                 axis1_label = 'Old Statement Type',
-                 axis2_label = 'Old OLE Category',
-                 axis1_min_text_size = 9)
-}
-
-# View the plot
-river_oldcat_22
-
-# Save the plot
-ggsave(filename = 'Plots/river_oldcat_22.png',
-       plot = river_oldcat_22,
-       width = 14,
-       height = 10)
-
-
-# Alluvial plot of all data, only from ALL OTHER STATEMENTS --------------------
-# define statements to repel
-river_newcat_AOST_labels <- statements_combined %>%
-  filter(OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES',
-         OLE_SYSTEM == 'NEW') %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 6)
-
-# Make the plot
-river_all_other_statements <- {
-  ggplot(data = statements_combined %>%
-           filter(OLD_OLE_CATEGORY == 'ALL OTHER STATEMENT TYPES',
-                  OLE_SYSTEM == 'NEW'),
-         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
-             axis2 = NEW_OLE_CATEGORY_LABEL,
-             axis3 = STATEMENT_TYPE_LABEL)) +
-    river3_theme(labels = river_newcat_AOST_labels$STATEMENT_TYPE_LABEL,
-                 axis1_label = 'Old OLE Category',
-                 axis2_label = 'New OLE Category',
-                 axis3_label = 'New Statement Type')
-}
-
-# View the plot
-river_all_other_statements
-
-# Save the plot
-ggsave(filename = 'Plots/river_all_other_statement_types.png',
-       plot = river_all_other_statements,
-       width = 20,
-       height = 10)
-
-# Alluvial plot of new data ----------------------------------------------------
-# flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
-# NEW OLE SYSTEM)
-
-# Set labels
-river_newcat_labels <- statements_combined %>%
-  filter(OLE_SYSTEM == 'NEW') %>%
-  group_by(STATEMENT_TYPE_LABEL) %>%
-  summarize(FREQ = n()) %>%
-  filter(FREQ < 9) 
-
-# Make the plot
-river_newcat <- {
-  ggplot(data = statements_combined %>%
-           filter(OLE_SYSTEM == 'NEW'),
-         aes(axis1 = OLD_OLE_CATEGORY_LABEL,
-             axis2 = NEW_OLE_CATEGORY_LABEL,
-             axis3 = STATEMENT_TYPE_LABEL)) +
-    river3_theme(labels = river_newcat_labels$STATEMENT_TYPE_LABEL, 
-                 axis1_label = 'Old OLE Category',
-                 axis2_label = 'New OLE Category',
-                 axis3_label = 'New Statement Type',
-                 size_label = 3)
-}
-
-# View the plot
-river_newcat
-
-# Save the plot
-ggsave(filename = 'Plots/river_newcat.png',
-       plot = river_newcat,
-       width = 20,
-       height = 10)
-
-
-# Facet of rates of occurrences across OLE System/Year and subcat in SASHI -----
-### UNFINISHED ###
-ggplot(data = rate_by_subcat %>%
-         filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL' |
-                  OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES'),
-       aes(x = 1,
-           y = 1,
-           fill = INCIDENTS_PER_1000_DEPLOYED_DAYS)) +
-  geom_tile() +
-  facet_nested(OLE_SYSTEM + CALENDAR_YEAR ~ OLD_OLE_CATEGORY + STATEMENT_TYPE)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Rain cloud plot of violations, facet by system -------------------------------
-OPS_number_rainplot_system <- {
-  
-  ggplot(data = statements_combined,
-         aes(x = factor(OLE_SYSTEM,
-                        levels = c('OLD', 'NEW')),
-             y = (NUMBER_VIOLATIONS),
-             fill = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM),
-             color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
-    labs(x = 'OLE System',
-         y = 'Occurrences per Statement',
-         title = 'All Categories') +
-    facet_grid(. ~ FIRST_VIOL_YEAR, 
-               scales = 'free',) +
-    force_panelsizes(cols = c(0.3, 0.5),) +
-    stat_halfeye(adjust = .5,
-                 width = .3,
-                 .width = 0,
-                 justification = -0.6,
-                 point_color = NA,
-                 show.legend = F) +
-    geom_boxplot(width = 0.2, 
-                 size = 0.9,
-                 color = 'black',
-                 show.legend = F,
-                 alpha = 0.6,
-                 outliers = F) +
-    geom_half_point(side = 'l', 
-                    range_scale = .3, 
-                    alpha = .25, 
-                    show.legend = F,
-                    size = 3,
-                    pch = 1,
-                    transformation = position_jitter(height = 0)) +
-    scale_fill_manual(values = colors[c(2, 1, 3)],
-                      guide = 'none') +
-    scale_color_manual(values = colors[c(2, 1, 3)],
-                       guide = 'none') +
-    scale_y_log10() +
-    theme_bw() +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          strip.background = element_rect(fill = 'black'),
-          strip.text = element_text(color = 'white'),
-          plot.title = element_text(hjust = 0.5),
-          text = element_text(size = 20, family = 'Gill Sans MT'))
-  
-} 
