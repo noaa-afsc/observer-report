@@ -233,11 +233,7 @@ AvailableYR.2023 <-
   as.vector()
   
 # Predicted cost for the year (in days)
-PredictedYR.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$AFF_D #%>% 
-               #filter(ALLO == "min_plus_opt") %>% 
-               #summarise(ADP_D = mean(ADP_D)) %>% 
-               #unlist() %>% 
-               #as.vector()
+PredictedYR.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
 ActualYR.2023 <- 
