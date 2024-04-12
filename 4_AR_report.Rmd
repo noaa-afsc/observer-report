@@ -261,7 +261,9 @@ eval.2023 <-
                                  " greater than ")))
 
 
-rm(bud_scen_lst, Nnd_tbl, adj_tbl, bud_tbl, days_paid, Nnd_tbl.2022, Nnd_tbl.2023)
+
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+rm(bud_scen_lst, adj_tbl, bud_tbl, days_paid, Nnd_tbl.2022, Nnd_tbl.2023)
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
