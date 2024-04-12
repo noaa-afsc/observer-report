@@ -169,7 +169,7 @@ AvailableYR.2022 <-
   unlist() %>%
   as.vector()
   
-#' Predicted cost for the year (in days) *Break by stratum? - Need to think about - other calculations here are getting total, strata are presented in budget_eval*
+#' Predicted cost for the year (in days)
 PredictedYR.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
@@ -384,7 +384,7 @@ days_paid_sum.2022 <-
 costs.plot.2022 <- 
   #ggplot(sample_budget_out, aes(x = ADP_C)) +
   ggplot(bud_tbl.2022, aes(x = ADP_C)) + #' *NEW DATA CALL*
-  geom_histogram(aes(y = ..density..), binwidth = 20000, alpha = 0.2, 
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20000, alpha = 0.2, 
                  fill = "green", col = "darkseagreen2") +
   geom_vline(xintercept = BUDGET.2022, lty = 2, col = "black") +
   geom_vline(xintercept = days_paid_sum.2022$Total.Dollars, lty = 1, col = "darkgreen") +
@@ -426,7 +426,7 @@ days_paid_sum.2023 <-
 # Plot
 costs.plot.2023 <- 
   ggplot(bud_tbl.2023, aes(x = ADP_C)) +
-  geom_histogram(aes(y = ..density..), binwidth = 20000, alpha = 0.2, 
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20000, alpha = 0.2, 
                  fill = "green", col = "darkseagreen2") +
   geom_vline(xintercept = BUDGET.2023, lty = 2, col = "black") +
   geom_vline(xintercept = days_paid_sum.2023$Total.Dollars, lty = 1, col = "darkgreen") +
@@ -452,40 +452,75 @@ costs.plot.2023 <-
 ```
 
 ```{r budget_eval, include=FALSE}
+#' `------------ALL--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+
+# Create work.data object
+library(data.table)
+
+load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
+work.data.2022 <- filter(work.data, ADP == 2022)
+load("source_data/2024-02-20cas_valhalla.RData")
+work.data <- copy(valhalla)
+work.data.2023 <- filter(work.data, ADP == 2023)
+
+work.data <- rbind(
+  work.data.2022[COVERAGE_TYPE == "PARTIAL", -c("CVG_NEW", "STRATA_NEW", "PORT_NEW", "P_STRATA")], 
+  work.data.2023[COVERAGE_TYPE == "PARTIAL"])
+
+source("functions/for_christian_trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
+
+if(exists("td_mod")) rm(td_mod)
+
+# Initilize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
+ # of the matching are automatically assigned to the `mod_dat` object in the global environment
+td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
+
+# Yearly totals
+mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
+# It appears some observers were assigned to non-observer strata
+mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
+
+# Scraping all the non-observer strata matches to their observed strata counterparts
+mod_dat_copy <- copy(mod_dat)
+mod_dat_copy[
+][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "ZERO", STRATA := "OB HAL"]
+
+# Stratum-specific totals
+obs_act_days <- mod_dat_copy[, .(DAYS = sum(DAYS), MOD = sum(MOD)), keyby = .(ADP, STRATA)]
+
+# Format work.data
+work.data <- work.data %>% 
+  mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
+         LANDING_DATE = as.Date(LANDING_DATE),
+         STRATA = case_match(
+           STRATA,
+           c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
+           c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
+           c("FULL", "ZERO") ~ STRATA,
+           .default = "Undefined")
+         )
+
+work.data %>% distinct(STRATA) %>% arrange(STRATA)
+if(any(work.data$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
+
+partial <- tibble(
+  STRATA = c("OB POT", "OB TRW", "EM HAL", "EM TRW EFP", "EM POT", "OB HAL"),
+  GEAR = c("Pot", "Trawl", "Hook-and-line", "Trawl", "Pot" , "Hook-and-line"),
+  formatted_strat = c("*OB POT*", "*OB TRW*", "*EM HAL*", "*EM TRW EFP*", "*EM POT*", "*OB HAL*")
+  )
+
+#'*----------------------------------------------------------------------------*
+
+
 
 #' `------------2022--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
 
-work.data.2022 <- filter(work.data, ADP == 2022)
-
-rm(work.data)
-gc()
-
-work.data.2022 <- mutate(work.data.2022, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
-                         LANDING_DATE = as.Date(LANDING_DATE))
-
-work.data.2022 <- 
-  work.data.2022 %>% 
-  mutate(STRATA = case_match(
-    STRATA,
-    c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
-    c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
-    c("FULL", "ZERO") ~ STRATA,
-    .default = "Undefined")
-    )
-
-work.data.2022 %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(work.data.2022$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
-
-# Hard-code the 'partial' object for 2023 that is created by the ODDS pull
-partial.2022 <- tibble(
-  YEAR = rep(2022, times = 6),
-  STRATA = c("OB POT", "OB TRW", "EM HAL", "EM TRW EFP", "EM POT", "OB HAL"),
-  #Rate = c(0.1709, 0.2268, 0.3000, 0.3333, 0.3000, 0.1787),
-  GEAR = c("Pot", "Trawl", "Hook-and-line", "Trawl", "Pot" , "Hook-and-line"),
-  formatted_strat = c("*OB POT*", "*OB TRW*", "*EM HAL*", "*EM TRW EFP*", "*EM POT*", "*OB HAL*")
-)
+obs_act_days.2022 <- filter(obs_act_days, ADP == 2022)
 
 #'*----------------------------------------------------------------------------*
 
@@ -545,10 +580,6 @@ trip.budget.table.2022 <-
 #' `------------2023--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 
-library(data.table)
-(load("source_data/2024-02-20cas_valhalla.RData"))
-work.data.2023 <- copy(valhalla)
-
 # We have zero-coverage trips that were monitored. Phil is working on these. We're just gonna throw them into the observer stata for now.
 unique(work.data.2023[LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
   VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, AGENCY_GEAR_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL
@@ -556,30 +587,7 @@ unique(work.data.2023[LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
 work.data.2023[TRIP_ID %in% c(2170855, 2170858), STRATA := "POT"]
 work.data.2023[TRIP_ID %in% c(2307113, 2307114), STRATA := "HAL"]
 
-# Change date format to eliminate times and match what is in the database
-work.data.2023 <- mutate(work.data.2023, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
-
-# Re-assign stratum names
-unique(work.data.2023$STRATA)
-
-work.data.2023 <- work.data.2023 %>% mutate(STRATA = case_match(
-  STRATA,
-  c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
-  c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
-  c("FULL", "ZERO") ~ STRATA,
-  .default = "Undefined")
-)
-work.data.2023 %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(work.data.2023$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
-
-# Hard-code the 'partial' object for 2023 that is created by the ODDS pull
-partial.2023 <- tibble(
-  YEAR = rep(2023, times = 6),
-  STRATA = c("OB POT", "OB TRW", "EM HAL", "EM TRW EFP", "EM POT", "OB HAL"),
-  Rate = c(0.1709, 0.2268, 0.3000, 0.3333, 0.3000, 0.1787),
-  GEAR = c("Pot", "Trawl", "Hook-and-line", "Trawl", "Pot" , "Hook-and-line"),
-  formatted_strat = c("*OB POT*", "*OB TRW*", "*EM HAL*", "*EM TRW EFP*", "*EM POT*", "*OB HAL*")
-)
+obs_act_days.2023 <- filter(obs_act_days, ADP == 2023)
 
 #'*----------------------------------------------------------------------------*
 
