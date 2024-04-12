@@ -903,7 +903,6 @@ Coverage.Table.partial <- bind_rows(
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"])),
               Rate = unique(Rate)) %>%
     mutate(Pct.obs = (n/N) * 100,
-           #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") %>% 
     # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
     group_by(COVERAGE_TYPE, STRATA) %>%
@@ -935,7 +934,6 @@ Coverage.Table.partial <- bind_rows(
               n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
     mutate(COVERAGE_TYPE = "Partial coverage total",
            Pct.obs = (n/N) * 100,
-           #Pct.obs = format((n/N) * 100, digits = 1, nsmall = 1),
            deployment.method = "Trip-Selection") 
 )
 
@@ -954,7 +952,6 @@ Coverage.Table.zero <-
            deployment.method = "Trip-Selection",
            Rate = 0,
            meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%#,
-           #Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
     select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
 
@@ -975,10 +972,8 @@ Coverage.Table.TOTALS <- work.data %>%
 Coverage.Table <- bind_rows(Coverage.Table.full, 
                             Coverage.Table.partial,
                             Coverage.Table.zero,
-                            #'Coverage.Table.TOTALS # , *THIS TABLE HAS Pct.obs as character*
-                            #' Coverage.Table.TOTALS.sansEM *THIS TABLE NO LONGER EXISTS*
                             ) %>%
-  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #' *CAN ELIMINATE ALL THE OTHER format() OF Pct.obs WITH THIS*
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #'
   bind_rows(Coverage.Table.TOTALS) %>%
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
@@ -1032,16 +1027,14 @@ totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Tot
 
 perc_trips_obs <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total") %>% 
-  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, 
-                                 digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
 totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*v*`) %>% as.numeric()
 
 perc_vessels_obs <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total") %>%
-  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, 
-                                 digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
 ```
