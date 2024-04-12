@@ -432,13 +432,13 @@ if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
 # Summarize by stratum and random.assign
 disposition <- odds.dat %>%
   filter(ODDS_SELECTION_PCT != 100) %>%
-  select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, RELEASE_STATUS_DESCRIPTION, TRIP_PLAN_NUMBER) %>%
+  select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, released, TRIP_PLAN_NUMBER) %>%
   group_by(YEAR, STRATA, random.assign) %>%
   summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
             Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
             Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
             Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-            Trips.waived = length(TRIP_PLAN_LOG_SEQ[!is.na(RELEASE_STATUS_DESCRIPTION)]),
+            Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
 # Add yearly totals and summary statistics
 disposition <- merge(
