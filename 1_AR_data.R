@@ -7,14 +7,14 @@ source("3_helper.R")
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2024
+year <- 2023
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
 # Establish database connections
 channel_afsc  <- channel.fxn(location)
-channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
+channel_akro  <- channel.fxn(location, db = "AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
 # Get data ----------------------------------------------------------------
 
@@ -132,7 +132,7 @@ script <- paste("
       ON a.vessel_seq = f.vessel_seq
     LEFT JOIN odds.odds_trip_gear g
       ON a.trip_plan_log_seq = g.trip_plan_log_seq
-  WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -2:-1, collapse = ","), ")
+  WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -1:0, collapse = ","), ")
     -- [2023 Annual report Only]
     -- Exclude a 2024 trip with original embark date in 2023 that makes the ODDS_RANDOM_NUMBER package throw an error.
     AND a.trip_plan_log_seq != 202328923             
@@ -147,7 +147,7 @@ if(sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ))) stop("Some 'TRIP_PLAN_LOG_SEQ' a
 
 #'*====================================================================================================================*
 #' FIXME `ODDS 3.0 is not creating records in odds.odds_strata_release for trips auto-released by the three-in-a-row`
-#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code 2 identified instances here`
+#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code these 2 identified instances here`
 
 setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
   RELEASE_COMMENT = "Three Observerd Trips Release",
