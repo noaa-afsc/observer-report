@@ -102,6 +102,7 @@ salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 # * ODDS ----
 
 # Queries
+#' *For 2023 AR, pulling 2 prior years instead of 1 to back-fill analyses that were skipped in 2022 AR*
 script <- paste("
   SELECT 
     -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
@@ -110,7 +111,8 @@ script <- paste("
     a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
     a.original_embark_date, a.planned_embark_date, a.tender_trip_flag, a.trip_plan_number,
     b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, 
-    b.inherit_trip_seq,
+    -- inherit_trip_seq corresponds to the trip_stratas_seq that was cancelled, not trip_plan_log_seq before ODDS 3.0!
+    b.inherit_trip_seq,          
     c.group_code, c.description AS STRATUM_DESCRIPTION,
     d.release_comment,
     e.description AS RELEASE_STATUS_DESCRIPTION,
@@ -141,100 +143,51 @@ odds.dat <- dbGetQuery(channel_afsc, script)
 # Data checks and clean up
 
 # Check for duplicates - should be no records (= 0)
-sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ)) 
+if(sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ))) stop("Some 'TRIP_PLAN_LOG_SEQ' are duplicated!")
 
-# Database check - Should be no records where trip_selected is NA and trip was cancelled
-nrow(odds.dat[!is.na(odds.dat$TRIP_SELECTED) & odds.dat$TRIP_STATUS_CODE=="CN", ]) 
+#'*====================================================================================================================*
+#' FIXME `ODDS 3.0 is not creating records in odds.odds_strata_release for trips auto-released by the three-in-a-row`
+#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code 2 identified instances here`
 
-# This confirms the check
-table(odds.dat$TRIP_SELECTED, odds.dat$TRIP_STATUS_CODE, useNA = 'always')  
-
-#'*==============================================*
-#' FIXME * I FAIL THIS CHECK *
-
-if(F){
-  
-  
-  # Try pulling data since 2020 for comparison
-  since_2020 <- paste(
-  "
-    SELECT 
-    
-      -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
-      odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT,     
-      
-      a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
-      a.original_embark_date, a.planned_embark_date, a.tender_trip_flag,
-      b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata, b.inherit_trip_seq,
-      c.group_code, c.gear_typecode, c.description AS STRATUM_DESCRIPTION,
-      d.release_comment,
-      e.description AS RELEASE_STATUS_DESCRIPTION,
-      f.akr_vessel_id AS VESSEL_ID
-     
-    FROM odds.odds_trip_plan_log a
-      LEFT JOIN odds.odds_trip_stratas b
-        ON a.trip_plan_log_seq = b.trip_plan_log_seq 
-      LEFT JOIN odds.odds_strata c
-        ON b.strata = c.strata
-      LEFT JOIN odds.odds_strata_release d
-        ON b.trip_stratas_seq = d.trip_stratas_seq
-      LEFT JOIN odds.odds_lov_release_status e
-        ON d.release_status_seq = e.release_status_seq
-      LEFT JOIN norpac.atl_lov_vessel f
-        ON a.vessel_seq = f.vessel_seq
-    WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -4:-1, collapse = ","), ")
-      -- Just to make the code run for now until the package is fixed to deal with 2023 trip that should be in 2024
-      AND a.trip_plan_log_seq != 202328923             
-    "
-  )
-  
-  test <- setDT(dbGetQuery(channel_afsc, since_2020))
-  
-  # To look at TRIP_STATUS_CODE == CN cases
-  data.table::dcast(
-    test[, .N, keyby = .(YEAR, TRIP_SELECTED, TRIP_STATUS_CODE, TRIP_MONITOR_CODE)],
-    TRIP_STATUS_CODE + TRIP_SELECTED + TRIP_MONITOR_CODE ~ YEAR, value.var = "N", fill = 0
-  )[TRIP_STATUS_CODE == "CN"]
-  # In the past, all CN trips had NA for TRIP_SELECTED. They still might have had OA or TRIP_MONITOR_CODE?
-  
-  #' TRIP_PLAN_LOG_SEQ = 145603 was logged *2022*-01-22, original embark of *2022*-02-22, cancelled *2023*-01-02
-  what <- paste(test[YEAR == 2022 & TRIP_STATUS_CODE == "CN" & !is.na(TRIP_SELECTED), TRIP_PLAN_LOG_SEQ], collapse = ",")
-  what <- setDT(dbGetQuery(channel_afsc, paste(
-    "SELECT * FROM odds.odds_trip_plan_log WHERE TRIP_PLAN_LOG_SEQ IN(", what, ")"
-  )))
-  range(what[, CANCEL_DATE_TIME])  
-  #' *ALL of these trips were cancelled on or after Dec 14 2022, the day ODDS 3.0 went live!*
-  #' *Is it our wish to make ODDS 3.0 match the old data, re-work our analyses, or make the old match the new?*
-}
-#'*==============================================*
+setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
+  RELEASE_COMMENT = "Three Observerd Trips Release",
+  RELEASE_STATUS_DESCRIPTION = "Three in Row Release"
+)]
+odds.dat <- as.data.frame(odds.dat)
+#'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
-# GROUP_CODE: 10 = at-sea observer, 13 = fixed gear EM, 14 = EM TRW EFP
-# Trip status codes: CS	= Cancel by System, PD = Pending, CN = Cancelled, CP = Completed, CC = Cancel Cascaded
+# GROUP_CODE: 10:11 = at-sea observer, 13 = Fixed-gear EM, 14 = Trawl EM
+# TRIP_STATUS_CODE: 
+#   CS = Cancel by System 
+#   PD = Pending
+#   CN = Cancelled 
+#   CP = Completed 
+#   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
+#   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
-# The trip_selected_obs = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due 
-# to fishing occurring in more than one area) but the random number generated was larger than the 
-# programmed rate, and so the video was not selected for review. Since these trips aren't truly
-# monitored, make trip_selected_obs = "N". 96 is used for at-sea observer compliance trips and 98 is used
-# for at-sea fixed gear EM trips.
-odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96,98), "N", TRIP_SELECTED))
+#' The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due to fishing occurring in 
+#' more than one area) but the random number generated was larger than the programmed rate, and so the video was not 
+#' selected for review. Since these trips aren't truly monitored, make TRIP_SELECTED = "N". 96 is used for at-sea 
+#' observer compliance trips and 98 is used for at-sea fixed gear EM trips.
+odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96, 98), "N", TRIP_SELECTED))
 
 # Translate GROUP_CODE, STRATA_CODE, and GEAR_TYPE_CODE into STRATA
-odds.dat %>% select(GROUP_CODE, STRATA_CODE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% distinct() %>% arrange(GROUP_CODE, STRATA_CODE)
 odds.dat <- mutate(odds.dat, STRATA = paste0(
   # Tag on "compliance" if the trip was a multi-area IFQ trip
   ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
   case_when(
-    GROUP_CODE == 10 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
+    GROUP_CODE %in% 10:11 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
     GROUP_CODE == 13 ~ case_match(GEAR_TYPE_CODE, 6 ~ "EM POT", 8 ~ "EM HAL"),
-    GROUP_CODE == 14 ~ "EM TRW EFP"
+    GROUP_CODE == 14 ~ "EM TRW EFP",
+    .default = "Unknown"
   )
 ))
 odds.dat %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(is.na(odds.dat$STRATA))) stop("Some `STRATA` are not yet defined!")
+if(any(odds.dat$STRATA == "Unknown")) stop("Some `STRATA` are not yet defined!")
 
-# Lookup table for strata in partial coverage category
+# Create a lookup table for strata in partial coverage category
 partial <- odds.dat %>%
   filter(!(STRATA %like% "Compliance")) %>% 
   group_by(YEAR, STRATA, GEAR_TYPE_CODE) %>%
