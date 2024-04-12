@@ -160,12 +160,8 @@ AvailableYR.2022 <-
   unlist() %>%
   as.vector()
   
-#' Predicted cost for the year (in days) *CHANGE TO AVAILABLE (break by stratum)*
-PredictedYR.2022 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D #%>% 
-               #filter(ALLO == "min_plus_opt") %>% 
-               #summarise(ADP_D = mean(ADP_D)) %>% 
-               #unlist() %>% 
-               #as.vector()
+#' Predicted cost for the year (in days) *Break by stratum? - Need to think about - other calculations here are getting total, strata are presented in budget_eval*
+PredictedYR.2022 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
 ActualYR.2022 <- 
@@ -180,7 +176,7 @@ eval.2022 <-
   data.frame(ActualYR.2022, PredictedYR.2022) %>%
   mutate(
     # Percent of the budget used
-    pct.budget.spent = round(ActualYR.2022/PredictedYR.2022, digits = 3) * 100, #' *CHANGE TO PREDICTED?*
+    pct.budget.spent = round(ActualYR.2022/AvailableYR.2022, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
     # Percent of budget remaining
     pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
     # Was it more, less, or equal to the predicted budget?
@@ -223,7 +219,7 @@ eval.2023 <-
   data.frame(ActualYR.2023, PredictedYR.2023) %>%
   mutate(
     # Percent of the budget used
-    pct.budget.spent = round(ActualYR.2023/PredictedYR.2023, digits = 3) * 100,
+    pct.budget.spent = round(ActualYR.2023/AvailableYR.2023, digits = 3) * 100,
     # Percent of budget remaining
     pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
     # Was it more, less, or equal to the predicted budget?
