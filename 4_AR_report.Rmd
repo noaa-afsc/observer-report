@@ -147,7 +147,6 @@ load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022
 # Available budget for the year (in days)
 AvailableYR.2022 <- 
   adj_tbl %>% 
-  #filter(ALLO == "min_plus_opt") %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -155,7 +154,7 @@ AvailableYR.2022 <-
   unlist() %>%
   as.vector()
   
-# Predicted cost for the year (in days)
+#' Predicted cost for the year (in days) *CHANGE TO AVAILABLE (break by stratum)*
 PredictedYR.2022 <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D #%>% 
                #filter(ALLO == "min_plus_opt") %>% 
                #summarise(ADP_D = mean(ADP_D)) %>% 
@@ -175,7 +174,7 @@ eval.2022 <-
   data.frame(ActualYR.2022, PredictedYR.2022) %>%
   mutate(
     # Percent of the budget used
-    pct.budget.spent = round(ActualYR.2022/PredictedYR.2022, digits = 3) * 100,
+    pct.budget.spent = round(ActualYR.2022/PredictedYR.2022, digits = 3) * 100, #' *CHANGE TO PREDICTED?*
     # Percent of budget remaining
     pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
     # Was it more, less, or equal to the predicted budget?
@@ -191,7 +190,6 @@ load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023
 # Available budget for the year (in days)
 AvailableYR.2023 <- 
   adj_tbl %>% 
-  #filter(ALLO == "min_plus_opt") %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -300,7 +298,7 @@ load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022
 
 # Plot effort predictions against actual
 outcomes.plot.2022 <-
-  #ggplot(sample_budget_out, aes(x = ADP_D)) +
+  #'ggplot(sample_budget_out, aes(x = ADP_D)) + *OLD CALL*
   ggplot(bud_tbl, aes(x = ADP_D)) + #' *NEW DATA CALL*
   geom_histogram(aes(y = ..density..), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
   geom_vline(xintercept = AvailableYR.2022, lty = 2, col = "black") +
@@ -361,7 +359,7 @@ options(scipen = 999) # Remove scientific notation
 #'*----------------------------------------------------------------------------*
 
 # Get the budget used in the ADP
-BUDGET.2022 <- bud_scen_lst$bud_TYFCPN$BUD$BUD #dp_res$BUD$BUD
+BUDGET.2022 <- bud_scen_lst$bud_TYFCPN$BUD$BUD #'dp_res$BUD$BUD *OLD CALL*
 
 # Get total costs
 days_paid_sum.2022 <- 
@@ -407,7 +405,7 @@ load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023
 #'*----------------------------------------------------------------------------*
 
 # Get the budget used in the ADP
-BUDGET.2023 <- bud_scen_lst$bud_TYFCPN$BUD$BUD #dp_res$BUD$BUD
+BUDGET.2023 <- bud_scen_lst$bud_TYFCPN$BUD$BUD
 
 # Get total costs
 days_paid_sum.2023 <- 
@@ -448,42 +446,192 @@ costs.plot.2023 <-
 ```
 
 ```{r budget_eval, include=FALSE}
+
+#' `------------2022--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+load("source_data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData") # 2022 ADP
+load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
+
+work.data.2022 <- filter(work.data, ADP == 2022)
+
+rm(work.data)
+gc()
+
+work.data.2022 <- mutate(work.data.2022, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
+                         LANDING_DATE = as.Date(LANDING_DATE))
+
+work.data.2022 <- 
+  work.data.2022 %>% 
+  mutate(STRATA = case_match(
+    STRATA,
+    c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
+    c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
+    c("FULL", "ZERO") ~ STRATA,
+    .default = "Undefined")
+    )
+
+work.data.2022 %>% distinct(STRATA) %>% arrange(STRATA)
+if(any(work.data.2022$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
+
+# Hard-code the 'partial' object for 2023 that is created by the ODDS pull
+partial.2022 <- tibble(
+  YEAR = rep(2022, times = 6),
+  STRATA = c("OB POT", "OB TRW", "EM HAL", "EM TRW EFP", "EM POT", "OB HAL"),
+  #Rate = c(0.1709, 0.2268, 0.3000, 0.3333, 0.3000, 0.1787),
+  GEAR = c("Pot", "Trawl", "Hook-and-line", "Trawl", "Pot" , "Hook-and-line"),
+  formatted_strat = c("*OB POT*", "*OB TRW*", "*EM HAL*", "*EM TRW EFP*", "*EM POT*", "*OB HAL*")
+)
+
+#'*----------------------------------------------------------------------------*
+
 # Isolate ADP rate predictions for the chosen design
-sample_pops_out <- adp_out$ADJ[ALLO == "min_plus_opt"]
+predicted.2022 <- Nnd_tbl[, lapply(.SD, mean), keyby = .(POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
+
+predicted.2022 <- predicted.2022 %>%
+  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
+                            STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
+                            STRATA == "POT" & POOL == "OB" ~ "OB POT",
+                            STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
+                            STRATA == "EM_POT" ~ "EM POT",
+                            STRATA == "EM_HAL" ~ "EM HAL",
+                            TRUE ~ STRATA)) %>%
+  rename(pred_days = dh) %>%
+  select(!c(POOL, Nh, nh)) %>%
+  filter(STRATA != c("HAL", "POT"))
+  
 
 # Evaluate why we were off budget
-trip.budget.table <- merge(
-                     # Predicted trips days by strata
-                     sample_pops_out %>%
-                     group_by(STRATA) %>%
-                     summarise(pred_days = round(mean(STRATA_N) * mean(TRP_DUR)))
-                     ,
-                     # Actual trip days by strata
-                     work.data %>%
-                     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-                     group_by(TRIP_ID, STRATA) %>%
-                     summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                     dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
-                     mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
-                     group_by(STRATA) %>% 
-                     summarise(act_days = sum(days))
-                     , all = TRUE) %>% 
-                     # Calculate total predicted days for EM strata from final  
-                     # ADP document, since their trip duration isn't in ADP output 
-                     mutate(pred_days = ifelse(STRATA == "EM HAL", round(806 * (1204/242)), pred_days),
-                            pred_days = ifelse(STRATA == "EM POT", round(113 * (159/34)), pred_days),
-                            pred_days = ifelse(STRATA == "EM TRW EFP", round(496 * (401/149)), pred_days)) %>% 
-                     # Change NAs to 0 for actual days      
-                     mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
-                     # Percent difference between predicted and actual
-                     mutate(diff = act_days -  pred_days,
-                            perc = (diff)/pred_days * 100) %>%
-                     mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
+trip.budget.table.2022 <- 
+  merge(
+    # Predicted trips days by strata
+    #'sample_pops_out.2022 %>% *OLD CALL*
+    predicted.2022 %>%
+      group_by(STRATA)
+    ,
+    # Actual trip days by strata
+    work.data.2022 %>%
+      filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial.2022$STRATA & OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
+      group_by(TRIP_ID, STRATA) %>%
+      summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
+                dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
+      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
+      group_by(STRATA) %>% 
+      summarise(act_days = sum(days))
+    , all = TRUE) %>% 
+  # Change NAs to 0 for actual days      
+  mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+  # Percent difference between predicted and actual
+  mutate(diff = act_days -  pred_days,
+         perc = (diff)/pred_days * 100) %>%
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
 
 # Append total
-trip.budget.table <- rbind(trip.budget.table,
-                           trip.budget.table %>% 
-summarise(STRATA = "Total", pred_days = sum(pred_days), act_days = sum(act_days), diff = sum(diff), perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1)))
+trip.budget.table.2022 <- 
+  rbind(trip.budget.table.2022,
+        trip.budget.table.2022 %>% 
+          summarise(STRATA = "Total", 
+                    pred_days = sum(pred_days), 
+                    act_days = sum(act_days), 
+                    diff = sum(diff), 
+                    perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
+  mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
+         diff = format(diff, digits = 1, nsmall = 0))
+
+#' `------------2023--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+load("source_data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.rdata") # 2023 ADP
+
+library(data.table)
+(load("source_data/2024-02-20cas_valhalla.RData"))
+work.data.2023 <- copy(valhalla)
+
+# We have zero-coverage trips that were monitored. Phil is working on these. We're just gonna throw them into the observer stata for now.
+unique(work.data.2023[LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
+  VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, AGENCY_GEAR_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL
+)])[order(TRIP_ID)]
+work.data.2023[TRIP_ID %in% c(2170855, 2170858), STRATA := "POT"]
+work.data.2023[TRIP_ID %in% c(2307113, 2307114), STRATA := "HAL"]
+
+# Change date format to eliminate times and match what is in the database
+work.data.2023 <- mutate(work.data.2023, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
+
+# Re-assign stratum names
+unique(work.data.2023$STRATA)
+
+work.data.2023 <- work.data.2023 %>% mutate(STRATA = case_match(
+  STRATA,
+  c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
+  c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
+  c("FULL", "ZERO") ~ STRATA,
+  .default = "Undefined")
+)
+work.data.2023 %>% distinct(STRATA) %>% arrange(STRATA)
+if(any(work.data.2023$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
+
+# Hard-code the 'partial' object for 2023 that is created by the ODDS pull
+partial.2023 <- tibble(
+  YEAR = rep(2023, times = 6),
+  STRATA = c("OB POT", "OB TRW", "EM HAL", "EM TRW EFP", "EM POT", "OB HAL"),
+  Rate = c(0.1709, 0.2268, 0.3000, 0.3333, 0.3000, 0.1787),
+  GEAR = c("Pot", "Trawl", "Hook-and-line", "Trawl", "Pot" , "Hook-and-line"),
+  formatted_strat = c("*OB POT*", "*OB TRW*", "*EM HAL*", "*EM TRW EFP*", "*EM POT*", "*OB HAL*")
+)
+
+#'*----------------------------------------------------------------------------*
+
+# Isolate ADP rate predictions for the chosen design
+predicted.2023 <- Nnd_tbl[, lapply(.SD, mean), keyby = .(POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
+
+predicted.2023 <- predicted.2023 %>%
+  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
+                            STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
+                            STRATA == "POT" & POOL == "OB" ~ "OB POT",
+                            STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
+                            STRATA == "EM_POT" ~ "EM POT",
+                            STRATA == "EM_HAL" ~ "EM HAL",
+                            TRUE ~ STRATA)) %>%
+  rename(pred_days = dh) %>%
+  select(!c(POOL, Nh, nh)) %>%
+  filter(STRATA != c("HAL", "POT"))
+  
+
+# Evaluate why we were off budget
+trip.budget.table.2023 <- 
+  merge(
+    # Predicted trips days by strata
+    #'sample_pops_out.2022 %>% *OLD CALL*
+    predicted.2023 %>%
+      group_by(STRATA)
+    ,
+    # Actual trip days by strata
+    work.data.2023 %>%
+      filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial.2023$STRATA & OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
+      group_by(TRIP_ID, STRATA) %>%
+      summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
+                dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
+      mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
+      group_by(STRATA) %>% 
+      summarise(act_days = sum(days))
+    , all = TRUE) %>% 
+  # Change NAs to 0 for actual days      
+  mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+  # Percent difference between predicted and actual
+  mutate(diff = act_days -  pred_days,
+         perc = (diff)/pred_days * 100) %>%
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
+
+# Append total
+trip.budget.table.2023 <- 
+  rbind(trip.budget.table.2023,
+        trip.budget.table.2023 %>% 
+          summarise(STRATA = "Total", 
+                    pred_days = sum(pred_days), 
+                    act_days = sum(act_days), 
+                    diff = sum(diff), 
+                    perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
+  mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
+         diff = format(diff, digits = 1, nsmall = 0))
+
 ```
 
 Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
