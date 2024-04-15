@@ -482,7 +482,9 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 ```{r budget_eval, include=FALSE}
 #' `------------ALL--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+#' TODO *MOVE THIS TO 1_AR_data.R*
 #' `work.data` will be in `2_AR_data.rdata`, created from `1_AR_data.R`
+
 
 # Create work.data object
 library(data.table)
@@ -497,12 +499,12 @@ work.data <- rbind(
   work.data.2022[COVERAGE_TYPE == "PARTIAL", -c("CVG_NEW", "STRATA_NEW", "PORT_NEW", "P_STRATA")], 
   work.data.2023[COVERAGE_TYPE == "PARTIAL"])
 
-source("functions/for_christian_trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
+source("functions/trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
 
 if(exists("td_mod")) rm(td_mod)
 
-# Initilize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
- # of the matching are automatically assigned to the `mod_dat` object in the global environment
+#' Initialize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
+#' of the matching are automatically assigned to the `mod_dat` object in the global environment
 td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
 
 # Yearly totals
