@@ -180,7 +180,7 @@ predicted <- predicted %>%
                             TRUE ~ STRATA)) %>%
   rename(pred_days = dh) %>%
   select(!c(POOL, Nh, nh)) %>%
-  filter(STRATA != c("HAL", "POT"))
+  filter(STRATA != c("HAL", "POT")) # Remove zero strata
 
 #'*----------------------------------------------------------------------------*
 
@@ -506,10 +506,11 @@ mod_dat_copy[
 ][STRATA == "ZERO", STRATA := "OB HAL"]
 
 # Stratum-specific totals
-obs_act_days <- mod_dat_copy[, .(DAYS = sum(DAYS), MOD = sum(MOD)), keyby = .(ADP, STRATA)]
+obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Format work.data
-work.data <- work.data %>% 
+work.data <- 
+  work.data %>% 
   mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
          LANDING_DATE = as.Date(LANDING_DATE),
          STRATA = case_match(
@@ -517,54 +518,53 @@ work.data <- work.data %>%
            c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
            c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
            c("FULL", "ZERO") ~ STRATA,
-           .default = "Undefined")
+           .default = "Undefined"),
+         ADP = as.factor(ADP) #' *OTHER DATASETS HAVE THIS AS factor, NEEDS TO MATCH DATA TYPE*
          )
 
 work.data %>% distinct(STRATA) %>% arrange(STRATA)
 if(any(work.data$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
 
-partial <- tibble(
-  STRATA = c("OB POT", "OB TRW", "EM HAL", "EM TRW EFP", "EM POT", "OB HAL"),
-  GEAR = c("Pot", "Trawl", "Hook-and-line", "Trawl", "Pot" , "Hook-and-line"),
-  formatted_strat = c("*OB POT*", "*OB TRW*", "*EM HAL*", "*EM TRW EFP*", "*EM POT*", "*OB HAL*")
-  )
-
+# Free up workspace
+rm(work.data.2022, work.data.2023)
 #'*----------------------------------------------------------------------------*
 
 
 
 #' `------------2022--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-
-obs_act_days.2022 <- filter(obs_act_days, ADP == 2022)
-
-#'*----------------------------------------------------------------------------*
 
 # Evaluate why we were off budget
 trip.budget.table.2022 <- 
   merge(
-    # Predicted trips days by strata
+    # Predicted days by strata
     #'sample_pops_out.2022 %>% *OLD CALL*
     predicted %>%
       filter(YEAR == 2022) %>%
       group_by(STRATA)
     ,
     # Actual trip days by strata
-    work.data.2022 %>%
-      filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial.2022$STRATA & OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
-      group_by(TRIP_ID, STRATA) %>%
+    rbind(
+      # EM strata
+      work.data %>%
+      filter(ADP == 2022 & COVERAGE_TYPE == "PARTIAL" & 
+      (STRATA == "EM TRW EFP" | STRATA == "EM HAL" | STRATA == "EM POT") & #' *NEEDED ONLY EM STRATA*
+      OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
+      group_by(ADP, TRIP_ID, STRATA) %>%
       summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
                 dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
       mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
-      group_by(STRATA) %>% 
-      summarise(act_days = sum(days))
+      group_by(ADP, STRATA) %>% 
+      summarise(act_days = sum(days)),
+      # Observer strata
+    filter(obs_act_days, ADP == 2022))
     , all = TRUE) %>% 
   # Change NAs to 0 for actual days      
   mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
   # Percent difference between predicted and actual
   mutate(diff = act_days -  pred_days,
          perc = (diff)/pred_days * 100) %>%
-  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>%
+  select(!c(ADP, YEAR))
 
 # Append total
 trip.budget.table.2022 <- 
@@ -572,7 +572,7 @@ trip.budget.table.2022 <-
         trip.budget.table.2022 %>% 
           summarise(STRATA = "Total", 
                     pred_days = sum(pred_days), 
-                    act_days = sum(act_days), 
+                    act_days = format(sum(act_days), digits = 1, nsmall = 0), 
                     diff = sum(diff), 
                     perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
   mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
@@ -582,13 +582,11 @@ trip.budget.table.2022 <-
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 
 # We have zero-coverage trips that were monitored. Phil is working on these. We're just gonna throw them into the observer stata for now.
-unique(work.data.2023[LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
+unique(work.data[ADP == 2023 & LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
   VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, AGENCY_GEAR_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL
 )])[order(TRIP_ID)]
-work.data.2023[TRIP_ID %in% c(2170855, 2170858), STRATA := "POT"]
-work.data.2023[TRIP_ID %in% c(2307113, 2307114), STRATA := "HAL"]
-
-obs_act_days.2023 <- filter(obs_act_days, ADP == 2023)
+work.data[TRIP_ID %in% c(2170855, 2170858), STRATA := "OB POT"]
+work.data[TRIP_ID %in% c(2307113, 2307114), STRATA := "OB HAL"]
 
 #'*----------------------------------------------------------------------------*
 
@@ -602,21 +600,28 @@ trip.budget.table.2023 <-
       group_by(STRATA)
     ,
     # Actual trip days by strata
-    work.data.2023 %>%
-      filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial.2023$STRATA & OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
-      group_by(TRIP_ID, STRATA) %>%
+    rbind(
+      # EM Strata
+      work.data %>%
+      filter(ADP == 2023 & COVERAGE_TYPE == "PARTIAL" &
+      (STRATA == "EM TRW EFP" | STRATA == "EM HAL" | STRATA == "EM POT") & #' *NEEDED ONLY EM STRATA* 
+      OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
+      group_by(ADP, TRIP_ID, STRATA) %>%
       summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
                 dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
       mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
-      group_by(STRATA) %>% 
-      summarise(act_days = sum(days))
+      group_by(ADP, STRATA) %>% 
+      summarise(act_days = sum(days)),
+      # Observer strata
+      filter(obs_act_days, ADP == 2023))
     , all = TRUE) %>% 
   # Change NAs to 0 for actual days      
   mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
   # Percent difference between predicted and actual
   mutate(diff = act_days -  pred_days,
          perc = (diff)/pred_days * 100) %>%
-  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>%
+  select(!c(ADP, YEAR))
 
 # Append total
 trip.budget.table.2023 <- 
@@ -624,7 +629,7 @@ trip.budget.table.2023 <-
         trip.budget.table.2023 %>% 
           summarise(STRATA = "Total", 
                     pred_days = sum(pred_days), 
-                    act_days = sum(act_days), 
+                    act_days = format(sum(act_days), digits = 1, nsmall = 0), 
                     diff = sum(diff), 
                     perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
   mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
