@@ -86,6 +86,23 @@ Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
 load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
 
 # load odds data issues from google sheet
+# Because there is a shortcut to the google sheet housed in the same folder as
+  # the data, it is the same project_dribble call as above
+project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+
+# identify the data you will download
+data_dribble <-
+  drive_ls(project_dribble) %>%
+  filter(name == "possible_trips_not_logged_or_logged_incorrectly")
+
+# Download the file from g-drive into local
+drive_download(
+  data_dribble,
+  path = paste0(Rdata_files_path, "possible_trips_not_logged_or_logged_incorrectly.xlsx"),
+  overwrite = T
+)
+# ERROR: Cannot export Google file of type 'application/vnd.google-apps.shortcut
+
 # TODO: this is currently a sheet downloaded from drive as of 4/10/2024
   # once this sheet is housed in an accessible drive, update to download from 
   # google drive
