@@ -216,8 +216,7 @@ predicted <- predicted %>%
 #' `------------2022--------------`
 
 # Available budget for the year (in days)
-AvailableYR.2022 <- 
-  adj_tbl.2022 %>% 
+AvailableYR.2022 <- adj_tbl.2022 %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -229,16 +228,14 @@ AvailableYR.2022 <-
 PredictedYR.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
-ActualYR.2022 <- 
-  days_paid.2022 %>% 
+ActualYR.2022 <- days_paid.2022 %>% 
   replace(is.na(.), 0) %>%
   summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
   unlist() %>% 
   as.vector()
 
 # Percent of budget predicted to be spent
-eval.2022 <- 
-  data.frame(ActualYR.2022, AvailableYR.2022) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
+eval.2022 <- data.frame(ActualYR.2022, AvailableYR.2022) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
   mutate(
     # Percent of the budget used
     pct.budget.spent = round(ActualYR.2022/AvailableYR.2022, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
@@ -252,8 +249,7 @@ eval.2022 <-
 #' `------------2023--------------`
 
 # Available budget for the year (in days)
-AvailableYR.2023 <- 
-  adj_tbl.2023 %>% 
+AvailableYR.2023 <- adj_tbl.2023 %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -265,16 +261,14 @@ AvailableYR.2023 <-
 PredictedYR.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
-ActualYR.2023 <- 
-  days_paid.2023 %>% 
+ActualYR.2023 <- days_paid.2023 %>% 
   replace(is.na(.), 0) %>%
   summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
   unlist() %>% 
   as.vector()
 
 # Percent of budget predicted to be spent
-eval.2023 <- 
-  data.frame(ActualYR.2023, AvailableYR.2023) %>%
+eval.2023 <- data.frame(ActualYR.2023, AvailableYR.2023) %>%
   mutate(
     # Percent of the budget used
     pct.budget.spent = round(ActualYR.2023/AvailableYR.2023, digits = 3) * 100,
@@ -353,12 +347,9 @@ The deployment of observers into the `r year` Federal fisheries in Alaska is pri
 
 #' `------------2022--------------`
 # Isolate ADP budget predictions for the chosen design
-#'sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"] *Called directly from bud_tbl now*
 
 # Plot effort predictions against actual
-outcomes.plot.2022 <-
-  #'ggplot(sample_budget_out, aes(x = ADP_D)) + *OLD CALL*
-  ggplot(bud_tbl.2022, aes(x = ADP_D)) + #' *NEW DATA CALL*
+outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
   geom_histogram(aes(y = after_stat(density)), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
   geom_vline(xintercept = AvailableYR.2022, lty = 2, col = "black") +
   geom_vline(xintercept = ActualYR.2022, lty = 1, col = "blue") +
@@ -383,8 +374,7 @@ outcomes.plot.2022 <-
 
 #' `------------2023--------------`
 
-outcomes.plot.2023 <-
-  ggplot(bud_tbl.2023, aes(x = ADP_D)) +
+outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
   geom_histogram(aes(y = after_stat(density)), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
   geom_vline(xintercept = AvailableYR.2023, lty = 2, col = "black") +
   geom_vline(xintercept = ActualYR.2023, lty = 1, col = "blue") +
@@ -411,11 +401,10 @@ outcomes.plot.2023 <-
 #' `------------2022--------------`
 
 # Get the budget used in the ADP
-BUDGET.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$BUD #'dp_res$BUD$BUD *OLD CALL*
+BUDGET.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$BUD
 
 # Get total costs
-days_paid_sum.2022 <- 
-  days_paid.2022 %>% 
+days_paid_sum.2022 <- days_paid.2022 %>% 
   summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
             Total.Option.Dollars = sum(Option_Dollars, na.rm = TRUE),
             Total.Travel.Dollars = sum(Travel_Dollars, na.rm = TRUE),
@@ -424,9 +413,7 @@ days_paid_sum.2022 <-
   mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot.2022 <- 
-  #ggplot(sample_budget_out, aes(x = ADP_C)) +
-  ggplot(bud_tbl.2022, aes(x = ADP_C)) + #' *NEW DATA CALL*
+costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
   geom_histogram(aes(y = after_stat(density)), binwidth = 20000, alpha = 0.2, 
                  fill = "green", col = "darkseagreen2") +
   geom_vline(xintercept = BUDGET.2022, lty = 2, col = "black") +
@@ -457,8 +444,7 @@ costs.plot.2022 <-
 BUDGET.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$BUD
 
 # Get total costs
-days_paid_sum.2023 <- 
-  days_paid.2023 %>% 
+days_paid_sum.2023 <- days_paid.2023 %>% 
   summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
             Total.Option.Dollars = sum(Option_Dollars, na.rm = TRUE),
             Total.Travel.Dollars = sum(Travel_Dollars, na.rm = TRUE),
@@ -467,8 +453,7 @@ days_paid_sum.2023 <-
   mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot.2023 <- 
-  ggplot(bud_tbl.2023, aes(x = ADP_C)) +
+costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   geom_histogram(aes(y = after_stat(density)), binwidth = 20000, alpha = 0.2, 
                  fill = "green", col = "darkseagreen2") +
   geom_vline(xintercept = BUDGET.2023, lty = 2, col = "black") +
@@ -497,6 +482,7 @@ costs.plot.2023 <-
 ```{r budget_eval, include=FALSE}
 #' `------------ALL--------------`
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+#' `work.data` will be in `2_AR_data.rdata`, created from `1_AR_data.R`
 
 # Create work.data object
 library(data.table)
