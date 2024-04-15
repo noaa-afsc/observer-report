@@ -7,14 +7,14 @@ source("3_helper.R")
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2020 
+year <- 2023
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
 # Establish database connections
 channel_afsc  <- channel.fxn(location)
-channel_akro  <- channel.fxn(location, db="AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
+channel_akro  <- channel.fxn(location, db = "AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
 
 # Get data ----------------------------------------------------------------
 
@@ -102,85 +102,102 @@ salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 # * ODDS ----
 
 # Queries
+#' *For 2023 AR, pulling 2 prior years instead of 1 to back-fill analyses that were skipped in 2022 AR*
 script <- paste("
-SELECT
-norpac.ODDS_RANDOM_NUMBER.getControlPct(pl.original_embark_date, vtr.trip_rate_strata)  as ODDS_SELECTION_PCT,
-EXTRACT(YEAR FROM pl.original_embark_date) AS YEAR,      
-vtr.sample_plan_seq,
---vtr.gear_type_code, --Change #1 for 2018 Annual Report
--- vtr.tender_trip_flag, --Change #2 for 2018 Annual Report
--- vtr.trip_rate_strata, 
-vtr.description,
-lov.akr_vessel_id AS VESSEL_ID,
-lov.vessel_seq,
-pl.trip_plan_log_seq,
-pl.gear_type_code, --Change #3 for 2018 Annual Report
-pl.tender_trip_flag, --Change #4 for 2018 Annual Report
-pl.original_embark_date,
-pl.planned_embark_date,
-pl.trip_status_code,
-pl.trip_obs_code,
-pl.trip_selected_obs,
-pl.inherit_obs_trip_seq,
-mon.random_number_used,
-pl.trip_plan_number,
--- This line converts the CLOB format of this field into VARCHAR
+  SELECT 
+    -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
+    odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT,     
 
-dbms_lob.substr(tw.request_comment,4000) AS WAIVER_DESCRIPTION,
-(SELECT ws.description 
-FROM odds_lov_waiver_status ws
-WHERE tw.waiver_status_seq = ws.waiver_status_seq) AS WAIVER_TYPE
-                
-FROM      
-norpac.odds_vessel_to_rate_strata vtr ,   
-norpac.atl_lov_vessel             lov,
-norpac.odds_trip_plan_log         pl   
--- monitor record doesnt exist for BSAI or early EM ( dont need random number for 100% or 0% selection)
-                
-LEFT OUTER JOIN
-norpac.odds_monitor mon   
-ON pl.trip_plan_log_seq  =  mon.trip_plan_log_seq 
-                AND mon.random_number_used IS NOT NULL 
-                
-LEFT OUTER JOIN
-norpac.odds_trip_waiver tw    
-ON pl.trip_plan_log_seq  =  tw.trip_plan_log_seq 
-WHERE pl.sample_plan_seq = vtr.sample_plan_seq
-AND NVL(pl.gear_type_code, 0) =  NVL( vtr.gear_type_code ,  NVL(pl.gear_type_code, 0))                  
-AND NVL(pl.tender_trip_flag, 0) = NVL( vtr.tender_trip_flag , NVL(pl.tender_trip_flag, 0))               
-AND pl.vessel_seq = lov.vessel_seq 
-AND EXTRACT(YEAR FROM pl.original_embark_date) =", year)
+    a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
+    a.original_embark_date, a.planned_embark_date, a.tender_trip_flag, a.trip_plan_number,
+    b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, 
+    -- inherit_trip_seq corresponds to the trip_stratas_seq that was cancelled, not trip_plan_log_seq before ODDS 3.0!
+    b.inherit_trip_seq,          
+    c.group_code, c.description AS STRATUM_DESCRIPTION,
+    d.release_comment,
+    e.description AS RELEASE_STATUS_DESCRIPTION,
+    f.akr_vessel_id AS VESSEL_ID,
+    g.gear_type_code
+   
+  FROM odds.odds_trip_plan_log a
+    LEFT JOIN odds.odds_trip_stratas b
+      ON a.trip_plan_log_seq = b.trip_plan_log_seq 
+    LEFT JOIN odds.odds_strata c
+      ON b.strata = c.strata
+    LEFT JOIN odds.odds_strata_release d
+      ON b.trip_stratas_seq = d.trip_stratas_seq
+    LEFT JOIN odds.odds_lov_release_status e
+      ON d.release_status_seq = e.release_status_seq
+    LEFT JOIN norpac.atl_lov_vessel f
+      ON a.vessel_seq = f.vessel_seq
+    LEFT JOIN odds.odds_trip_gear g
+      ON a.trip_plan_log_seq = g.trip_plan_log_seq
+  WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -1:0, collapse = ","), ")
+    -- [2023 Annual report Only]
+    -- Exclude a 2024 trip with original embark date in 2023 that makes the ODDS_RANDOM_NUMBER package throw an error.
+    AND a.trip_plan_log_seq != 202328923             
+")
 
 odds.dat <- dbGetQuery(channel_afsc, script)
 
 # Data checks and clean up
 
 # Check for duplicates - should be no records (= 0)
-sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ)) 
+if(sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ))) stop("Some 'TRIP_PLAN_LOG_SEQ' are duplicated!")
 
-# Database check - Should be no records
-length(odds.dat[!is.na(odds.dat$TRIP_SELECTED_OBS) & odds.dat$TRIP_STATUS_CODE=="CN"]) 
+#'*====================================================================================================================*
+#' FIXME `ODDS 3.0 is not creating records in odds.odds_strata_release for trips auto-released by the three-in-a-row`
+#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code these 2 identified instances here`
 
-# This confirms the check
-table(odds.dat$TRIP_SELECTED_OBS, odds.dat$TRIP_STATUS_CODE, useNA='always')  
+setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
+  RELEASE_COMMENT = "Three Observerd Trips Release",
+  RELEASE_STATUS_DESCRIPTION = "Three in Row Release"
+)]
+odds.dat <- as.data.frame(odds.dat)
+#'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
-# Sample plan sequences: 11 = gear + tender, 13 = EM selected for review, 14 = EM EFP
-# 98 = EM not selected for review where IFQ fishing was to occur in more than one NMFS area.
-# Trip status codes: CS	= Cancel by System, PD = Pending, CN = Cancelled, CP = Completed, CC = Cancel Cascaded
-table(odds.dat$TRIP_OBS_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$SAMPLE_PLAN_SEQ, useNA='ifany')
+# GROUP_CODE: 10:11 = at-sea observer, 13 = Fixed-gear EM, 14 = Trawl EM
+# TRIP_STATUS_CODE: 
+#   CS = Cancel by System 
+#   PD = Pending
+#   CN = Cancelled 
+#   CP = Completed 
+#   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
+#   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
+table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
-# The trip_selected_obs = "Y" when sample_plan_seq = 98 means that coverage was requested (due 
-# to fishing occuring in more than one area) but the random number generated was larger than the 
-# programmed rate, and so the video was not selected for review. Since these trips aren't truly
-# monitored, make trip_selected_obs = "N". Also change strata to include gear_type_code = 6 (pot)
-# and gear_type_code = 8 (longline).
-odds.dat <- odds.dat %>% 
-            mutate(TRIP_SELECTED_OBS=ifelse(SAMPLE_PLAN_SEQ==98, "N", TRIP_SELECTED_OBS),
-                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="N", paste0(DESCRIPTION, " - POT - No Tender"), DESCRIPTION),
-                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==6 & TENDER_TRIP_FLAG=="Y", paste0(DESCRIPTION, " - POT - Tender"), DESCRIPTION),
-                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="N", paste0(DESCRIPTION, " - HAL - No Tender"), DESCRIPTION),
-                   DESCRIPTION=ifelse(SAMPLE_PLAN_SEQ==98 & GEAR_TYPE_CODE==8 & TENDER_TRIP_FLAG=="Y", paste0(DESCRIPTION, " - HAL - Tender"), DESCRIPTION))
+#' The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due to fishing occurring in 
+#' more than one area) but the random number generated was larger than the programmed rate, and so the video was not 
+#' selected for review. Since these trips aren't truly monitored, make TRIP_SELECTED = "N". 96 is used for at-sea 
+#' observer compliance trips and 98 is used for at-sea fixed gear EM trips.
+odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96, 98), "N", TRIP_SELECTED))
+
+# Translate GROUP_CODE, STRATA_CODE, and GEAR_TYPE_CODE into STRATA
+odds.dat <- mutate(odds.dat, STRATA = paste0(
+  # Tag on "compliance" if the trip was a multi-area IFQ trip
+  ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
+  case_when(
+    GROUP_CODE %in% 10:11 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
+    GROUP_CODE == 13 ~ case_match(GEAR_TYPE_CODE, 6 ~ "EM POT", 8 ~ "EM HAL"),
+    GROUP_CODE == 14 ~ "EM TRW EFP",
+    .default = "Unknown"
+  )
+))
+odds.dat %>% distinct(STRATA) %>% arrange(STRATA)
+if(any(odds.dat$STRATA == "Unknown")) stop("Some `STRATA` are not yet defined!")
+
+# Create a lookup table for strata in partial coverage category
+partial <- odds.dat %>%
+  filter(!(STRATA %like% "Compliance")) %>% 
+  group_by(YEAR, STRATA, GEAR_TYPE_CODE) %>%
+  distinct(Rate = ODDS_SELECTION_PCT / 100 ) %>%
+  ungroup() %>%
+  mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
+  mutate(Rate = ifelse(STRATA == "EM TRW EFP", 0.3333, Rate)) %>%
+  distinct(YEAR, STRATA, Rate, GEAR) %>%
+  mutate(formatted_strat = paste0("*", STRATA, "*"))
+partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
@@ -408,24 +425,8 @@ shp_centroids <- st_read("../shapefiles/NMFS_Area_Centroid.shp")
 
 # Format strata names -----------------------------------------------------
 
-# Translate ODDS sample plans into strata
-odds.dat <- mutate(odds.dat, STRATA = recode(DESCRIPTION, 
-                                             "Declared Gear & Tender Delivery - Pot No  Tender Delivery" = "POT",    
-                                             "Declared Gear & Tender Delivery - Pot   Tender Delivery" = "POT",      
-                                             "Declared Gear & Tender Delivery - Trawl  No Tender Delivery" = "TRW",  
-                                             "EM Declared Gear & Tender - Longline No Tender Delivery" = "EM HAL",      
-                                             "Declared Gear & Tender Delivery - Longline No Tender Delivery" = "HAL",
-                                             "EM Declared Gear & Tender - Pot gear - No Tender Delivery" = "EM POT",    
-                                             "Declared Gear & Tender Delivery - Trawl  Tender Delivery" = "TRW",    
-                                             "EM Compliance Monitoring - Fishing IFQ mulitple Areas - HAL - No Tender" = "EM Compliance HAL",
-                                             "Declared Gear & Tender Delivery - Longline  Tender Delivery" = "HAL",
-                                             "EM Declared Gear & Tender -  Pot gear Tender delivery" = "EM POT",
-                                             "EM Declared Gear & Tender - Longline Tender Delivery" = "EM HAL",
-                                             "EM Compliance Monitoring - Fishing IFQ mulitple Areas - POT - No Tender" = "EM Compliance POT",
-                                             "EM Exempt fish Permit - Trawl - No Tender Delivery" = "EM TRW EFP",
-                                             "EM Exempt Fish Permit -  Trawl - Tender Delivery" = "EM TRW EFP"))
-
 # Format strata names in Valhalla
+#' TODO *Do this for observer strata as well, adding "OB "? *
 work.data <- mutate(work.data, STRATA = recode(STRATA,
                     "EM_POT" = "EM POT",
                     "EM_HAL" = "EM HAL",
@@ -434,40 +435,6 @@ work.data <- mutate(work.data, STRATA = recode(STRATA,
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
              mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
-
-# Lookup table for strata in partial coverage category
-partial_desc <- data.table(STRATA = c("HAL", "POT", "TRW", "EM HAL", "EM POT", "EM TRW EFP"), 
-                      descriptions = c("hook-and-line gear", "pot gear", "trawl gear", "hook-and-line gear with electronic monitoring", "pot gear with electronic monitoring", "trawl gear with electronic monitoring")) 
-# Pull selection rates from norpac.odds_pct_trip_select table
-partial <- setDT(dbGetQuery(channel_afsc, paste(
-  "
-  SELECT DISTINCT 
-    a.percent / 100 as rate, a.effective_date, 
-    b.sample_plan_seq, 
-    c.description AS GEAR,
-    d.description AS SAMPLE_PLAN
-  FROM norpac.odds_pct_trip_select a
-    JOIN norpac.odds_vessel_to_rate_strata b
-      ON a.trip_rate_strata = b.trip_rate_strata
-    JOIN norpac.atl_lov_gear_type c
-      ON b.gear_type_code = c.gear_type_code
-    JOIN norpac.odds_lov_sample_plan d
-      ON b.sample_plan_seq = d.sample_plan_seq
-  WHERE EXTRACT(YEAR FROM a.effective_date) = ", year, "
-  "
-)))
-
-partial[, GEAR := ifelse(GEAR %like% "Pot", "POT", ifelse(GEAR %like% "Longline", "HAL", ifelse(GEAR %like% "Trawl", "TRW", GEAR)))] # Simplify gear types
-partial[, STRATA := ifelse(           # Define strata based on sample plan and gear type
-  SAMPLE_PLAN %like% "Electronic Monitoring", paste("EM", GEAR, sep=" "), ifelse(
-    SAMPLE_PLAN %like% "EM EFP" & GEAR == "TRW", "EM TRW EFP", ifelse(
-      SAMPLE_PLAN %like% "Gear Type", GEAR, NA)))]
-partial <- unique(partial[, .(Effective_Date = as.Date(EFFECTIVE_DATE), STRATA, Rate = RATE)])[order(Effective_Date, STRATA)]  # Run unique on simplified gear and sample plans
-partial[STRATA == "EM TRW EFP", Rate := 0.3000]   # Make the expected rate for partial coverage EM TRW EFP equal to the shoreside monitoring rate (not in ODDS)  
-partial[, descriptions := partial_desc[partial, descriptions, on=.(STRATA)]]    # Merge descriptions in 
-partial[, formatted_strat := paste0("*", STRATA, "*")]                          # Create formatted_strata column
-partial[, txt := paste0(formatC(round(Rate * 100, 2), format='f', digits=2), '% in the ', formatted_strat, ' stratum')]    # Create txt column that combines Rate and formatted_strata
-dcast(partial, STRATA ~ Effective_Date, value.var="Rate")   # Note that if the rates change for some strata and not others, 'NA' is returned
 
 # Save --------------------------------------------------------------------
 

@@ -3,7 +3,7 @@
 # See AR_helpfile.doc for information on file structure and workflow, column names and descriptions, etc.
 
 # I. Libraries ----
-if(!require("captioner"))   install.packages("captioner") #numbering, ordering, & creating captions for tables and figures
+if(!require("captioner"))   install.packages("packages/captioner_2.2.3.tar.gz") #numbering, ordering, & creating captions for tables and figures. #download the tar.gz from: https://cran.r-project.org/src/contrib/Archive/captioner/  
 if(!require("data.table"))   install.packages("data.table") #caution: masks between, last in dplyr and dcast, melt in reshape2
 if(!require("devtools"))  install.packages("devtools")
 if(!require("getPass"))   install.packages("getPass")
@@ -11,13 +11,13 @@ if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
 if(!require("kableExtra"))   install.packages("kableExtra") #markdown tables
 if(!require("knitr"))   install.packages("knitr") #markdown
 if(!require("lubridate"))  install.packages("lubridate")
-if(!require("maptools"))   install.packages("maptools")
+#if(!require("maptools"))   install.packages("maptools")     # No longer on CRAN, replace with sf
 if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derivedVariable(), careful it masks some stats fxns like binomial.test() 
 if(!require("patchwork"))  devtools::install_github("thomasp85/patchwork")
 if(!require("reshape2"))   install.packages("reshape2") 
 if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
-if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles
-if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed
+# if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles      # No longer on CRAN, replace with sf
+#if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed  # No longer on CRAN, replace with sf
 if(!require("scales"))  install.packages("scales")
 if(!require("sf"))  install.packages("sf")
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
