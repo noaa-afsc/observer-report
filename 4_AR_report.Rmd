@@ -347,7 +347,7 @@ The random selection of trips for monitoring is made by the ODDS for logged trip
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
 #' Perform a check on the random number process in ODDS. `random.assign` is a flag for whether a trip's random number 
-#' was less than the trip's selection rate. Since ODDS 3.0 was online in 2023, all trips have `RANDOM_NUMBER_USED` 
+#' was less than the trip's selection rate. Since ODDS 3.0 went online in 2023, all trips have `RANDOM_NUMBER_USED` 
 #' assigned and will therefore not have NA values. `PLANNED_EMBARK_DATE` is also changed from POSIX.ct to Date class.
 odds.dat <- odds.dat %>% mutate(
   # Convert to Date class
@@ -507,7 +507,7 @@ odds.ts.cp <- odds.dat %>%
   summarize(
     n = sum(random.assign[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),                        # 
     ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),                     # 
-    nr = sum(released, na.rm = T),
+    nr = sum(released, na.rm = TRUE),
     N = length(unique(TRIP_PLAN_LOG_SEQ)),
     TYPE = "Adjusted date: Valid trips only") %>% 
   arrange(Date) %>% 
@@ -519,8 +519,8 @@ odds.ts.ni.create <- odds.dat %>%
   filter(!ODDS_SELECTION_PCT %in% c(0, 100) & !(TRIP_STATUS_CODE %in% c("CP", "PD"))) %>%
   transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format = "%Y-%m-%d")) %>%
   group_by(YEAR, STRATA, Date) %>%
-  summarize(ni.create = sum(random.assign[is.na(INHERIT_TRIP_SEQ) & released == 0], na.rm = T)) %>%
-  filter(ni.create > 0 ) %>%
+  summarize(ni.create = sum(random.assign[is.na(INHERIT_TRIP_SEQ) & released == 0], na.rm = TRUE)) %>%
+  filter(ni.create > 0) %>%
   mutate(TYPE = "Original date: All logged trips")
 
 # Get the dates when inherits are realized
@@ -529,7 +529,7 @@ odds.ts.ni.real <- odds.dat %>%
   transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>%
   group_by(YEAR, STRATA, Date) %>%
   summarize(ni.real = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ) & released == 0]))) %>% 
-  filter(ni.real > 0 ) %>%
+  filter(ni.real > 0) %>%
   mutate(TYPE = "Adjusted date: Valid trips only")
 
 ```
@@ -599,7 +599,7 @@ for.p.wide <- merge(
   #' Now add in the total trips for the random number only. This includes every trip logged in ODDS (excluding those in 
   #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
   #' inherits, cancellations, and waivers
-  ts.all %>%
+  odds.ts.all %>%
     group_by(YEAR, STRATA) %>%
     summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
   all = TRUE) %>%
@@ -758,16 +758,16 @@ odds.by.date.plot <- ggplot(odds.ts.daily.cuml, aes(x = Date,  col = TYPE)) +
      ylab("Cumulative Coverage Percent\n") +
      coord_cartesian(ylim = c(0, 70)) +
      xlab("\nDate") +
-     geom_rug(data = odds.inh %>% filter(ni.create > 0), sides = "b", color = "gray") + 
-     geom_rug(data = odds.inh.real %>% filter(ni.real > 0), sides = "t") + 
+     geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray") + 
+     geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0), sides = "t") + 
      #' *==================For multi-year plotting==================================*
      facet_grid(STRATA ~ YEAR, scales = "free_x") +
      geom_text(aes(x = as.Date(Inf), y = 60, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
-               hjust = 1, size = 3, color = "black", check_overlap = T) +
+               hjust = 1, size = 3, color = "black", check_overlap = TRUE) +
      geom_text(aes(x = as.Date(Inf), y = 54, label = paste("Original (%) = ", label.original, sep = "")), 
-               hjust = 1, size = 3, color = "gray70", check_overlap = T) +
+               hjust = 1, size = 3, color = "gray70", check_overlap = TRUE) +
      geom_text(aes(x = as.Date(Inf), y = 48, label = paste("Final (%) = ", label.adjusted, sep = "")), 
-               hjust = 1, size = 3, color = "black", check_overlap = T) +
+               hjust = 1, size = 3, color = "black", check_overlap = TRUE) +
      #' *===================For single year plotting================================*
      # facet_grid(STRATA ~ ., scales = "free_x") +
      #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = ""), y = 60, 
@@ -826,14 +826,14 @@ perc.user.canc.2023 <- disposition %>%
 sel.min.canc <- disposition %>% 
                 filter(STRATA != "Total" & random.assign == "Selected") %>%
                 group_by(YEAR, STRATA) %>% 
-                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>%
                 slice_min(as.numeric(Cancellation.Pct)) %>% 
                 mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 
 sel.max.canc <- disposition %>% 
                 filter(STRATA != "Total" & random.assign == "Selected") %>%
                 group_by(YEAR, STRATA) %>% 
-                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>% 
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>%
                 slice_max(as.numeric(Cancellation.Pct)) %>% 
                 mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 ```
