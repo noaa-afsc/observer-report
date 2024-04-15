@@ -23,6 +23,7 @@ if(!require("sf"))  install.packages("sf")
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
+if(!require("FMAtools")) devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 
 # II. Functions ----
 

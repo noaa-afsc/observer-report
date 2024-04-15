@@ -133,45 +133,154 @@ More information on the sampling design used by observers and the relationship b
 The following items from the `r year` ADP have been identified as objectives for evaluation in this report:  
 
 ```{r actual_observerdays_paid, include=FALSE}
-# Available budget for the year (in days)
-AvailableYR <- adp_out$ADJ %>% 
-               filter(ALLO == "min_plus_opt") %>% 
-               group_by(SIM_ITER, STEP) %>% 
-               summarise(OB_D = sum(OB_D)) %>% 
-               ungroup() %>% 
-               summarise(OB_D = mean(OB_D)) %>% 
-               unlist() %>% 
-               as.vector()
-  
-# Predicted cost for the year (in days)
-PredictedYR <- adp_out$BUD %>% 
-               filter(ALLO == "min_plus_opt") %>% 
-               summarise(ADP_D = mean(ADP_D)) %>% 
-               unlist() %>% 
-               as.vector()
 
-# Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!)
-days_paid <- read.csv("data/FMA Days Paid.csv")
-days_paid <- filter(days_paid, Calendar == year)
+#'`NEED TO ADD THE FOLLOWING FILES TO GOOGLE SHARED DRIVE`
+#'*2024_Draft_ADP_data.rdata* `Maybe? to be able to create 2022 work.data`
+
+#'TODO *MOVE THIS TO 1_AR_data.rdata*
+#' TODO Move if/else to `1_AR_data.R` and include `FMA_Day_Paid` object when the `2_AR_data.Rdata` object is saved.
+#' Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!). 
+AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter")
+if( !(file.exists("source_data/FMA_Days_Paid.rdata")) ) {
+  #' Download the following spreadsheet as a `.csv` format file tothe `source_data/` folder. Upload  an `.rdata` copy to 
+  #' the [FMA shared Gdrive].
+  #' [https://docs.google.com/spreadsheets/d/1KGmZNo7uVuB6FCVRZd4UV2PROa4Jl7-J/edit?usp=sharing&ouid=112928343270640187258&rtpof=true&sd=true]
+  FMA_Days_Paid <- read.csv("source_data/FMA Days Paid.xlsx - Days_Paid.csv")
+  save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
+  # Upload to the shared Gdrive
+  gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
+} else {
+  #' If the file does exist, make sure you are up-to-date#'
+  #' [ver1] *was used for the 2023 Annual Report*
+  gdrive_download("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
+}
+
+load("source_data/FMA_Days_Paid.rdata")
+days_paid.2022 <- filter(FMA_Days_Paid, Calendar == 2022)
+days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
+
+
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+#'TODO *MOVE THIS TO 1_AR_data.rdata*
+options(scipen = 999) # Remove scientific notation
+
+adp_output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
+
+#' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
+#' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
+#' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
+if(F) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+
+#' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
+#' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
+#' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
+if(F) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
+
+# 2022 Final ADP Outputs
+gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+final_adp_vec.2022 <- (load("source_data/2022_Final_ADP_Output.rdata"))
+Nnd_tbl.2022 <- mutate(Nnd_tbl, YEAR = 2022)
+adj_tbl.2022 <- adj_tbl
+bud_scen_lst.2022 <- bud_scen_lst
+bud_tbl.2022 <- bud_tbl
+rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
+
+# 2023 Final ADP Outputs
+gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
+Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
+adj_tbl.2023 <- adj_tbl
+bud_scen_lst.2023 <- bud_scen_lst
+bud_tbl.2023 <- bud_tbl
+rm(list = c(final_adp_vec.2023, "final_adp_vec.2023"))
+
+# Format and calculate predicted days from ADP
+Nnd_tbl <- rbind(Nnd_tbl.2022, Nnd_tbl.2023)
+
+predicted <- Nnd_tbl[, lapply(.SD, mean), keyby = .(YEAR, POOL, STRATA), .SDcols = c("Nh", "nh", "dh")]
+
+predicted <- predicted %>%
+  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
+                            STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
+                            STRATA == "POT" & POOL == "OB" ~ "OB POT",
+                            STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
+                            STRATA == "EM_POT" ~ "EM POT",
+                            STRATA == "EM_HAL" ~ "EM HAL",
+                            TRUE ~ STRATA)) %>%
+  rename(pred_days = dh) %>%
+  select(!c(POOL, Nh, nh)) %>%
+  filter(STRATA != c("HAL", "POT")) # Remove zero strata
+
+#'*----------------------------------------------------------------------------*
+
+#' `------------2022--------------`
+
+# Available budget for the year (in days)
+AvailableYR.2022 <- adj_tbl.2022 %>% 
+  group_by(SIM_ITER, STEP) %>% 
+  summarise(OB_D = sum(OB_D)) %>% 
+  ungroup() %>% 
+  summarise(OB_D = mean(OB_D)) %>% 
+  unlist() %>%
+  as.vector()
+  
+#' Predicted cost for the year (in days)
+PredictedYR.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
-ActualYR <- days_paid %>% 
-            replace(is.na(.), 0) %>%
-            summarise(Total.Days = sum(Base.Days + na.omit(Option.Days))) %>% 
-            unlist() %>% 
-            as.vector()
+ActualYR.2022 <- days_paid.2022 %>% 
+  replace(is.na(.), 0) %>%
+  summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
+  unlist() %>% 
+  as.vector()
 
 # Percent of budget predicted to be spent
-eval <- data.frame(ActualYR, PredictedYR) %>%
-        mutate(
-        #Percent of the budget used
-        pct.budget.spent = round(ActualYR/PredictedYR,3)*100,
-        #Percent of budget remaining
-        pct.budget.remain = round(100 - pct.budget.spent, 3),
-        #Was it more, less, or equal to the predicted budget?
-        more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
-                       ifelse(pct.budget.remain == 0, "equal to",
+eval.2022 <- data.frame(ActualYR.2022, AvailableYR.2022) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
+  mutate(
+    # Percent of the budget used
+    pct.budget.spent = round(ActualYR.2022/AvailableYR.2022, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
+    # Percent of budget remaining
+    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
+    # Was it more, less, or equal to the predicted budget?
+    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+                          ifelse(pct.budget.remain == 0, "equal to",
                                  " greater than ")))
+
+#' `------------2023--------------`
+
+# Available budget for the year (in days)
+AvailableYR.2023 <- adj_tbl.2023 %>% 
+  group_by(SIM_ITER, STEP) %>% 
+  summarise(OB_D = sum(OB_D)) %>% 
+  ungroup() %>% 
+  summarise(OB_D = mean(OB_D)) %>% 
+  unlist() %>%
+  as.vector()
+  
+# Predicted cost for the year (in days)
+PredictedYR.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$AFF_D
+
+# Actual number of observer days paid for
+ActualYR.2023 <- days_paid.2023 %>% 
+  replace(is.na(.), 0) %>%
+  summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
+  unlist() %>% 
+  as.vector()
+
+# Percent of budget predicted to be spent
+eval.2023 <- data.frame(ActualYR.2023, AvailableYR.2023) %>%
+  mutate(
+    # Percent of the budget used
+    pct.budget.spent = round(ActualYR.2023/AvailableYR.2023, digits = 3) * 100,
+    # Percent of budget remaining
+    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
+    # Was it more, less, or equal to the predicted budget?
+    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+                          ifelse(pct.budget.remain == 0, "equal to",
+                                 " greater than ")))
+
+rm(Nnd_tbl.2022, Nnd_tbl.2023)
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
@@ -235,107 +344,312 @@ Changes to our analyses were necessary to properly address the changes to the de
 The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
 ##Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
+
+#' `------------2022--------------`
 # Isolate ADP budget predictions for the chosen design
-sample_budget_out <- adp_out$BUD[ALLO == "min_plus_opt"]
 
 # Plot effort predictions against actual
-outcomes.plot <-
-  ggplot(sample_budget_out, aes(x = ADP_D)) +
-  geom_histogram(aes(y = ..density..), binwidth = 20, alpha=0.2, fill="blue", col="cornflowerblue") +
-  geom_vline(xintercept = AvailableYR, lty=2, col="black") +
-  geom_vline(xintercept = ActualYR, lty=1, col="blue") +
-  annotate("text", x=AvailableYR + 20, y=0.002,
-            label=paste("Available Day Budget: ", AvailableYR, sep=""),
-            col="black", angle = 90) + 
-  annotate("text", x=ActualYR - 30, y=0.002,
-           label=paste("Actual Days Paid: ", ActualYR, sep=""),
-           col="blue", angle = 90) +
+outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
+  geom_vline(xintercept = AvailableYR.2022, lty = 2, col = "black") +
+  geom_vline(xintercept = ActualYR.2022, lty = 1, col = "blue") +
+  annotate("text", x = AvailableYR.2022 - 35, y = 0.002,
+            label = paste("Available Day Budget: ", round(AvailableYR.2022), sep = ""),
+            col = "black", angle = 90) + 
+  annotate("text", x = ActualYR.2022 - 35, y = 0.002,
+           label = paste("Actual Days Paid: ", ActualYR.2022, sep = ""),
+           col = "blue", angle = 90) +
   theme_bw() +
-  theme(text = element_text(size=14),
-        axis.title.x = element_text(size=12),
-        axis.title.y = element_text(size=12),
-        axis.line=element_line(size=.5, color="black"),
+  theme(text = element_text(size = 14),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.line = element_line(size = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(limits = c(1100, 3100), breaks=seq(1500, 3000, 500)) +
-  labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
-       x=paste("\nTotal days used in ", year, sep = ""))
+  scale_x_continuous(breaks = seq(2000, 3500, 500)) +
+  labs(y = paste("Density of simulated outcomes (2022 ADP)\n"),
+       #y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
+       x = paste("\nTotal days used in 2022"))
+       #x = paste("\nTotal days used in ", year, sep = ""))
+
+#' `------------2023--------------`
+
+outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20, alpha = 0.2, fill = "blue", col = "cornflowerblue") +
+  geom_vline(xintercept = AvailableYR.2023, lty = 2, col = "black") +
+  geom_vline(xintercept = ActualYR.2023, lty = 1, col = "blue") +
+  annotate("text", x = AvailableYR.2023 + 35, y = 0.002,
+            label = paste("Available Day Budget: ", round(AvailableYR.2023), sep = ""),
+            col = "black", angle = 90) + 
+  annotate("text", x = ActualYR.2023 - 35, y = 0.002,
+           label = paste("Actual Days Paid: ", ActualYR.2023, sep = ""),
+           col = "blue", angle = 90) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.line = element_line(size = 0.5, color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(limits = c(2250, 3750), breaks = seq(2000, 3500, 500)) +
+  labs(y = paste("Density of simulated outcomes (2023 ADP)\n"),
+       x = paste("\nTotal days used in 2023"))
 ```
 
 ```{r costs.plot, include=FALSE}
+
+#' `------------2022--------------`
+
 # Get the budget used in the ADP
-BUDGET <- dp_res$BUD$BUD
+BUDGET.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$BUD
 
 # Get total costs
-days_paid_sum <- days_paid %>% 
-                 summarise(Total.Base.Dollars = sum(Base.Dollars, na.rm = TRUE),
-                           Total.Option.Dollars = sum(Option.Dollars, na.rm = TRUE),
-                           Total.Travel.Dollars = sum(Travel.Dollars, na.rm = TRUE),
-                           Total.Quarantine.Dollars = sum(Quarantine..Dollars, na.rm = TRUE),
-                           Total.Plant.Dollars = sum(Plant..Dollars, na.rm = TRUE)) %>% 
-                 mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
+days_paid_sum.2022 <- days_paid.2022 %>% 
+  summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
+            Total.Option.Dollars = sum(Option_Dollars, na.rm = TRUE),
+            Total.Travel.Dollars = sum(Travel_Dollars, na.rm = TRUE),
+            Total.Quarantine.Dollars = sum(Quarantine_Dollars, na.rm = TRUE),
+            Total.Plant.Dollars = sum(Plant_Dollars, na.rm = TRUE)) %>% 
+  mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Plot
-costs.plot <- ggplot(sample_budget_out, aes(x = ADP_C)) +
-              geom_histogram(aes(y = ..density..), binwidth = 20000, alpha=0.2, 
-                             fill="green", col="darkseagreen2") +
-              geom_vline(xintercept = BUDGET, lty=2, col="black") +
-              geom_vline(xintercept = days_paid_sum$Total.Dollars, lty=1, col="darkgreen") +
-              annotate("text", x=BUDGET + 30000, y=0.000001, 
-                       label=paste("Available Contract Budget: $", prettyNum(BUDGET, big.mark=","), sep=""), col="black", angle = 90) +
-              annotate("text", x=days_paid_sum$Total.Dollars - 30000, y=0.000001, 
-                       label=paste("Actual Contract Cost: $", prettyNum(days_paid_sum$Total.Dollars, big.mark=","), sep=""), 
-                       col="darkgreen", angle = 90) +
-              theme_bw() +
-              theme(text = element_text(size=14),
-                    axis.title.x = element_text(size=12),
-                    axis.title.y = element_text(size=12),
-                    axis.line=element_line(size=.5, color="black"),
-                    panel.grid.major = element_blank(),
-                    panel.grid.minor = element_blank()) +
-              scale_x_continuous(limits = c(2600000, 4250000), breaks=c(3000000, 4000000, 5000000),
-                                 labels = dollar) +
-              labs(y=paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""), 
-                   x=paste("\nTotal contract costs in ", year, sep = ""))
+costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20000, alpha = 0.2, 
+                 fill = "green", col = "darkseagreen2") +
+  geom_vline(xintercept = BUDGET.2022, lty = 2, col = "black") +
+  geom_vline(xintercept = days_paid_sum.2022$Total.Dollars, lty = 1, col = "darkgreen") +
+  annotate("text", x = BUDGET.2022 - 45000, y = 0.0000015, 
+           label = paste("Available Contract Budget: $", prettyNum(BUDGET.2022, big.mark = ","), sep = ""), 
+           col = "black", angle = 90) +
+  annotate("text", x = days_paid_sum.2022$Total.Dollars - 45000, y = 0.0000015, 
+           label = paste("Actual Contract Cost: $", prettyNum(days_paid_sum.2022$Total.Dollars, big.mark = ","), sep = ""), 
+           col = "darkgreen", angle = 90) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.line = element_line(size = 0.5, color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = seq(3750000, 4750000, 500000),
+                     labels = dollar) +
+  labs(#y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
+       y = paste("Density of simulated outcomes (2022 ADP)\n"),
+       x = paste("\nTotal contract costs in 2022"))
+       #x = paste("\nTotal contract costs in ", year, sep = ""))
+
+#' `------------2023--------------`
+
+# Get the budget used in the ADP
+BUDGET.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$BUD
+
+# Get total costs
+days_paid_sum.2023 <- days_paid.2023 %>% 
+  summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
+            Total.Option.Dollars = sum(Option_Dollars, na.rm = TRUE),
+            Total.Travel.Dollars = sum(Travel_Dollars, na.rm = TRUE),
+            Total.Quarantine.Dollars = sum(Quarantine_Dollars, na.rm = TRUE),
+            Total.Plant.Dollars = sum(Plant_Dollars, na.rm = TRUE)) %>% 
+  mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
+
+# Plot
+costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = 20000, alpha = 0.2, 
+                 fill = "green", col = "darkseagreen2") +
+  geom_vline(xintercept = BUDGET.2023, lty = 2, col = "black") +
+  geom_vline(xintercept = days_paid_sum.2023$Total.Dollars, lty = 1, col = "darkgreen") +
+  annotate("text", x = BUDGET.2023 - 45000, y = 0.00000125, 
+           label = paste("Available Contract Budget: $", prettyNum(BUDGET.2023, big.mark = ","), sep = ""), 
+           col = "black", angle = 90) +
+  annotate("text", x = days_paid_sum.2023$Total.Dollars - 45000, y = 0.00000125, 
+           label = paste("Actual Contract Cost: $", prettyNum(days_paid_sum.2023$Total.Dollars, big.mark = ","), sep = ""), 
+           col = "darkgreen", angle = 90) +
+  theme_bw() +
+  theme(text = element_text(size = 14),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.line = element_line(size = 0.5, color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = seq(4000000, 6000000, 500000),
+                     labels = dollar) +
+  scale_y_continuous(breaks = seq(0, 0.0000025, 0.000001)) +
+  labs(y = paste("Density of simulated outcomes (2023 ADP)\n"),
+       x = paste("\nTotal contract costs in 2023"))
+
 ```
 
 ```{r budget_eval, include=FALSE}
-# Isolate ADP rate predictions for the chosen design
-sample_pops_out <- adp_out$ADJ[ALLO == "min_plus_opt"]
+#' `------------ALL--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+#' TODO *MOVE THIS TO 1_AR_data.R*
+#' `work.data` will be in `2_AR_data.rdata`, created from `1_AR_data.R`
+
+
+# Create work.data object
+library(data.table)
+
+load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
+work.data.2022 <- filter(work.data, ADP == 2022)
+load("source_data/2024-02-20cas_valhalla.RData")
+work.data <- copy(valhalla)
+work.data.2023 <- filter(work.data, ADP == 2023)
+
+work.data <- rbind(
+  work.data.2022[COVERAGE_TYPE == "PARTIAL", -c("CVG_NEW", "STRATA_NEW", "PORT_NEW", "P_STRATA")], 
+  work.data.2023[COVERAGE_TYPE == "PARTIAL"])
+
+source("functions/trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
+
+if(exists("td_mod")) rm(td_mod)
+
+#' Initialize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
+#' of the matching are automatically assigned to the `mod_dat` object in the global environment
+td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
+
+# Yearly totals
+mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
+# It appears some observers were assigned to non-observer strata
+mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
+
+# Scraping all the non-observer strata matches to their observed strata counterparts
+mod_dat_copy <- copy(mod_dat)
+mod_dat_copy[
+][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "ZERO", STRATA := "OB HAL"]
+
+# Stratum-specific totals
+obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
+
+# Format work.data
+work.data <- 
+  work.data %>% 
+  mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
+         LANDING_DATE = as.Date(LANDING_DATE),
+         STRATA = case_match(
+           STRATA,
+           c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
+           c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
+           c("FULL", "ZERO") ~ STRATA,
+           .default = "Undefined"),
+         ADP = as.factor(ADP)
+         )
+
+work.data %>% distinct(STRATA) %>% arrange(STRATA)
+if(any(work.data$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
+
+# Free up workspace
+rm(work.data.2022, work.data.2023)
+#'*----------------------------------------------------------------------------*
+
+#' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata in 2020.*
+#' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
+#' this stratum, and using a 33% of sea days as a proxy for 'plant days' is not a good prediction, nor is adding up
+#' sea days of monitored trips a logical estimate of actuals.
+
+#' `------------2022--------------`
 
 # Evaluate why we were off budget
-trip.budget.table <- merge(
-                     # Predicted trips days by strata
-                     sample_pops_out %>%
-                     group_by(STRATA) %>%
-                     summarise(pred_days = round(mean(STRATA_N) * mean(TRP_DUR)))
-                     ,
-                     # Actual trip days by strata
-                     work.data %>%
-                     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-                     group_by(TRIP_ID, STRATA) %>%
-                     summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE),
-                     dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm=TRUE)) %>%
-                     mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units="days")))+1) %>%
-                     group_by(STRATA) %>% 
-                     summarise(act_days = sum(days))
-                     , all = TRUE) %>% 
-                     # Calculate total predicted days for EM strata from final  
-                     # ADP document, since their trip duration isn't in ADP output 
-                     mutate(pred_days = ifelse(STRATA == "EM HAL", round(806 * (1204/242)), pred_days),
-                            pred_days = ifelse(STRATA == "EM POT", round(113 * (159/34)), pred_days),
-                            pred_days = ifelse(STRATA == "EM TRW EFP", round(496 * (401/149)), pred_days)) %>% 
-                     # Change NAs to 0 for actual days      
-                     mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
-                     # Percent difference between predicted and actual
-                     mutate(diff = act_days -  pred_days,
-                            perc = (diff)/pred_days * 100) %>%
-                     mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)))
+trip.budget.table.2022 <- 
+  merge(
+    # Predicted days by strata
+    #'sample_pops_out.2022 %>% *OLD CALL*
+    predicted %>%
+      filter(YEAR == 2022) %>%
+      group_by(STRATA),
+    # Actual trip days by strata
+    rbind(
+      # EM strata
+      work.data %>%
+        filter(
+          ADP == 2022 & COVERAGE_TYPE == "PARTIAL" & STRATA %in% c("EM TRW EFP", "EM HAL", "EM POT") & 
+          OBSERVED_FLAG == "Y") %>%
+        group_by(ADP, TRIP_ID, STRATA) %>%
+        summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
+                  dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
+        mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
+        group_by(ADP, STRATA) %>% 
+        summarise(act_days = sum(days)),
+      # Observer strata
+      filter(obs_act_days, ADP == 2022)), 
+    all = TRUE) %>% 
+  # Change NAs to 0 for actual days      
+  mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+  # Percent difference between predicted and actual
+  mutate(diff = act_days -  pred_days,
+         perc = (diff)/pred_days * 100) %>%
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>%
+  select(!c(ADP, YEAR))
 
 # Append total
-trip.budget.table <- rbind(trip.budget.table,
-                           trip.budget.table %>% 
-summarise(STRATA = "Total", pred_days = sum(pred_days), act_days = sum(act_days), diff = sum(diff), perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1)))
+trip.budget.table.2022 <- 
+  rbind(trip.budget.table.2022,
+        trip.budget.table.2022 %>% 
+          summarise(STRATA = "Total", 
+                    pred_days = sum(pred_days), 
+                    act_days = format(sum(act_days), digits = 1, nsmall = 0), 
+                    diff = sum(diff), 
+                    perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
+  mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
+         diff = format(diff, digits = 1, nsmall = 0))
+
+#' `------------2023--------------`
+#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
+
+# We have zero-coverage trips that were monitored. Phil is working on these. We're just gonna throw them into the observer strata for now.
+unique(work.data[ADP == 2023 & LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
+  VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, AGENCY_GEAR_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL
+)])[order(TRIP_ID)]
+work.data[TRIP_ID %in% c(2170855, 2170858), STRATA := "OB POT"]
+work.data[TRIP_ID %in% c(2307113, 2307114), STRATA := "OB HAL"]
+
+#'*----------------------------------------------------------------------------*
+
+# Evaluate why we were off budget
+trip.budget.table.2023 <- 
+  merge(
+    # Predicted trips days by strata
+    predicted %>%
+      filter(YEAR == 2023) %>%
+      group_by(STRATA),
+    # Actual trip days by strata
+    rbind(
+      # EM Strata
+      work.data %>%
+        filter(ADP == 2023 & COVERAGE_TYPE == "PARTIAL" &
+        (STRATA == "EM TRW EFP" | STRATA == "EM HAL" | STRATA == "EM POT") & #' *NEEDED ONLY EM STRATA* 
+        OBSERVED_FLAG == "Y") %>% #' *HAD TO CALL OBSERVER FLAG*
+        group_by(ADP, TRIP_ID, STRATA) %>%
+        summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
+                  dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
+        mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
+        group_by(ADP, STRATA) %>% 
+        summarise(act_days = sum(days)),
+      # Observer strata
+      filter(obs_act_days, ADP == 2023)), 
+    all = TRUE) %>% 
+  # Change NAs to 0 for actual days      
+  mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+  # Percent difference between predicted and actual
+  mutate(diff = act_days -  pred_days,
+         perc = (diff)/pred_days * 100) %>%
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>%
+  select(!c(ADP, YEAR))
+
+# Append total
+trip.budget.table.2023 <- 
+  rbind(trip.budget.table.2023,
+        trip.budget.table.2023 %>% 
+          summarise(STRATA = "Total", 
+                    pred_days = sum(pred_days), 
+                    act_days = format(sum(act_days), digits = 1, nsmall = 0), 
+                    diff = sum(diff), 
+                    perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
+  mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
+         diff = format(diff, digits = 1, nsmall = 0))
+
 ```
 
 Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
