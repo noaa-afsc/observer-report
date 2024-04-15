@@ -86,26 +86,28 @@ Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
 load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
 
 # load odds data issues from google sheet
-# Because there is a shortcut to the google sheet housed in the same folder as
-  # the data, it is the same project_dribble call as above
-project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# to properly load the ODDS data, we need to create the unique dribble ID
+  # THIS IS UNIQUE TO EACH USER SINCE THE DATA IS NOT HOUSED IN A SHARED FOLDER
+  # EDIT THE FOLLOWING LINE ACCORDING TO WHERE THE DATA IS LOCATED IN YOUR DRIVE
+project_dribble <- googledrive::drive_get("possible_trips_not_logged_or_logged_incorrectly")
 
-# identify the data you will download
-data_dribble <-
-  drive_ls(project_dribble) %>%
-  filter(name == "possible_trips_not_logged_or_logged_incorrectly")
+# extract the ID of the file (if there are multiple, select 1 since there should
+  # be no difference among the files (I'm not certain though))
+id <- as.character(project_dribble$id[1])
 
-# Download the file from g-drive into local
+# specify this file 
+data_dribble <- googledrive::drive_get(googledrive::as_id(id))
+
+# download the file from g-drive into local
 drive_download(
   data_dribble,
   path = paste0(Rdata_files_path, "possible_trips_not_logged_or_logged_incorrectly.xlsx"),
   overwrite = T
 )
-# ERROR: Cannot export Google file of type 'application/vnd.google-apps.shortcut
 
-# TODO: this is currently a sheet downloaded from drive as of 4/10/2024
-  # once this sheet is housed in an accessible drive, update to download from 
-  # google drive
+# format the excel sheet to function within R
+  # IMPORTANT: comment out the below code and recreate the function call with
+  # YOUR SPECIFIC FILE PATH
 # the map function allows for multiple sheets to be clumped into one list
 odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
   map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
