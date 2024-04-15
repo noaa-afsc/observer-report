@@ -250,7 +250,8 @@ depl_days_summ_all <-
                      OBSERVERS   = n_distinct(OBSERVER_SEQ)
                      ) %>%
            ungroup()
-          )
+          ) %>%
+   distinct()
  
 # calculate rate by subcat for NO GROUPINGS
 rate_by_subcat <-
@@ -277,7 +278,38 @@ rate_by_subcat <-
             )
 
 
-
+# munge it for cleaner plotting. 
+# filter for OLE_PRIORITY types only, 
+# and combine subcats that are the SAME for old and new systems.
+rate_by_subcat_priority <-
+  rate_by_subcat %>%
+  ungroup() %>% 
+  filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
+                                 'OLE PRIORITY: INTER-PERSONAL')
+         | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
+                                                                       'MARINE CASUALTY') 
+         ) %>%
+  mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
+         OLD_OLE_CATEGORY = gsub("OLE PRIORITY: ","", OLD_OLE_CATEGORY),
+         OLD_OLE_CATEGORY = paste0(OLD_OLE_CATEGORY, ' categories'),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Harassment - Sexual',
+                                    'SEXUAL HARASSMENT',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Harassment-Assault',
+                                    'ASSAULT',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-NMFS',
+                                    'SAFETY',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Interference/Sample Biasing',
+                                    'SAMPLING INTERFERENCE',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-USCG-Marine Casualty',
+                                    'MARINE CASUALTY',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = toupper(STATEMENT_TYPE)
+         
+  )
 
 
 # calculate rate by OLD_OLE_CATEGORY for NO GROUPINGS
@@ -308,13 +340,117 @@ rate_by_old_ole_category <-
 
 
 
+# calculate rate by NEW_OLE_CATEGORY for NO GROUPINGS
+# (2023 NEW data only)
+rate_by_new_ole_category <-
+  statements_combined %>%
+  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_SYSTEM,
+           NEW_OLE_CATEGORY) %>%
+  summarize(TOTAL_INCIDENTS  = sum(if_else(is.na(NUMBER_VIOLATIONS) | NUMBER_VIOLATIONS == 0, 1, NUMBER_VIOLATIONS)),
+            TOTAL_STATEMENTS = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(depl_days_summ_all) %>%
+  mutate(AFFIS_PER_DAY         = TOTAL_STATEMENTS/DAYS,
+         INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/DAYS,
+         STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*1000,
+         INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*1000,
+         STATEMENTS_PER_90_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*90,
+         INCIDENTS_PER_90_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*90,
+         STATEMENTS_PER_OBSERVER     = TOTAL_STATEMENTS/OBSERVERS,
+         INCIDENTS_PER_OBSERVER      = TOTAL_INCIDENTS/OBSERVERS,
+         STATEMENTS_PER_CRUISE       = TOTAL_STATEMENTS/CRUISES,
+         INCIDENTS_PER_CRUISE        = TOTAL_INCIDENTS/CRUISES,
+         STATEMENTS_PER_ASSIGNMENT   = TOTAL_STATEMENTS/ASSIGNMENTS,
+         INCIDENTS_PER_ASSIGNMENT    = TOTAL_INCIDENTS/ASSIGNMENTS
+  )
 
 
 
 
+# calculate the rate of occurrences per assnmt and per deployed day for EACH CRUISE.
+# Can be used in distribution plots???
+rate_by_subcat_cruise <-
+  merge(assignments_dates_cr_perm %>%
+          group_by(CRUISE, 
+                   CALENDAR_YEAR, 
+                   OLE_SYSTEM
+                   )  %>%
+          summarize(DEPLOYED_DAYS = n_distinct(DEPLOYED_DATE),
+                    ASSIGNMENTS   = n_distinct(PERMIT)
+                    ) %>%
+          ungroup(),
+        statements_combined %>%
+          distinct(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+                   OLE_SYSTEM,
+                   OLD_OLE_CATEGORY, 
+                   STATEMENT_TYPE) 
+      , all = TRUE ) %>%
+    left_join(statements_combined %>%
+                group_by(CRUISE, 
+                         CALENDAR_YEAR = FIRST_VIOL_YEAR,
+                         OLE_SYSTEM,
+                         OLD_OLE_CATEGORY, 
+                         STATEMENT_TYPE
+                         ) %>%
+                summarize(STATEMENTS  = n_distinct(AFFIDAVIT_ID),
+                          OCCURRENCES = sum(NUMBER_VIOLATIONS)
+                          ) %>%
+                ungroup()
+               ) %>%
+     mutate(STATEMENTS                   = if_else(is.na(STATEMENTS),  0, STATEMENTS),  
+            OCCURRENCES                  = if_else(is.na(OCCURRENCES), 0, OCCURRENCES), 
+            STATEMENTS_PER_DEPLOYED_DAY  = STATEMENTS/DEPLOYED_DAYS, 
+            STATEMENTS_PER_1000_DEPLOYED_DAYS  = (STATEMENTS/DEPLOYED_DAYS)*1000,
+            STATEMENTS_PER_ASSIGNMENT    = STATEMENTS/ASSIGNMENTS,
+            OCCURRENCES_PER_DEPLOYED_DAY = OCCURRENCES/DEPLOYED_DAYS,
+            OCCURRENCES_PER_1000_DEPLOYED_DAYS  = (OCCURRENCES/DEPLOYED_DAYS)*1000,
+            OCCURRENCES_PER_ASSIGNMENT   = OCCURRENCES/ASSIGNMENTS) %>%
+     select(CALENDAR_YEAR,
+            OLE_SYSTEM,
+            OLD_OLE_CATEGORY, 
+            STATEMENT_TYPE,
+            CRUISE,
+            DEPLOYED_DAYS,
+            ASSIGNMENTS,
+            STATEMENTS,
+            OCCURRENCES,
+            STATEMENTS,  
+            OCCURRENCES, 
+            STATEMENTS_PER_DEPLOYED_DAY,
+            STATEMENTS_PER_ASSIGNMENT,
+            OCCURRENCES_PER_DEPLOYED_DAY,
+            OCCURRENCES_PER_ASSIGNMENT)
+ 
 
-
-
+# munge it for cleaner plotting. Combine subcats that are the SAME for old and new systems.
+rate_by_subcat_cruise_priority <-
+  rate_by_subcat_cruise  %>%
+  filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
+                                 'OLE PRIORITY: INTER-PERSONAL',
+                                 'COAST GUARD')
+         ) %>%
+  mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
+         OLD_OLE_CATEGORY = gsub("OLE PRIORITY: ","", OLD_OLE_CATEGORY),
+         OLD_OLE_CATEGORY = paste0(OLD_OLE_CATEGORY, ' categories'),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Harassment - Sexual',
+                                    'SEXUAL HARASSMENT',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Harassment-Assault',
+                                    'ASSAULT',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-NMFS',
+                                    'SAFETY',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Interference/Sample Biasing',
+                                    'SAMPLING INTERFERENCE',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-USCG-Marine Casualty',
+                                    'MARINE CASUALTY',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = toupper(STATEMENT_TYPE)
+         
+  )
 
 
 

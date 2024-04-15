@@ -316,8 +316,8 @@ assignments_dates_cr_perm <-
               WHERE DEPLOYED_DATE BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR') 
          ")) %>%
   mutate(OLE_SYSTEM = if_else(CALENDAR_YEAR == 2023 & 
-                              DEBRIEF_START_DATE < as.POSIXct(x = '2023/07/28', format = "%Y/%m/%d"),
-                               'OLD',  'NEW')
+                              DEBRIEF_START_DATE >= as.POSIXct(x = '2023/07/27', format = "%Y/%m/%d"),
+                               'NEW',  'OLD')
            )
 
 
@@ -334,7 +334,8 @@ df_fishery_dates <-
                WHERE vp.cruise > ", first_cruise, sep = ''))
 
 
-
+# ADd new code
+ test <- 'TEST'
 
 ###################
 # hauls
