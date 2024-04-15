@@ -140,10 +140,23 @@ The following items from the `r year` ADP have been identified as objectives for
 #'*2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345.RData* 2023 ADP data
 #'*2024_Draft_ADP_data.rdata* `Maybe? to be able to create 2022 work.data`
 
-# Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!)
-days_paid <- read.csv("source_data/FMA Days Paid.csv") #' *PLACEHOLDER LOAD LOCATION (changed from "data/..."*
-days_paid.2022 <- filter(days_paid, Calendar == 2022)
-days_paid.2023 <- filter(days_paid, Calendar == 2023)
+#' Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!). 
+if( !(file.exists("source_data/FMA_Days_Paid.rdata")) ) {
+  #' Download the following spreadsheet as a `.csv` format file in the `source_data/` folder. Save an `.rdata` copy to 
+  #' the [FMA shared Gdrive].
+  #' [https://docs.google.com/spreadsheets/d/1KGmZNo7uVuB6FCVRZd4UV2PROa4Jl7-J/edit?usp=sharing&ouid=112928343270640187258&rtpof=true&sd=true]
+  FMA_Days_Paid <- read.csv("source_data/FMA Days Paid.xlsx - Days_Paid.csv")
+  save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
+  # Upload the shared Gdrive
+  gdrive_upload("source_data/FMA_Days_Paid.rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
+} else {
+  #' If the file does exist, make sure you are up-to-date
+  gdrive_download("source_data/FMA_Days_Paid.rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
+}
+
+load("source_data/FMA_Days_Paid.rdata")
+days_paid.2022 <- filter(FMA_Days_Paid, Calendar == 2022)
+days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
 
 
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
