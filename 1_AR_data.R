@@ -13,8 +13,7 @@ year <- 2023
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
 
 # Establish database connections
-channel_afsc  <- channel.fxn(location)
-channel_akro  <- channel.fxn(location, db = "AKRO") # Hit cancel unless sitting in Juneau and pulling Valhalla.
+channel_afsc  <- channel.fxn(location, db = "AFSC")
 
 # Get data ----------------------------------------------------------------
 
@@ -43,21 +42,21 @@ days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
 # * ADP outputs ----
 
 # Assign the address of the ADP outputs in the Shared Gdrive
-adp_output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
+ADP_Output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
 
 # Initially:
 #' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
 #' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
 #' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
-if(FALSE) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+if(FALSE) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", ADP_Output_dribble)
 
 #' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
 #' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
 #' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
-if(FALSE) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
+if(FALSE) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", ADP_Output_dribble)
 
 # 2022 Final ADP Outputs
-gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+gdrive_download("source_data/2022_Final_ADP_Output.rdata", ADP_Output_dribble)
 final_adp_vec.2022 <- (load("source_data/2022_Final_ADP_Output.rdata"))
 Nnd_tbl.2022 <- mutate(Nnd_tbl, YEAR = 2022)
 adj_tbl.2022 <- adj_tbl
@@ -66,7 +65,7 @@ bud_tbl.2022 <- bud_tbl
 rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
 
 # 2023 Final ADP Outputs
-gdrive_download("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
+gdrive_download("source_data/2023_Final_ADP_Output.rdata", ADP_Output_dribble)
 final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
 Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
 adj_tbl.2023 <- adj_tbl
@@ -143,6 +142,20 @@ unique(work.data[TRIP_ID == 1615161, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(T
 # Will assign `ADP` to 2023 for these trips
 work.data[TRIP_ID %in% c(1593889, 1615161), ADP := 2023]
 
+# Format strata names
+work.data <- work.data %>%
+  mutate(STRATA = recode(
+    STRATA,
+    "POT" = "OB POT",
+    "HAL" = "OB HAL",
+    "TRW" = "OB TRW",
+    "EM_POT" = "EM POT",
+    "EM_HAL" = "EM HAL",
+    "EM_TRW_EFP" = "EM TRW EFP"))
+
+#' [NOTE] `work.data` may be modified later in the `EM` section of this script to re-assign STRATA for any EM research
+#' vessels active for this year.
+
 # * Observed days ----
 
 #' Match up ODDS/OLS records with VALHALLA records to get stratum-specific estimates of total at-sea observer days.
@@ -150,7 +163,7 @@ work.data[TRIP_ID %in% c(1593889, 1615161), ADP := 2023]
 source("functions/model_trip_duration.R")
 
 #' Initialize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
-#' of the matching are automatically assigned to the `mod_dat` object in the global environment
+#' of the matching are automatically assigned to the `mod_dat` object in the global environment.
 td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
 
 #' Yearly totals
@@ -404,154 +417,144 @@ EM.data <-
 # Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
 
 #'*========== Geoff and Christian get the error: [Oracle][ODBC][Ora]ORA-01031: insufficient privileges*
-script <- paste(
-  "select all_data.*, em_rev_gear.em_gear_code, 
-  hd_data.date_hd_received_by_psmfc,
-  hd_data.date_exported_to_afsc,
-  hd_data.actual_em_trip_start_date_time,
-  hd_data.actual_em_trip_end_date_time from (
-  select 
+#'*Skipping this section for now*
+if(F){
   
-  case
-  when em_reviewed.trip_plan_log_seq is not null
-  then 'YES'
-  else 'NO'
-  End as EM_DATA_REVIEWED,   
-  em_reviewed.trip_number as em_reviewed_trip_number, 
-  em_selected.*
-  from    
+  script <- paste(
+    "select all_data.*, em_rev_gear.em_gear_code, 
+    hd_data.date_hd_received_by_psmfc,
+    hd_data.date_exported_to_afsc,
+    hd_data.actual_em_trip_start_date_time,
+    hd_data.actual_em_trip_end_date_time from (
+    select 
+    
+    case
+    when em_reviewed.trip_plan_log_seq is not null
+    then 'YES'
+    else 'NO'
+    End as EM_DATA_REVIEWED,   
+    em_reviewed.trip_number as em_reviewed_trip_number, 
+    em_selected.*
+    from    
+    
+    ---- from ODDS get the list of selected EM trips that are in completed or pending status
+    ---- and are not compliance monitoring trips
+    ( select distinct
+    
+    e.odds_trip_number,
+    d.name as vessel_name,
+    d.adfg_number as vessel_adfg_number,
+    trunc(e.date_logged) as date_logged,
+    e.GEAR_TYPE as gear_type_logged,
+    trunc(e.declared_leave_date) as declared_trip_start_date,
+    e.declared_port_of_departure as declared_trip_start_port,
+    trunc(e.declared_return_date) as declared_trip_end_date,
+    e.declared_plant_offloading_to as declared_trip_end_port,
+    trip_status,
+    i.user_reqst_coverage
+    
+    from norpac.odds_provider a,                   
+    norpac.odds_em_vessel_request f,
+    norpac.odds_eligible_opt_strata g,
+    norpac.odds_vessel_sample_plan c,
+    norpac.atl_lov_vessel d,
+    norpac.odds_logged_trip_summary_v e,
+    norpac.odds_em_request_status h,
+    norpac.odds_monitor i
+    where f.eligible_opt_seq = g.eligible_opt_seq
+    and g.vessel_seq = d.vessel_seq
+    and c.vessel_seq = d.vessel_seq
+    and d.permit = e.akr_vessel_id
+    and e.odds_trip_number = i.trip_plan_log_seq
+    and e.year = h.status_year   --- need this to make sure we don't get duplicates
+    and e.observer_status_code <> 'NO'
+    and e.year = ", year,"
+    and h.status_year = ", year,"
+    and i.sample_plan_seq in (13))em_selected
+    
+    left join
+    
+    ----get the EM reviewed trip number for those em trips that have been reviwed and where AFSC has the data
+    
+    (select a.trip_plan_log_seq, a.trip_number 
+    from em_pac_review.em_trip a
+    )em_reviewed
+    
+    on em_selected.ODDS_TRIP_NUMBER = em_reviewed.trip_plan_log_seq  
+    
+    
+    AND em_selected.trip_status in ('COMPLETED', 'PENDING')  
+    
+    order by  em_selected.odds_trip_number asc)all_data
+    
+    left join 
+    
+    ---- the below query will get the em gear code from the em data
+    
+    (select em_rev_gear.* from 
+    (select em_gear_code.trip_number,
+    em_gear_code.gear_type_code as em_gear_code
+    from
+    (select a.trip_number, b.gear_type_code
+    from EM_PAC_REVIEW.EM_FISHING_EVENT a,
+    em_pac_review.em_gear_type_lov b
+    where a.gear_Type_id = b.gear_type_id
+    group by a.trip_number, b.gear_type_code)em_gear_code
+    group by em_gear_code.trip_number, em_gear_code.gear_type_code)em_rev_gear)em_rev_gear
+    
+    on em_rev_gear.trip_number = all_data.em_reviewed_trip_number
+    
+    left join 
+    
+    --- the below query will get the when the HD was received by PSMFC, when it was exported to AFSC and the em trip start date and time and trip end date and time
+    
+    (select a.trip_number, 
+    b.date_received_by_psmfc as date_hd_received_by_psmfc,
+    a.file_import_date as date_exported_to_afsc, 
+    c.trip_plan_log_seq, 
+    c.trip_start_date_time as actual_em_trip_start_date_time, 
+    c.trip_end_date_time as actual_em_trip_end_date_time,
+    d.planned_embark_date as declared_embark_date,
+    d.planned_disembark_date as declared_end_date
+    from em_pac_review.em_trip_hard_drive a,
+    em_pac_review.em_hard_drive b,
+    em_pac_review.em_trip c,
+    norpac.odds_trip_plan_log d
+    where a.HARD_DRIVE_NUMBER = b.HARD_DRIVE_NUMBER
+    and c.TRIP_PLAN_LOG_SEQ = d.TRIP_PLAN_LOG_SEQ
+    and a.trip_number = c.trip_number)hd_data
+    
+    on hd_data.trip_number = all_data.em_reviewed_trip_number"
+  )
   
-  ---- from ODDS get the list of selected EM trips that are in completed or pending status
-  ---- and are not compliance monitoring trips
-  ( select distinct
+  EM.review <- dbGetQuery(channel_afsc, script)
   
-  e.odds_trip_number,
-  d.name as vessel_name,
-  d.adfg_number as vessel_adfg_number,
-  trunc(e.date_logged) as date_logged,
-  e.GEAR_TYPE as gear_type_logged,
-  trunc(e.declared_leave_date) as declared_trip_start_date,
-  e.declared_port_of_departure as declared_trip_start_port,
-  trunc(e.declared_return_date) as declared_trip_end_date,
-  e.declared_plant_offloading_to as declared_trip_end_port,
-  trip_status,
-  i.user_reqst_coverage
-  
-  from norpac.odds_provider a,                   
-  norpac.odds_em_vessel_request f,
-  norpac.odds_eligible_opt_strata g,
-  norpac.odds_vessel_sample_plan c,
-  norpac.atl_lov_vessel d,
-  norpac.odds_logged_trip_summary_v e,
-  norpac.odds_em_request_status h,
-  norpac.odds_monitor i
-  where f.eligible_opt_seq = g.eligible_opt_seq
-  and g.vessel_seq = d.vessel_seq
-  and c.vessel_seq = d.vessel_seq
-  and d.permit = e.akr_vessel_id
-  and e.odds_trip_number = i.trip_plan_log_seq
-  and e.year = h.status_year   --- need this to make sure we don't get duplicates
-  and e.observer_status_code <> 'NO'
-  and e.year = ", year,"
-  and h.status_year = ", year,"
-  and i.sample_plan_seq in (13))em_selected
-  
-  left join
-  
-  ----get the EM reviewed trip number for those em trips that have been reviwed and where AFSC has the data
-  
-  (select a.trip_plan_log_seq, a.trip_number 
-  from em_pac_review.em_trip a
-  )em_reviewed
-  
-  on em_selected.ODDS_TRIP_NUMBER = em_reviewed.trip_plan_log_seq  
-  
-  
-  AND em_selected.trip_status in ('COMPLETED', 'PENDING')  
-  
-  order by  em_selected.odds_trip_number asc)all_data
-  
-  left join 
-  
-  ---- the below query will get the em gear code from the em data
-  
-  (select em_rev_gear.* from 
-  (select em_gear_code.trip_number,
-  em_gear_code.gear_type_code as em_gear_code
-  from
-  (select a.trip_number, b.gear_type_code
-  from EM_PAC_REVIEW.EM_FISHING_EVENT a,
-  em_pac_review.em_gear_type_lov b
-  where a.gear_Type_id = b.gear_type_id
-  group by a.trip_number, b.gear_type_code)em_gear_code
-  group by em_gear_code.trip_number, em_gear_code.gear_type_code)em_rev_gear)em_rev_gear
-  
-  on em_rev_gear.trip_number = all_data.em_reviewed_trip_number
-  
-  left join 
-  
-  --- the below query will get the when the HD was received by PSMFC, when it was exported to AFSC and the em trip start date and time and trip end date and time
-  
-  (select a.trip_number, 
-  b.date_received_by_psmfc as date_hd_received_by_psmfc,
-  a.file_import_date as date_exported_to_afsc, 
-  c.trip_plan_log_seq, 
-  c.trip_start_date_time as actual_em_trip_start_date_time, 
-  c.trip_end_date_time as actual_em_trip_end_date_time,
-  d.planned_embark_date as declared_embark_date,
-  d.planned_disembark_date as declared_end_date
-  from em_pac_review.em_trip_hard_drive a,
-  em_pac_review.em_hard_drive b,
-  em_pac_review.em_trip c,
-  norpac.odds_trip_plan_log d
-  where a.HARD_DRIVE_NUMBER = b.HARD_DRIVE_NUMBER
-  and c.TRIP_PLAN_LOG_SEQ = d.TRIP_PLAN_LOG_SEQ
-  and a.trip_number = c.trip_number)hd_data
-  
-  on hd_data.trip_number = all_data.em_reviewed_trip_number"
-)
-
-EM.review <- dbGetQuery(channel_afsc, script)
-
-# Flip pending trips to completed if they have data reviewed
-# For clarification, see email from Glenn Campbell on 3/11/20
-EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
+  # Flip pending trips to completed if they have data reviewed
+  # For clarification, see email from Glenn Campbell on 3/11/20
+  EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
+}
 
 # Fixed-gear EM research
-em_research <- dbGetQuery(channel_afsc, paste("select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
+em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
                                               and adp =", year))
 
-#'*============================================================================*
-
-#' *FILE PATHS NEED TO BE UPDATED/SET*
-# * Shapefiles ----
-## Load land and NMFS stat area shapefiles 
-## (".." points the directory back one level)
-shp_land      <- st_read("../shapefiles/P3_AK_All.shp")
-shp_nmfs      <- st_read("../shapefiles/NMFS_Zones_Clean.shp")
-shp_centroids <- st_read("../shapefiles/NMFS_Area_Centroid.shp")
-
-# Format strata names -----------------------------------------------------
-
-# Format strata names in Valhalla
-#' TODO *Do this for observer strata as well, adding "OB "? *
-work.data <- mutate(work.data, STRATA = recode(STRATA,
-                    "EM_POT" = "EM POT",
-                    "EM_HAL" = "EM HAL",
-                    "EM_TRW_EFP" = "EM TRW EFP"))
-
-
-#' *EM.review QUERY NEEDS TO BE FIXED FOR THIS TO WORK=========================*
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
-             mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
+  mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
+
+# * Shapefiles ----
+# Initial upload to Shared Gdrive
+if(F) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+## Load land and NMFS stat area shapefiles 
+gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+(load(("source_data/ak_shp.rdata")))
 
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(location, channel_afsc, channel_akro)
+rm(location, channel_afsc, AnnRpt_DepChp_dribble, ADP_Output_dribble)
 
 # Save
 save.image(file = "2_AR_data.Rdata")
