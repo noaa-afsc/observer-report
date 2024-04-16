@@ -70,16 +70,11 @@ spatiotemp_data_prep <- function(valhalla){
     pc_effort_dt <- pc_effort_dt[!is.na(LANDING_DATE)]
   }
   
-  # Rename strata to include POOL
-  unique(pc_effort_dt$STRATA)
+  # Make sure no full coverage trips are still in the dataset.
   if(any(unique(pc_effort_dt$STRATA) == "FULL")) stop("There are some FULL coverage trips in the partial coverage dataset!")
   
-  # Re-label STRATA so that it also specifies pool, and separates monitoring method/gear from BSAI with '-'
-  pc_effort_dt[, STRATA := fcase(
-    STRATA %in% c("EM_HAL", "EM_POT", "ZERO"), STRATA,
-    STRATA == "EM_TRW_EFP", "EM_TRW",
-    STRATA %in% c("HAL", "POT", "TRW"), paste0("OB_", STRATA)
-  )]
+  # Replace spaces in STRATA with underscores
+  pc_effort_dt[, STRATA := gsub(" ", "_", STRATA)]
   
   # Set the order of columns
   setcolorder(pc_effort_dt, neworder = c(
