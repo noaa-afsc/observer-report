@@ -18,20 +18,35 @@ channel_akro  <- channel.fxn(location, db = "AKRO") # Hit cancel unless sitting 
 
 # Get data ----------------------------------------------------------------
 
-# To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
-# effort_prediction.rdata (created in the most recent final ADP project)
-# fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
-# These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
+# Assign the address of the Annual Report Project in the Shared Gdrive
+AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter")
 
-# * ADP inputs ----
+# Upload Valhalla to the Shared Gdrive
+if(F) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+# Download Valhalla 
+gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 
-# Loads two objects: efrt and efrt_adpyear
-# efrt contains 3 years of effort data used for the ADP
-# efrt_adpyear contains the effort predictions for each domain and the 1 year of trips used to simulate effort
-load("data/effort_prediction.rdata")
 
-# Remove the efrt object
-rm(efrt)
+#' *OLD - REMOVE THESE?*
+if(F) {
+  # To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
+  # effort_prediction.rdata (created in the most recent final ADP project)
+  # fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
+  # These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
+  
+  # * ADP inputs ----
+  
+  # Loads two objects: efrt and efrt_adpyear
+  # efrt contains 3 years of effort data used for the ADP
+  # efrt_adpyear contains the effort predictions for each domain and the 1 year of trips used to simulate effort
+  load("data/effort_prediction.rdata")
+  
+  # Remove the efrt object
+  rm(efrt)
+  
+  
+  
+}
 
 # * ADP outputs ----
 
