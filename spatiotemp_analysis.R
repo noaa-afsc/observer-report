@@ -1865,35 +1865,28 @@ plot_interspersion_density <- function(den, real_interspersion, dmn_N){
 # Wrangle the Valhalla data set for spatiotemporal analyses
 pc_effort_st <- spatiotemp_data_prep(work.data)
 
-#' FIXME *Some ZERO TRIPS were MONITORED IN 2023 - Phil is working on removing these*
-pc_effort_st[STRATA == "ZERO" & OBSERVED_FLAG == "Y", OBSERVED_FLAG := "N"]
-
-# Realized Rates
+#' Realized Rates *Check that these match up with the realized rates in 4_AR_report*
 realized_rates.val <- unique(pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)])[
 ][, .(STRATA_N = .N, SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)]
 
-# Realized Monitored trips
+# Create a subset table of realized monitored trips
 realized_mon <- unique(pc_effort_st[OBSERVED_FLAG == "Y", .(ADP, STRATA, TRIP_ID)])
 
-#' TODO Use the *partial* object from 2_AR_data.R to create this object, when it is ready
-programmed_rates <- rbind(
-  data.table(
-    ADP = rep(2022, times = 7),
-    STRATA = c("EM_HAL", "EM_POT", "EM_TRW_EFP", "OB_HAL", "OB_POT", "OB_TRW", "ZERO"),
-    SAMPLE_RATE = c(0.3, 0.3, 0.3333, 0.1902, 0.1748, 0.2965, 0)),
-  data.table(
-    ADP = rep(2023, times = 7),
-    STRATA = c("EM_HAL", "EM_POT", "EM_TRW_EFP", "OB_HAL", "OB_POT", "OB_TRW", "ZERO"),
-    SAMPLE_RATE = c(0.3, 0.3, 0.3333, 0.1787, 0.1709, 0.2268, 0))
-)
+# Calculate the realized rates of each STRATUM x ADP
+programmed_rates <- copy(data.table(partial))[
+][, -c("formatted_strat", "GEAR")
+][, STRATA := gsub(" ", "_", STRATA)][]
+setnames(programmed_rates, old = c("YEAR", "Rate"), new = c("ADP", "SAMPLE_RATE"))
+# Add ZERO to programmed rates
+programmed_rates <- rbind(programmed_rates, data.table(ADP = 2022:2023, STRATA = "ZERO", SAMPLE_RATE = 0))
 # Add STRATA_N to programmed_rates
 programmed_rates[, STRATA_N := realized_rates.val[programmed_rates, STRATA_N, on = .(ADP, STRATA)]]
 setcolorder(programmed_rates, c("ADP", "STRATA", "STRATA_N", "SAMPLE_RATE"))
 
-#' TODO *Make sure the realized ODDS and realized VALHALLA rates aren't too far off!* We will use the VALHALLA rates 
-#' because our fishing effort is based on Valhalla.
-
-#' TODO *Make a check to make sure all strata names match between pc_effort_dt and rates objects!*
+#' Check to make sure all strata names match between pc_effort_st and rates objects!*
+if( !fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
+  stop("STRATA and ADP in `pc_effort_dt` does not match those in `programmed_rates!`")
+}
 
 ## Define Boxes ----
 
