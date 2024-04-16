@@ -153,7 +153,8 @@ work.data <- work.data %>%
     "TRW" = "OB TRW",
     "EM_POT" = "EM POT",
     "EM_HAL" = "EM HAL",
-    "EM_TRW_EFP" = "EM TRW EFP"))
+    "EM_TRW_EFP" = "EM TRW EFP"),
+    ADP = as.factor(ADP))
 
 #' [NOTE] `work.data` may be modified later in the `EM` section of this script to re-assign STRATA for any EM research
 #' vessels active for this year.
@@ -548,7 +549,7 @@ work.data <- work.data %>%
 
 # * Shapefiles ----
 # Initial upload to Shared Gdrive
-if(F) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 ## Load land and NMFS stat area shapefiles 
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
