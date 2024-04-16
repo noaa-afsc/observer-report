@@ -556,7 +556,8 @@ gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(helper_objects, location, channel_afsc, AnnRpt_DepChp_dribble, ADP_Output_dribble)
+rm(helper_objects, location, channel_afsc, ADP_Output_dribble)
 
 # Save
 save.image(file = "2_AR_data.Rdata")
+gdrive_upload("2_AR_data.Rdata", AnnRpt_DepChp_dribble)
