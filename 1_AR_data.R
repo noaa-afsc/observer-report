@@ -2,6 +2,8 @@
 
 # Get packages and user-defined functions
 source("3_helper.R")
+# Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
+helper_objects <- ls()
 
 # Random number seed
 set.seed(052870)
@@ -183,7 +185,7 @@ mod_dat_copy[
 # Stratum-specific totals
 obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
 
-rm(td_mod0, mod_dat, mod_dat_copy)
+rm(td_mod0, mod_dat, mod_dat_copy, model_trip_duration)
 
 # * Salmon dockside monitoring ----
 
@@ -554,7 +556,7 @@ gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(location, channel_afsc, AnnRpt_DepChp_dribble, ADP_Output_dribble)
+rm(helper_objects, location, channel_afsc, AnnRpt_DepChp_dribble, ADP_Output_dribble)
 
 # Save
 save.image(file = "2_AR_data.Rdata")
