@@ -4,9 +4,9 @@
 
 
 # load req'd packages ----------------------------------------
- library(dplyr)
- library(ggplot2)
- library(ggh4x)
+library(dplyr)
+library(ggplot2)
+library(ggh4x)
 
 # load the data files. ----------------------------------------
 # * chng wd filepath as needed *
@@ -79,10 +79,10 @@ fn_heatmap_theme <- function(){
 fn_heatmap_1000_gg <-
   function(ggcategory, ggtitle){
     ggplot(data = rate_all_groupings_affi_type_for_plots %>%
-                     ungroup() %>% 
-                     filter(OLE_CATEGORY == ggcategory,
-                            CONFI_FLAG == 0,
-                            CALENDAR_YEAR == adp_yr), 
+             ungroup() %>% 
+             filter(OLE_CATEGORY == ggcategory,
+                    CONFI_FLAG == 0,
+                    CALENDAR_YEAR == adp_yr), 
            aes(x = '', 
                y = AFFIDAVIT_TYPE)) +
       geom_tile(aes(fill  = INCIDENTS_PER_1000_DEPLOYED_DAYS)) +
@@ -97,7 +97,7 @@ fn_heatmap_1000_gg <-
                                         "Days", sep = "\n"))  +
       labs(x = '', y = "Statement Type", title = ggtitle) +
       fn_heatmap_theme() 
-    }
+  }
 
 
 
@@ -114,7 +114,7 @@ fn_heatmap_assnmt_gg <-
                y = AFFIDAVIT_TYPE)) +
       geom_tile(aes(fill  = INCIDENTS_PER_ASSIGNMENT)) +
       geom_text(aes(label = round(INCIDENTS_PER_ASSIGNMENT, 2)),
-                    fontface = "bold") +
+                fontface = "bold") +
       facet_nested(COVERAGE_TYPE  ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE) +
       scale_fill_gradient(low  = "blue",
                           high = "yellow",
@@ -131,14 +131,14 @@ fn_save_defs_heatmaps <-
   function(plotname_char, plotname){
     ggsave(filename = paste0(adp_yr,
                              "_outputs/charts_and_tables/heat_maps/hm_", 
-                              adp_yr, "_",
-                              plotname_char,
+                             adp_yr, "_",
+                             plotname_char,
                              ".png"
-                            ), 
-       plot   = plotname,
-       height = 8.00,  # mess with these as needed
-       width  = 15.6) # mess with these as needed
-      }
+    ), 
+    plot   = plotname,
+    height = 8.00,  # mess with these as needed
+    width  = 15.6) # mess with these as needed
+  }
 
 
 ## Histogram definitions ----------------------------------
@@ -170,10 +170,10 @@ fn_save_defs_histog <-
                              adp_yr, "_",
                              plotname_char,
                              ".png"
-                             ), 
-           plot   = plotname,
-           height = 8.00,  # mess with these as needed
-           width  = 15.6) # mess with these as needed
+    ), 
+    plot   = plotname,
+    height = 8.00,  # mess with these as needed
+    width  = 15.6) # mess with these as needed
   }
 
 
@@ -186,10 +186,10 @@ fn_barchart_theme <-
     theme(axis.text.y  = element_text(size = 7, hjust = 0),
           strip.text.y.left = element_text(size = 8, angle = 0, hjust = 0),
           strip.text.x = element_text(size = 5),
-           panel.spacing = unit(0,"lines"),
-           strip.background = element_rect(color="grey30", fill="grey90"),
-           panel.border = element_rect(color= "black", fill = "NA", size = 0.1), # "grey90"),
-           panel.grid = element_blank(),
+          panel.spacing = unit(0,"lines"),
+          strip.background = element_rect(color="grey30", fill="grey90"),
+          panel.border = element_rect(color= "black", fill = "NA", size = 0.1), # "grey90"),
+          panel.grid = element_blank(),
           axis.ticks.x = element_blank(),
           legend.position = "none")
   }
@@ -238,8 +238,8 @@ fn_barchart_1000_gg <-
       geom_text(aes(label = round(INCIDENTS_PER_1000_DEPLOYED_DAYS, 1)),
                 position = position_dodge(width = 1),
                 fontface = "bold", size = 2,
-               vjust="inward",
-               hjust="inward") +
+                vjust="inward",
+                hjust="inward") +
       # + facet_nested(AFFIDAVIT_TYPE ~ VESSEL_TYPE + GEAR_TYPE + NMFS_REGION + MANAGEMENT_PROGRAM_CODE,
       #              scales = "free",
       #              switch="both",
@@ -306,11 +306,11 @@ fn_save_defs_barchart <-
                              adp_yr, "_",
                              plotname_char,
                              ".pdf"
-                             ), 
-           plot   = plotname,
-           height = 5.7,  # mess with these as needed
-           width  = 9, 
-           units = "in") # mess with these as needed
+    ), 
+    plot   = plotname,
+    height = 5.7,  # mess with these as needed
+    width  = 9, 
+    units = "in") # mess with these as needed
   }
 
 # Heat Maps ----------------------------------------
@@ -328,7 +328,7 @@ incis_per_1000_days_work_env_by_affi_type <-
   fn_heatmap_1000_gg(
     ggcategory = 'OLE PRIORITY: SAFETY AND DUTIES',
     ggtitle    = "Statement Category Group OLE PRIORITY: SAFETY AND DUTIES"
-              )
+  )
 
 incis_per_1000_days_work_env_by_affi_type
 fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_work_env_by_affi_type",
@@ -423,7 +423,7 @@ incis_per_assnmt_work_env_by_affi_type <-
   fn_heatmap_assnmt_gg(
     ggcategory = 'OLE PRIORITY: SAFETY AND DUTIES',
     ggtitle = "Statement Category Group OLE PRIORITY: SAFETY AND DUTIES"
-    )
+  )
 
 incis_per_assnmt_work_env_by_affi_type
 fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_work_env_by_affi_type",
@@ -680,8 +680,8 @@ incis_per_assnmt_lapp_by_affi_type
 fn_save_defs_heatmaps(plotname_char = "incis_per_assnmt_lapp_by_affi_type",
                       plotname = incis_per_assnmt_lapp_by_affi_type)
 
-  
- 
+
+
 
 
 
@@ -813,7 +813,7 @@ incis_per_1000_days_cg_by_affi_type <-
   fn_heatmap_1000_gg(
     ggcategory =  'COAST GUARD',  
     ggtitle    = "Statement Category Group COAST GUARD"
-       )
+  )
 
 incis_per_1000_days_cg_by_affi_type
 fn_save_defs_heatmaps(plotname_char = "incis_per_1000_days_cg_by_affi_type",
@@ -1090,7 +1090,7 @@ incis_per_statement_histog_Interpersonal <-
 incis_per_statement_histog_Interpersonal
 fn_save_defs_histog(plotname_char = "incis_per_statement_histog_Interpersonal",
                     plotname = incis_per_statement_histog_Interpersonal)
- 
+
 
 
 ## Safety and Duties ----------------------------------------
@@ -1199,32 +1199,32 @@ ggsave(paste(adp_yr,"_outputs/charts_and_tables/histograms/histog_",
 # THIS ONE IS A KEEPER
 
 incis_per_statement_all_facet <-
-(ggplot(days_statements_all_groupings_raw %>%
-          mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1,
-                 STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
-          filter(CALENDAR_YEAR == adp_yr,
-                 OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES',
-                 # VESSEL_TYPE == 'PLANT',
-                 COVERAGE_TYPE == 'FULL',
-                 #MANAGEMENT_PROGRAM_CODE == 'AFA'
-          ),
-        aes(x=NUMBER_OF_INCIDENTS,
-            fill = paste(VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, sep= '~')))
- + geom_histogram(stat     = "bin",
-                  binwidth = 1,
-                  position = "stack")
- + facet_grid(AFFIDAVIT_TYPE ~., 
-              scales = "free", 
-              switch = 'y',
-              labeller = label_wrap_gen())
- + scale_y_continuous(labels = scales::number_format(accuracy = 0.1), position="right")  # Put the y-axis labels on the right
- + labs(x = "Number of Occurrences",
-        y = "Number of Statements",
-        fill = paste("Vessel Type","Gear Type", "Management Program","Geographic Region", sep = ' ~ \n'), 
-        title = "PROTECTED RESOURCE & PROHIBITED SPECIES: Occurrences Per Statement")
- + theme(strip.text.y = element_text(angle = 180),
- )
-)
+  (ggplot(days_statements_all_groupings_raw %>%
+            mutate(NUMBER_OF_INCIDENTS = NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1,
+                   STATEMENT_TYPE = AFFIDAVIT_TYPE) %>%
+            filter(CALENDAR_YEAR == adp_yr,
+                   OLE_CATEGORY == 'PROTECTED RESOURCE & PROHIBITED SPECIES',
+                   # VESSEL_TYPE == 'PLANT',
+                   COVERAGE_TYPE == 'FULL',
+                   #MANAGEMENT_PROGRAM_CODE == 'AFA'
+            ),
+          aes(x=NUMBER_OF_INCIDENTS,
+              fill = paste(VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, sep= '~')))
+   + geom_histogram(stat     = "bin",
+                    binwidth = 1,
+                    position = "stack")
+   + facet_grid(AFFIDAVIT_TYPE ~., 
+                scales = "free", 
+                switch = 'y',
+                labeller = label_wrap_gen())
+   + scale_y_continuous(labels = scales::number_format(accuracy = 0.1), position="right")  # Put the y-axis labels on the right
+   + labs(x = "Number of Occurrences",
+          y = "Number of Statements",
+          fill = paste("Vessel Type","Gear Type", "Management Program","Geographic Region", sep = ' ~ \n'), 
+          title = "PROTECTED RESOURCE & PROHIBITED SPECIES: Occurrences Per Statement")
+   + theme(strip.text.y = element_text(angle = 180),
+   )
+  )
 
 incis_per_statement_all_facet
 ggsave(paste(adp_yr,"_outputs/charts_and_tables/histograms/histog_", 
@@ -1280,7 +1280,7 @@ ggsave(paste(adp_yr,"_outputs/charts_and_tables/histograms/histog_",
 
 ## Prohibs 1000_days ----------------------------------------
 incis_per_1000_days_prohib_bar <-
- fn_barchart_1000_gg(ggcategory = 'PROTECTED RESOURCE & PROHIBITED SPECIES')
+  fn_barchart_1000_gg(ggcategory = 'PROTECTED RESOURCE & PROHIBITED SPECIES')
 
 incis_per_1000_days_prohib_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_prohib_bar",
@@ -1302,7 +1302,7 @@ incis_per_1000_days_other_bar <-
 incis_per_1000_days_other_bar
 fn_save_defs_barchart(plotname_char = "incis_per_1000_days_other_bar",
                       plotname = incis_per_1000_days_other_bar)
-  
+
 ## LAPP 1000 days ----------------------------------------
 incis_per_1000_days_LAPP_bar <-
   fn_barchart_1000_gg(ggcategory = 'LIMITED ACCESS PROGRAMS')

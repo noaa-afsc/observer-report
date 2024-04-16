@@ -711,6 +711,7 @@ save(list = ls(),
 googledrive::drive_upload(
   media     = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
   name      = "AR_2_rolling_join_output.Rdata",
-  path      = project_dribble
+  path      = project_dribble,
+  overwrite = T
 ) 
 

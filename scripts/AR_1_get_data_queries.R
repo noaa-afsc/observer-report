@@ -84,8 +84,8 @@ first_cruise <- manual_year_cruises$MIN_CRUISE[manual_year_cruises$MANUAL_YEAR =
 # Amend as needed to get statements for the current year.
 statements_raw_old  <-
   dbGetQuery(
-   channel,
-   paste("
+    channel,
+    paste("
           SELECT affidavit_id
              ,   mtt.species as mgmt_fish_code
              ,   first_violation_date
@@ -132,7 +132,7 @@ statements_raw_old  <-
              AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
              AND oco.hake_flag = 'N'                  --eliminate HAKE cruises 
           ",
-         sep = '')) %>%
+          sep = '')) %>%
   mutate(FIRST_VIOL_YEAR  = year(FIRST_VIOLATION_DATE),
          OLE_SYSTEM       = 'OLD',
          NEW_OLE_CATEGORY = NA,
@@ -153,119 +153,124 @@ statements_raw_old  <-
 statements_raw_new <-
   dbGetQuery(
     channel,
-    paste0("SELECT os.ole_obs_statement_seq AS affidavit_id
-                 ,  null AS mgmt_fish_code
-                 ,  oc.category  AS new_ole_category   
-                 ,	nvl(norpac.OLE_STATEMENT_PKG.get_first_violation_date(os.ole_obs_statement_seq),
-                      
-                        --2nd step in the above 'nvl' fxn is to fill in the GAPS of statements that are missing units 
-                        --(i.e, they have a UNIT_ISSUE) by reviewing th text fields from the statement and then hard-coding.  
-                        --ADK went thru and mined the text on 20240314
-                        --Note: this will need to be done again for any that are missing in subsequent years.
-                        
-                        CASE WHEN os.ole_obs_statement_seq = 30153 THEN to_date('08/19/2023', 'mm/dd/yyyy')  --directly from the statement and/or unit_issue text.
-                             WHEN os.ole_obs_statement_seq = 30152 THEN 
-                                   (SELECT trunc(min(retrv_date_time)) --first haul of trip 2, from the statement and/or unit_issue text.
-                                      FROM norpac.atl_haul h JOIN norpac.atl_fma_trip t 
-                                        ON t.cruise = h.cruise AND t.permit = h.permit AND t.trip_seq = h.trip_seq
-                                      WHERE t.cruise in ((select * from table(norpac.ole_factor_pkg.get_data_cruise(os.cruise, os.permit))))
-                                        AND t.permit = os.permit
-                                        AND t.trip_number = 2
-                                    )
-                             WHEN os.ole_obs_statement_seq = 30236 THEN to_date('08/15/2023', 'mm/dd/yyyy')  --directly from the statement and/or unit_issue text
-                             WHEN os.ole_obs_statement_seq = 30238 THEN (SELECT min(delivery_end_date) 
-                                                                           FROM norpac.atl_offload WHERE cruise = 26324 
-                                                                            AND permit = 5306
-                                                                            AND offload_number = 12)  --offload 12, from the statement and/or unit_issue text
-                             WHEN os.ole_obs_statement_seq = 30290 THEN to_date('10/10/2023', 'mm/dd/yyyy')  --directly from the unit_issue text.
-                             WHEN os.ole_obs_statement_seq = 30358 THEN   
-                                           (SELECT trunc(min(retrv_date_time)) --haul 599, which was deleted.  From the statement and/or unit_issue text.
-                                              FROM norpac.atl_haul h
-                                             WHERE h.haul_number = 599)
-                             WHEN os.ole_obs_statement_seq = 30364 THEN  
-                                            (SELECT min(delivery_end_date) FROM norpac.atl_offload
-                                              WHERE cruise = os.cruise AND plant_seq = 21) --first offload for at this processor.  From the statement and/or unit_issue text.
-                             WHEN os.ole_obs_statement_seq = 30395 THEN
-                                         (SELECT min(embark_date) FROM norpac.ols_vessel_plant
-                                               WHERE cruise = os.cruise AND permit = 5306)  --first embark for the plant.
-                             WHEN os.ole_obs_statement_seq = 30460 THEN to_date('02/03/2024', 'mm/dd/yyyy') --from the statement and/or unit_issue text.
-                             WHEN os.ole_obs_statement_seq = 30463 THEN to_date('02/22/2024', 'mm/dd/yyyy')  --from the statement and/or unit_issue text.             
-                             WHEN os.ole_obs_statement_seq = 30027 THEN
-                                         (SELECT trunc(min(retrv_date_time)) --first haul.  Not defined in statement or unit_issue text.
-                                                  FROM norpac.atl_haul h  
-                                                    WHERE h.cruise in ((select * from table(norpac.ole_factor_pkg.get_data_cruise(os.cruise, os.permit))))
-                                                    AND h.permit = os.permit
-                                             )
-                             --if any are still left,  use the FIRST EMBARK DATE for the vessel_plant.
-                             
-                             ELSE nvl((SELECT min(embark_date) FROM norpac.ols_vessel_plant
-                                        WHERE cruise = os.cruise AND permit = os.permit
-                                       ),
-                                       --if any are STILL left, use the FIRST EMBARK DATE for the cruise overall.
-                                       --Note: no statements ever went this far in the CASE statement for 2023, so it is just a fallback.
-                                      (SELECT min(embark_date) FROM norpac.ols_vessel_plant
-                                        WHERE cruise = os.cruise) 
-                                      )  
-                         END           
-                     ) AS first_violation_date
-                 ,	(SELECT COUNT(*)
-                   	   FROM norpac.OLE_OBS_STATEMENT_UNIT osu2
-                      WHERE osu2.ole_obs_statement_detail_seq = osd.ole_obs_statement_detail_seq ) 
-                       AS number_violations
-                 ,	(SELECT listagg(distinct INCIDENT_UNIT, ', ')
-                  	   FROM norpac.OLE_LOV_INCIDENT_UNIT lu
-                       JOIN norpac.OLE_OBS_STATEMENT_UNIT osu3 ON osu3.ole_incident_unit_seq = lu.ole_incident_unit_seq
-                  	   JOIN norpac.OLE_OBS_STATEMENT_DETAIL osd3 ON osu3.ole_obs_statement_detail_seq = osd3.ole_obs_statement_detail_seq
-                  	  WHERE osu3.ole_obs_statement_detail_seq = osd.ole_obs_statement_detail_seq)
-                      AS units  
-                 ,   ( SELECT listagg(distinct subcategory, ', ')
-                        FROM norpac.OLE_LOV_SUBCATEGORY lsc
-                        JOIN norpac.OLE_LOV_REGULATION lr ON lr.ole_subcategory_seq = lsc.ole_subcategory_seq
-                       WHERE lr.ole_regulation_seq = osd.ole_regulation_seq)
-                      AS statement_type
-                 ,  acs.status_value  AS case_status
-                 ,  os.agent
-                 ,  os.case_number     
-                 ,  os.enforcement_comments
-                 ,	CASE WHEN os.permit = 0 OR os.permit is null 
-                         THEN 'No Permit'
-                         ELSE v.name
-                     END AS vessel_plant
-                 ,  CASE WHEN os.permit = 0 OR os.permit is null 
-                         THEN 'N'
-                         ELSE decode(norpac.ole_statement_factors_pkg.wasCruiseAssndToVssPlnt_TF(
-                                                     in_cruise => os.cruise, 
-                                                     in_permit => os.permit),
-                                     'T', 'Y', 'F', 'N')               
-                     END AS was_assigned_to_permit_flag           
-                 ,	os.cruise AS cruise
-                 ,	to_number(os.permit) AS permit
-                 ,	os.comments AS statement_body
-                 ,  (SELECT listagg(distinct ole_category, ', ') FROM norpac.ole_transform ot
-                      WHERE osd.ole_regulation_seq = ot.ole_regulation_seq)
-                     AS old_ole_category  
-                 ,  norpac.ole_statement_factors_pkg.getManualYearForCruise(os.cruise) AS manual_year     
-                 ,  os.witness_flag
-                 ,  os.victim_name
-            FROM norpac.OLE_OBS_STATEMENT os
-            JOIN norpac.ole_lov_category oc             ON oc.ole_category_seq = os.ole_category_seq
-            JOIN norpac.ole_obs_statement_detail osd    ON osd.ole_obs_statement_seq = os.ole_obs_statement_seq
-            LEFT JOIN affidavit_case_status acs         ON acs.status = os.affidavit_case_status
-            LEFT JOIN norpac.atl_vessplant_v v          ON v.permit = os.permit
-            LEFT JOIN norpac.OLS_OBSERVER_CRUISE ocr    ON ocr.cruise = os.cruise
-            LEFT JOIN norpac.OLS_OBSERVER_CONTRACT oco  ON oco.contract_number = ocr.contract_number
-            LEFT JOIN norpac.OLS_DEBRIEFING_SCHEDULE ds ON ds.cruise = ocr.cruise
-           WHERE trunc(norpac.OLE_STATEMENT_PKG.get_first_violation_date(os.ole_obs_statement_seq)) BETWEEN 
-                      to_date('", first_date, "', 'DD-MON-RR') AND
-                      to_date('", last_date,  "', 'DD-MON-RR')
-                --      to_date(:in_first_date, 'DD-MON-RR') AND
-                --      to_date(:in_last_date,  'DD-MON-RR')
-             AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
-             AND oco.hake_flag = 'N'                  --eliminate HAKE cruises
-           ")) %>%
+    paste0("
+WITH stmts_base AS (
+ SELECT os.ole_obs_statement_seq,  oc.category AS new_ole_category,
+        os.cruise, os.permit, os.witness_flag,  os.victim_name,
+        os.agent, os.case_number,  os.enforcement_comments,
+        acs.status_value  AS case_status,
+        lsc.subcategory AS statement_type,
+        listagg(distinct ot.ole_category, ', ') AS old_ole_category,
+        listagg(distinct lu.incident_unit, ', ') WITHIN GROUP (order by lsc.subcategory) AS units,
+        count(osu.ole_obs_statement_unit_seq) AS number_violations
+   FROM norpac.OLE_OBS_STATEMENT os
+   JOIN norpac.ole_lov_category oc             ON oc.ole_category_seq = os.ole_category_seq
+   JOIN norpac.ole_obs_statement_detail osd    ON osd.ole_obs_statement_seq = os.ole_obs_statement_seq
+   JOIN norpac.ole_lov_regulation lr ON lr.ole_regulation_seq = osd.ole_regulation_seq
+   JOIN norpac.ole_lov_subcategory lsc         ON lsc.ole_subcategory_seq = lr.ole_subcategory_seq
+   LEFT JOIN affidavit_case_status acs         ON acs.status = os.affidavit_case_status    
+   LEFT JOIN norpac.OLE_OBS_STATEMENT_UNIT osu ON osu.ole_obs_statement_detail_seq = osd.ole_obs_statement_detail_seq      
+   LEFT JOIN norpac.OLE_LOV_INCIDENT_UNIT lu   ON osu.ole_incident_unit_seq = lu.ole_incident_unit_seq
+   LEFT JOIN norpac.ole_transform ot           ON osd.ole_regulation_seq = ot.ole_regulation_seq
+   GROUP BY os.ole_obs_statement_seq,  oc.category,
+        os.cruise, os.permit, os.witness_flag, os.victim_name,
+        os.agent, os.case_number, os.enforcement_comments, acs.status_value, lsc.subcategory       
+  )
+ SELECT a.ole_obs_statement_seq AS affidavit_id
+     ,  null AS mgmt_fish_code
+     ,  a.new_ole_category   
+     ,	nvl(norpac.OLE_STATEMENT_PKG.get_first_violation_date(a.ole_obs_statement_seq),              
+        --2nd step in the above 'nvl' fxn is to fill in the GAPS of statements that are missing units 
+        --(i.e, they have a UNIT_ISSUE) by reviewing th text fields from the statement and then hard-coding.  
+        --ADK went thru and mined the text on 20240314
+        --Note: this will need to be done again for any that are missing in subsequent years.            
+        CASE WHEN a.ole_obs_statement_seq = 30153 THEN to_date('08/19/2023', 'mm/dd/yyyy')  --directly from the statement and/or unit_issue text.
+             WHEN a.ole_obs_statement_seq = 30152 THEN 
+                   (SELECT trunc(min(retrv_date_time)) --first haul of trip 2, from the statement and/or unit_issue text.
+                      FROM norpac.atl_haul h JOIN norpac.atl_fma_trip t 
+                        ON t.cruise = h.cruise AND t.permit = h.permit AND t.trip_seq = h.trip_seq
+                      WHERE t.cruise in ((select * from table(norpac.ole_factor_pkg.get_data_cruise(a.cruise, a.permit))))
+                        AND t.permit = a.permit
+                        AND t.trip_number = 2
+                    )
+             WHEN a.ole_obs_statement_seq = 30236 THEN to_date('08/15/2023', 'mm/dd/yyyy')  --directly from the statement and/or unit_issue text
+             WHEN a.ole_obs_statement_seq = 30238 THEN 
+                   (SELECT min(delivery_end_date) 
+                      FROM norpac.atl_offload WHERE cruise = 26324 
+                       AND permit = 5306
+                       AND offload_number = 12)  --offload 12, from the statement and/or unit_issue text
+             WHEN a.ole_obs_statement_seq = 30290 THEN to_date('10/10/2023', 'mm/dd/yyyy')  --directly from the unit_issue text.
+             WHEN a.ole_obs_statement_seq = 30358 THEN   
+                   (SELECT trunc(min(retrv_date_time)) --haul 599, which was deleted.  From the statement and/or unit_issue text.
+                      FROM norpac.atl_haul h
+                     WHERE h.haul_number = 599)
+             WHEN a.ole_obs_statement_seq = 30364 THEN  
+                   (SELECT min(delivery_end_date) FROM norpac.atl_offload
+                     WHERE cruise = a.cruise AND plant_seq = 21) --first offload for at this processor.  From the statement and/or unit_issue text.
+             WHEN a.ole_obs_statement_seq = 30395 THEN
+                   (SELECT min(embark_date) FROM norpac.ols_vessel_plant
+                     WHERE cruise = a.cruise AND permit = 5306)  --first embark for the plant.
+             WHEN a.ole_obs_statement_seq = 30460 THEN to_date('02/03/2024', 'mm/dd/yyyy') --from the statement and/or unit_issue text.
+             WHEN a.ole_obs_statement_seq = 30463 THEN to_date('02/22/2024', 'mm/dd/yyyy')  --from the statement and/or unit_issue text.             
+             WHEN a.ole_obs_statement_seq = 30027 THEN
+                   (SELECT trunc(min(retrv_date_time)) --first haul.  Not defined in statement or unit_issue text.
+                      FROM norpac.atl_haul h  
+                     WHERE h.cruise in ((select * from table(norpac.ole_factor_pkg.get_data_cruise(a.cruise, a.permit))))
+                       AND h.permit = a.permit
+                    )
+                 --if any are still left,  use the FIRST EMBARK DATE for the vessel_plant.
+                 
+             ELSE nvl((SELECT min(embark_date) FROM norpac.ols_vessel_plant
+                        WHERE cruise = a.cruise AND permit = a.permit
+                       ),
+                       --if any are STILL left, use the FIRST EMBARK DATE for the cruise overall.
+                       --Note: no statements ever went this far in the CASE statement for 2023, so it is just a fallback.
+                      (SELECT min(embark_date) FROM norpac.ols_vessel_plant
+                        WHERE cruise = a.cruise) 
+                      )  
+         END           
+             ) AS first_violation_date
+         ,	a.number_violations
+         ,	a.units  
+         ,  a.statement_type
+         ,  a.case_status
+         ,  a.agent
+         ,  a.case_number     
+         ,  a.enforcement_comments
+         ,	CASE WHEN a.permit = 0 OR a.permit is null 
+                 THEN 'No Permit'
+                 ELSE v.name
+             END AS vessel_plant
+         ,  CASE WHEN a.permit = 0 OR a.permit is null 
+                 THEN 'N'
+                 ELSE decode(norpac.ole_statement_factors_pkg.wasCruiseAssndToVssPlnt_TF(
+                                             in_cruise => a.cruise, 
+                                             in_permit => a.permit),
+                             'T', 'Y', 'F', 'N')               
+             END AS was_assigned_to_permit_flag           
+         ,	a.cruise AS cruise
+         ,	to_number(a.permit) AS permit
+         ,	(SELECT comments FROM norpac.ole_obs_statement WHERE ole_obs_statement_seq = a.ole_obs_statement_seq) AS statement_body
+         ,  a.old_ole_category  
+         ,  norpac.ole_statement_factors_pkg.getManualYearForCruise(a.cruise) AS manual_year     
+         ,  a.witness_flag
+         ,  a.victim_name
+    FROM stmts_base a
+    LEFT JOIN norpac.atl_vessplant_v v          ON v.permit = a.permit
+    LEFT JOIN norpac.OLS_OBSERVER_CRUISE ocr    ON ocr.cruise = a.cruise
+    LEFT JOIN norpac.OLS_OBSERVER_CONTRACT oco  ON oco.contract_number = ocr.contract_number
+    LEFT JOIN norpac.OLS_DEBRIEFING_SCHEDULE ds ON ds.cruise = ocr.cruise
+   WHERE trunc(norpac.OLE_STATEMENT_PKG.get_first_violation_date(a.ole_obs_statement_seq)) BETWEEN 
+               to_date('", first_date, "', 'DD-MON-RR') AND
+               to_date('", last_date,  "', 'DD-MON-RR')
+           --    to_date(:in_first_date, 'DD-MON-RR') AND
+           --    to_date(:in_last_date,  'DD-MON-RR')
+     AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
+     AND oco.hake_flag = 'N'                  --eliminate HAKE cruises
+   ")) %>%
   mutate(OLE_SYSTEM = 'NEW',
          FIRST_VIOL_YEAR = year(FIRST_VIOLATION_DATE)
-         )
+  )
 
 
 
@@ -312,13 +317,13 @@ assignments_dates_cr_perm <-
                 JOIN TABLE(norpac.ole_statement_factors_pkg.get_deployed_dates_list_vp_seq(vp.vessel_plant_seq))  dl
                   ON vp.vessel_plant_seq = dl.vessel_plant_seq  
                WHERE vp.cruise > ", first_cruise,
-                           " AND ols_cruise.isFMAcruiseTF(vp.cruise) = 'T')  --eliminate HAKE cruises.
+           " AND ols_cruise.isFMAcruiseTF(vp.cruise) = 'T')  --eliminate HAKE cruises.
               WHERE DEPLOYED_DATE BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR') 
          ")) %>%
   mutate(OLE_SYSTEM = if_else(CALENDAR_YEAR == 2023 & 
-                              DEBRIEF_START_DATE >= as.POSIXct(x = '2023/07/27', format = "%Y/%m/%d"),
-                               'NEW',  'OLD')
-           )
+                                DEBRIEF_START_DATE >= as.POSIXct(x = '2023/07/27', format = "%Y/%m/%d"),
+                              'NEW',  'OLD')
+  )
 
 
 ################
@@ -333,9 +338,6 @@ df_fishery_dates <-
                  AND vp.permit = fd.permit 
                WHERE vp.cruise > ", first_cruise, sep = ''))
 
-
-# ADd new code
- test <- 'TEST'
 
 ###################
 # hauls
@@ -458,12 +460,12 @@ project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhS
 
 
 save(list = c("statements_raw_old", "statements_raw_new", 
-             "manual_year_cruises", "assignments_dates_cr_perm", 
-             "hauls",               "df_fishery_dates",
-             "df_em_efp_offloads",  "df_offloads",
-             "first_cruise",        "first_date",
-             "last_date",           "adp_yr", 
-             "Rdata_files_path",    "project_dribble"), 
+              "manual_year_cruises", "assignments_dates_cr_perm", 
+              "hauls",               "df_fishery_dates",
+              "df_em_efp_offloads",  "df_offloads",
+              "first_cruise",        "first_date",
+              "last_date",           "adp_yr", 
+              "Rdata_files_path",    "project_dribble"), 
      file = paste0(Rdata_files_path, 
                    "AR_1_Statements_data.Rdata"))
 

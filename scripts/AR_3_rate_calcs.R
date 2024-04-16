@@ -49,25 +49,25 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 ## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 ################
 
-  # project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
-  # 
-  # data_dribble <- 
-  #   drive_ls(project_dribble) %>%
-  #   filter(name == "AR_2_rolling_join_output.Rdata")
-  # 
-  # # Download the file from g-drive into local
-  # drive_download(
-  #   data_dribble,
-  #   path = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
-  #   overwrite = T
-  # )
+# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# 
+# data_dribble <- 
+#   drive_ls(project_dribble) %>%
+#   filter(name == "AR_2_rolling_join_output.Rdata")
+# 
+# # Download the file from g-drive into local
+# drive_download(
+#   data_dribble,
+#   path = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
+#   overwrite = T
+# )
 
 ################
 ## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 
 
 
-load(file = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"))
+load(file = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"))
 
 
 
@@ -174,11 +174,14 @@ rate_all_groupings_subcat_for_plots <-
   )
 
 # output this for OLE to examine.  It includes confidential data so not for public use.
+#UPDATE: filtering out CONFI_FLAG rows
 write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_", 
                         adp_yr, 
                         "rate_all_groupings_subcat_for_plots"
 ),
-x    = rate_all_groupings_subcat_for_plots)
+x    = rate_all_groupings_subcat_for_plots %>%
+  filter (CONFI_FLAG == 0 | is.na(CONFI_FLAG))
+)
 
 
 
@@ -219,6 +222,38 @@ rate_all_groupings_ole_category <-
 
 
 
+######################
+# Third rate: by NEW_OLE_CATEGORY, for each factor combination.
+
+rate_all_groupings_new_ole_category <- 
+  depl_days_summ_by_factor %>%
+  # Next, join raw_statements to the dep_days DF on cruise/permit, and sum to get the WEIGHTED number_of_incidents and number_of_statements. This is the NUMERATOR of the rates.
+  left_join(cnt_dep_days_all_groupings %>% # LEFT join ensures all days where NO statements were written are counted!! Critical to accurate rate calc.
+              inner_join(statements_combined %>% 
+                           mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+                                  PERMIT = as.numeric(PERMIT)) # need to make column names match
+              ) %>%  
+              group_by (CALENDAR_YEAR, OLE_SYSTEM, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, NMFS_REGION, NEW_OLE_CATEGORY) %>%
+              summarize(TOTAL_STATEMENTS = sum(if_else(is.na(AFFIDAVIT_ID), 0, FACTOR_WEIGHT_MTHD_1)),
+                        TOTAL_INCIDENTS  = sum(if_else(is.na(AFFIDAVIT_ID), 0, NUMBER_VIOLATIONS*FACTOR_WEIGHT_MTHD_1)) ) %>%
+              ungroup() ) %>%
+  # last, calculate the rates.
+  mutate(CONFI_FLAG = ifelse(DISTINCT_OBSERVER_ASSIGNMENTS < 3, 1, 0), # for confidentiality, flag any factor combinations with < 3 cruise/permit assignments, these will be removed later.
+         AFFIS_PER_DAY         = TOTAL_STATEMENTS/TOTAL_DAYS,
+         INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/TOTAL_DAYS,
+         STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/TOTAL_DAYS)*1000,
+         INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/TOTAL_DAYS)*1000,
+         STATEMENTS_PER_90_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/TOTAL_DAYS)*90,
+         INCIDENTS_PER_90_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/TOTAL_DAYS)*90,
+         STATEMENTS_PER_OBSERVER     = TOTAL_STATEMENTS/TOTAL_OBSERVERS,
+         INCIDENTS_PER_OBSERVER      = TOTAL_INCIDENTS/TOTAL_OBSERVERS,
+         STATEMENTS_PER_CRUISE       = TOTAL_STATEMENTS/TOTAL_CRUISES,
+         INCIDENTS_PER_CRUISE        = TOTAL_INCIDENTS/TOTAL_CRUISES,
+         STATEMENTS_PER_ASSIGNMENT   = TOTAL_STATEMENTS/DISTINCT_OBSERVER_ASSIGNMENTS,
+         INCIDENTS_PER_ASSIGNMENT    = TOTAL_INCIDENTS/DISTINCT_OBSERVER_ASSIGNMENTS
+  )
+
+
 
 
 
@@ -234,13 +269,13 @@ rate_all_groupings_ole_category <-
 # Note that all inner_joins for rates will IGNORE this row so it is not needed for the other rates.
 depl_days_summ_all <-
   rbind( assignments_dates_cr_perm %>%
-            group_by(CALENDAR_YEAR, 
-                     OLE_SYSTEM    = if_else(CALENDAR_YEAR == adp_yr, 'COMBINED', 'OLD')
-                     ) %>%
-            summarize(DAYS         = n_distinct(CRUISE, PERMIT, DEPLOYED_DATE),
-                      ASSIGNMENTS  = n_distinct(CRUISE, PERMIT),
-                      CRUISES      = n_distinct(CRUISE),
-                      OBSERVERS    = n_distinct(OBSERVER_SEQ)) %>%
+           group_by(CALENDAR_YEAR, 
+                    OLE_SYSTEM    = if_else(CALENDAR_YEAR == adp_yr, 'COMBINED', 'OLD')
+           ) %>%
+           summarize(DAYS         = n_distinct(CRUISE, PERMIT, DEPLOYED_DATE),
+                     ASSIGNMENTS  = n_distinct(CRUISE, PERMIT),
+                     CRUISES      = n_distinct(CRUISE),
+                     OBSERVERS    = n_distinct(OBSERVER_SEQ)) %>%
            ungroup(),
          assignments_dates_cr_perm %>%
            group_by(CALENDAR_YEAR, OLE_SYSTEM ) %>%
@@ -248,34 +283,34 @@ depl_days_summ_all <-
                      ASSIGNMENTS = n_distinct(CRUISE, PERMIT),
                      CRUISES     = n_distinct(CRUISE),
                      OBSERVERS   = n_distinct(OBSERVER_SEQ)
-                     ) %>%
+           ) %>%
            ungroup()
-          ) %>%
-   distinct()
- 
+  ) %>%
+  distinct()
+
 # calculate rate by subcat for NO GROUPINGS
 rate_by_subcat <-
   statements_combined %>%
-      group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_SYSTEM,
-               OLD_OLE_CATEGORY, STATEMENT_TYPE) %>%
-      summarize(TOTAL_INCIDENTS  = sum(if_else(is.na(NUMBER_VIOLATIONS) | NUMBER_VIOLATIONS == 0, 1, NUMBER_VIOLATIONS)),
-                TOTAL_STATEMENTS = n()
-                ) %>%
-      ungroup() %>%
-      inner_join(depl_days_summ_all) %>%
-      mutate(AFFIS_PER_DAY         = TOTAL_STATEMENTS/DAYS,
-             INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/DAYS,
-             STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*1000,
-             INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*1000,
-             STATEMENTS_PER_90_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*90,
-             INCIDENTS_PER_90_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*90,
-             STATEMENTS_PER_OBSERVER     = TOTAL_STATEMENTS/OBSERVERS,
-             INCIDENTS_PER_OBSERVER      = TOTAL_INCIDENTS/OBSERVERS,
-             STATEMENTS_PER_CRUISE       = TOTAL_STATEMENTS/CRUISES,
-             INCIDENTS_PER_CRUISE        = TOTAL_INCIDENTS/CRUISES,
-             STATEMENTS_PER_ASSIGNMENT   = TOTAL_STATEMENTS/ASSIGNMENTS,
-             INCIDENTS_PER_ASSIGNMENT    = TOTAL_INCIDENTS/ASSIGNMENTS
-            )
+  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_SYSTEM,
+           OLD_OLE_CATEGORY, STATEMENT_TYPE) %>%
+  summarize(TOTAL_INCIDENTS  = sum(if_else(is.na(NUMBER_VIOLATIONS) | NUMBER_VIOLATIONS == 0, 1, NUMBER_VIOLATIONS)),
+            TOTAL_STATEMENTS = n()
+  ) %>%
+  ungroup() %>%
+  inner_join(depl_days_summ_all) %>%
+  mutate(AFFIS_PER_DAY         = TOTAL_STATEMENTS/DAYS,
+         INCIDENTS_PER_DAY     = TOTAL_INCIDENTS/DAYS,
+         STATEMENTS_PER_1000_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*1000,
+         INCIDENTS_PER_1000_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*1000,
+         STATEMENTS_PER_90_DEPLOYED_DAYS  = (TOTAL_STATEMENTS/DAYS)*90,
+         INCIDENTS_PER_90_DEPLOYED_DAYS   = (TOTAL_INCIDENTS/DAYS)*90,
+         STATEMENTS_PER_OBSERVER     = TOTAL_STATEMENTS/OBSERVERS,
+         INCIDENTS_PER_OBSERVER      = TOTAL_INCIDENTS/OBSERVERS,
+         STATEMENTS_PER_CRUISE       = TOTAL_STATEMENTS/CRUISES,
+         INCIDENTS_PER_CRUISE        = TOTAL_INCIDENTS/CRUISES,
+         STATEMENTS_PER_ASSIGNMENT   = TOTAL_STATEMENTS/ASSIGNMENTS,
+         INCIDENTS_PER_ASSIGNMENT    = TOTAL_INCIDENTS/ASSIGNMENTS
+  )
 
 
 # munge it for cleaner plotting. 
@@ -287,8 +322,8 @@ rate_by_subcat_priority <-
   filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
                                  'OLE PRIORITY: INTER-PERSONAL')
          | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
-                                                                       'MARINE CASUALTY') 
-         ) %>%
+                                                                      'MARINE CASUALTY') 
+  ) %>%
   mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
          OLD_OLE_CATEGORY = gsub("OLE PRIORITY: ","", OLD_OLE_CATEGORY),
          OLD_OLE_CATEGORY = paste0(OLD_OLE_CATEGORY, ' categories'),
@@ -375,53 +410,53 @@ rate_by_subcat_cruise <-
           group_by(CRUISE, 
                    CALENDAR_YEAR, 
                    OLE_SYSTEM
-                   )  %>%
+          )  %>%
           summarize(DEPLOYED_DAYS = n_distinct(DEPLOYED_DATE),
                     ASSIGNMENTS   = n_distinct(PERMIT)
-                    ) %>%
+          ) %>%
           ungroup(),
         statements_combined %>%
           distinct(CALENDAR_YEAR = FIRST_VIOL_YEAR,
                    OLE_SYSTEM,
                    OLD_OLE_CATEGORY, 
                    STATEMENT_TYPE) 
-      , all = TRUE ) %>%
-    left_join(statements_combined %>%
-                group_by(CRUISE, 
-                         CALENDAR_YEAR = FIRST_VIOL_YEAR,
-                         OLE_SYSTEM,
-                         OLD_OLE_CATEGORY, 
-                         STATEMENT_TYPE
-                         ) %>%
-                summarize(STATEMENTS  = n_distinct(AFFIDAVIT_ID),
-                          OCCURRENCES = sum(NUMBER_VIOLATIONS)
-                          ) %>%
-                ungroup()
-               ) %>%
-     mutate(STATEMENTS                   = if_else(is.na(STATEMENTS),  0, STATEMENTS),  
-            OCCURRENCES                  = if_else(is.na(OCCURRENCES), 0, OCCURRENCES), 
-            STATEMENTS_PER_DEPLOYED_DAY  = STATEMENTS/DEPLOYED_DAYS, 
-            STATEMENTS_PER_1000_DEPLOYED_DAYS  = (STATEMENTS/DEPLOYED_DAYS)*1000,
-            STATEMENTS_PER_ASSIGNMENT    = STATEMENTS/ASSIGNMENTS,
-            OCCURRENCES_PER_DEPLOYED_DAY = OCCURRENCES/DEPLOYED_DAYS,
-            OCCURRENCES_PER_1000_DEPLOYED_DAYS  = (OCCURRENCES/DEPLOYED_DAYS)*1000,
-            OCCURRENCES_PER_ASSIGNMENT   = OCCURRENCES/ASSIGNMENTS) %>%
-     select(CALENDAR_YEAR,
-            OLE_SYSTEM,
-            OLD_OLE_CATEGORY, 
-            STATEMENT_TYPE,
-            CRUISE,
-            DEPLOYED_DAYS,
-            ASSIGNMENTS,
-            STATEMENTS,
-            OCCURRENCES,
-            STATEMENTS,  
-            OCCURRENCES, 
-            STATEMENTS_PER_DEPLOYED_DAY,
-            STATEMENTS_PER_ASSIGNMENT,
-            OCCURRENCES_PER_DEPLOYED_DAY,
-            OCCURRENCES_PER_ASSIGNMENT)
- 
+        , all = TRUE ) %>%
+  left_join(statements_combined %>%
+              group_by(CRUISE, 
+                       CALENDAR_YEAR = FIRST_VIOL_YEAR,
+                       OLE_SYSTEM,
+                       OLD_OLE_CATEGORY, 
+                       STATEMENT_TYPE
+              ) %>%
+              summarize(STATEMENTS  = n_distinct(AFFIDAVIT_ID),
+                        OCCURRENCES = sum(NUMBER_VIOLATIONS)
+              ) %>%
+              ungroup()
+  ) %>%
+  mutate(STATEMENTS                   = if_else(is.na(STATEMENTS),  0, STATEMENTS),  
+         OCCURRENCES                  = if_else(is.na(OCCURRENCES), 0, OCCURRENCES), 
+         STATEMENTS_PER_DEPLOYED_DAY  = STATEMENTS/DEPLOYED_DAYS, 
+         STATEMENTS_PER_1000_DEPLOYED_DAYS  = (STATEMENTS/DEPLOYED_DAYS)*1000,
+         STATEMENTS_PER_ASSIGNMENT    = STATEMENTS/ASSIGNMENTS,
+         OCCURRENCES_PER_DEPLOYED_DAY = OCCURRENCES/DEPLOYED_DAYS,
+         OCCURRENCES_PER_1000_DEPLOYED_DAYS  = (OCCURRENCES/DEPLOYED_DAYS)*1000,
+         OCCURRENCES_PER_ASSIGNMENT   = OCCURRENCES/ASSIGNMENTS) %>%
+  select(CALENDAR_YEAR,
+         OLE_SYSTEM,
+         OLD_OLE_CATEGORY, 
+         STATEMENT_TYPE,
+         CRUISE,
+         DEPLOYED_DAYS,
+         ASSIGNMENTS,
+         STATEMENTS,
+         OCCURRENCES,
+         STATEMENTS,  
+         OCCURRENCES, 
+         STATEMENTS_PER_DEPLOYED_DAY,
+         STATEMENTS_PER_ASSIGNMENT,
+         OCCURRENCES_PER_DEPLOYED_DAY,
+         OCCURRENCES_PER_ASSIGNMENT)
+
 
 # munge it for cleaner plotting. Combine subcats that are the SAME for old and new systems.
 rate_by_subcat_cruise_priority <-
@@ -429,7 +464,7 @@ rate_by_subcat_cruise_priority <-
   filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
                                  'OLE PRIORITY: INTER-PERSONAL',
                                  'COAST GUARD')
-         ) %>%
+  ) %>%
   mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
          OLD_OLE_CATEGORY = gsub("OLE PRIORITY: ","", OLD_OLE_CATEGORY),
          OLD_OLE_CATEGORY = paste0(OLD_OLE_CATEGORY, ' categories'),
@@ -456,6 +491,34 @@ rate_by_subcat_cruise_priority <-
 
 
 
+occur_per_stmt <-
+  statements_combined %>%
+  mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Harassment - Sexual',
+                                    'SEXUAL HARASSMENT',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Harassment-Assault',
+                                    'ASSAULT',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-NMFS',
+                                    'SAFETY',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Interference/Sample Biasing',
+                                    'SAMPLING INTERFERENCE',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = if_else(STATEMENT_TYPE == 'Safety-USCG-Marine Casualty',
+                                    'MARINE CASUALTY',
+                                    STATEMENT_TYPE),
+         STATEMENT_TYPE   = toupper(STATEMENT_TYPE)
+  ) %>%
+  group_by(FIRST_VIOL_YEAR, OLE_SYSTEM, OLD_OLE_CATEGORY, STATEMENT_TYPE) %>%
+  summarize(OCCUR_PER_STMT = mean(NUMBER_VIOLATIONS)
+  ) # %>%
+# filter(STATEMENT_TYPE %in% c('MARINE CASUALTY', 'SAFETY', 'ASSAULT','SEXUAL HARASSMENT'))  
+
+
+
+
 
 ##################
 # Save Output -------------------------------------------------------------
@@ -468,7 +531,8 @@ save(list = ls(),
 googledrive::drive_upload(
   media     = paste0(Rdata_files_path, "AR_3_rate_output.rdata"),
   name      = "AR_3_rate_output.rdata",
-  path      = project_dribble
+  path      = project_dribble,
+  overwrite = T
 ) 
 
 
