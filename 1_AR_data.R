@@ -294,11 +294,8 @@ EM.gear <-
   select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
   distinct() %>% 
   arrange(TRIP_NUMBER) %>% 
-  mutate(AGENCY_GEAR_CODE = case_when(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7 ~ "HAL",
-                                      GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11 | GEAR_TYPE_ID == 16 |
-                                        GEAR_TYPE_ID == 17 | GEAR_TYPE_ID == 18 | GEAR_TYPE_ID == 19 ~ "POT")) %>%
-  #mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7, "HAL", "NA"),
-  #      AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11, "POT", AGENCY_GEAR_CODE)) %>%
+  mutate(AGENCY_GEAR_CODE = case_when(GEAR_TYPE_ID %in% c(6, 7) ~ "HAL",
+                                      GEAR_TYPE_ID %in% c(10, 11, 16, 17, 18, 19) ~ "POT")) %>%
   select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
   distinct()
 
@@ -313,22 +310,25 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
-single_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
-                   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
-                   arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
-                   group_by(VESSEL_ID) %>% 
-                   filter(uniqueN(GEAR_TYPE_CODE) == 1) %>% 
-                   mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 8, "HAL", NA)) %>% 
-                   mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 6, "POT", AGENCY_GEAR_CODE)) %>% 
-                   distinct(VESSEL_ID, AGENCY_GEAR_CODE)
+#' *2023: one vessel has trawl gear declared, but no trawl codes in EM.gear - this trip seems to be coming from EM.data*
+single_gear_nas <- 
+  filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
+  distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
+  arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
+  group_by(VESSEL_ID) %>% 
+  filter(uniqueN(GEAR_TYPE_CODE) == 1) %>% 
+  mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 8, "HAL", NA)) %>% 
+  mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 6, "POT", AGENCY_GEAR_CODE)) %>% 
+  distinct(VESSEL_ID, AGENCY_GEAR_CODE, STRATUM_DESCRIPTION)
 
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of more than one gear type in ODDS
-multiple_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
-                     distinct(VESSEL_ID, GEAR_TYPE_CODE) %>% 
-                     arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
-                     group_by(VESSEL_ID) %>% 
-                     filter(uniqueN(GEAR_TYPE_CODE) > 1)
+multiple_gear_nas <- 
+  filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
+  distinct(VESSEL_ID, GEAR_TYPE_CODE) %>% 
+  arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
+  group_by(VESSEL_ID) %>% 
+  filter(uniqueN(GEAR_TYPE_CODE) > 1)
 
 # Compare ODDS to EM.data for VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE
 # to determine the most likely AGENCY_GEAR_CODE
@@ -341,14 +341,15 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
   arrange(VESSEL_ID, TRIP_START_DATE_TIME)
 
 # Fix NAs in AGENCY_GEAR_CODE for EM.data
-EM.data <- EM.data %>% 
-           # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
-           mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
-           mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE=="POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
-           # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
-           mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER  == "20_POLARSTAR03.02", "HAL", AGENCY_GEAR_CODE))
+EM.data <- 
+  EM.data %>% 
+  # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
+  mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
+  mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
+  # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
+  mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER  == "20_POLARSTAR03.02", "HAL", AGENCY_GEAR_CODE))
 
-# The following query will provide a list of em selectecd trips and if they have been reviewed or not
+# The following query will provide a list of em selected trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
 # This query will also show the declared gear type and if reviewed, will show the em_reviewed_gear_type_code
 # This query will also show when the HD was received by PSFMC and when the EM reviewed data was exported and sent to AFSC
