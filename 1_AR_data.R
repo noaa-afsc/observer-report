@@ -373,6 +373,7 @@ EM.data <-
 
 # Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
 
+#'*==========BELOW QUERY NOT WORKING (MAYBE I DON"T HAVE ACCESS TO THE SCHEMA?)*
 script <- paste(
   "select all_data.*, em_rev_gear.em_gear_code, 
   hd_data.date_hd_received_by_psmfc,
@@ -427,7 +428,7 @@ script <- paste(
   
   left join
   
-  ----get the em reviewed trip number for those em trips that have been reviwed and where AFSC has the data
+  ----get the EM reviewed trip number for those em trips that have been reviwed and where AFSC has the data
   
   (select a.trip_plan_log_seq, a.trip_number 
   from em_pac_review.em_trip a
@@ -459,7 +460,7 @@ script <- paste(
   
   left join 
   
-  --- the below query will get the when the HD was received by psmfc, when it was exported to AFSC and the em trip start date and time and trip end date and time
+  --- the below query will get the when the HD was received by PSMFC, when it was exported to AFSC and the em trip start date and time and trip end date and time
   
   (select a.trip_number, 
   b.date_received_by_psmfc as date_hd_received_by_psmfc,
@@ -479,6 +480,8 @@ script <- paste(
   
   on hd_data.trip_number = all_data.em_reviewed_trip_number"
 )
+
+#'*============================================================================*
 
 EM.review <- dbGetQuery(channel_afsc, script)
 
