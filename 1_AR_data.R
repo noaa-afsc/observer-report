@@ -290,13 +290,17 @@ script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
 EM.gear <- dbGetQuery(channel_afsc, script)
 
 #Select data for this report year and recode gear type to those used by CAS
-EM.gear <- select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
-           distinct() %>% 
-           arrange(TRIP_NUMBER) %>% 
-           mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7, "HAL", "NA"),
-                  AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11, "POT", AGENCY_GEAR_CODE)) %>%
-           select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
-           distinct()
+EM.gear <- 
+  select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
+  distinct() %>% 
+  arrange(TRIP_NUMBER) %>% 
+  mutate(AGENCY_GEAR_CODE = case_when(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7 ~ "HAL",
+                                      GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11 | GEAR_TYPE_ID == 16 |
+                                        GEAR_TYPE_ID == 17 | GEAR_TYPE_ID == 18 | GEAR_TYPE_ID == 19 ~ "POT")) %>%
+  #mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7, "HAL", "NA"),
+  #      AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11, "POT", AGENCY_GEAR_CODE)) %>%
+  select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
+  distinct()
 
 # Join gear types to EM data
 EM.data <- left_join(EM.data, EM.gear, by = "TRIP_NUMBER")
