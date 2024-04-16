@@ -93,19 +93,33 @@ predicted <- Nnd_tbl[
 
 # * Valhalla ----
 
-#' Initial upload of Valhalla to the Shared Gdrive. Originally obtained from:
+#' Initial upload of [2022] Valhalla to the Shared Gdrive. Originally obtained from the 2024 ADP data folder, keeping 
+#' 2022 only (run date of 2023-04-10 15:15:15 PDT)
+#' [https://drive.google.com/drive/folders/1em6NDOvfPIkgT7FlZkdUYh1S-_z7v2PE]. 
+#' *NOTE* Downloaded version 6 (instead of the current version, which returns an error during loading!). Renamed to
+if(F){
+  valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
+  valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
+  valhalla.2022[, LANDING_DATE := as.Date(LANDING_DATE)]
+  save(valhalla.2022, file = "source_data/2023-04-10cas_valhalla.Rdata")
+  gdrive_upload("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+}
+gdrive_download("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+(load("source_data/2023-04-10cas_valhalla.Rdata"))
+
+#' Initial upload of [2023] Valhalla to the Shared Gdrive. Originally obtained from:
 #' [https://drive.google.com/drive/u/0/folders/1JK0EJDBByn7GyfDt2q96ZBjvjYuhezOF]
 if(F) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 (load("source_data/2024-04-15cas_valhalla.Rdata"))
 
-#' Create a copy of valhalla named 'work.data' that will be manipulated
-work.data <- copy(valhalla)
-rm(valhalla)
+#' Create a copy of Valhalla named 'work.data' that will be manipulated
+work.data <- rbind(valhalla, valhalla.2022)
+rm(valhalla, valhalla.2022); gc()
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
-table(work.data$COVERAGE_TYPE, work.data$STRATA, work.data$PROCESSING_SECTOR, useNA='always')
+table(work.data$COVERAGE_TYPE, work.data$STRATA, work.data$PROCESSING_SECTOR, useNA = 'always')
 
 # Data check for observed vessels under 40 ft., should be zero rows
 work.data %>% 
@@ -118,15 +132,15 @@ arrange(VESSEL_ID)
 work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
 
 # Check for TRIP_IDs that are repeated across ADP years
-if(nrow(select(work.data, TRIP_ID, ADP) %>% 
-        distinct() %>% 
-        group_by(TRIP_ID) %>% 
-        filter(n()>1) %>% 
-        data.frame()) > 0
-){
-  # If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
-  work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")
+if( nrow(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1]) ){
+  message("Some TRIP_IDs are repated across ADP years")
+  print(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1])
 }
+#' *2023 AR* Addressing trips that spanned years
+unique(work.data[TRIP_ID == 1593889, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
+unique(work.data[TRIP_ID == 1615161, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
+# Will assign `ADP` to 2023 for these trips
+work.data[TRIP_ID %in% c(1593889, 1615161), ADP := 2023]
 
 # * Salmon dockside monitoring ----
 
