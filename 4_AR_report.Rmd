@@ -6,6 +6,8 @@ output:
   word_document:
     reference_docx: docs/word-styles-reference-01.docx
   pdf_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
@@ -16,34 +18,15 @@ output:
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-# Load data
-load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
-
 # Load packages and functions 
 source("3_helper.R")
 
-# Saving original partial object from work.data for strata will different selection rates at different time periods
-partial_og <- partial 
-
-# Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
-partial <- partial[1:6,]
-
-# Create a version of the partial coverage programmed rate table that includes all time periods    
-partial_time <- partial %>% 
-                filter(Effective_Date == min(Effective_Date)) %>% 
-                mutate(Effective_Date = as.Date(Effective_Date), Expire_After = as.Date(c("2020-12-31", "2020-12-31", "2020-12-31", "2020-03-25", "2020-03-25", "2020-03-25"))) %>% 
-                select(Effective_Date, Expire_After, STRATA, Rate, descriptions, formatted_strat, txt)
-
-partial_time <- rbind(partial_time,
-                      partial_time %>% 
-                      filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
-                      mutate(Effective_Date = as.Date("2020-03-26"), Expire_After = as.Date("2020-06-30")),
-                      partial_time %>% 
-                      filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
-                      mutate(Effective_Date = as.Date("2020-07-01"), Expire_After = as.Date("2020-12-31")))
+# Load data
+gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
+load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
 # Avoid scientific notation
-options(scipen=10000)
+options(scipen = 10000)
 
 # Avoid dplyr summarise warnings
 options(dplyr.summarise.inform = FALSE)
@@ -54,8 +37,8 @@ annual.report <- TRUE
 tech.memo     <- FALSE
 
 if(annual.report){
-  fig_nums <- captioner(prefix = "Figure 3-", auto_space=FALSE)  # In Annual report, deployment analyses make up Chapter 3. 
-  tbl_nums <- captioner(prefix = "Table 3-", auto_space=FALSE)
+  fig_nums <- captioner(prefix = "Figure 3-", auto_space = FALSE)  # In Annual report, deployment analyses make up Chapter 3. 
+  tbl_nums <- captioner(prefix = "Table 3-", auto_space = FALSE)
 }
 ```
 
