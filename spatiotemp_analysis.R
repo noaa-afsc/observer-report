@@ -5,8 +5,14 @@ library(ggh4x)  # facet_grid2 has cleaner facet labels while allowing for indepe
 library(sf)          # for manipulating simpler feature objects and mapping
 library(sfheaders)   # for sf_remove_holes?  also sf_bbox() to calculate the bbox from the geometry, like st_bbox?
 
-
+# Assign the address of Shared Gdrive operations for this project
 project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
+
+# Download 2_AR_data.Rdata
+gdrive_download("2_AR_data.Rdata", project_folder)
+(load("2_AR_data.Rdata"))
+# Remove everything except for what is needed
+rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", "shp_nmfs")))
 
 # Load Data and Functions ----------------------------------------------------------------------------------------------
 
@@ -15,8 +21,6 @@ project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
 #' already had new stratum definitions applied. Only has 2022 data, not 2023
 #(load("source_data/data_prep_outputs.Rdata"))#
 
-#' Load spatial data
-(load("source_data/ak_shp.rdata"))
 # Make FMP-specific polygons
 shp_fmp <- rbind(
   shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
@@ -24,7 +28,7 @@ shp_fmp <- rbind(
   shp_nmfs %>% filter(SubArea == "GOA")  %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
     mutate(FMP = "BSAI")
 ) %>% st_set_crs(st_crs(3467))
-#' Make lower-res versions that are faster to draw, espectially repeatedly for faceted figures
+#' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
 shp_land <- shp_land %>% st_set_crs(st_crs(3467))
 ak_low_res <- shp_land %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_land)) %>% select(geometry) %>%
   st_set_crs(st_crs(3467))
@@ -41,25 +45,6 @@ stat_area_sf <- st_read(
   dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = T) %>%
   select(STAT_AREA) %>%
   st_transform(crs = 3467)
-
-#----------------------------------------------------------------------------------------------------------------------#
-#' TODO *Loading 2022 and 2023 separately and combining until 1_AR_data.R is finalized
-#----------------------------------------------------------------------------------------------------------------------#
-
-# Load work.data from the 2024 Final ADP
-# (load("source_data/2024_Final_ADP_data_ver6.rdata"))   # 2022 and 2023, but both are out-dated
-(load("source_data/2024-02-20cas_valhalla.RData"))     # 2023 only (not yet complete)
-val_2023 <- copy(valhalla)
-(load("source_data/2024-03-14cas_valhalla.RData"))     # 2022 only (complete)
-val_2022 <- copy(valhalla)
-intersect(val_2022$TRIP_ID, val_2023$TRIP_ID)   # Some trip_ids are duplicated between years
-# Looks like the trips started in 2022 (all are full coverage CP trips and won't affect the PC analyses)
-unique(val_2022[TRIP_ID %in% c(1615161, 1593889, 1728532), .(ADP, TRIP_ID, COVERAGE_TYPE, STRATA, PROCESSING_SECTOR, TRIP_TARGET_DATE, LANDING_DATE)])
-unique(val_2023[TRIP_ID %in% c(1615161, 1593889, 1728532), .(ADP, TRIP_ID, COVERAGE_TYPE, STRATA, PROCESSING_SECTOR, TRIP_TARGET_DATE, LANDING_DATE)])
-# Combine both years
-valhalla <- rbind(val_2022, val_2023)
-rm(val_2022, val_2023)
-
 
 #' * OLD STUFF * 
 if(F){
@@ -1878,7 +1863,8 @@ plot_interspersion_density <- function(den, real_interspersion, dmn_N){
 ## Data Prep ----
 
 # Wrangle the Valhalla data set for spatiotemporal analyses
-pc_effort_st <- spatiotemp_data_prep(valhalla)
+pc_effort_st <- spatiotemp_data_prep(work.data)
+
 # Rename EM_TRW to EM_TRW_EFP
 pc_effort_st[STRATA == "EM_TRW", STRATA := "EM_TRW_EFP"]
 #' FIXME *Some ZERO TRIPS were MONITORED IN 2023 - Phil is working on removing these*
