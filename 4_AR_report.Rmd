@@ -6,6 +6,8 @@ output:
   word_document:
     reference_docx: docs/word-styles-reference-01.docx
   pdf_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
@@ -16,17 +18,13 @@ output:
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-# Load data
-load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
-
 # Load packages and functions 
 source("3_helper.R")
 
-# Saving original partial object from work.data for strata with different selection rates at different time periods
-partial_og <- partial 
+# Load data
+gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
+load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
-# Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
-partial <- partial[1:6,]
 
 # Avoid scientific notation
 options(scipen = 10000)
@@ -385,55 +383,6 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 ```
 
 ```{r budget_eval, include=FALSE}
-#' `------------ALL--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-#' TODO *MOVE THIS TO 1_AR_data.R*
-#' `work.data` will be in `2_AR_data.rdata`, created from `1_AR_data.R`
-
-source("functions/trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
-
-if(exists("td_mod")) rm(td_mod)
-
-#' Initialize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
-#' of the matching are automatically assigned to the `mod_dat` object in the global environment
-td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
-
-# Yearly totals
-mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
-# It appears some observers were assigned to non-observer strata
-mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
-
-# Scraping all the non-observer strata matches to their observed strata counterparts
-mod_dat_copy <- copy(mod_dat)
-mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
-][STRATA == "ZERO", STRATA := "OB HAL"]
-
-# Stratum-specific totals
-obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
-
-# Format work.data
-work.data <- 
-  work.data %>% 
-  mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
-         LANDING_DATE = as.Date(LANDING_DATE),
-         STRATA = case_match(
-           STRATA,
-           c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
-           c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
-           c("FULL", "ZERO") ~ STRATA,
-           .default = "Undefined"),
-         ADP = as.factor(ADP)
-         )
-
-work.data %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(work.data$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
-
-# Free up workspace
-rm(work.data.2022, work.data.2023)
-#'*----------------------------------------------------------------------------*
 
 #' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata in 2020.*
 #' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
