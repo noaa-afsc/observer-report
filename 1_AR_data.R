@@ -21,48 +21,86 @@ channel_akro  <- channel.fxn(location, db = "AKRO") # Hit cancel unless sitting 
 # Assign the address of the Annual Report Project in the Shared Gdrive
 AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter")
 
-# Upload Valhalla to the Shared Gdrive
-if(F) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-# Download Valhalla 
-gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+# * Observer costs ----
 
-
-#' *OLD - REMOVE THESE?*
+#' Get actual costs from spreadsheet provided by FMA (make sure spreadsheet is up-to-date!). 
+#' Initially, download the following spreadsheet as a `.csv` format file to the `source_data/` folder. 
+#' Upload an `.rdata` copy to the [FMA shared Gdrive].
+#' [https://docs.google.com/spreadsheets/d/1KGmZNo7uVuB6FCVRZd4UV2PROa4Jl7-J/edit?usp=sharing&ouid=112928343270640187258&rtpof=true&sd=true]
 if(F) {
-  # To make this script run, ensure that the following files are within a folder titled 'data' within the main repo:
-  # effort_prediction.rdata (created in the most recent final ADP project)
-  # fin_a2020_i5000_s12345.rds (created in the most recent final ADP project)
-  # These files can be found here: https://drive.google.com/drive/u/0/folders/1Mf628Jvb_TaeL2zN2wdSbiZ8h62YbS3R
-  
-  # * ADP inputs ----
-  
-  # Loads two objects: efrt and efrt_adpyear
-  # efrt contains 3 years of effort data used for the ADP
-  # efrt_adpyear contains the effort predictions for each domain and the 1 year of trips used to simulate effort
-  load("data/effort_prediction.rdata")
-  
-  # Remove the efrt object
-  rm(efrt)
-  
-  
-  
+  FMA_Days_Paid <- read.csv("source_data/FMA Days Paid.xlsx - Days_Paid.csv")
+  save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
+  gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
 }
+#' [ver1] *was used for the 2023 Annual Report*
+gdrive_download("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
+load("source_data/FMA_Days_Paid.rdata")
 
-# * ADP outputs ----
+#' *2023 AR* create separate days paid 
+days_paid.2022 <- filter(FMA_Days_Paid, Calendar == 2022)
+days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
 
-# Output from the days paid function, which sets the budget
-load("data/dp_res.rdata")
+# * ADP outputs (NEW) ----
 
-# Output from simulations
-adp_out <- readRDS("data/fin_a2020_i5000_s12345.rds")
+# Assign the address of the ADP outputs in the Shared Gdrive
+adp_output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
+
+# Initially:
+#' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
+#' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
+#' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
+if(F) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+
+#' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
+#' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
+#' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
+if(F) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
+
+# 2022 Final ADP Outputs
+gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+final_adp_vec.2022 <- (load("source_data/2022_Final_ADP_Output.rdata"))
+Nnd_tbl.2022 <- mutate(Nnd_tbl, YEAR = 2022)
+adj_tbl.2022 <- adj_tbl
+bud_scen_lst.2022 <- bud_scen_lst
+bud_tbl.2022 <- bud_tbl
+rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
+
+# 2023 Final ADP Outputs
+gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
+Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
+adj_tbl.2023 <- adj_tbl
+bud_scen_lst.2023 <- bud_scen_lst
+bud_tbl.2023 <- bud_tbl
+rm(list = c(final_adp_vec.2023, "final_adp_vec.2023"))
+
+# Format and calculate predicted days from ADP
+Nnd_tbl <- rbind(Nnd_tbl.2022, Nnd_tbl.2023)
+
+predicted <- Nnd_tbl[
+][, lapply(.SD, mean), keyby = .(YEAR, POOL, STRATA), .SDcols = c("Nh", "nh", "dh")] %>%
+  # Remove zero stratum
+  filter(POOL != "ZE") %>% 
+  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
+                            STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
+                            STRATA == "POT" & POOL == "OB" ~ "OB POT",
+                            STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
+                            STRATA == "EM_POT" ~ "EM POT",
+                            STRATA == "EM_HAL" ~ "EM HAL",
+                            TRUE ~ STRATA)) %>%
+  rename(pred_days = dh) %>%
+  select(!c(POOL, Nh, nh)) 
 
 # * Valhalla ----
-# Pull in this report year's Valhalla
-# The code that creates Valhalla is maintained separately from this project
-script <- paste0("select * 
-                  from loki.akr_valhalla_scratch_v")
 
-work.data <- dbGetQuery(channel_afsc, script)
+#' Initial upload of Valhalla to the Shared Gdrive. Originally obtained from:
+#' [https://drive.google.com/drive/u/0/folders/1JK0EJDBByn7GyfDt2q96ZBjvjYuhezOF]
+if(F) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+(load("source_data/2024-04-15cas_valhalla.Rdata"))
+
+#' Create a copy of valhalla named 'work.data' that will be manipulated
+work.data <- copy(valhalla)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
