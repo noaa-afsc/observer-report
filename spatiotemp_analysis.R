@@ -1865,8 +1865,6 @@ plot_interspersion_density <- function(den, real_interspersion, dmn_N){
 # Wrangle the Valhalla data set for spatiotemporal analyses
 pc_effort_st <- spatiotemp_data_prep(work.data)
 
-# Rename EM_TRW to EM_TRW_EFP
-pc_effort_st[STRATA == "EM_TRW", STRATA := "EM_TRW_EFP"]
 #' FIXME *Some ZERO TRIPS were MONITORED IN 2023 - Phil is working on removing these*
 pc_effort_st[STRATA == "ZERO" & OBSERVED_FLAG == "Y", OBSERVED_FLAG := "N"]
 
