@@ -359,18 +359,19 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
 EM.data <- 
   EM.data %>% 
   # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
-  mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
-  mutate(AGENCY_GEAR_CODE=ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
+  mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
+  mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
   # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
-  mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER  == "20_POLARSTAR03.02", "HAL", AGENCY_GEAR_CODE))
+  # NAs for vessels that (based on ODDS and PSMFC EM.data) did not actually fish in the EM strata 
+  filter(VESSEL_ID  != "422")
 
-# The following query will provide a list of em selected trips and if they have been reviewed or not
+# The following query will provide a list of EM selected trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
 # This query will also show the declared gear type and if reviewed, will show the em_reviewed_gear_type_code
 # This query will also show when the HD was received by PSFMC and when the EM reviewed data was exported and sent to AFSC
-# This query will also show the actual em trip start date and time and actual em trip end date and time which comes from the data on the HD.
+# This query will also show the actual EM trip start date and time and actual EM trip end date and time which comes from the data on the HD.
 
-# Important note: if an EM reviewed trip used multiple gear types on a trip (ie.  pot and longline) there will be 2 records in the output.
+# Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
 
 script <- paste(
   "select all_data.*, em_rev_gear.em_gear_code, 
