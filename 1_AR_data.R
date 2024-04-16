@@ -40,7 +40,7 @@ load("source_data/FMA_Days_Paid.rdata")
 days_paid.2022 <- filter(FMA_Days_Paid, Calendar == 2022)
 days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
 
-# * ADP outputs (NEW) ----
+# * ADP outputs ----
 
 # Assign the address of the ADP outputs in the Shared Gdrive
 adp_output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
