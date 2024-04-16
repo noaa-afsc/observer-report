@@ -97,7 +97,7 @@ predicted <- Nnd_tbl[
 #' 2022 only (run date of 2023-04-10 15:15:15 PDT)
 #' [https://drive.google.com/drive/folders/1em6NDOvfPIkgT7FlZkdUYh1S-_z7v2PE]. 
 #' *NOTE* Downloaded version 6 (instead of the current version, which returns an error during loading!). Renamed to
-if(F){
+if(FALSE){
   valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
   valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
   valhalla.2022[, LANDING_DATE := as.Date(LANDING_DATE)]
@@ -481,9 +481,9 @@ script <- paste(
   on hd_data.trip_number = all_data.em_reviewed_trip_number"
 )
 
-#'*============================================================================*
-
 EM.review <- dbGetQuery(channel_afsc, script)
+
+#'*============================================================================*
 
 # Flip pending trips to completed if they have data reviewed
 # For clarification, see email from Glenn Campbell on 3/11/20
