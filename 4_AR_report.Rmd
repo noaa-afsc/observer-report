@@ -402,68 +402,6 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 
 ```{r budget_eval, include=FALSE}
 #' `------------ALL--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-#' TODO *MOVE THIS TO 1_AR_data.R*
-#' `work.data` will be in `2_AR_data.rdata`, created from `1_AR_data.R`
-
-
-# Create work.data object
-library(data.table)
-
-load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
-work.data.2022 <- filter(work.data, ADP == 2022)
-load("source_data/2024-02-20cas_valhalla.RData")
-work.data <- copy(valhalla)
-work.data.2023 <- filter(work.data, ADP == 2023)
-
-work.data <- rbind(
-  work.data.2022[COVERAGE_TYPE == "PARTIAL", -c("CVG_NEW", "STRATA_NEW", "PORT_NEW", "P_STRATA")], 
-  work.data.2023[COVERAGE_TYPE == "PARTIAL"])
-
-source("functions/trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
-
-if(exists("td_mod")) rm(td_mod)
-
-#' Initialize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
-#' of the matching are automatically assigned to the `mod_dat` object in the global environment
-td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
-
-# Yearly totals
-mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
-# It appears some observers were assigned to non-observer strata
-mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
-
-# Scraping all the non-observer strata matches to their observed strata counterparts
-mod_dat_copy <- copy(mod_dat)
-mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
-][STRATA == "ZERO", STRATA := "OB HAL"]
-
-# Stratum-specific totals
-obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
-
-# Format work.data
-work.data <- 
-  work.data %>% 
-  mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), 
-         LANDING_DATE = as.Date(LANDING_DATE),
-         STRATA = case_match(
-           STRATA,
-           c("EM_POT", "EM_HAL", "EM_TRW_EFP") ~ gsub("_", " ", STRATA),
-           c("HAL", "POT", "TRW") ~ paste0("OB ", STRATA),
-           c("FULL", "ZERO") ~ STRATA,
-           .default = "Undefined"),
-         ADP = as.factor(ADP)
-         )
-
-work.data %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(work.data$STRATA == "Undefined")) stop("Some `STRATA` are not yet defined!")
-
-# Free up workspace
-rm(work.data.2022, work.data.2023)
-#'*----------------------------------------------------------------------------*
 
 #' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata in 2020.*
 #' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
