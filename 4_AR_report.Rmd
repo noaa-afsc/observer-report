@@ -22,7 +22,7 @@ load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 # Load packages and functions 
 source("3_helper.R")
 
-# Saving original partial object from work.data for strata will different selection rates at different time periods
+# Saving original partial object from work.data for strata with different selection rates at different time periods
 partial_og <- partial 
 
 # Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
@@ -47,9 +47,9 @@ if(annual.report){
 
 ```{r set-options, echo=FALSE, message=FALSE, warning=FALSE}
 #Total deployment strata:
-# 2 full coverage (FULL, EM TRW EFP)
+# 2 full coverage (FULL, EM TRW EFP[BSAI])
 # 3 partial coverage observed (OB HAL, OB POT, OB TRW)
-# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP) + 
+# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP[GOA]) + 
 # 1 zero coverage EM research (Zero EM Research) +
 # 1 zero coverage (ZERO)
 total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))

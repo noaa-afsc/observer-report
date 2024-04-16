@@ -67,7 +67,7 @@ work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LAN
 if(nrow(select(work.data, TRIP_ID, ADP) %>% 
         distinct() %>% 
         group_by(TRIP_ID) %>% 
-        filter(n()>1) %>% 
+        filter(n() > 1) %>% 
         data.frame()) > 0){
 
 # If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
@@ -97,7 +97,7 @@ salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 # Data checks and clean up
 
 #Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
-salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
+salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 
 # * ODDS ----
 
@@ -238,8 +238,8 @@ EM.gear <- dbGetQuery(channel_afsc, script)
 EM.gear <- select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
            distinct() %>% 
            arrange(TRIP_NUMBER) %>% 
-           mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID==6 | GEAR_TYPE_ID==7, "HAL", "NA"),
-                  AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID==10 | GEAR_TYPE_ID==11, "POT", AGENCY_GEAR_CODE)) %>%
+           mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7, "HAL", "NA"),
+                  AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11, "POT", AGENCY_GEAR_CODE)) %>%
            select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
            distinct()
 
