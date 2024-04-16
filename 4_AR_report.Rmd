@@ -28,20 +28,6 @@ partial_og <- partial
 # Create a version of the partial coverage programmed rate table that only includes the initial programmed rates  
 partial <- partial[1:6,]
 
-#' Create a version of the partial coverage programmed rate table that includes all time periods *NO PARTIAL TIME 2023*    
-#partial_time <- partial %>% 
- #               filter(Effective_Date == min(Effective_Date)) %>% 
-  #              mutate(Effective_Date = as.Date(Effective_Date), Expire_After = as.Date(c("2020-12-31", "2020-12-31", "2020-12-31", "2020-03-25", "2020-03-25", "2020-03-25"))) %>% 
- #               select(Effective_Date, Expire_After, STRATA, Rate, descriptions, formatted_strat, txt)
-
-#partial_time <- rbind(partial_time,
- #                     partial_time %>% 
-  #                    filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
-   #                   mutate(Effective_Date = as.Date("2020-03-26"), Expire_After = as.Date("2020-06-30")),
-    #                  partial_time %>% 
-     #                 filter(STRATA %in% c("HAL", "POT", "TRW")) %>% 
-      #                mutate(Effective_Date = as.Date("2020-07-01"), Expire_After = as.Date("2020-12-31")))
-
 # Avoid scientific notation
 options(scipen = 10000)
 
