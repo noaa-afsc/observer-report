@@ -101,6 +101,7 @@ gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribbl
 
 #' Create a copy of valhalla named 'work.data' that will be manipulated
 work.data <- copy(valhalla)
+rm(valhalla)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
@@ -121,10 +122,11 @@ if(nrow(select(work.data, TRIP_ID, ADP) %>%
         distinct() %>% 
         group_by(TRIP_ID) %>% 
         filter(n()>1) %>% 
-        data.frame()) > 0){
-
-# If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
-work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")}
+        data.frame()) > 0
+){
+  # If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
+  work.data$TRIP_ID <- paste(work.data$ADP, work.data$TRIP_ID, sep = ".")
+}
 
 # * Salmon dockside monitoring ----
 

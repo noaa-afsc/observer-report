@@ -134,21 +134,6 @@ The following items from the `r year` ADP have been identified as objectives for
 
 ```{r actual_observerdays_paid, include=FALSE}
 
-#'`NEED TO ADD THE FOLLOWING FILES TO GOOGLE SHARED DRIVE`
-#'*2024_Draft_ADP_data.rdata* `Maybe? to be able to create 2022 work.data`
-
-#'TODO *MOVE THIS TO 1_AR_data.rdata*
-#' TODO Move if/else to `1_AR_data.R` and include `FMA_Day_Paid` object when the `2_AR_data.Rdata` object is saved.
-
-
-
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-#'TODO *MOVE THIS TO 1_AR_data.rdata*
-options(scipen = 999) # Remove scientific notation
-
-
-#'*----------------------------------------------------------------------------*
-
 #' `------------2022--------------`
 
 # Available budget for the year (in days)
