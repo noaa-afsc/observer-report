@@ -50,7 +50,7 @@ if(annual.report){
 # 2 full coverage (FULL, EM TRW EFP[BSAI])
 # 3 partial coverage observed (OB HAL, OB POT, OB TRW)
 # 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP[GOA]) + 
-# 1 zero coverage EM research (Zero EM Research) +
+# 0 zero coverage EM research (Zero EM Research) +
 # 1 zero coverage (ZERO)
 total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 ```
@@ -186,7 +186,6 @@ eval.2023 <- data.frame(ActualYR.2023, AvailableYR.2023) %>%
                                  " greater than ")))
 
 rm(Nnd_tbl.2022, Nnd_tbl.2023)
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 ```
 
 * Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format = "d", big.mark = ",")` days in `r year`.      
@@ -269,7 +268,7 @@ outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(2000, 3500, 500)) +
@@ -294,7 +293,7 @@ outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(limits = c(2250, 3750), breaks = seq(2000, 3500, 500)) +
@@ -334,7 +333,7 @@ costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(3750000, 4750000, 500000),
@@ -374,7 +373,7 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(4000000, 6000000, 500000),
@@ -390,20 +389,6 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 #'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 #' TODO *MOVE THIS TO 1_AR_data.R*
 #' `work.data` will be in `2_AR_data.rdata`, created from `1_AR_data.R`
-
-
-# Create work.data object
-library(data.table)
-
-load("source_data/2024_Draft_ADP_data.rdata") # 2022 work.data
-work.data.2022 <- filter(work.data, ADP == 2022)
-load("source_data/2024-02-20cas_valhalla.RData")
-work.data <- copy(valhalla)
-work.data.2023 <- filter(work.data, ADP == 2023)
-
-work.data <- rbind(
-  work.data.2022[COVERAGE_TYPE == "PARTIAL", -c("CVG_NEW", "STRATA_NEW", "PORT_NEW", "P_STRATA")], 
-  work.data.2023[COVERAGE_TYPE == "PARTIAL"])
 
 source("functions/trip_duration_model.R") # Match OLS and VALHALLA observer days (actual)
 
@@ -502,16 +487,6 @@ trip.budget.table.2022 <-
          diff = format(diff, digits = 1, nsmall = 0))
 
 #' `------------2023--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-
-# We have zero-coverage trips that were monitored. Phil is working on these. We're just gonna throw them into the observer strata for now.
-unique(work.data[ADP == 2023 & LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
-  VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, AGENCY_GEAR_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL
-)])[order(TRIP_ID)]
-work.data[TRIP_ID %in% c(2170855, 2170858), STRATA := "OB POT"]
-work.data[TRIP_ID %in% c(2307113, 2307114), STRATA := "OB HAL"]
-
-#'*----------------------------------------------------------------------------*
 
 # Evaluate why we were off budget
 trip.budget.table.2023 <- 
@@ -666,6 +641,7 @@ disposition <- odds.dat %>%
             Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
             Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
+
 # Add yearly totals and summary statistics
 disposition <- merge(
   disposition,
