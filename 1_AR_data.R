@@ -143,6 +143,35 @@ unique(work.data[TRIP_ID == 1615161, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(T
 # Will assign `ADP` to 2023 for these trips
 work.data[TRIP_ID %in% c(1593889, 1615161), ADP := 2023]
 
+# * Observed days ----
+
+#' Match up ODDS/OLS records with VALHALLA records to get stratum-specific estimates of total at-sea observer days.
+
+source("functions/model_trip_duration.R")
+
+#' Initialize: Perform the matching of ODDS+OLS with VALHALLA, and model using the simplest model possible. The results
+#' of the matching are automatically assigned to the `mod_dat` object in the global environment
+td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = channel_afsc)
+
+#' Yearly totals
+mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
+#' It appears some observers were assigned to non-observer strata
+mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
+
+#' *2023 AR* Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
+#' days regardless of the observer was supposed to monitor these trips or not.
+mod_dat_copy <- copy(mod_dat)
+mod_dat_copy[
+][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "ZERO", STRATA := "OB HAL"]
+
+# Stratum-specific totals
+obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
+
+rm(td_mod0, mod_dat, mod_dat_copy)
+
 # * Salmon dockside monitoring ----
 
 # Queries
@@ -223,7 +252,7 @@ setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
   RELEASE_COMMENT = "Three Observerd Trips Release",
   RELEASE_STATUS_DESCRIPTION = "Three in Row Release"
 )]
-odds.dat <- as.data.frame(odds.dat)
+setDF(odds.dat)
 #'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
@@ -363,6 +392,7 @@ EM.data <-
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
   # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
   # NAs for vessels that (based on ODDS and PSMFC EM.data) did not actually fish in the EM strata 
+  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear
   filter(VESSEL_ID  != "422")
 
 # The following query will provide a list of EM selected trips and if they have been reviewed or not
@@ -373,7 +403,7 @@ EM.data <-
 
 # Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
 
-#'*==========BELOW QUERY NOT WORKING (MAYBE I DON"T HAVE ACCESS TO THE SCHEMA?)*
+#'*========== Geoff and Christian get the error: [Oracle][ODBC][Ora]ORA-01031: insufficient privileges*
 script <- paste(
   "select all_data.*, em_rev_gear.em_gear_code, 
   hd_data.date_hd_received_by_psmfc,
