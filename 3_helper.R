@@ -3,7 +3,7 @@
 # See AR_helpfile.doc for information on file structure and workflow, column names and descriptions, etc.
 
 # I. Libraries ----
-if(!require("captioner"))   install.packages("captioner") #numbering, ordering, & creating captions for tables and figures
+if(!require("captioner"))   install.packages("packages/captioner_2.2.3.tar.gz") #numbering, ordering, & creating captions for tables and figures. #download the tar.gz from: https://cran.r-project.org/src/contrib/Archive/captioner/  
 if(!require("data.table"))   install.packages("data.table") #caution: masks between, last in dplyr and dcast, melt in reshape2
 if(!require("devtools"))  install.packages("devtools")
 if(!require("getPass"))   install.packages("getPass")
@@ -11,18 +11,19 @@ if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
 if(!require("kableExtra"))   install.packages("kableExtra") #markdown tables
 if(!require("knitr"))   install.packages("knitr") #markdown
 if(!require("lubridate"))  install.packages("lubridate")
-if(!require("maptools"))   install.packages("maptools")
+#if(!require("maptools"))   install.packages("maptools")     # No longer on CRAN, replace with sf
 if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derivedVariable(), careful it masks some stats fxns like binomial.test() 
 if(!require("patchwork"))  devtools::install_github("thomasp85/patchwork")
 if(!require("reshape2"))   install.packages("reshape2") 
 if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
-if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles
-if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed
+# if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles      # No longer on CRAN, replace with sf
+#if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed  # No longer on CRAN, replace with sf
 if(!require("scales"))  install.packages("scales")
 if(!require("sf"))  install.packages("sf")
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
+if(!require("FMAtools")) devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 
 # II. Functions ----
 
@@ -72,12 +73,12 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
       N1 <- filter(N1, spp.wgt == max.spp.wgt) %>% select(TRIP_ID, spp.wgt)
       rm(N1.max, N1.spp)
       #...and merge it with obs.effect.start
-      data.out <- merge(data.out, N1, all=T)
+      data.out <- merge(data.out, N1, all = TRUE)
       rm(N1)
       #...and ammend obs.effect.start to contain the new calculated metric.
       data.out <- 
         data.out %>% 
-        mutate(N1 = round(spp.wgt/landed.catch,4)) %>% 
+        mutate(N1 = round(spp.wgt/landed.catch, 4)) %>% 
         select(-spp.wgt)
       
       return(data.out)
@@ -119,10 +120,10 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   #*FLAG* New version of dplyr retains underlying grouping structure and messes up Ntable object below.
   actuals.out <-
     group_by_(data.melt, .dots = annot_gp_vec) %>%
-    summarize(Ytrips=length(unique(TRIP_ID[YN=='Y'])),
-              Ntrips=length(unique(TRIP_ID[YN=='N'])),              
-              obs.diff = mean(value[YN=="Y"], na.rm=TRUE) - mean(value[YN=="N"], na.rm=TRUE),
-              Nmean = mean(value[YN=="N"], na.rm=TRUE)
+    summarize(Ytrips = length(unique(TRIP_ID[YN == 'Y'])),
+              Ntrips = length(unique(TRIP_ID[YN == 'N'])),              
+              obs.diff = mean(value[YN == "Y"], na.rm = TRUE) - mean(value[YN == "N"], na.rm = TRUE),
+              Nmean = mean(value[YN == "N"], na.rm = TRUE)
     )
 
   Ntable <- actuals.out %>% ungroup() %>% select(STRATA, Ytrips, Ntrips) %>%  distinct() %>% data.frame()
@@ -163,8 +164,8 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   permutation.out <- merge(permutation.out, actuals.out)
   permutation.out$test.stat <- ifelse(abs(permutation.out$perm_result) >= abs(permutation.out$obs.diff), 1, 0)                                
   #Now make use of our percents to convert the results to relative terms
-  permutation.out$perm_result_pct <- round((permutation.out$perm_result / permutation.out$Nmean)*100, 3)
-  permutation.out$obs.diff_pct <-round((permutation.out$obs.diff / permutation.out$Nmean)*100, 3)
+  permutation.out$perm_result_pct <- round((permutation.out$perm_result / permutation.out$Nmean) * 100, 3)
+  permutation.out$obs.diff_pct <-round((permutation.out$obs.diff / permutation.out$Nmean) * 100, 3)
   
   #relabel for outputs
   permutation.out$variable <- 
@@ -175,10 +176,10 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   summary <- 
     data.frame(
       group_by_(permutation.out, .dots = annot_gp_vec) %>%
-        summarize(obs.diff = round(unique(obs.diff),3),
-                  mean.perm.diff = round(mean(na.omit(perm_result)),3),
-                  obs.diff.pct = round(unique(obs.diff_pct),3),
-                  mean.perm.diff.pct = round(mean(na.omit(perm_result_pct)),3),
+        summarize(obs.diff = round(unique(obs.diff), 3),
+                  mean.perm.diff = round(mean(na.omit(perm_result)), 3),
+                  obs.diff.pct = round(unique(obs.diff_pct), 3),
+                  mean.perm.diff.pct = round(mean(na.omit(perm_result_pct)), 3),
                   iter = length(variable),
                   p = sum(test.stat/iter)
         )
@@ -193,7 +194,7 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   ODtable <- dcast(summary, form_you_la, value.var = "obs.diff")
   ODtable$Metric <- "Observed difference"
   
-  ODpct<-dcast(summary, form_you_la, value.var="obs.diff.pct")
+  ODpct<-dcast(summary, form_you_la, value.var = "obs.diff.pct")
   ODpct$Metric <- "OD (%)"
   
   summary.table <- 
@@ -219,7 +220,7 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
 # b. my_excel - used to make the list of statistically significant stat areas in the upper-lefthand corner of the probability maps
 
 my_excel <- function(x,y) {
-   for(i in 2:length(x)) x[i] = x[i-1] + y
+   for(i in 2:length(x)) x[i] = x[i - 1] + y
   return(x)
 }
 
@@ -230,14 +231,14 @@ highlight_significant = function(significant)
   library(choroplethrMaps)
   #data(sub, package="choroplethrMaps", envir=environment())
   df = nmfs_prob[nmfs_prob$proportion %in% significant, ]
-  geom_polygon(data=df, aes(long, lat, group = group), color = "grey40", fill = NA, size = .7, alpha=.5)
+  geom_polygon(data = df, aes(long, lat, group = group), color = "grey40", fill = NA, size = 0.7, alpha = 0.5)
 }
 
 #d. wordlist - used for in-text lists of unknown length
 
-wordlist <- function(w, oxford=T) {
-  if(length(w)==1) return(w);
-  if(length(w)==2) return(paste(w[1],"and",w[2]));
+wordlist <- function(w, oxford = TRUE) {
+  if(length(w) == 1) return(w);
+  if(length(w) == 2) return(paste(w[1],"and",w[2]));
   paste0( paste(w[-length(w)], collapse=", "), 
           ifelse(oxford,",","")," and ", w[length(w)] )
 }
@@ -350,30 +351,30 @@ appendix_fig_nums <- captioner(prefix = "Figure") #Numbers figures in the append
 
 interpret_trip_metrics <- function(dat) {
   dat.out <- dat %>% 
-    mutate(obs.diff.pct = round(obs.diff.pct,1),
-           obs.diff = round(obs.diff,2)) %>% 
+    mutate(obs.diff.pct = round(obs.diff.pct, 1),
+           obs.diff = round(obs.diff, 2)) %>% 
     #Filter out super small effect sizes
     #filter(obs.diff > 0.0 & obs.diff.pct > 0.0) %>% 
     # filter(!c(obs.diff == 0.0 | obs.diff.pct == 0.0) ) %>% 
     mutate(interpretation = ifelse(variable %in% "NMFS areas",
-                                   paste0("occurred in ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall=2, digits=2)), ") ",  
-                                          ifelse(obs.diff.pct<0, "fewer", "more"), " areas"), 
+                                   paste0("occurred in ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall = 2, digits = 2)), ") ",  
+                                          ifelse(obs.diff.pct < 0, "fewer", "more"), " areas"), 
                                    ifelse(variable %in% "Days fished",
-                                          paste0("were ",  abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall=2, digits=2)), " days) ", 
-                                                 ifelse(obs.diff.pct<0, "shorter", "longer"), " in duration"),
+                                          paste0("were ",  abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall = 2, digits = 2)), " days) ", 
+                                                 ifelse(obs.diff.pct < 0, "shorter", "longer"), " in duration"),
                                           ifelse(variable %in% "Vessel length (ft)",
-                                                 paste0("occurred on vessels ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall=2, digits=2)), " ft) ", 
-                                                        ifelse(obs.diff.pct<0, "shorter", "longer"), " in length"),
+                                                 paste0("occurred on vessels ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall = 2, digits = 2)), " ft) ", 
+                                                        ifelse(obs.diff.pct < 0, "shorter", "longer"), " in length"),
                                                  ifelse(variable %in% "Species landed",
-                                                        paste0("landed ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall=2, digits=2)), ") ",
-                                                               ifelse(obs.diff.pct<0, "fewer", "more"), " species"),
+                                                        paste0("landed ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall = 2, digits = 2)), ") ",
+                                                               ifelse(obs.diff.pct < 0, "fewer", "more"), " species"),
                                                         ifelse(variable %in% "pMax species",
                                                                paste0("landed catch that was ", abs(obs.diff.pct), "% ", 
                                                                       #This one is counterintuitive, but low values mean more diverse in the Hill's index
-                                                                      ifelse(obs.diff.pct<0, "more", "less"), " diverse"),
+                                                                      ifelse(obs.diff.pct < 0, "more", "less"), " diverse"),
                                                                ifelse(variable %in% "Landed catch (t)",
-                                                                      paste0("landed catch that weighed ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall=2, digits=2)), " metric tons) ",
-                                                                             ifelse(obs.diff.pct<0, "less", "more")),"NA")))))))
+                                                                      paste0("landed catch that weighed ", abs(obs.diff.pct), "% (", trimws(format(abs(obs.diff), nsmall = 2, digits = 2)), " metric tons) ",
+                                                                             ifelse(obs.diff.pct < 0, "less", "more")),"NA")))))))
   return(dat.out)
 }
 
@@ -399,22 +400,22 @@ numbers2words <- function(x){
       nSuffix <- ((nDigits + 2) %/% 3) - 1
       if (nSuffix > length(suffixes)) stop(paste(x, "is too large!"))
       trim(paste(Recall(makeNumber(digits[
-        nDigits:(3*nSuffix + 1)])),
+        nDigits:(3 * nSuffix + 1)])),
         suffixes[nSuffix],"," ,
-        Recall(makeNumber(digits[(3*nSuffix):1]))))
+        Recall(makeNumber(digits[(3 * nSuffix):1]))))
     }
   }
   trim <- function(text){
-    #Tidy leading/trailing whitespace, space before comma
+    # Tidy leading/trailing whitespace, space before comma
     text=gsub("^\ ", "", gsub("\ *$", "", gsub("\ ,",",",text)))
-    #Clear any trailing " and"
+    # Clear any trailing " and"
     text=gsub(" and$","",text)
-    #Clear any trailing comma
+    # Clear any trailing comma
     gsub("\ *,$","",text)
   }  
   makeNumber <- function(...) as.numeric(paste(..., collapse=""))     
-  #Disable scientific notation
-  opts <- options(scipen=100) 
+  # Disable scientific notation
+  opts <- options(scipen = 100) 
   on.exit(options(opts)) 
   ones <- c("", "one", "two", "three", "four", "five", "six", "seven",
             "eight", "nine") 
@@ -480,24 +481,24 @@ fig.theme <-
         axis.title.y = element_text(size = 12),
         axis.title.x = element_text(size = 12),
         strip.text.x = element_text(size = 14),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         legend.position = "bottom")
 
 # b. Maps ----
 
 map_theme <- theme(
   plot.title = element_text(size = rel(1.5)),
-  axis.line=element_blank(),
-  axis.text.x=element_blank(),
-  axis.text.y=element_blank(),
-  axis.ticks=element_blank(),
-  axis.title.x=element_blank(),
-  axis.title.y=element_blank(),
-  panel.background=element_blank(),
-  panel.border=element_blank(),
-  panel.grid.major=element_blank(),
-  panel.grid.minor=element_blank(),
-  plot.background=element_blank())
+  axis.line = element_blank(),
+  axis.text.x = element_blank(),
+  axis.text.y = element_blank(),
+  axis.ticks = element_blank(),
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.background = element_blank(),
+  panel.border = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  plot.background = element_blank())
 
 # d. Barplot theme
 
