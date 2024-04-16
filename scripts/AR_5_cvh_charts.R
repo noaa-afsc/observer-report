@@ -86,6 +86,9 @@ Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
 load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
 
 # load odds data issues from google sheet
+# the spreadsheet can be found at this link:
+  # https://docs.google.com/spreadsheets/d/17BsqLarIh-8gqu9W5VWiEvFTjjnzaK-R48TXweXc2ag/edit?usp=sharing
+
 # to properly load the ODDS data, we need to create the unique dribble ID
   # THIS IS UNIQUE TO EACH USER SINCE THE DATA IS NOT HOUSED IN A SHARED FOLDER
   # EDIT THE FOLLOWING LINE ACCORDING TO WHERE THE DATA IS LOCATED IN YOUR DRIVE
