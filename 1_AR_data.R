@@ -27,7 +27,7 @@ AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"
 #' Initially, download the following spreadsheet as a `.csv` format file to the `source_data/` folder. 
 #' Upload an `.rdata` copy to the [FMA shared Gdrive].
 #' [https://docs.google.com/spreadsheets/d/1KGmZNo7uVuB6FCVRZd4UV2PROa4Jl7-J/edit?usp=sharing&ouid=112928343270640187258&rtpof=true&sd=true]
-if(F) {
+if(FALSE) {
   FMA_Days_Paid <- read.csv("source_data/FMA Days Paid.xlsx - Days_Paid.csv")
   save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
   gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
@@ -49,12 +49,12 @@ adp_output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
 #' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
 #' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
 #' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
-if(F) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+if(FALSE) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
 
 #' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
 #' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
 #' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
-if(F) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
+if(FALSE) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
 
 # 2022 Final ADP Outputs
 gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
@@ -66,7 +66,7 @@ bud_tbl.2022 <- bud_tbl
 rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
 
 # 2023 Final ADP Outputs
-gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+gdrive_download("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
 final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
 Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
 adj_tbl.2023 <- adj_tbl
@@ -95,7 +95,7 @@ predicted <- Nnd_tbl[
 
 #' Initial upload of Valhalla to the Shared Gdrive. Originally obtained from:
 #' [https://drive.google.com/drive/u/0/folders/1JK0EJDBByn7GyfDt2q96ZBjvjYuhezOF]
-if(F) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 (load("source_data/2024-04-15cas_valhalla.Rdata"))
 
