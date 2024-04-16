@@ -483,8 +483,6 @@ script <- paste(
 
 EM.review <- dbGetQuery(channel_afsc, script)
 
-#'*============================================================================*
-
 # Flip pending trips to completed if they have data reviewed
 # For clarification, see email from Glenn Campbell on 3/11/20
 EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
@@ -495,6 +493,9 @@ em_research <- dbGetQuery(channel_afsc, paste("select distinct adp, vessel_id, v
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
                                               and adp =", year))
 
+#'*============================================================================*
+
+#' *FILE PATHS NEED TO BE UPDATED/SET*
 # * Shapefiles ----
 ## Load land and NMFS stat area shapefiles 
 ## (".." points the directory back one level)
@@ -511,6 +512,8 @@ work.data <- mutate(work.data, STRATA = recode(STRATA,
                     "EM_HAL" = "EM HAL",
                     "EM_TRW_EFP" = "EM TRW EFP"))
 
+
+#' *EM.review QUERY NEEDS TO BE FIXED FOR THIS TO WORK=========================*
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
              mutate(STRATA = ifelse(VESSEL_ID %in% em_research$VESSEL_ID, "Zero EM Research", STRATA))
