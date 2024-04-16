@@ -99,13 +99,13 @@ if(FALSE) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepCh
 gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 (load("source_data/2024-04-15cas_valhalla.Rdata"))
 
-#' Create a copy of valhalla named 'work.data' that will be manipulated
+#' Create a copy of valhalla named `work.data` that will be manipulated
 work.data <- copy(valhalla)
 rm(valhalla)
 
-#Summary of coverage by strata and processing sector
-#This is a check to make sure no entries look wonky
-table(work.data$COVERAGE_TYPE, work.data$STRATA, work.data$PROCESSING_SECTOR, useNA='always')
+# Summary of coverage by strata and processing sector
+# This is a check to make sure no entries look wonky
+table(work.data$COVERAGE_TYPE, work.data$STRATA, work.data$PROCESSING_SECTOR, useNA = 'always')
 
 # Data check for observed vessels under 40 ft., should be zero rows
 work.data %>% 
@@ -121,7 +121,7 @@ work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LAN
 if(nrow(select(work.data, TRIP_ID, ADP) %>% 
         distinct() %>% 
         group_by(TRIP_ID) %>% 
-        filter(n()>1) %>% 
+        filter(n() > 1) %>% 
         data.frame()) > 0
 ){
   # If there are duplicate TRIP_IDs across ADP years, add ADP year to the front of *all* TRIP_IDs
@@ -293,16 +293,16 @@ EM.gear <- dbGetQuery(channel_afsc, script)
 EM.gear <- select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
            distinct() %>% 
            arrange(TRIP_NUMBER) %>% 
-           mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID==6 | GEAR_TYPE_ID==7, "HAL", "NA"),
-                  AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID==10 | GEAR_TYPE_ID==11, "POT", AGENCY_GEAR_CODE)) %>%
+           mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7, "HAL", "NA"),
+                  AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11, "POT", AGENCY_GEAR_CODE)) %>%
            select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
            distinct()
 
 # Join gear types to EM data
-EM.data <- left_join(EM.data, EM.gear, by="TRIP_NUMBER")
+EM.data <- left_join(EM.data, EM.gear, by = "TRIP_NUMBER")
 
 # Are there NAs in EM.data$AGENCY_GEAR_CODE?
-EM.data %>% group_by(AGENCY_GEAR_CODE) %>% summarise(n=n_distinct(TRIP_NUMBER))
+EM.data %>% group_by(AGENCY_GEAR_CODE) %>% summarise(n = n_distinct(TRIP_NUMBER))
 
 # Isolate VESSEL_IDs for NAs in EM.data$AGENCY_GEAR_CODE
 gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_ID) %>% unlist() %>% as.vector()
@@ -310,12 +310,12 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
 single_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
-                   distinct(VESSEL_ID, GEAR_TYPE_CODE,DESCRIPTION) %>% 
+                   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
                    arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
                    group_by(VESSEL_ID) %>% 
                    filter(uniqueN(GEAR_TYPE_CODE) == 1) %>% 
-                   mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_CODE==8, "HAL", NA)) %>% 
-                   mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_CODE==6, "POT", AGENCY_GEAR_CODE)) %>% 
+                   mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 8, "HAL", NA)) %>% 
+                   mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 6, "POT", AGENCY_GEAR_CODE)) %>% 
                    distinct(VESSEL_ID, AGENCY_GEAR_CODE)
 
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
@@ -329,8 +329,8 @@ multiple_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>%
 # Compare ODDS to EM.data for VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE
 # to determine the most likely AGENCY_GEAR_CODE
 filter(odds.dat, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
-  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION) %>% 
-  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION)
+  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
+  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION)
 
 filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
