@@ -27,7 +27,7 @@ AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"
 #' Initially, download the following spreadsheet as a `.csv` format file to the `source_data/` folder. 
 #' Upload an `.rdata` copy to the [FMA shared Gdrive].
 #' [https://docs.google.com/spreadsheets/d/1KGmZNo7uVuB6FCVRZd4UV2PROa4Jl7-J/edit?usp=sharing&ouid=112928343270640187258&rtpof=true&sd=true]
-if(F) {
+if(FALSE) {
   FMA_Days_Paid <- read.csv("source_data/FMA Days Paid.xlsx - Days_Paid.csv")
   save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
   gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
@@ -49,12 +49,12 @@ adp_output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
 #' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
 #' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
 #' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
-if(F) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+if(FALSE) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
 
 #' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
 #' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
 #' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
-if(F) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
+if(FALSE) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
 
 # 2022 Final ADP Outputs
 gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
@@ -66,7 +66,7 @@ bud_tbl.2022 <- bud_tbl
 rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
 
 # 2023 Final ADP Outputs
-gdrive_download("source_data/2022_Final_ADP_Output.rdata", adp_output_dribble)
+gdrive_download("source_data/2023_Final_ADP_Output.rdata", adp_output_dribble)
 final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
 Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
 adj_tbl.2023 <- adj_tbl
@@ -109,7 +109,7 @@ gdrive_download("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribbl
 
 #' Initial upload of [2023] Valhalla to the Shared Gdrive. Originally obtained from:
 #' [https://drive.google.com/drive/u/0/folders/1JK0EJDBByn7GyfDt2q96ZBjvjYuhezOF]
-if(F) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 (load("source_data/2024-04-15cas_valhalla.Rdata"))
 
@@ -135,6 +135,7 @@ work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LAN
 if( nrow(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1]) ){
   message("Some TRIP_IDs are repated across ADP years")
   print(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1])
+
 }
 #' *2023 AR* Addressing trips that spanned years
 unique(work.data[TRIP_ID == 1593889, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
@@ -304,19 +305,23 @@ script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
 EM.gear <- dbGetQuery(channel_afsc, script)
 
 #Select data for this report year and recode gear type to those used by CAS
-EM.gear <- select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
-           distinct() %>% 
-           arrange(TRIP_NUMBER) %>% 
-           mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID==6 | GEAR_TYPE_ID==7, "HAL", "NA"),
-                  AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_ID==10 | GEAR_TYPE_ID==11, "POT", AGENCY_GEAR_CODE)) %>%
-           select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
-           distinct()
+EM.gear <- 
+  select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
+  distinct() %>% 
+  arrange(TRIP_NUMBER) %>% 
+  mutate(AGENCY_GEAR_CODE = case_when(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7 ~ "HAL",
+                                      GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11 | GEAR_TYPE_ID == 16 |
+                                        GEAR_TYPE_ID == 17 | GEAR_TYPE_ID == 18 | GEAR_TYPE_ID == 19 ~ "POT")) %>%
+  #mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 6 | GEAR_TYPE_ID == 7, "HAL", "NA"),
+  #      AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_ID == 10 | GEAR_TYPE_ID == 11, "POT", AGENCY_GEAR_CODE)) %>%
+  select(TRIP_NUMBER, AGENCY_GEAR_CODE) %>%  
+  distinct()
 
 # Join gear types to EM data
-EM.data <- left_join(EM.data, EM.gear, by="TRIP_NUMBER")
+EM.data <- left_join(EM.data, EM.gear, by = "TRIP_NUMBER")
 
 # Are there NAs in EM.data$AGENCY_GEAR_CODE?
-EM.data %>% group_by(AGENCY_GEAR_CODE) %>% summarise(n=n_distinct(TRIP_NUMBER))
+EM.data %>% group_by(AGENCY_GEAR_CODE) %>% summarise(n = n_distinct(TRIP_NUMBER))
 
 # Isolate VESSEL_IDs for NAs in EM.data$AGENCY_GEAR_CODE
 gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_ID) %>% unlist() %>% as.vector()
@@ -324,12 +329,12 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
 single_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
-                   distinct(VESSEL_ID, GEAR_TYPE_CODE,DESCRIPTION) %>% 
+                   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
                    arrange(VESSEL_ID, GEAR_TYPE_CODE) %>% 
                    group_by(VESSEL_ID) %>% 
                    filter(uniqueN(GEAR_TYPE_CODE) == 1) %>% 
-                   mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_CODE==8, "HAL", NA)) %>% 
-                   mutate(AGENCY_GEAR_CODE=ifelse(GEAR_TYPE_CODE==6, "POT", AGENCY_GEAR_CODE)) %>% 
+                   mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 8, "HAL", NA)) %>% 
+                   mutate(AGENCY_GEAR_CODE = ifelse(GEAR_TYPE_CODE == 6, "POT", AGENCY_GEAR_CODE)) %>% 
                    distinct(VESSEL_ID, AGENCY_GEAR_CODE)
 
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
@@ -343,8 +348,8 @@ multiple_gear_nas <- filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>%
 # Compare ODDS to EM.data for VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE
 # to determine the most likely AGENCY_GEAR_CODE
 filter(odds.dat, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
-  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION) %>% 
-  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, DESCRIPTION)
+  distinct(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
+  arrange(VESSEL_ID, PLANNED_EMBARK_DATE, GEAR_TYPE_CODE, STRATUM_DESCRIPTION)
 
 filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>% 
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
