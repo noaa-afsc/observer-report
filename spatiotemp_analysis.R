@@ -1818,19 +1818,29 @@ sim.programmed.stratum_fmp[, .(MEAN = mean(INSP)), keyby = .(ADP, STRATA, BSAI_G
 
 # TODO Do these plots differ if I feed box definitions or realized_interspersion? It shouldn't!
 
+#' `BOX` plots show which boxes were gaps (outlined in red) and the count of trip components in each box (effort density)
+#' `HEX_ID.realized` is a yearly summary of each box, comparing the realized count of covered trips versus the average across simulations.
+
 interspersion_maps <- plot_interspersion_map(box_def.stratum_fmp, real_interspersion.stratum_fmp, exp_interspersion.realized.stratum_fmp, exp_interspersion.programmed)
 
-
+# In 2022 for OB_TRW, gaps in weeks 20-27 (find # of trips)
 interspersion_maps[["2022.OB_TRW"]]$BOX
-interspersion_maps[["2022.OB_HAL"]]$BOX
-
-
-interspersion_maps[["2022.EM_HAL"]]$HEX_ID.realized
-interspersion_maps[["2022.EM_POT"]]$HEX_ID.realized
-interspersion_maps[["2022.EM_TRW_EFP"]]$HEX_ID.realized
-interspersion_maps[["2022.OB_HAL"]]$HEX_ID.realized  #' Can see the Pribilof Islands were below expected given the realized monitoring rate
-interspersion_maps[["2022.OB_POT"]]$HEX_ID.realized
 interspersion_maps[["2022.OB_TRW"]]$HEX_ID.realized  #' Overall more red than blue, meaning the monitoring was more clumped in space than expected given the realized distribution
+
+# In 2022 for OB_HAL, many gaps in the BSAI, especially in the middle of the year
+interspersion_maps[["2022.OB_HAL"]]$BOX
+interspersion_maps[["2022.OB_HAL"]]$HEX_ID.realized  #' Can see the Pribilof Islands were below expected given the realized monitoring rate
+
+# EM_HAL and EM_POT at the time of analysis had many fewer than expected trips in the panhandle. We see more gaps in the latter half of the year when review fell behind. Should see
+# this in the temporal plots
+interspersion_maps[["2022.EM_HAL"]]$BOX
+interspersion_maps[["2022.EM_HAL"]]$HEX_ID.realized
+
+interspersion_maps[["2022.EM_POT"]]$HEX_ID.realized
+
+
+interspersion_maps[["2022.EM_TRW_EFP"]]$HEX_ID.realized
+interspersion_maps[["2022.OB_POT"]]$HEX_ID.realized
 
 
 interspersion_maps[["2023.EM_HAL"]]$HEX_ID.realized
