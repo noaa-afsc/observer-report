@@ -85,7 +85,9 @@ Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
 
 load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
 
-# load odds data issues from google sheet
+
+
+# load ODDS data from google sheet
 # the spreadsheet can be found at this link:
   # https://docs.google.com/spreadsheets/d/17BsqLarIh-8gqu9W5VWiEvFTjjnzaK-R48TXweXc2ag/edit?usp=sharing
 
@@ -116,6 +118,8 @@ odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5
   map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
 
 # create dataset for 2023
+  # the number corresponds to the sheet # in the spreadsheet
+  # 2024 is the first (1) item in the list
 odds_2023 <- odds_data[[2]]
 # create dataset for 2022
 odds_2022 <- odds_data[[3]]
