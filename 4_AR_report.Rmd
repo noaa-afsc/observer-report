@@ -1512,6 +1512,12 @@ For.ts.temporal.plot <- For.ts.temporal.plot %>%
                         mutate(p = ifelse(as.numeric(p) < 0.05, paste0(p, "*"), p)) %>%
                         mutate(p = ifelse(p == "0.000*", paste0("italic(p) < '0.001*'"), paste0("italic(p) == '", p, "'")))
 
+# Create "dummy" dataframe to set limits for x axes
+YEAR <- c(2022, 2023)
+Date <- as.Date(c("2022-01-01", "2023-01-01",  # Lower limit
+                  "2022-12-31", "2023-12-31")) # Upper limit
+ff <- data.frame(Date, YEAR)
+
 # Plot
 Temporal.plot <- 
   ggplot(For.ts.temporal.plot, aes(x = Date)) +
@@ -1520,10 +1526,11 @@ Temporal.plot <-
   geom_line(aes(y = n.expected), col = "gray") +
   geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
   geom_rug(aes(x = Date.outside), sides = "b") +
-  facet_grid(STRATA ~ YEAR, scale = "free") +
+  facet_grid(STRATA ~ YEAR, scales = "free", space = "free_x") +
     # Annotate p-values
   geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
             hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
+  geom_point(data = ff, y = NA) + # Dummy variable to set x axis limits
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
   ylab("Cumulative Trips in Trip-selection Strata\n") +
