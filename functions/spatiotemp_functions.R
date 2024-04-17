@@ -652,6 +652,25 @@ calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor
 }
 
 
+calculate_expected_interspersion <- function(box_def, sample_rates){
+  # box_def <- copy(box_def.stratum); sample_rates <- copy(programmed_rates)
+  
+  exp_dt <- calculate_dmn_interspersion(
+    box_def = box_def,
+    selection_rates = sample_rates,
+    acceptor_donor_lst = as.list(seq_len(nrow(box_def$dmn$strata_dt))) # Make each stratum donate only to itself
+  )
+  dmn_cols <- unlist(exp_dt$params, use.names = F)
+  out <- exp_dt$RAW[
+  ][, .(
+    BOX_DMN_w = sum(BOX_DMN_w), 
+    POOL_DMN_INTERSPERSION = weighted.mean(BOX_DONOR_SAMPLE_PROB, w = BOX_DMN_w)
+  ), keyby = dmn_cols]
+  setattr(out, "box_expected", exp_dt )
+  out
+}
+
+
 #' TODO *CLEANUP*
 calculate_realized_interspersion <- function(box_def, monitored_trips) {
   # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon); 
@@ -716,4 +735,263 @@ simulate_interspersion <- function(box_def, sample_rates, iter, seed) {
   setattr(sim_dt, "year_strata_domains", c(year_strata, domains))
   
   sim_dt
+}
+
+
+calculate_density <- function(sim_res, fill_color) {
+  # sim_res <- copy(sim.programmed.stratum); fill_color <- "dodgerblue"
+  
+  year_strata_domains <- attr(sim_res, "year_strata_domains")
+  domain_tbl <- setorderv(unique(subset(sim_res, select = year_strata_domains)), year_strata_domains)
+  tail_color <- paste0(fill_color, "4")
+  
+  domain_density <- vector(mode = "list", length = nrow(domain_tbl))
+  for(i in 1:nrow(domain_tbl)) {
+    
+    dmn_subset <- sim_res[domain_tbl[i,], on = year_strata_domains ]
+    dmn_quantile <- quantile(dmn_subset$INSP, probs = c(0.025, 0.975))
+    dmn_median <- quantile(dmn_subset$INSP, probs = 0.5)
+    
+    # Due to rounding errors, INSP can be above 1.0. Truncate such cases, but make a check that INSP wasn't incorrectly
+    # calculated to be above 1.
+    if(nrow(dmn_subset[INSP > 1 + 1e5])) stop( paste(unname(domain_tbl[i,]), collapse = " "), " had INSP values > 1!")
+    dmn_subset[INSP > 1, INSP := trunc(INSP, 0)]
+    
+    # Run geom_density and extract the result
+    dmn_density <- ggplot_build(
+      ggplot(dmn_subset, aes(x = INSP)) + geom_density(bounds = c(0, 1))
+    )$data[[1]]
+    dmn_density <- data.table(domain_tbl[i,], X = dmn_density$x, Y = dmn_density$y)
+    
+    # Identify the quantiles and assign them to each datapoint
+    dmn_density$quant = factor(findInterval(dmn_density$X, dmn_quantile))
+    # Define plotting fill colors and plotting groups
+    dmn_density[, FILL := as.factor(fcase(quant %in% c(0, 2), tail_color, quant == 1, fill_color))]
+    
+    # Extract the cutoffs of each group
+    cutoffs <- dmn_density[, .SD[c(1, .N),], keyby = c(year_strata_domains, "quant", "FILL")]
+    # For the lower , add the x values of the tails 0 and 3
+    quant_1.min <- cutoffs[quant == 0][.N][, ':=' (FILL = fill_color, quant = 1)][]
+    quant_1.max <- cutoffs[quant == 2][1][, ':=' (FILL = fill_color, quant = 1)][]
+    
+    # Identify the median and split the middle.
+    quant_1 <- rbind(quant_1.min, dmn_density[quant == 1], quant_1.max)
+    quant_1$GROUP <- findInterval(quant_1$X, dmn_median) + 1
+    quant_1_g2 <- copy(quant_1[GROUP == 1][.N])
+    quant_1_g2[, GROUP := 2]
+    quant_1 <- setorder(rbind(quant_1, quant_1_g2), X, GROUP)
+    
+    quant_0 <- dmn_density[quant == 0][, GROUP := 0][]
+    quant_2 <- dmn_density[quant == 2][, GROUP := 3][]
+    
+    # Put it all back together. If distributions are so tight that there are not 3 quantile groups, omit empty groups.
+    dmn_density <- rbind(quant_0, quant_1, quant_2)[!is.na(STRATA)]
+    
+    domain_density[[i]] <-  dmn_density
+  }
+  domain_density <- rbindlist(domain_density)
+  domain_density[, GROUP := as.factor(GROUP)]
+  
+  setattr(domain_density, "year_strata_domains", year_strata_domains)
+  domain_density[]
+}
+
+
+# Combine both datasets, scaling them so that y-axis is centered
+combine_distributions <- function(realized, programmed) {
+  # realized <- copy(realized.density); programmed <- copy(programmed.density)
+  
+  year_strata_domains <- attr(realized, "year_strata_domains")
+  
+  programmed_flipped <- copy(programmed)
+  programmed_flipped[, Y := -Y]
+  dist_dat <- rbind(cbind(DIST = "REAL", realized), cbind(DIST = "PROG", programmed_flipped))
+  
+  dist_dat[, MAX_ABS := max(abs(Y)), keyby = year_strata_domains]
+  dist_dat[, Y := Y/MAX_ABS]
+  setattr(dist_dat, "year_strata_domains", year_strata_domains)
+  dist_dat
+}
+
+
+# Generate summary plots of interspersion density. Use facet_ functions to separate year and strata and FMP if desired.
+plot_interspersion_density <- function(den, real_interspersion, dmn_N){
+  # den <- copy(density.stratum); real_interspersion <- copy(real_interspersion.stratum); dmn_N <- copy(dmn_N.stratum)
+  
+  # ggplot(den, aes(x = X)) + 
+  #   geom_hline(yintercept = 0, color = "gray") + 
+  #   geom_ribbon(aes(ymin = 0, ymax = Y, fill = FILL, group = interaction(DIST, GROUP)), color = "black", outline.type = "full", alpha = 0.8) + 
+  #   geom_vline(data = real_interspersion, aes(xintercept = INSP, linetype = "Actually Realized"), color = "purple", linewidth = 0.75) + 
+  #   theme(
+  #     axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+  #     panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank() ) + 
+  #   ylim(c(-1, 1)) + 
+  #   labs(x = "Interspersion", y = "Density") +  
+  #   scale_fill_identity(
+  #     name = "Monitoring Rate", guide = "legend",
+  #     breaks = c("green", "dodgerblue"), labels = c('Realized', "Programmed")) +
+  #   scale_linetype_manual(name = NULL, values = 2 ) +
+  #   theme(legend.position = "bottom", legend.key = element_rect(fill = "white")) + 
+  #   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+  #   geom_text(data = dmn_N, aes(label = STRATA_DMN_N, x = X, y = 1), hjust = 0, vjust = 1, size = 3.5)
+  
+  # Identify the fill colors of the distributions
+  fill_breaks <- unique(den$FILL)[!(unique(den$FILL) %like% '4')]
+  
+  ggplot(den, aes(x = X)) + 
+    geom_hline(yintercept = 0, color = "gray") + 
+    geom_ribbon(aes(ymin = 0, ymax = Y, fill = FILL, group = interaction(DIST, GROUP)), color = "black", outline.type = "full", alpha = 0.8) + 
+    geom_vline(data = real_interspersion, aes(xintercept = INSP, linetype = "Actually Realized"), color = "purple", linewidth = 0.75) + 
+    theme(
+      axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+      panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank() ) + 
+    ylim(c(-1, 1)) + 
+    labs(x = "Interspersion", y = "Density") +  
+    scale_fill_identity(
+      name = "Monitoring Rate", guide = "legend",
+      breaks = fill_breaks, labels = c('Realized', "Programmed")) +
+    scale_linetype_manual(name = NULL, values = 2 ) +
+    theme(legend.position = "bottom", legend.key = element_rect(fill = "white")) + 
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+    geom_text(data = dmn_N, aes(label = STRATA_DMN_N, x = -Inf, y = Inf), hjust = -0.1, vjust = 1.1, size = 3.5)
+}
+
+
+plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersion.realized, exp_interspersion.programmed){
+  # box_def <- copy(box_def.stratum_fmp); real_interspersion <- copy(real_interspersion.stratum_fmp);  exp_interspersion.realized <- copy(exp_interspersion.realized.stratum_fmp)
+  
+  # Make a dt of all year * strata
+  year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
+  year_strata_dt <- box_def$dmn$geom_dmn_df %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
+  
+  realized_boxes <- attr(exp_interspersion.realized.stratum_fmp, "box_expected")$RAW[
+  ][attr(real_interspersion, "sampled_boxes"), on = c(year_strata, "BOX_ID")
+  ][!is.na(HEX_ID)]
+  
+  map_out_lst <- vector(mode = "list", length = nrow(year_strata_dt))
+  
+  # Make plots for each year_strata
+  for(i in 1:nrow(year_strata_dt)) {
+    # i <- 1
+    
+    stratum_map_lst <- list(BOX = NA, HEX_ID.realized = NA, HEX_ID.programmed = NA)
+    
+    # Subset stratum
+    stratum_sub <- merge(box_def$dmn$geom_dmn_df, year_strata_dt[i,], on = year_strata, all.y = T) %>% dplyr::filter(BOX_DMN_n > 0)
+    # Extract the spatial extent of the fishing effort
+    stratum_sub.bbox <- stratum_sub %>% st_bbox()
+    # Subset boxes that were sampled (realized)
+    stratum_sub.sampled <- merge(
+      stratum_sub, 
+      attr(real_interspersion, "sampled_boxes"),
+      by = c(year_strata, "BOX_ID"))
+    
+    # And those not near a sampled neighbor
+    stratum_sub.gaps <- setdiff(stratum_sub, stratum_sub.sampled)
+    # Plot boxes that didn't have a sample in neighboring boxes with a red outline
+    # Plot by BOX (HEX_ID and WEEK)
+    # This is way more information than we'd share with anyone else, but it's helpful to analysts to see exactly
+    # when/where monitoring/gaps occured. 
+    stratum_map_lst[["BOX"]] <- ggplot(stratum_sub) + 
+      #geom_sf(data = shp_nmfs %>% sf::st_set_crs(st_crs(3467))) + 
+      geom_sf(data = ak_low_res %>% sf::st_set_crs(st_crs(3467)), fill = "gray80") +
+      geom_sf(data = nmfs_low_res %>% sf::st_set_crs(st_crs(3467)), fill = NA) +
+      geom_sf(aes(fill = BOX_DMN_w)) + 
+      facet_wrap(~TIME) + 
+      geom_sf(data = stratum_sub.gaps, color = "red", alpha = 0, linewidth = 1) + 
+      scale_fill_viridis_c(trans = "log") + 
+      coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) + 
+      theme(legend.position = "bottom")
+    # TODO Knowing which boxes were sampled vs which were neighboring might be informative too! 
+    
+    # Get expected probability that each box is sampled and its weight
+    stratum_hex_exp <- attr(exp_interspersion.realized.stratum_fmp, "box_expected")$RAW[
+    ][year_strata_dt[i,], on = year_strata
+    ][, .(HEX_EXP = sum(BOX_DMN_w * BOX_DONOR_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
+    
+    # Merge in hex_id geometry
+    stratum_hex_exp <- merge(
+      box_def$geom_sf %>% select(HEX_ID, geometry) %>% unique(), 
+      stratum_hex_exp, 
+      by = "HEX_ID"
+    )
+    #' Recall that box is defined by HEX_ID and week, so we can summarize each HEX_ID over all WEEKs. 
+    #' If we subset all the 'actually sampled' boxes, we can total up the weight of trips for each HEX_ID and compare it
+    #' to the total expected interspersion of each HEX_ID. The difference of each HEX_ID, realized - expected tells us where
+    #' we got more or less monitoring relative to our expectation. Using the difference from the *realized rate* because
+    #' we are interested in departures from random sampling. Use the *programmed rate* to see differences relative to 
+    #' our goal at the start of the ear
+    stratum_hex_real <- realized_boxes[year_strata_dt[i,], on = year_strata][
+    ][, .(REALIZED = sum(BOX_DMN_w)), by = c(year_strata, "HEX_ID")]
+    stratum_hex <- merge(stratum_hex_exp, stratum_hex_real, on = c(year_strata, "HEX_ID"), all.x = T) %>%
+      mutate(REALIZED = ifelse(is.na(REALIZED), 0, REALIZED)) %>%
+      mutate(DIFF = REALIZED - HEX_EXP) 
+    # Fill colors represent difference in the realized  raw number of trips neighboring a monitored trip relative to
+    # expectation
+    # Plot by HEX_ID (across WEEK)
+    stratum_map_lst[["HEX_ID.realized"]] <- ggplot(stratum_hex) + 
+      facet_grid(ADP ~ STRATA, labeller = labeller(STRATA = function(x) gsub("_", " ", x))) +
+      geom_sf(data = shp_land, fill = "gray80") +
+      geom_sf(data = shp_fmp, color = "black", fill = NA) +
+      geom_sf(aes(fill = DIFF), alpha = 0.8) + 
+      scale_fill_gradient2() + 
+      coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) +
+      theme(legend.position = "bottom") + 
+      labs(
+        fill = "Difference (realized - expected) in number of\ntrips monitored or neighboring a monitored trip",
+        subtitle = "Relative to realized monitoring rates")
+    
+    # Do the same but with programmed rates
+    # Get expected probability that each box is sampled and its weight
+    stratum_hex_exp <- attr(exp_interspersion.programmed.stratum_fmp, "box_expected")$RAW[
+    ][year_strata_dt[i,], on = year_strata
+    ][, .(HEX_EXP = sum(BOX_DMN_w * BOX_DONOR_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
+    
+    # Merge in hex_id geometry
+    stratum_hex_exp <- merge(
+      box_def$geom_sf %>% select(HEX_ID, geometry) %>% unique(), 
+      stratum_hex_exp, 
+      by = "HEX_ID"
+    )
+    #' Recall that box is defined by HEX_ID and week, so we can summarize each HEX_ID over all WEEKs. 
+    #' If we subset all the 'actually sampled' boxes, we can total up the weight of trips for each HEX_ID and compare it
+    #' to the total expected interspersion of each HEX_ID. The difference of each HEX_ID, realized - expected tells us where
+    #' we got more or less monitoring relative to our expectation. Using the difference from the *realized rate* because
+    #' we are interested in departures from random sampling. Use the *programmed rate* to see differences relative to 
+    #' our goal at the start of the ear
+    stratum_hex_real <- realized_boxes[year_strata_dt[i,], on = year_strata][
+    ][, .(REALIZED = sum(BOX_DMN_w)), by = c(year_strata, "HEX_ID")]
+    stratum_hex <- merge(stratum_hex_exp, stratum_hex_real, on = c(year_strata, "HEX_ID"), all.x = T) %>%
+      mutate(REALIZED = ifelse(is.na(REALIZED), 0, REALIZED)) %>%
+      mutate(DIFF = REALIZED - HEX_EXP) 
+    
+    stratum_map_lst[["HEX_ID.programmed"]] <- ggplot(stratum_hex) + 
+      facet_grid(ADP ~ STRATA, labeller = labeller(
+        STRATA = function(x) paste0("Stratum : ", gsub("_", " ", x)),
+        ADP = function(x) paste0("Year : ", x))) + 
+      geom_sf(data = shp_land, fill = "gray80") +
+      geom_sf(data = shp_fmp, color = "black", fill = NA) +
+      geom_sf(aes(fill = DIFF), alpha = 0.8) + 
+      scale_fill_gradient2() + 
+      coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) +
+      theme(legend.position = "bottom") + 
+      labs(
+        fill = "Difference (realized - expected) in number of\ntrips monitored or neighboring a monitored trip",
+        subtitle = "Relative to programmed monitoring rates")
+    
+    map_out_lst[[i]] <- stratum_map_lst
+    
+  }
+  names(map_out_lst) <- apply(year_strata_dt, 1, paste0, collapse = ".")
+  
+  if(F) {
+    
+    # TODO Since we also simulated sampling with each rate, we can technically find the 95% range of each HEX_ID and
+    # see if our outcome was inside or outside that range? We don't have raw outputs at the moment (a lot of data to save!)
+    
+    # TODO Helpful to count how many sampled trips/neighbors in each box?
+  }
+  
+  map_out_lst
+  
 }
