@@ -7,7 +7,7 @@
   # Fix label wraps (ultimately reduces lines) []
   # Separate script for unused materials? []
   # add google drive script for downloading data []
-    # currently ODDS data is not housed in an accessible drive
+  # add google drive script for outputting plots []
   # delete tables from repo []
   # remove unused libraries []
 
