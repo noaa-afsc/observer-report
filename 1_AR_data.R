@@ -177,14 +177,16 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
 mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
 ][STRATA == "ZERO", STRATA := "OB HAL"]
+mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
 obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
 obs_act_days <- mutate(obs_act_days, ADP = as.numeric(as.character(ADP)))
+if(!any(obs_act_days$STRATA %like% "OB ")) stop("You still have non-observer strata in 'obs_act_days'")
 
 rm(td_mod0, mod_dat, mod_dat_copy, model_trip_duration)
 
