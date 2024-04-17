@@ -1619,37 +1619,6 @@ calculate_expected_interspersion <- function(box_def, sample_rates){
   out
 }
 
-calculate_realized_interspersion <- function(box_def, monitored_trips) {
-  # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon); 
-  # box_def <- copy(box_def.stratum_fmp); monitored_trips <- copy(realized_mon); 
-  
-  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
-  domains <- unlist(box_def$params[c("year_col", "stratum_cols", "dmn_cols")], use.names = F)
-  
-  # Identify sampled boxes and neighbors
-  box_sample <- copy(box_def$og_data)
-  box_sample <- box_sample[monitored_trips, on = c(year_strata,  "TRIP_ID")]
-  box_sample <- unique(subset(box_sample, select = c(year_strata, "TIME", "HEX_ID", "BOX_ID")))
-  
-  dmn_sample <- split(box_sample, by = year_strata)
-  nbr_sample <- lapply(dmn_sample, function(x) box_def$nbr_lst[ x[["BOX_ID"]] ])
-  nbr_sample <- lapply(nbr_sample, function(x) unique(unlist(x)))
-  
-  nbr_sample_dt <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = "ADP.STRATA")
-  nbr_sample_dt[, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]") ]
-  nbr_sample_dt[, "ADP.STRATA" := NULL]
-  nbr_sample_dt[, ADP := as.integer(ADP)]
-  
-  strata_domain_n <- box_def$dmn$strata_dmn_n_dt
-  insp_dt <- box_def$dmn$box_dmn_smry_dt[nbr_sample_dt, on = c(year_strata, "BOX_ID")][!is.na(BOX_DMN_w)]
-  insp_dt_sum <- insp_dt[, .(SUM_DMN_w = sum(BOX_DMN_w)) , keyby = domains]
-  insp_dt_sum <- insp_dt_sum[strata_domain_n, on = domains]
-  insp_dt_sum[, INSP := SUM_DMN_w / STRATA_DMN_N]
-  
-  setattr(insp_dt_sum, "sampled_boxes", nbr_sample_dt)
-  
-  insp_dt_sum[!is.na(INSP)]
-}
 
 #' *OLD VERSION*
 if(F){
@@ -1712,33 +1681,7 @@ if(F){
 }
 }
 
-# A wrapper for calculate_realized_interspersion, but randomly samples to create new `monitored_trips` object
-simulate_interspersion <- function(box_def, sample_rates, iter, seed) {
-  # box_def <- copy(box_def.stratum); sample_rates <- copy(programmed_rates); iter <- 1000; seed <- 12345
-  
-  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
-  domains <- box_def$params$dmn_cols
-  sim_lst <- vector(mode = "list", length = iter)
-  set.seed(seed)
-  for(i in seq_len(iter)){
-    
-    if(i %% 100 == 0) cat(paste0(i, ", "))
-    
-    # Sample according to sample rates
-    sample_lst <- apply(sample_rates, 1, function(x) runif(x[["STRATA_N"]]) < x[["SAMPLE_RATE"]])
-    trips <- setorderv(unique(subset(box_def$og_data, select = c(year_strata, "TRIP_ID"))), year_strata)
-    #trips$SAMPLE <- unlist(sample_lst)
-    
-    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])
-  } 
-  
-  sim_dt <- rbindlist(sim_lst, idcol = "ITER")
-  # sim_dt[, .(MEAN = mean(INSP)), keyby = year_strata] 
-  # Capture the domains as an attribute
-  setattr(sim_dt, "year_strata_domains", c(year_strata, domains))
-  
-  sim_dt
-}
+
 
 calculate_density <- function(sim_res, fill_color) {
   # sim_res <- copy(sim.programmed.stratum); fill_color <- "dodgerblue"
@@ -1883,7 +1826,12 @@ programmed_rates <- rbind(programmed_rates, data.table(ADP = 2022:2023, STRATA =
 programmed_rates[, STRATA_N := realized_rates.val[programmed_rates, STRATA_N, on = .(ADP, STRATA)]]
 setcolorder(programmed_rates, c("ADP", "STRATA", "STRATA_N", "SAMPLE_RATE"))
 
-#' Check to make sure all strata names match between pc_effort_st and rates objects!*
+#' Check to make sure all year/strata names match between rates objects
+if( !fsetequal(unique(realized_rates.val[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
+  stop("STRATA and ADP in `realized_rates.val` does not match those in `programmed_rates!`")
+}
+
+#' Check to make sure all year/strata names match between pc_effort_st and rates objects!
 if( !fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
   stop("STRATA and ADP in `pc_effort_dt` does not match those in `programmed_rates!`")
 }
@@ -1913,9 +1861,9 @@ real_interspersion.stratum <- calculate_realized_interspersion(box_def.stratum, 
 ### Simulate trip selection to create distributions of interspersion ----
 
 # Programmed rates
-sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 1000, seed = 12345)
+sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 100, seed = 12345)
 # Realized rates
-sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 1000, seed = 12345)
+sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 100, seed = 12345)
 
 # Calculate density of both distributions
 density.programmed.stratum <- calculate_density(sim.programmed.stratum, "dodgerblue")
