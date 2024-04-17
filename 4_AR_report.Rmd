@@ -1429,81 +1429,70 @@ Max.ts.date <- work.data %>%
 
 # Count the number of total and monitored trips that occurred at each date
 For.ts.temporal.plot <- Max.ts.date  %>%
-                        group_by(STRATA, Date=MAX_TARGET_DATE) %>%
-                        summarise(N=length(unique(TRIP_ID)),
-                                  n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>% 
-                        ungroup()
+  group_by(STRATA, Date = MAX_TARGET_DATE) %>%
+  summarise(N = length(unique(TRIP_ID)), # Number of total trips
+            n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>% # Number of observed trips 
+  ungroup()
 
 # Fill in missing dates using tidyr::complete()
 For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-         mutate(Date=as.Date(Date)) %>% 
-         complete(nesting(STRATA), Date=seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by="day")) 
+  mutate(Date = as.Date(Date)) %>% 
+  complete(nesting(STRATA), Date = seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by = "day")) %>%
+  mutate(YEAR = year(Date))
 
-# Fill in rates, effective dates, and expiration dates  
-For.ts.temporal.plot <- merge(For.ts.temporal.plot,
-                              select(partial_time, c(STRATA, Rate, Effective_Date, Expire_After))) %>%
-                        filter(Date >= Effective_Date & Date <= Expire_After)
+# Fill in rates
+For.ts.temporal.plot <- left_join(For.ts.temporal.plot,
+                              select(partial, c(YEAR, STRATA, Rate)), by = c("YEAR", "STRATA"))
 
-# Count cumulative number of trips by time period
-For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-                        group_by(STRATA, Effective_Date, Expire_After) %>%
-                        mutate(N = ifelse(is.na(N), 0, N),
-                               n = ifelse(is.na(n), 0, n)) %>% 
-                        mutate(N.cuml = cumsum(N)) %>% 
-                        group_by(STRATA) %>% 
-                        # Count cumulative number of monitored trips by stratum
-                        mutate(n.cuml = cumsum(n), 
-                               # Count the number of monitored trips that occured prior to the last time period  
-                               n.after.waivers = sum(n[Date < as.Date("2020-07-01")]),
-                               n.after.waivers = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-07-01"), n.after.waivers, 0)) %>% 
-                        ungroup()
+# Count cumulative number of trips by stratum and year
+For.ts.temporal.plot <- 
+  For.ts.temporal.plot %>% 
+  group_by(YEAR, STRATA) %>%
+  mutate(N = ifelse(is.na(N), 0, N),
+         n = ifelse(is.na(n), 0, n)) %>% 
+  mutate(N.cuml = cumsum(N),
+         n.cuml = cumsum(n)) %>% 
+  ungroup()
 
 # Calculate the expected number of trips  
 # The number of trips that occured prior to the third time period
 # is used as a vertical adjustment for the expectations on the plot  
-For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-                        mutate(n.expected = round((N.cuml * Rate) + n.after.waivers, 0),
-                               Low95 = qbinom(0.025, N.cuml, Rate) + n.after.waivers,
-                               High95 = qbinom(0.975,N.cuml, Rate) + n.after.waivers,
-                        Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
-                        Observed.days = ifelse(n > 0, 1, NA)) %>% 
-                        data.frame()
-
-# Remove values that aren't applicable for the waiver period
-For.ts.temporal.plot <- mutate(For.ts.temporal.plot,
-                               n.expected = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, n.expected),
-                               Low95 = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, Low95),
-                               High95 = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, High95),
-                               Outside.bounds = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, Outside.bounds))
+For.ts.temporal.plot <- 
+  For.ts.temporal.plot %>%
+  group_by(YEAR) %>%
+  mutate(n.expected = round((N.cuml * Rate), 0),
+         Low95 = qbinom(0.025, N.cuml, Rate),
+         High95 = qbinom(0.975,N.cuml, Rate),
+         Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
+         Observed.days = ifelse(n > 0, 1, NA)) %>% 
+  data.frame()
 
 # Summarise days and portion of the year outside of expected
-For.ts.temporal.summary <- For.ts.temporal.plot %>% 
-                           group_by(STRATA) %>% 
-                           summarise(N.outside = sum(Outside.bounds, na.rm = TRUE), 
-                                     Days = ifelse(STRATA %in% c("EM HAL", "EM POT"), 
-                                            sum(Date >= as.Date("2020-01-01")), 
-                                            # Only count non-waiver period days for observed strata 
-                                            sum(Date < as.Date("2020-03-26") | Date >= as.Date("2020-07-01")))) %>% 
-                           distinct() %>% 
-                           mutate(`% Outside` = round(100*N.outside/Days, 1))
+For.ts.temporal.summary <- 
+  For.ts.temporal.plot %>% 
+  group_by(YEAR, STRATA) %>% 
+  reframe(N.outside = sum(Outside.bounds, na.rm = TRUE),
+            Days = ifelse(YEAR == 2022,
+                          sum(Date >= as.Date("2022-01-01")),
+                          sum(Date >= as.Date("2023-01-01")))) %>%
+  distinct() %>% 
+  mutate(`% Outside` = round(N.outside / Days * 100, 1))
 
-#Calculate and store the p.value from a binomial
-for.binom <- For.ts.temporal.plot %>% 
-                     group_by(STRATA, Effective_Date, Rate) %>% 
-                     summarize(n = sum(n), 
-                               N = sum(N)) %>% 
-                     mutate(p = format(round(stats::binom.test(n, N, Rate)$p.value[1],3), nsmall=3),
-                            estimate = format(round(stats::binom.test(n, N, Rate)$estimate[1],3), digits=3, nsmall=3),
-                            # Results text with probability of success (estimate) & p-value
-                            text = paste0("*", STRATA, "* stratum expected rate = ", round(Rate, 3), ", realized rate = ", estimate, ", *p*-value = ", p)) %>% 
+# Calculate and store the p.value from a binomial
+for.binom <- 
+  For.ts.temporal.plot %>% 
+  group_by(YEAR, STRATA, Rate) %>% 
+  summarize(n = sum(n), 
+            N = sum(N)) %>% 
+  mutate(p = format(round(stats::binom.test(n, N, Rate)$p.value[1], 3), nsmall = 3),
+         estimate = format(round(stats::binom.test(n, N, Rate)$estimate[1], 3), digits = 3, nsmall = 3),
+         # Results text with probability of success (estimate) & p-value
+         text = paste0("*", STRATA, "* stratum expected rate = ", round(Rate, 3), 
+                       ", realized rate = ", estimate, ", *p*-value = ", p)) %>% 
   ungroup()
 
-# Remove significance tests for the waiver period  
-for.binom <- mutate(for.binom, p = ifelse(Effective_Date == as.Date("2020-03-26"), NA, p),
-                               text = ifelse(Effective_Date == as.Date("2020-03-26"), NA, text))
-
-#Interpretive text indicating whether the strata "were" or "were not" within
-#expectations of the binomial distribution
+# Interpretive text indicating whether the strata "were" or "were not" within
+# expectations of the binomial distribution
 passfail <- ifelse(any(for.binom$p < 0.05), "were not", "were")
 
 ```
