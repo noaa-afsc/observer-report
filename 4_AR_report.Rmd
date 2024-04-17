@@ -2149,6 +2149,13 @@ kbl(
   kable_paper() %>%
   # Group columns 
   add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
+
+kbl(
+  select(trip.budget.table.2023, Strata, pred_days, act_days, diff, perc) %>% 
+  rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
+  kable_paper() %>%
+  # Group columns 
+  add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
 ```
 
 #####
@@ -2311,7 +2318,8 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r"
 `r if(tech.memo){'# Figures'}`
 
 ```{r outcomes, echo = FALSE, warning = FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
-print(grid.arrange(outcomes.plot, costs.plot, nrow = 2))
+print(grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2))
+print(grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2))
 ```
 
 ####`r fig_nums('outcomes.plot', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
