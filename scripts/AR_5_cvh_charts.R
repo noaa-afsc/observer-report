@@ -88,13 +88,14 @@ load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
 
 
 # load ODDS data from google sheet
-# the spreadsheet can be found at this link:
+# the ORIGINAL spreadsheet can be found at this link:
   # https://docs.google.com/spreadsheets/d/17BsqLarIh-8gqu9W5VWiEvFTjjnzaK-R48TXweXc2ag/edit?usp=sharing
+  # here we are using a COPY of this spreadsheet, made 4/17/2024
 
 # to properly load the ODDS data, we need to create the unique dribble ID
   # THIS IS UNIQUE TO EACH USER SINCE THE DATA IS NOT HOUSED IN A SHARED FOLDER
   # EDIT THE FOLLOWING LINE ACCORDING TO WHERE THE DATA IS LOCATED IN YOUR DRIVE
-project_dribble <- googledrive::drive_get("possible_trips_not_logged_or_logged_incorrectly")
+project_dribble <- googledrive::drive_get("2023 Observer Program Annual Report/Chap 5 - Enforcement & Compliance/possible_trips_not_logged_or_logged_incorrectly_copy")
 
 # extract the ID of the file (if there are multiple, select 1 since there should
   # be no difference among the files (I'm not certain though))
