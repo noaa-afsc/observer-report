@@ -531,10 +531,11 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
     )) stop("STRATA_N and sum(BOX_DMN_w) are not equal!")
     
     box_res$dmn <- list()
+    box_res$dmn$og_data <- data_dmn
     box_res$dmn$strata_dmn_n_dt <- strata_dmn_N_dt
     box_res$dmn$box_dmn_smry_dt <- dmn_nbr_dt
     box_res$dmn$strata_dt <- setorderv(unique(strata_N_dt[, ..stratum_cols]), cols = stratum_cols)[, STRATUM_ID := .I][]
-
+    
   }
 
   # Create sf object with geometry if requested
@@ -580,7 +581,7 @@ calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor
   
   # For each acceptor stratum...
   for(i in 1:length(out)) {
-    # i <- 1
+    # i <- 4
 
     if( nrow(stratum_dt[ acceptor_donor_lst[[i]] ]) == 0 ) {
       # If there are no donors, skip
@@ -651,7 +652,8 @@ calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor
   
 }
 
-
+#' This function calculates the expected stratum-specific interspersion (the acceptor_donor_lst matches each stratum 
+#' with itself only)
 calculate_expected_interspersion <- function(box_def, sample_rates){
   # box_def <- copy(box_def.stratum); sample_rates <- copy(programmed_rates)
   
@@ -670,8 +672,8 @@ calculate_expected_interspersion <- function(box_def, sample_rates){
   out
 }
 
-
-#' TODO *CLEANUP*
+# TODO I think this function is doing what I've asked to do so far, but it probably isn't handling non-spatiotemporal
+# domains correctly!
 calculate_realized_interspersion <- function(box_def, monitored_trips) {
   # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon); 
   # box_def <- copy(box_def.stratum_fmp); monitored_trips <- copy(realized_mon); 
@@ -680,24 +682,28 @@ calculate_realized_interspersion <- function(box_def, monitored_trips) {
   domains <- unlist(box_def$params[c("year_col", "stratum_cols", "dmn_cols")], use.names = F)
   
   # Identify sampled boxes and neighbors
-  box_sample <- copy(box_def$og_data)
-  box_sample <- box_sample[monitored_trips, on = c(year_strata,  "TRIP_ID")]
+  box_sample <- copy(box_def$og_data)[monitored_trips, on = c(year_strata,  "TRIP_ID")]
   box_sample <- unique(subset(box_sample, select = c(year_strata, "TIME", "HEX_ID", "BOX_ID")))
   
   dmn_sample <- split(box_sample, by = year_strata)
   nbr_sample <- lapply(dmn_sample, function(x) box_def$nbr_lst[ x[["BOX_ID"]] ])
   nbr_sample <- lapply(nbr_sample, function(x) unique(unlist(x)))
   
-  nbr_sample_dt <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = "ADP.STRATA")
-  nbr_sample_dt[, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]") ]
-  nbr_sample_dt[, "ADP.STRATA" := NULL]
-  nbr_sample_dt[, ADP := as.integer(ADP)]
+  nbr_sample_dt <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = "ADP.STRATA")[
+  ][, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]")
+  ][, "ADP.STRATA" := NULL
+  ][, ADP := as.integer(ADP)][]
   
   strata_domain_n <- box_def$dmn$strata_dmn_n_dt
-  insp_dt <- box_def$dmn$box_dmn_smry_dt[nbr_sample_dt, on = c(year_strata, "BOX_ID")][!is.na(BOX_DMN_w)]
-  insp_dt_sum <- insp_dt[, .(SUM_DMN_w = sum(BOX_DMN_w)) , keyby = domains]
-  insp_dt_sum <- insp_dt_sum[strata_domain_n, on = domains]
-  insp_dt_sum[, INSP := SUM_DMN_w / STRATA_DMN_N]
+  
+  insp_dt <- box_def$dmn$box_dmn_smry_dt[
+  ][nbr_sample_dt, on = c(year_strata, "BOX_ID")
+  ][!is.na(BOX_DMN_w)]
+  
+  insp_dt_sum <- insp_dt[
+  ][, .(SUM_DMN_w = sum(BOX_DMN_w)), keyby = domains
+  ][strata_domain_n, on = domains
+  ][, INSP := SUM_DMN_w / STRATA_DMN_N][]
   
   setattr(insp_dt_sum, "sampled_boxes", nbr_sample_dt)
   
@@ -995,3 +1001,4 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
   map_out_lst
   
 }
+
