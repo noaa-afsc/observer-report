@@ -902,9 +902,9 @@ odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 #ODDS by date plot (Cumulative coverage percent by strata over the year)
 odds.by.date.plot <- ggplot(odds.ts.daily.cuml, aes(x = Date,  col = TYPE)) +
      # Add lines for selection rates  
-     geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, size = 1) +
+     geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
      geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
-     geom_line(aes(y = running.pct), size = 1.5) +
+     geom_line(aes(y = running.pct), linewidth = 1.5) +
      scale_color_manual(name = "Rate Type", values = c("black", "gray70")) +
      ylab("Cumulative Coverage Percent\n") +
      coord_cartesian(ylim = c(0, 70)) +
@@ -1080,7 +1080,7 @@ Coverage.Table.full <- bind_rows(
   # and voluntary full coverage)
   work.data %>%
     filter(COVERAGE_TYPE == "FULL") %>% 
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1089,13 +1089,14 @@ Coverage.Table.full <- bind_rows(
            deployment.method = "Trip-Selection",
            Rate = 1,
            meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%#,
-    select(COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
-    arrange(desc(STRATA))
+    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
+           V, v, N, n, Pct.obs, Rate, meets.expected) #%>% 
+    #arrange(ADP, desc(STRATA))
     ,
     # Totals for vessels in the full coverage category
     work.data %>%
       filter(COVERAGE_TYPE == "FULL") %>%
+    group_by(ADP) %>%
       summarize(V = length(unique(VESSEL_ID)),
                 v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
                 N = length(unique(TRIP_ID)),
@@ -1103,15 +1104,16 @@ Coverage.Table.full <- bind_rows(
       mutate(COVERAGE_TYPE = "Full coverage total",
              Pct.obs = (n/N) * 100,
              deployment.method = "Trip-Selection")
-)
+) %>%
+  arrange(ADP, desc(STRATA))
 
 #' *PARTIAL COVERAGE TRIP-SELECTION*
 Coverage.Table.partial <- bind_rows(
   # By strata for vessels in the partial coverage category (trip-selection)
   work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    left_join(select(partial, c(STRATA, Rate)), by = "STRATA") %>%
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    left_join(select(partial, c(YEAR, STRATA, Rate)), by = join_by(ADP == YEAR, STRATA)) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1120,7 +1122,7 @@ Coverage.Table.partial <- bind_rows(
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") %>% 
     # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     mutate(
       min.expected = round(
         stats::binom.test(x = n, 
@@ -1135,14 +1137,15 @@ Coverage.Table.partial <- bind_rows(
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                  Rate * 100 < min.expected ~ "No - higher than expected",
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
-    select(COVERAGE_TYPE, STRATA, deployment.method, 
+    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, 
-           min.expected, max.expected, meets.expected) %>% 
-    arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
+           min.expected, max.expected, meets.expected) #%>% 
+    #arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
   ,
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
-    filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>% 
+    filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
+    group_by(ADP) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1150,7 +1153,8 @@ Coverage.Table.partial <- bind_rows(
     mutate(COVERAGE_TYPE = "Partial coverage total",
            Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") 
-)
+) %>%
+  arrange(ADP, match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
 
 #' *ZERO COVERAGE* 
 Coverage.Table.zero <-
@@ -1158,7 +1162,7 @@ Coverage.Table.zero <-
     filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #' *NO ZERO EM Research in 2023*
     mutate(STRATA = as.character(STRATA)) %>% 
     mutate(STRATA = ifelse(STRATA == "ZERO", "Zero coverage", STRATA)) %>% 
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1167,11 +1171,12 @@ Coverage.Table.zero <-
            deployment.method = "Trip-Selection",
            Rate = 0,
            meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%#,
-    select(COVERAGE_TYPE, STRATA, deployment.method, 
+    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected)
 
 # Totals with EM (number of vessels is not additive)
 Coverage.Table.TOTALS <- work.data %>%
+  group_by(ADP) %>%
   summarize(V = length(unique(VESSEL_ID)),
             v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
             N = length(unique(TRIP_ID)),
@@ -1182,6 +1187,8 @@ Coverage.Table.TOTALS <- work.data %>%
          Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
          Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
          Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
+
+#' *FIX ME - I'M BROKEN====================================*
 
 #' *Combine all the coverage tables*
 Coverage.Table <- bind_rows(Coverage.Table.full, 
@@ -1211,20 +1218,23 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                                ifelse(deployment.method == "Trip-Selection", 
                                       format(max.expected, digits = 1, nsmall = 1),
                                       format(max.expected, digits = 0, nsmall = 0))),
-         STRATA = fct_recode(factor(STRATA),
-                             Full = "FULL"),
-         COVERAGE_TYPE = case_when(STRATA == "Zero coverage" ~ "Zero coverage", TRUE ~ COVERAGE_TYPE),
-         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
-                                    "Full coverage" = "FULL",
-                                    "Partial coverage" = "PARTIAL")) %>%
-  select(`Coverage` = COVERAGE_TYPE, 
+         STRATA = case_when(STRATA == "FULL" ~ "Full", TRUE ~ STRATA),
+         COVERAGE_TYPE = case_when(STRATA == "Zero coverage" ~ "Zero coverage",
+                                   COVERAGE_TYPE == "FULL" ~ "Full coverage",
+                                   COVERAGE_TYPE == "PARTIAL" ~ "Partial coverage",
+                                   TRUE ~ COVERAGE_TYPE)) %>%
+  mutate(STRATA = as.factor(STRATA),
+         COVERAGE_TYPE = as.factor(COVERAGE_TYPE)) %>%
+  select(`Year` = ADP,
+         `Coverage` = COVERAGE_TYPE, 
          Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
          `Lower limit`= min.expected,
          `Upper limit` = max.expected, 
-         `Realized meets expected?` = meets.expected)
+         `Realized meets expected?` = meets.expected) %>%
+  arrange(Year)
 
 # Create an empty factor level so that you can get rid of NAs in the table.
 Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels = c(levels(Coverage.Table$Coverage), " "))
