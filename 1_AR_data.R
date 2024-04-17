@@ -153,8 +153,7 @@ work.data <- work.data %>%
     "TRW" = "OB TRW",
     "EM_POT" = "EM POT",
     "EM_HAL" = "EM HAL",
-    "EM_TRW_EFP" = "EM TRW EFP"),
-    ADP = as.factor(ADP))
+    "EM_TRW_EFP" = "EM TRW EFP"))
 
 #' [NOTE] `work.data` may be modified later in the `EM` section of this script to re-assign STRATA for any EM research
 #' vessels active for this year.
@@ -187,6 +186,9 @@ mod_dat_copy[
 obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 rm(td_mod0, mod_dat, mod_dat_copy, model_trip_duration)
+
+# Need to change year information to factor type to match other data objects
+work.data <- mutate(work.data, ADP = as.factor(ADP))
 
 # * Salmon dockside monitoring ----
 
@@ -311,7 +313,8 @@ partial <- odds.dat %>%
   mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
   mutate(Rate = ifelse(STRATA == "EM TRW EFP", 0.3333, Rate)) %>%
   distinct(YEAR, STRATA, Rate, GEAR) %>%
-  mutate(formatted_strat = paste0("*", STRATA, "*"))
+  mutate(formatted_strat = paste0("*", STRATA, "*"),
+         YEAR = as.factor(YEAR)) #' *TESTING*
 partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
