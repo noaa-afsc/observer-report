@@ -1641,6 +1641,10 @@ box_def.stratum_fmp <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
   year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
 
+# Define boxes, post-stratifying by FMP and Gear type (for OB to EM and ZE interspersion)
+box_def.stratum_gear_fmp <- define_boxes(
+  data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+  year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
 
 ## Split by Stratum Only -----------------------------------------------------------------------------------------------
 
@@ -1830,6 +1834,7 @@ interspersion_maps[["2022.OB_TRW"]]$HEX_ID.realized  #' Overall more red than bl
 # In 2022 for OB_HAL, many gaps in the BSAI, especially in the middle of the year
 interspersion_maps[["2022.OB_HAL"]]$BOX
 interspersion_maps[["2022.OB_HAL"]]$HEX_ID.realized  #' Can see the Pribilof Islands were below expected given the realized monitoring rate
+# Interestingly, we actually had higher than programmed rates in the BSAI, but it must have been concentrated in the AI and not the BS
 
 # EM_HAL and EM_POT at the time of analysis had many fewer than expected trips in the panhandle. We see more gaps in the latter half of the year when review fell behind. Should see
 # this in the temporal plots
@@ -1871,8 +1876,168 @@ interspersion_maps[["2022.OB_HAL"]]$HEX_ID.programmed  #' Given the programmed r
 
 
 
+# Realized vs Expected Interspersion of OB with EM and ZERO ------------------------------------------------------------
 
+#' TODO Do I need to get my old 2024 functions or can I use my existing ones?
+#' I don't think I currently have a way of calculating realized interspersion, only the mathematical expectation
+#' TODO These summaries can omit the OB_TRW and EM_TRW_EFP strata
 
+# calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor_lst)
+
+box_def.stratum_gear_fmp$dmn$strata_dt
+ob_em_ze_adl <- c(
+  list(4:5),  # OB_HAL and OB_POT to EM_HAL
+  list(4:5),  # OB_HAL and OB_POT to EM_POT
+  list(3),    # EM_TRW_EFP to EM_TRW_EFP
+  list(4:5),  # OB_HAL and OB_POT to OB_HAL
+  list(4:5),  # OB_HAL and OB_POT to OB_POT
+  list(6),    # OB_TRW to OB_TRW
+  list(4:5)   # OB_HAL and OB_POT to ZERO
+)
+expected_ob_em_ze_interspersion <- calculate_dmn_interspersion(box_def.stratum_gear_fmp, programmed_rates, ob_em_ze_adl)
+
+#' TODO Don't I have some functions to summarize these outputs?
+#' What do I want to summarize? Overall overlap between POOLS? Or Gear-specific within pools? FMP?
+expected_dmn_interspersion.summary <- expected_ob_em_ze_interspersion$POOLED[
+][GEAR != "TRW"  
+][, .(EXP_INSP = sum(BOX_DONOR_SAMPLE_PROB * BOX_DMN_w, na.rm = T) / sum(BOX_DMN_w)), keyby = .(ADP, POOL, BSAI_GOA, GEAR)]
+
+# TODO Get the 'realized' interspersion
+# TODO Get the distribution of the expectation given perfectly random sampling (using the prior simulation)
+
+# Programmed Rates Simulation
+
+# TODO Make this function use the acceptor_donor_lst too?
+
+box_def.stratum_gear_fmp$dmn$og_data
+
+# Use this object as the subset of TRIP_IDs that were sampled
+realized_mon
+
+#' TODO Move this to the functions folder
+#' TODO Add the 'theoretical maximum dmn_INSP' assuming all donor trips were sampled
+calculate_realized_dmn_interspersion <- function(box_def, monitored_trips, acceptor_donor_lst) {
+  # box_def <- copy(box_def.stratum_gear_fmp); monitored_trips <- copy(realized_mon); acceptor_donor_lst <- copy(ob_em_ze_adl)
+  
+  # Identify the box definition parameters for quick grouping
+  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
+  domains <- unlist(box_def$params[c("dmn_cols")], use.names = F)
+  yst <- c(year_strata, domains)
+  
+  # For each domain, identify sampled boxes and neighbors
+  box_sample <- copy(box_def$dmn$og_data)[monitored_trips, on = c(year_strata,  "TRIP_ID")]
+  box_sample <- unique(subset(box_sample, select = c(yst, "TIME", "HEX_ID", "BOX_ID")))
+  
+  dmn_sample <- split(box_sample, by = c(yst))
+  nbr_sample <- lapply(dmn_sample, function(x) box_def$nbr_lst[ x[["BOX_ID"]] ])
+  nbr_sample <- lapply(nbr_sample, function(x) unique(unlist(x)))
+  
+  yst_col <- paste(yst, collapse = ".")
+
+  nbr_sample_dt <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = yst_col)[
+  ][, (yst) := tstrsplit(get(yst_col),  split = "[.]")
+  ][, (yst_col) := NULL
+  ][, ADP := as.integer(ADP)][]
+  
+  # Get the total count of trips in each domain
+  strata_domain_n <- box_def$dmn$strata_dmn_n_dt
+  
+  # Use the acceptor_donor_lst to determine which `acceptor` boxes were sampled by `donors`
+  
+  stratum_out_lst <- vector(mode = "list", length = length(acceptor_donor_lst))
+  
+  for(i in 1:length(acceptor_donor_lst)) {
+    # i <- 1
+    
+    # Identify the stratum accepting monitoring data
+    acceptor_stratum <- box_def$dmn$strata_dt[i,]
+    # Get the domain summaries of the acceptor stratum
+    acceptor_stratum.domain <- box_def$dmn$box_dmn_smry_dt[acceptor_stratum, on = box_def$params$stratum_cols]
+    
+    # Identify which strata are donors to the acceptor
+    donor_strata <- box_def$dmn$strata_dt[acceptor_donor_lst[[acceptor_stratum$STRATUM_ID]], ]
+    # Identify all boxes with monitoring by the donor strata
+    donor_strata.boxes <- nbr_sample_dt[donor_strata, on = box_def$params$stratum_cols]
+    
+    # Identify which domains are relevant to the stratum
+    focus_domain_dt <- unique(subset(acceptor_stratum.domain, select = domains))
+    
+    focus_domain_out_lst <- vector(mode = "list", length = nrow(focus_domain_dt))
+    
+    # For each domain, total up trips that were neighboring monitoring from the donor strata
+    for(j in 1:nrow(focus_domain_dt)) {
+      # j <- 1
+      focus_domain <- focus_domain_dt[j,]
+      # Subset the acceptor stratum's boxes to those with fishing effort
+      acceptor.domain.sub <- acceptor_stratum.domain[focus_domain, on = domains][BOX_DMN_n > 0]
+      # Identify which boxes in the domain were monitored by donors
+      donor.domain.monitored_boxes <- unique(donor_strata.boxes[focus_domain, on = domains]$BOX_ID)
+      # Flag the boxes that were monitored by donors
+      acceptor.domain.sub[, MON := BOX_ID %in% donor.domain.monitored_boxes]
+      # Flag the boxes that had potential to be monitored by donors
+      potential_donor.boxes <- unique(box_def$dmn$og_data[donor_strata, on = .(STRATA)][focus_domain, on = c(domains)]$BOX_ID)
+      potential_donor.neighbors <- unique(unlist(box_def$nbr_lst[potential_donor.boxes]))
+      acceptor.domain.sub[, IN_FRAME := BOX_ID %in% potential_donor.neighbors]
+
+      focus_domain_out_lst [[j]] <- acceptor.domain.sub[
+      ][, .(
+        dmn_INSP = sum(BOX_DMN_w[MON]),  # actually realized trips neighboring monitored donors
+        max_INSP = sum(BOX_DMN_w[IN_FRAME]),  # theoretical max if all donor trips were sampled
+        sum_BOX_DMN_w = sum(BOX_DMN_w)   # Total trips of domain
+        ), keyby = c(year_strata, domains)
+      ]
+      
+    }
+    
+    stratum_out_lst[[i]] <- rbindlist(focus_domain_out_lst)
+
+  }
+  
+  out <- rbindlist(stratum_out_lst)
+  setattr(out, "sampled_boxes", nbr_sample_dt)
+  out
+  
+}
+
+realized_dmn_interspersion <- calculate_realized_dmn_interspersion(box_def.stratum_gear_fmp, realized_mon, ob_em_ze_adl)
+
+# Add Pool so we can summarize by POOL and domain
+realized_dmn_interspersion[, POOL := fcase(
+  STRATA %like% "EM", "EM",
+  STRATA %like% "OB", "OB",
+  STRATA == "ZERO", "ZERO"
+)]
+# Generate summaries by pool and domain (FMP and GEAR). Exclude TRW domains
+realized_dmn_interspersion.summary <- realized_dmn_interspersion[
+][GEAR != "TRW"
+][, .(
+  dmn_N = sum(sum_BOX_DMN_w), 
+  dmn_MAX_INSP = sum(max_INSP),
+  dmn_INSP = sum(dmn_INSP)
+  ), keyby = .(ADP, POOL, GEAR, BSAI_GOA)
+]
+realized_dmn_interspersion.summary[, ':=' (INSP = dmn_INSP / dmn_N, MAX_INSP = dmn_MAX_INSP / dmn_N)]
+
+# Combine the realized with expected (mean) and melt for plotting
+realized_dmn_interpsersion.comparison <- realized_dmn_interspersion.summary[expected_dmn_interspersion.summary, on = .(ADP, POOL, BSAI_GOA, GEAR)]
+realized_dmn_interpsersion.comparison.melt <- data.table::melt(realized_dmn_interpsersion.comparison, id.vars = c("ADP", "POOL", "GEAR", "BSAI_GOA"), measure.vars = c("INSP", "EXP_INSP", "MAX_INSP"))
+
+ggplot(realized_dmn_interpsersion.comparison.melt[variable != "MAX_INSP"], aes(x = BSAI_GOA, y = value, fill = variable)) +
+  facet_grid(ADP ~ POOL + GEAR) + 
+  geom_col(position = position_dodge()) + 
+  theme(legend.position = "bottom") + 
+  geom_point(data = realized_dmn_interpsersion.comparison.melt[variable == "MAX_INSP"], color = "blue")
+# Realized is read, expectation (mathematical mean) is green, theoretical maximum (all donor boxes monitored) is blue
+# OB-EM Generally looks as expected across FMP and Gear types for both years
+# OB-OB comparisons show OB HAL was a little low in 2022, which matches previous summary (even though realized rates were higher in the BSAI, it was biased towards BS and away from AI)
+# OB-ZE was below expected for HAL gear trips in both 2022 and 2023, POT gear was generally as expected.
+#' *NOTE* because of the changes to stratification/allocation in 2024, the 'expected' interspersion for all BSAI 
+#' comparisons should greatly improve (closer to the theoretical maximums), with small compromise to GOA
+#' Does it make sense to have interspersion on the y-axis here rather than on the x? Just need to flip my distributions...
+#' Better to have "up is better" or "right is better?
+
+# TODO Fixing define_boxes
+data <- copy(pc_effort_st); space <- c(2e5, 2e5); time <- c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"); year_col <- "ADP"; stratum_cols <- "STRATA"; geom <- T; dmn_lst <- list(nst = "GEAR", st = "BSAI_GOA"); ps_cols <- NULL
 
 
 # Realized rates by FMP ------------------------------------------------------------------------------------------------
@@ -1883,7 +2048,7 @@ dcast(
   pc_effort_st[STRATA != "ZERO", .(REALIZED = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]) / uniqueN(TRIP_ID)), keyby = .(ADP, STRATA, BSAI_GOA)],
   ADP + STRATA ~ BSAI_GOA, value.var = "REALIZED")
 realized_rates.val
-#' EM_HAL : Rates in the BSAI were only 0.19 instead of 30, but we still got expected interspersion
+  #' EM_HAL : Rates in the BSAI were only 0.19 instead of 30, but we still got expected interspersion
 #' *OB_HAL : Rates in the BSAI were higher than in the GOA, but interspersion was still lower than mean expected*
 #' OB_POT : Rates in the BSAI were 0.25, compared to 0.14 in the GOA, perhaps why interspersion was higher than mean expected.
 #' OB_TRW : Rates in the BSAI were 0.35, higher than expected, but interspersion was below mean. 0.275 in 
