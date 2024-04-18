@@ -334,7 +334,7 @@ script <- paste0("SELECT DISTINCT et.vessel_id as EM_VESSEL_ID,
 
 transform.EM.data.vessel <- dbGetQuery(channel_afsc, script)
 
-#Fix EM.data VESSEL_ID
+# Fix EM.data VESSEL_ID
 EM.data <- rename(EM.data, PS_VESSEL_ID = VESSEL_ID)
 
 EM.data <- merge(EM.data, transform.EM.data.vessel, 
@@ -349,7 +349,7 @@ script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
-#Select data for this report year and recode gear type to those used by CAS
+# Select data for this report year and recode gear type to those used by CAS
 EM.gear <- 
   select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
   distinct() %>% 
@@ -371,6 +371,7 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
 #' *2023: one vessel has trawl gear declared, but no trawl codes in EM.gear - this trip seems to be coming from EM.data*
+#' *2023: one vessel has a trip marked as NON_FISHING_TRIP = Y*
 single_gear_nas <- 
   filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
@@ -400,16 +401,20 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
   arrange(VESSEL_ID, TRIP_START_DATE_TIME)
 
-# Fix NAs in AGENCY_GEAR_CODE for EM.data
+#' *Fix NAs in AGENCY_GEAR_CODE for EM.data*
+#' *TODO We should make the query more robust, filter out non-fishing trips and when gear is NA but ODDS has it as trawl.*
 EM.data <- 
   EM.data %>% 
   # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
   # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
+  mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER == "22_SUMNERSTRAIT01.01", "POT", AGENCY_GEAR_CODE)) %>%
   # NAs for vessels that (based on ODDS and PSMFC EM.data) did not actually fish in the EM strata 
-  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear
-  filter(VESSEL_ID  != "422")
+  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear 
+  filter(VESSEL_ID  != "422") %>%
+  #' *2023 AR* Another that had it's trip marked as non-fishing
+  filter(TRIP_NUMBER != "22_BLACKPEARL07.01")
 
 # The following query will provide a list of EM selected trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
