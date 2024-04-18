@@ -203,15 +203,15 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year, "' AND '31-DEC-", year, "'
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year - 1, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
-#The following query returns all landing ID's for offloads monitored for salmon all sectors.
+# The following query returns all landing ID's for offloads monitored for salmon all sectors.
 salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 
 # Data checks and clean up
 
-#Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
+# Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
 salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 
 # * ODDS ----
@@ -316,7 +316,7 @@ partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
-                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.data <- dbGetQuery(channel_afsc, script)
 
@@ -345,7 +345,7 @@ rm(transform.EM.data.vessel)
 
 # Get gear type for EM data
 script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
-                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
@@ -541,7 +541,7 @@ if(F){
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
-                                              and adp =", year))
+                                              and adp IN(", paste(year + -1:0, collapse = ","), ")" ))
 
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
