@@ -316,7 +316,7 @@ partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
-                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.data <- dbGetQuery(channel_afsc, script)
 
