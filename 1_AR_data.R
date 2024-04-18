@@ -345,7 +345,7 @@ rm(transform.EM.data.vessel)
 
 # Get gear type for EM data
 script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
-                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
@@ -541,7 +541,7 @@ if(F){
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
-                                              and adp =", year))
+                                              and adp IN(", paste(year + -1:0, collapse = ","), ")" ))
 
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
