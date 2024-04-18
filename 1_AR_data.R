@@ -10,7 +10,6 @@ set.seed(052870)
 
 # Report year (year that fishing and observing took place)
 year <- 2023
-year2 <- 2022 #' *For 2023 AR*
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
@@ -203,15 +202,15 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year2, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year - 1, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
-#The following query returns all landing ID's for offloads monitored for salmon all sectors.
+# The following query returns all landing ID's for offloads monitored for salmon all sectors.
 salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 
 # Data checks and clean up
 
-#Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
+# Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
 salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
 
 # * ODDS ----
