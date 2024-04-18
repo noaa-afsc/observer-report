@@ -94,10 +94,8 @@ predicted <- Nnd_tbl[
 
 # * Valhalla ----
 
-#' Initial upload of [2022] Valhalla to the Shared Gdrive. Originally obtained from the 2024 ADP data folder, keeping 
-#' 2022 only (run date of 2023-04-10 15:15:15 PDT)
-#' [https://drive.google.com/drive/folders/1em6NDOvfPIkgT7FlZkdUYh1S-_z7v2PE]. 
-#' *NOTE* Downloaded version 6 (instead of the current version, which returns an error during loading!). Renamed to
+#' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.
+#' (run date of 2023-04-10 15:15:15 PDT)
 if(FALSE){
   valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
   valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]

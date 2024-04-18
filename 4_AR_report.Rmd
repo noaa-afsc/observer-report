@@ -20,11 +20,16 @@ editor_options:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load packages and functions 
 source("3_helper.R")
+```
 
-# Load data
+```{r, eval=FALSE}
+#' Download data. Run this line manually during development, but it won't run during knitting.
 gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
-load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
+```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#' Load data and set parameters
+load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
 # Avoid scientific notation
 options(scipen = 10000)
@@ -108,8 +113,6 @@ More information on the sampling design used by observers and the relationship b
 `r if(tech.memo){'In this report we attempt to evaluate the deployment of EM onto fixed gear vessels to the same degree as we evaluate the deployment of observers since catch accounting has used data collected through the *EM HAL* stratum since 2018 and the *EM POT* stratum since 2019. NMFS also sought vessels to participate in EM research and development activities. Vessels that volunteered for the fixed gear EM Program or EM research activities and were selected by the NMFS were not required to carry observers but were required to continue to log their fishing trips into the Observer Declare and Deploy System (ODDS).'}`
 
 `r if(tech.memo){'The *EM TRW EFP* stratum is represented by vessels participating in an Exempted Fishing Permit (EFP) to evaluate the efficacy of EM on pollock catcher vessels using pelagic trawl gear in the Bering Sea and Gulf of Alaska. The EFP allows pollock catcher vessels using pelagic trawl gear to use EM systems *in lieu* of at-sea observers.  While we report some findings on these vessel activities here, we do not evaluate them fully sine the EFP is not part of the regulated fishery monitoring program.'}`
-
-*PROBABLY NO LONGER RELEVANT:* `r if(tech.memo){'The largest component of the Alaskan groundfish fisheries, vessels and processors in the full coverage category (including catcher processors and participants in limited access privilege programs), were not issued waivers in 2020. Additionally, requirements for deployment of EM was not waived for trawl catcher vessels fishing under the trawl EM exempted fishing permit and only a few trips were released from coverage under the fixed gear EM portion of the partial coverage category for circumstances when an EM service technician was unable to travel.'}`
 
 #Performance Review Objectives  
 `r if(tech.memo){'The following sections contain the FMSC review of the deployment of observers in'}` `r if(tech.memo){year}` `r if(tech.memo){'relative to the intended sampling plan and goals of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS'}` `r if(tech.memo){year-1}` `r if(tech.memo){'). This report identifies where potential mechanisms for biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(tech.memo){year + 2}` `r if(tech.memo){'ADP.'}`  
@@ -244,7 +247,8 @@ Changes to our analyses were necessary to properly address the changes to the de
 The methods used in this analysis are similar to those employed in the gap analysis in Appendix C of the 2020 Draft Annual Deployment Plan and Appendix B of the 2019 Annual Report and are published in Ganz et al. (2020). Partial coverage fishing effort data from 2020 was used to quantify the degree to which data from monitored trips are available within specified spatiotemporal distances to unmonitored fishing trips. Prior versions of this analysis had quantified the degree of overlap in terms of an index. Here, we only use presence and absence of fishing effort and monitored fishing effort in each week, each NMFS area, and each stratum. More detailed versions of these plots with species target are planned to be available to stock assessment authors separate from this document.
 
 #Evaluation of Deployment in `r year`  
-The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
+The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
+
 ##Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
 
@@ -482,13 +486,7 @@ trip.budget.table.2023 <-
 
 ```
 
-Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET.2023, format = "d", big.mark = ",")` and `r formatC(AvailableYR.2023, format = "d", big.mark = ",")` days in the `r year` ADP,
-
-<!-- This section is confusing, Total.Dollars is what we actually ended up spending and PredictedYR is how many days we predicted to observe-->
-and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format = "d", big.mark = ",")` observing `r formatC(PredictedYR, format = "d", big.mark = ",")` days (NMFS `r year - 1`). 
-<!---->
-
-The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year - 1`).  
+Each year, the NMFS sets an annual budget for the deployment of partial coverage at-sea observers in terms of cost and observer days. The partial coverage observer budget for `r year` was set at \$`r formatC(BUDGET.2023, format = "d", big.mark = ",")` and `r formatC(AvailableYR.2023, format = "d", big.mark = ",")` days in the `r year` ADP.
 
 In `r year`, the FMA paid for `r formatC(round(ActualYR.2023), format = "d", big.mark = ",")` observer days, which was `r ifelse(eval.2023$pct.budget.remain != 0, abs(eval.2023$pct.budget.remain), " ")` `r ifelse(eval.2023$pct.budget.remain != 0, "%", "")` `r eval.2023$more.or.less` predicted by the average simulation, but well within the range of possibilities predicted in the `r year` ADP (`r fig_nums('outcomes.plot.2023', display = "cite")`, top panel). This is explained by the fact that there was *UPDATE* more effort in *HAL*, *POT – Tender*, and *TRW – Tender* than expected (`r tbl_nums('trip.budget.table.2023', display = "cite")`). *UPDATE* Despite observing more days than predicted, expenditures for partial observer coverage were under budget (`r fig_nums('outcomes.plot.2023', display = "cite")`, bottom panel). This resulted because the cost of a partial coverage observer day in `r year` was less than the expected cost that was estimated in the `r year` ADP.     
 
@@ -1191,8 +1189,6 @@ Coverage.Table.TOTALS <- work.data %>%
          Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
          Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) %>%
   ungroup()
-
-#' *FIX ME - I'M BROKEN====================================*
 
 #' *Combine all the coverage tables*
 Coverage.Table <- bind_rows(Coverage.Table.full, 
@@ -2183,8 +2179,8 @@ if(FALSE){
   logged.table[c(3:7)] <- lapply(logged.table[, 3:7], prettyNum, trim = TRUE, big.mark = ",")
   logged.table$Strata <- cell_spec(logged.table$Strata, italic = TRUE) # Italicize strata
   
-kbl(logged.table, escape = FALSE) %>%
-  kable_paper()
+  kbl(logged.table, escape = FALSE) %>%
+    kable_paper()
 }
 ```
 
@@ -2198,7 +2194,9 @@ Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # 
 
 kbl(
   Selection.table %>% arrange(Year, Strata, `Trip disposition`),
-  col.names = c("Year" , "Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
+  col.names = c(
+    "Year" , "Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", 
+    "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"),
   escape = FALSE, align = "lllrrrrr") %>% 
   kable_paper() 
 
