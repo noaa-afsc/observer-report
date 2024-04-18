@@ -1515,7 +1515,7 @@ For.ts.temporal.plot <- For.ts.temporal.plot %>%
                         mutate(p = ifelse(p == "0.000*", paste0("italic(p) < '0.001*'"), paste0("italic(p) == '", p, "'")))
 
 # Create "dummy" dataframe to set limits for x axes
-Temporal.plot.x_range <- data.frame(YEAR = rep(year + -1:0,2) ) %>%
+Temporal.plot.x_range <- data.frame(YEAR = rep(year + -1:0, each = 2)) %>%
   mutate(Date = as.Date(paste0(YEAR, c("-01-01", "-12-31"))))
 
 # Plot
