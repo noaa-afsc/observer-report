@@ -94,10 +94,8 @@ predicted <- Nnd_tbl[
 
 # * Valhalla ----
 
-#' Initial upload of [2022] Valhalla to the Shared Gdrive. Originally obtained from the 2024 ADP data folder, keeping 
-#' 2022 only (run date of 2023-04-10 15:15:15 PDT)
-#' [https://drive.google.com/drive/folders/1em6NDOvfPIkgT7FlZkdUYh1S-_z7v2PE]. 
-#' *NOTE* Downloaded version 6 (instead of the current version, which returns an error during loading!). Renamed to
+#' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.
+#' (run date of 2023-04-10 15:15:15 PDT)
 if(FALSE){
   valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
   valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
@@ -177,13 +175,16 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
 mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
 ][STRATA == "ZERO", STRATA := "OB HAL"]
+mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
 obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
+obs_act_days <- mutate(obs_act_days, ADP = as.numeric(as.character(ADP)))
+if(!any(obs_act_days$STRATA %like% "OB ")) stop("You still have non-observer strata in 'obs_act_days'")
 
 rm(td_mod0, mod_dat, mod_dat_copy, model_trip_duration)
 
@@ -211,7 +212,7 @@ salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 # Data checks and clean up
 
 #Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
-salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
+salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 
 # * ODDS ----
 
@@ -548,7 +549,7 @@ work.data <- work.data %>%
 
 # * Shapefiles ----
 # Initial upload to Shared Gdrive
-if(F) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 ## Load land and NMFS stat area shapefiles 
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
