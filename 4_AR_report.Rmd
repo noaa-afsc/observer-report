@@ -1318,38 +1318,39 @@ Pollock.landing.data <- work.data %>%
          PROCESSING_SECTOR == "S" &                  
          TRIP_TARGET_CODE %in% c("B", "P") & 
          MANAGEMENT_PROGRAM_CODE != "RPP") %>% 
-  distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
+  distinct(ADP, REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
   # salmon.landings.obs is a list of REPORT_IDs for which dockside sampling for salmon occurred (all sectors)
   mutate(Observed.type = ifelse(REPORT_ID %in% salmon.landings.obs$REPORT_ID, "Observed", "Not_Observed"),
          FMP = fct_recode(factor(FMP), `Bering Sea` = "BSAI", `Gulf of Alaska` = "GOA"),
          PORT_CODE = fct_recode(factor(PORT_CODE),
                                 `Kodiak` = "KOD", 
-                                `Dutch Hbr.` = "DUT", 
+                                `Dutch Harbor` = "DUT", 
                                 `Akutan` = "AKU", 
                                 `Sand Point` = "SPT", 
-                                `King Cove` = "KCO"),
+                                `King Cove` = "KCO",
+                                `Inshore floating processor` = "IFP"),
          COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), `Full` = "FULL", `Partial` = "PARTIAL")) 
 
-# table(Pollock.landing.data$COVERAGE_TYPE, Pollock.landing.data$Observed.type, Pollock.landing.data$TENDER)
+# table(Pollock.landing.data$COVERAGE_TYPE, Pollock.landing.data$Observed.type, Pollock.landing.data$TENDER, Pollock.landing.data$ADP)
 
 # Summarise landings by FMP, coverage type, port, and observed status
 Pollock.monitored <- rbind(
   Pollock.landing.data %>%
-    group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
+    group_by(ADP, FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
     summarize(N.Pollock = n_distinct(REPORT_ID),
               N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
     mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock) * 100, digits = 1, nsmall = 1)) %>% 
-    select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
+    select(ADP, FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
     ungroup()
   ,
   Pollock.landing.data %>%
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(FMP = as.factor("Total"),
               PORT_CODE = as.factor(""),
               N.Pollock = n_distinct(REPORT_ID),
               N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
     mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock) * 100, digits = 1, nsmall = 1)) %>%
-    select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
+    select(ADP, FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
     ungroup())
 
 # Isolate observed strata
@@ -1361,12 +1362,14 @@ Pollock.observed <- rbind(
 Pollock.observed.table <- Pollock.observed %>% 
   mutate(N.Pollock = as.character(N.Pollock),
          N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
-  select(`FMP` = FMP, 
+  select(`Year` = ADP,
+         `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
-         `% Observed` = Pct.Obs)
+         `% Observed` = Pct.Obs) %>%
+  arrange(Year)
 
 # Isolate EFP strata
 Pollock.efp <- rbind(
@@ -1377,12 +1380,14 @@ Pollock.efp <- rbind(
 Pollock.efp.table <- Pollock.efp %>% 
   mutate(N.Pollock = as.character(N.Pollock),
          N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
-  select(`FMP` = FMP, 
+  select(`Year` = ADP,
+         `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
-         `% Observed` = Pct.Obs)
+         `% Observed` = Pct.Obs) %>%
+  arrange(Year)
 ```
 
 Given the design, the level of dockside observation of walleye pollock deliveries should be 100% in the full coverage category. In `r year`, 100% of full coverage walleye pollock deliveries were observed (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).   
