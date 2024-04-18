@@ -1190,8 +1190,6 @@ Coverage.Table.TOTALS <- work.data %>%
          Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) %>%
   ungroup()
 
-#' *FIX ME - I'M BROKEN====================================*
-
 #' *Combine all the coverage tables*
 Coverage.Table <- bind_rows(Coverage.Table.full, 
                             Coverage.Table.partial,
