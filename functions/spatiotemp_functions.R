@@ -431,6 +431,9 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   #' TODO dmn_lst is never not null since it is now created if left null. Can remove? Always create dmn outputs?
   if( !is.null(dmn_lst) ) {
     
+    # Save the raw form of data_dmn for the output
+    data_dmn_og <- copy(data_dmn)
+    
     # Get trip weights, splitting by dmn_cols as well (both categorical and spatiotemporal)
     trip_id_dmn_mat <- as.matrix(data_dmn[, .N, by = .(TRIP_ID)])
     trip_id_dmn_vec <- vector(mode = "integer")
@@ -531,7 +534,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
     )) stop("STRATA_N and sum(BOX_DMN_w) are not equal!")
     
     box_res$dmn <- list()
-    box_res$dmn$og_data <- data_dmn
+    box_res$dmn$og_data <- data_dmn_og 
     box_res$dmn$strata_dmn_n_dt <- strata_dmn_N_dt
     box_res$dmn$box_dmn_smry_dt <- dmn_nbr_dt
     box_res$dmn$strata_dt <- setorderv(unique(strata_N_dt[, ..stratum_cols]), cols = stratum_cols)[, STRATUM_ID := .I][]
@@ -673,7 +676,8 @@ calculate_expected_interspersion <- function(box_def, sample_rates){
 }
 
 # TODO I think this function is doing what I've asked to do so far, but it probably isn't handling non-spatiotemporal
-# domains correctly!
+# domains correctly! I have since updated define_boxes to have $dmn$og_data so that each TRIP_ID and the domains it 
+# belongs to are specified. 
 calculate_realized_interspersion <- function(box_def, monitored_trips) {
   # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon); 
   # box_def <- copy(box_def.stratum_fmp); monitored_trips <- copy(realized_mon); 
