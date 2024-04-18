@@ -10,6 +10,7 @@ set.seed(052870)
 
 # Report year (year that fishing and observing took place)
 year <- 2023
+year2 <- 2022 #' *For 2023 AR*
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
@@ -177,9 +178,9 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
 mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
 ][STRATA == "ZERO", STRATA := "OB HAL"]
 
 # Stratum-specific totals
@@ -202,7 +203,7 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year, "' AND '31-DEC-", year, "'
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year2, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
 #The following query returns all landing ID's for offloads monitored for salmon all sectors.
@@ -548,7 +549,7 @@ work.data <- work.data %>%
 
 # * Shapefiles ----
 # Initial upload to Shared Gdrive
-if(F) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 ## Load land and NMFS stat area shapefiles 
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
