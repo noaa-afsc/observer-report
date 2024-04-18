@@ -1315,7 +1315,7 @@ Pollock.landing.data <- work.data %>%
   filter(SOURCE_TABLE == "Y" & # Retained catch
          TENDER == "N" &
          AGENCY_GEAR_CODE %in% c("PTR", "NPT") &   
-         PROCESSING_SECTOR=="S" &                  
+         PROCESSING_SECTOR == "S" &                  
          TRIP_TARGET_CODE %in% c("B", "P") & 
          MANAGEMENT_PROGRAM_CODE != "RPP") %>% 
   distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
@@ -1338,7 +1338,7 @@ Pollock.monitored <- rbind(
           group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
           summarize(N.Pollock = n_distinct(REPORT_ID),
                     N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
-          mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock)*100, digits=1, nsmall=1)) %>% 
+          mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock) * 100, digits = 1, nsmall = 1)) %>% 
           select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
           ungroup(),
           Pollock.landing.data %>%
@@ -1347,7 +1347,7 @@ Pollock.monitored <- rbind(
                     PORT_CODE = as.factor(""),
                     N.Pollock = n_distinct(REPORT_ID),
                     N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
-          mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock)*100, digits=1, nsmall=1)) %>%
+          mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock) * 100, digits = 1, nsmall = 1)) %>%
           select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
           ungroup())
 
