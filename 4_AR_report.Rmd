@@ -1,5 +1,5 @@
 ---
-title: "Deployment Performance Review of the 2020 North Pacific Observer Program"
+title: "Deployment Performance Review of the 2023 North Pacific Observer Program"
 author: "Fishery Monitoring Science Committee"
 always_allow_html: true
 output:
@@ -20,9 +20,15 @@ editor_options:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load packages and functions 
 source("3_helper.R")
+```
 
-# Load data
+```{r, eval=FALSE}
+#' Download data. Run this line manually during development, but it won't run during knitting.
 gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#' Load data and set parameters
 load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
 # Avoid scientific notation
@@ -44,29 +50,29 @@ if(annual.report){
 
 ```{r set-options, echo=FALSE, message=FALSE, warning=FALSE}
 #Total deployment strata:
-# 2 full coverage (FULL, EM TRW EFP)
-# 3 partial coverage observed (HAL, POT, TRW)
-# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP) + 
-# 1 zero coverage EM research (Zero EM Research) +
+# 2 full coverage (FULL, EM TRW EFP[BSAI])
+# 3 partial coverage observed (OB HAL, OB POT, OB TRW)
+# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP[GOA]) + 
+# 0 zero coverage EM research (Zero EM Research) +
 # 1 zero coverage (ZERO)
 total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 ```
 
 `r if(tech.memo){'#Abstract'}`  
-`r if(tech.memo){'This report contains the analyses and findings of the Alaska Fisheries Science Center’s Fisheries Monitoring and Analysis Division’s Fishery Monitoring Science Committee (FMSC) on the efficiency and effectiveness of observer deployment following the 2019 Annual Deployment Plan (ADP). Responses to comments by the North Pacific Fishery Management Council (Council) from the 2018 version of this report, and recommendations to improve data quality and guide the 2021 Annual Deployment Plan are also included. In 2019, there were 10 strata to evaluate: one full coverage stratum, five partial coverage observer strata defined by gear and tender designation, two partial coverage Electronic Monitoring (EM) strata defined by gear designation, one zero coverage EM research stratum, and one zero voverage stratum. Observers were deployed under trip-selection on 161 full coverage vessels that fished for 3,343 trips and 584 unique partial coverage vessel and stratum combinations (vessels can fish in more than one stratum) that fished 5,016 trips total. This was the second year in which data from the *EM HAL* stratum was used in catch accounting, and the first year in which data from the *EM POT* stratum was used in catch accounting. The *EM HAL* stratum was the third largest stratum by trip count in 2019 with 916 total trips fished. EM systems were deployed onto 21 pot vessels that fished for 165 trips. Research EM systems were deployed onto four vessels that fished for 29 trips. A total of 393 vessels fished 2,005 trips in the *Zero Coverage* stratum, accounting for 28% of all trips that occurred within the partial coverage category. Realized coverage rates met expectations in eight of ten strata in 2019. The *Full* stratum was observed at a rate of 99.9%, falling below the expected rate of 100%. The partial coverage *POT – Tender* stratum was observed at a rate of 29.5%, with a 95% confidence interval that fell above the expected coverage rate of 16.1%. However, deployment in 2019 generally proceeded as planned, with few missed expectations or signs of potential bias. The FMSC recommends that future ADPs fully integrate EM and observer deployment into one fishery monitoring program. Although EM data are now being used in catch accounting, the funding and selection of EM vessels has so far occurred separately from the processes used to optimize observer deployment in each ADP. Considering EM as a more integral part of those optimization processes will better enable analysts to avoid data gaps and take advantage of the respective abilities of each monitoring method (observers and EM). The FMSC also continues to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council. Such a linkage will better enable analysts to discern the contributing factors behind instances in which intended deployment is inconsistent with realized deployment.'}`  
+`r if(tech.memo){'This report contains the analyses and findings of the Alaska Fisheries Science Center’s Fisheries Monitoring and Analysis Division’s Fishery Monitoring Science Committee (FMSC) on the efficiency and effectiveness of observer deployment following the 2023 Annual Deployment Plan (ADP). Responses to comments by the North Pacific Fishery Management Council (Council) from the 2022 version of this report, and recommendations to improve data quality and guide the 2024 Annual Deployment Plan are also included. In 2023, there were 10 strata to evaluate: two full coverage strata, five (*THREE IF TENDER DROPPED*) partial coverage observer strata defined by gear and tender designation (*ARE WE COVERING TENDERS STILL?*), three partial coverage Electronic Monitoring (EM) strata defined by gear designation, one zero coverage EM research stratum, and one zero coverage stratum. Observers were deployed under trip-selection on *UPDATE:*161 full coverage vessels that fished for *UPDATE:*3,343 trips and *UPDATE:*584 unique partial coverage vessel and stratum combinations (vessels can fish in more than one stratum) that fished *UPDATE:*5,016 trips total. This was the *UPDATE:*second year in which data from the *EM HAL* stratum was used in catch accounting, and the *UPDATE:*first year in which data from the *EM POT* stratum was used in catch accounting. *UPDATE:*The *EM HAL* stratum was the third largest stratum by trip count in 2019 with 916 total trips fished. EM systems were deployed onto 21 pot vessels that fished for 165 trips. *UPDATE:*Research EM systems were deployed onto four vessels that fished for 29 trips. *UPDATE:*A total of 393 vessels fished 2,005 trips in the *Zero Coverage* stratum, accounting for 28% of all trips that occurred within the partial coverage category. Realized coverage rates met expectations in *UPDATE:*eight of ten strata in 2023. The *Full* stratum was observed at a rate of 99.9%, falling below the expected rate of 100%. *UPDATE:*The partial coverage *POT – Tender* stratum was observed at a rate of 29.5%, with a 95% confidence interval that fell above the expected coverage rate of 16.1%. *UPDATE:*However, deployment in 2019 generally proceeded as planned, with few missed expectations or signs of potential bias. The FMSC recommends that future ADPs fully integrate EM and observer deployment into one fishery monitoring program. Although EM data are now being used in catch accounting, the funding and selection of EM vessels has so far occurred separately from the processes used to optimize observer deployment in each ADP. Considering EM as a more integral part of those optimization processes will better enable analysts to avoid data gaps and take advantage of the respective abilities of each monitoring method (observers and EM). The FMSC also continues to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council. Such a linkage will better enable analysts to discern the contributing factors behind instances in which intended deployment is inconsistent with realized deployment.'}`  
 
 #Introduction  
 `r if(tech.memo){'##Background of the North Pacific Groundfish and Halibut Observer Program'}`  
 `r if(tech.memo){'Fisheries observers and electronic monitoring (EM) systems collect independent information that is used to determine the effects of fishing on natural resources. The National Marine Fisheries Service (NMFS) uses its observer program in Alaska to enable the use of tools such as catch quotas to manage against the over- or under-harvest of fishes. Observers and EM are two verifiable methods for collecting fishery discard information used to estimate total catch. Observers (but not the EM systems currently used in the North Pacific) are able to record seabird and marine mammal interactions with fisheries as well. Observers also collect biological information such as length, sex, weight, ageing structures (e.g., otoliths, spines, scales, and vertebrae), and stomachs to support ecosystem studies and stock assessments.'}`
 
-`r if(tech.memo){'The observer program in the North Pacific has a long history. Observers were first deployed onto fishing vessels in the Bering Sea in 1973 and into the remainder of the North Pacific in 1975 (Nelson et al. 1981, Wall et al. 1981). Fisheries in the North Pacific were initially prosecuted exclusively by foreign and later by "joint venture"'}` `r if(tech.memo){"operations where a developing domestic fleet of catcher vessels delivered to foreign-owned processing vessels. During the foreign and joint venture operations, foreign vessels carried fisheries observers at their expense, while domestic vessels were exempted from this observer coverage. As foreign vessels' rights to fish in the U.S. Exclusive Economic Zone (EEZ) were reduced over time and the domestic fishery grew, it became obvious to managers that observer coverage would be necessary for the emerging domestic fleet. At the onset of fully domestic fishery operations in 1990, the North Pacific Groundfish Observer Program was established as an interim observer program with rules governing observer coverage codified in regulations. This interim program would be extended four times over the next 20 years by the North Pacific Fishery Management Council (Council) - the last without a sunset date."}`
+`r if(tech.memo){'The observer program in the North Pacific has a long history. Observers were first deployed onto fishing vessels in the Bering Sea in 1973 and into the remainder of the North Pacific in 1975 (Nelson et al. 1981, Wall et al. 1981). Fisheries in the North Pacific were initially prosecuted exclusively by foreign and later by "joint venture"'}` `r if(tech.memo){"operations where a developing domestic fleet of catcher vessels delivered to foreign-owned processing vessels. During the foreign and joint venture operations, foreign vessels carried fisheries observers at their expense, while domestic vessels were exempted from this observer coverage. As foreign vessels' rights to fish in the U.S. Exclusive Economic Zone (EEZ) were reduced over time and the domestic fishery grew, it became obvious to managers that observer coverage would be necessary for the emerging domestic fleet. At the onset of fully domestic fishery operations in 1990, the North Pacific Groundfish Observer Program was established as an interim observer program with rules governing observer coverage codified in regulations. This interim program would be extended four times over the next 20 years by the North Pacific Fishery Management Council (Council) — the last without a sunset date."}`
 
-`r if(tech.memo){'The regulations established in 1990 required vessels 60-125 feet in length (overall) and all vessels fishing pot gear to carry observers at their own cost for 30% of their fishing days in a calendar quarter plus at least one trip in each fishery they participate in (termed the "30% fleet"), and vessels greater than 125 feet in length to carry an observer for 100% of their fishing days at their expense. Some vessels were not required to carry observers. These included vessels less than 60 feet, vessels fishing jig gear or vessels fishing with trawl gear that deliver unsorted codends to processing vessels (termed "catcher processors" or CPs if the vessel also has catching ability and "mothership" or M if the vessel does not) and vessels that fished for Pacific halibut (*Hippoglossus stenolepis*). For shoreside processors, the rules governing observer coverage were based on the estimated tonnage processed in a calendar month: plants that processed less than 500 metric tons (t) a month were exempted from coverage, those that processed between 500 t and 1,000 t a month were required to be observed for 30% of the calendar days, and those that processed more than 1,000 t a month were required to be observed for each day in the month.'}`
+`r if(tech.memo){'The regulations established in 1990 required vessels 60-125 feet in length (overall) and all vessels fishing pot gear to carry observers at their own cost for 30% of their fishing days in a calendar quarter plus at least one trip in each fishery they participate in (termed the "30% fleet"), and vessels greater than 125 feet in length to carry an observer for 100% of their fishing days at their expense. Some vessels were not required to carry observers. These included vessels less than 60 feet, vessels fishing jig gear or vessels fishing with trawl gear that deliver unsorted codends to processing vessels (termed "catcher processors" or CPs if the vessel also has catching ability and "mothership" or M if the vessel does not) and vessels that fished for Pacific halibut (*Hippoglossus stenolepis*). For shoreside processors, the rules governing observer coverage were based on the estimated tonnage processed in a calendar month: plants that processed less than 500 metric tons (t) a month were exempted from coverage, those that processed between 500 t and 1,000 t a month were required to be observed for 30% of the calendar days fish, and those that processed more than 1,000 t a month were required to be observed for each day in the month.'}`
 
 `r if(tech.memo){'Soon after the establishment of the domestic observer program, concerns over the ability and incentive for fishers to manipulate observer coverage in a way that might bias catch estimates and other analytic products prompted efforts by NMFS and the Council to provide a mechanism for NMFS to gain control over where and when observers were deployed (Faunce and Barbeaux 2011). From 1992 to 2008, several attempts to “restructure” the program were made. In 2010, the Council unanimously decided to move forward with the restructured observer program. In 2012, the Final Rule 77 FR 70062 was published to implement Amendment 86 to the Fishery Management Plan for Groundfish of the Bering Sea and Aleutian Islands (BSAI) Management Area and Amendment 76 to the Fishery Management Plan for Groundfish of the Gulf of Alaska (GOA). Amendments 86/76 added a funding and deployment system for observer coverage to the existing North Pacific Groundfish Observer Program and amended existing observer coverage requirements for vessels and processing plants. The “restructured” North Pacific Groundfish and Halibut Observer Program (hereafter termed “Observer Program”) began in 2013 with the randomization of deployments among trips and vessels. In 2018, the use of EM was added as an additional catch monitoring tool, with the understanding that some data elements collected by observers would not be collected using EM systems.'}`
 
 `r if(tech.memo){'#The Annual Deployment Plan and Review'}`
-`r if(tech.memo){"Analysis and evaluation of the data collected by observers is an ongoing process. The NMFS considers Council input in making decisions as to the amount of coverage (i.e., selection probabilities that are assigned to each partial-coverage category). These decisions are based on available funding, the cost of observer coverage, and anticipated effort. The restructure of the Observer Program established new annual reporting processes. Each June, the NMFS provides the Council with a comprehensive evaluation of past years' observer deployments, costs, sampling levels, and implementation issues as well as recommended changes for the coming year. The June deployment performance review aims to identify areas where improvements are needed to 1) collect the data necessary to manage the groundfish and halibut fisheries; 2) maintain the scientific goals of unbiased data collection; and 3) accomplish the most effective and efficient use of the funds collected through the observer fee. The annual deployment performance review is an opportunity to inform the Council and the public of how well various aspects of the program are working, and consequently lead to recommendations for improvement as appropriate. The NMFS also prepares the Observer Program Annual Deployment Plan (ADP) each fall. The ADP defines deployment strata and establishes selection rates given available budgets and anticipated fishing effort. A draft ADP is released by September of each year to allow review by the Council's Groundfish Plan Teams, as well as the Council and its Scientific and Statistical Committee (SSC). Based on input from its advisory bodies and the public, the Council may choose to clarify objectives and provide recommendations to NMFS for the ADP. Upon analysis of the Council recommendations, NMFS will make any necessary adjustments to finalize the ADP and release it to the public. The ADP is released to the public prior to the December Council meeting."}`    
+`r if(tech.memo){"Analysis and evaluation of the data collected by observers is an ongoing process. The NMFS considers Council input in making decisions as to the amount of coverage (i.e., selection probabilities that are assigned to each partial-coverage category). These decisions are based on available funding, the cost of observer coverage, and anticipated effort. The restructure of the Observer Program established new annual reporting processes. Each June, the NMFS provides the Council with a comprehensive evaluation of past year's observer deployments, costs, sampling levels, and implementation issues as well as recommended changes for the coming year. The June deployment performance review aims to identify areas where improvements are needed to 1) collect the data necessary to manage the groundfish and halibut fisheries; 2) maintain the scientific goals of unbiased data collection; and 3) accomplish the most effective and efficient use of the funds collected through the observer fee. The annual deployment performance review is an opportunity to inform the Council and the public of how well various aspects of the program are working, and consequently lead to recommendations for improvement as appropriate. The NMFS also prepares the Observer Program Annual Deployment Plan (ADP) each fall. The ADP defines deployment strata and establishes selection rates given available budgets and anticipated fishing effort. A draft ADP is released by September of each year to allow review by the Council's Groundfish Plan Teams, as well as the Council and its Scientific and Statistical Committee (SSC). Based on input from its advisory bodies and the public, the Council may choose to clarify objectives and provide recommendations to NMFS for the ADP. Upon analysis of the Council recommendations, NMFS will make any necessary adjustments to finalize the ADP and release it to the public. The ADP is released to the public prior to the December Council meeting."}`    
 
 `r if(tech.memo){'##Fishery Monitoring Science Committee'}`
 `r if(tech.memo){'Each year the Alaska Fisheries Science Center’s (AFSC) Fisheries Monitoring and Analysis (FMA) Division establishes a committee to review the scientific elements of the North Pacific Observer Program. This committee, formerly referred to as the Observer Science Committee (OSC), was renamed in 2020 as the Fishery Monitoring Science Committee (FMSC), in order to reflect the addition of EM as a tool being used to monitor fisheries in the North Pacific. Similarly, we use the term ‘monitoring’ in this chapter when referencing fishing activity that has been monitored either by an observer or with EM.'}`  
@@ -75,44 +81,41 @@ total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 
 The FMSC provides scientific advice in the areas of regulatory management, natural science, mathematics, and statistics as they relate to observer deployment and sampling in the groundfish and Halibut fisheries of the BSAI and the GOA. The FMSC members have analytical and scientific expertise relating to observer sampling of groundfish and halibut fisheries of the BSAI and GOA and use of the collected data. If possible, the FMSC is represented by at least one member of the AFSC/FMA (Observer Program) Division, one member of the AFSC/Stock Assessment and Multispecies Assessments Program, one member of the Alaska Regional Office (AKRO) Sustainable Fisheries Division, and one member of the International Pacific Halibut Commission (IPHC).
 
-`r if(annual.report){'This chapter contains the FMSC review of the deployment of observers and EM in'}` `r if(annual.report){year}` `r if(annual.report){'relative to the intended sampling plan and goals of the'}` `r if(annual.report){year}` `r if(annual.report){'Annual Deployment Plan (ADP, NMFS'}` `r if(annual.report){year-1}` `r if(annual.report){'a). This review identifies where possible biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(annual.report){year+2}` `r if(annual.report){'ADP.'}`    
+`r if(annual.report){'This chapter contains the FMSC review of the deployment of observers and EM in'}` `r if(annual.report){year}` `r if(annual.report){'relative to the intended sampling plan and goals of the'}` `r if(annual.report){year}` `r if(annual.report){'Annual Deployment Plan (ADP, NMFS'}` `r if(annual.report){year - 1}` `r if(annual.report){'a). This review identifies where possible biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(annual.report){year + 2}` `r if(annual.report){'ADP.'}`    
 
 `r if(annual.report){'The goal of the Observer Program is to achieve a random deployment of observers and EM into fisheries to collect representative data used to estimate catch and bycatch, assess stock status, collect fishery-dependent biological information used in population and ecosystem modeling efforts, and make salmon bycatch stock-of-origin determinations, among other objectives. Therefore, this evaluation focuses on the randomization of observer and EM deployments into primary sampling units, and how departures from a random sample affect data quality.'}`  
 
 ##The Sampling Design of the Observer Program 
 Since 2013, the Observer Program has used a stratified hierarchical sampling design with randomization at all levels. Stratification is used to increase the efficiency of sampling by observers and to address logistical issues associated with deployment. By grouping similar fishing activities into strata and sampling those strata appropriately, sampling efficiency is increased and the variance of resulting estimates may also be decreased. Sampling strata are defined in the ADP and are designed such that each unit of deployment (e.g., trip) is assigned to only one stratum.
 
-Within a stratum, observers are deployed randomly to either vessels for a predetermined period of time (termed vessel-selection), or to individual fishing trips (termed trip-selection). In both cases, this initial deployment to the fishery is the first level of the sampling hierarchy and defines the primary sampling unit (PSU; either vessel-periods or individual trips). The list of all PSUs in a stratum defines the sampling frame and should equate to the population of interest for that sampling stratum (e.g., all trips taken by trawl vessels fishing in the Alaska EEZ).  If the sampling frame does not contain all elements of the stratum, the resulting information may be biased.  The magnitude and direction of the bias will depend on how different the fishing activities in the sample frame are from actual fishing activity.
+Within a stratum, observers are deployed randomly to either: (1) vessels for a predetermined period of time (termed vessel-selection), or (2) to individual fishing trips (termed trip-selection). In both cases, this initial deployment to the fishery is the first level of the sampling hierarchy and defines the primary sampling unit (PSU; either vessel-periods or individual trips). The list of all PSUs in a stratum defines the sampling frame and should equate to the population of interest for that sampling stratum (e.g., all trips taken by trawl vessels fishing in the Alaska EEZ). If the sampling frame does not contain all elements of the stratum, the resulting information may be biased. The magnitude and direction of the bias will depend on how different the fishing activities in the sample frame are from actual fishing activity.
 
-Although this report evaluates whether monitoring goals were met, we include a brief summary of the full sampling hierarchy here for context.  For each observed trip, if all hauls cannot be sampled for logistical reasons, hauls are randomly selected to be sampled. This is the next level in the hierarchy; the secondary sampling units are defined as hauls within a trip. Randomization of haul selection is designed to allow observers to record and transmit data, attend to other non-sampling responsibilities, and to allow observers time to sleep and eat. Randomization of haul selection also gives EM video reviewers the ability to optimize the amount of video that can be reviewed from each trip. Haul selection is determined using the random sampling tables and random break tables provided by NMFS. For each haul, fishing location and effort (e.g., number of hooks) are recorded, while marine mammal and seabird interactions are primarily recorded on randomly selected hauls. The ability of EM to capture marine mammal and seabird interactions is less than that of observers due to the fixed location in which EM equipment is placed.
+Although this report evaluates whether monitoring goals were met, we include a brief summary of the full sampling hierarchy here for context. For each observed trip, if all hauls cannot be sampled for logistical reasons, hauls are randomly selected to be sampled. This is the next level in the hierarchy; the secondary sampling units are defined as hauls within a trip. Randomization of haul selection is designed to allow observers to record and transmit data, attend to other non-sampling responsibilities, and to allow observers time to sleep and eat. Randomization of haul selection also gives EM video reviewers the ability to optimize the amount of video that can be reviewed from each trip. Haul selection is determined using the random sampling tables and random break tables provided by NMFS. For each haul, fishing location and effort (e.g., number of hooks) are recorded, while marine mammal and seabird interactions are primarily recorded on randomly selected hauls. The ability of EM to capture marine mammal and seabird interactions is less than that of observers due to the fixed location in which EM equipment is placed.
 
 For the randomly selected hauls, a random sample of the catch is collected (observers) or selected for video review (EM), and data from those samples are used to determine the species composition and amount of discarded catch. These samples of catch within each haul are the third level of the sampling hierarchy. While observers are trained to collect multiple large samples of catch, the number and size of samples taken from each haul will depend on the vessel configuration, fishing operations, and diversity of catch. The size of EM samples is largely determined by the number of video reviewers available relative to the amount of video to be reviewed.
 
 At the fourth level of the sampling hierarchy, a predetermined number of individual fish of predetermined species is randomly selected from the species composition sample and measured. Lastly, at the fifth sampling level, a random selection of fish is used to collect otoliths, reproductive maturity assessments, stomach contents, genetic tissues, and other biological specimens. The number and species of fish selected for measurement and biological specimen collection is specified each year by the AFSC’s stock assessment scientists. Sampling rates for genetic tissue collection by observers (e.g., 1 of 10 Chinook salmon caught as bycatch) are set each year by the AFSC’s Auke Bay Laboratory. Sampling at the fourth and fifth levels of the sampling hierarchy does not occur with EM. 
 
-More information on the sampling design used by observers and the relationship between the sample design and catch estimation can be found in Cahalan and Faunce (2020) and the `r year` Observer Sampling Manual (AFSC `r year-1`). `r if(annual.report){'A summary of the'}` `r if(annual.report){year}` `r if(annual.report){'ADP can be found in Section 1.3. The focus of this report is related to deployment, and the evaluation is at the primary level of the sampling hierarchy.'}` `r if(tech.memo){'A summary of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP is included below. The focus of this report is related to deployment, and the evaluation is at the first level of the sampling hierarchy.'}`
+More information on the sampling design used by observers and the relationship between the sample design and catch estimation can be found in Cahalan and Faunce (2020) and the `r year` Observer Sampling Manual (AFSC `r year - 1`). `r if(annual.report){'A summary of the'}` `r if(annual.report){year}` `r if(annual.report){'ADP can be found in Section 1.3. The focus of this report is related to deployment, and the evaluation is at the primary level of the sampling hierarchy.'}` `r if(tech.memo){'A summary of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP is included below. The focus of this report is related to deployment, and the evaluation is at the first level of the sampling hierarchy.'}`
 
 `r if(tech.memo){'#The'}` `r if(tech.memo){year}` `r if(tech.memo){'Annual Deployment Plan'}`    
-`r if(tech.memo){'The following briefly summarizes the final'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS '}` `r if(tech.memo){year-1}``r if(tech.memo){'). In general, all vessels that participate in cooperatives or act as catcher-processors or motherships are fully observed at the trip-level and constitute the full-coverage category of the fleet. In 2016, NMFS published new regulations to allow the owner of a trawl catcher vessel to annually request that NMFS place requesting vessels in the full coverage category for all directed fishing for groundfish using trawl gear in the Bering Sea and Aleutian Islands management area (BSAI) in the following calendar year. This regulated process has replaced an interim policy. For the '}` `r if(tech.memo){year}` `r if(tech.memo){'calendar year, NMFS received and approved requests and has placed'}` `r if(tech.memo){'32'}` `r if(tech.memo){'catcher vessels in the full coverage category for all directed fishing for groundfish using trawl gear in the BSAI management area (NMFS'}` `r if(tech.memo){year-1}``r if(tech.memo){'). The partial-coverage category includes vessels greater than or equal to 40 feet (ft) length overall (LOA) and not in the full coverage category. The following sampling strata comprised the partial coverage category in'}` `r if(tech.memo){year}` `r if(tech.memo){':'}`  
+`r if(tech.memo){'The following briefly summarizes the final'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS '}` `r if(tech.memo){year - 1}``r if(tech.memo){'). In general, all vessels that participate in cooperatives or act as catcher-processors or motherships are fully observed at the trip-level and constitute the full-coverage category of the fleet. In 2016, NMFS published new regulations to allow the owner of a trawl catcher vessel to annually request that NMFS place requesting vessels in the full coverage category for all directed fishing for groundfish using trawl gear in the Bering Sea and Aleutian Islands management area (BSAI) in the following calendar year. This regulated process has replaced an interim policy. For the '}` `r if(tech.memo){year}` `r if(tech.memo){'calendar year, NMFS received and approved requests and has placed'}` `r if(tech.memo){'32'}` `r if(tech.memo){'catcher vessels in the full coverage category for all directed fishing for groundfish using trawl gear in the BSAI management area (NMFS'}` `r if(tech.memo){year-1}``r if(tech.memo){'). The partial-coverage category includes vessels greater than or equal to 40 feet (ft) length overall (LOA) and not in the full coverage category. The following sampling strata comprised the partial coverage category in'}` `r if(tech.memo){year}` `r if(tech.memo){':'}`  
 
-`r if(tech.memo){'1. Hook-and-line vessels (*HAL* stratum).'}`    
-`r if(tech.memo){'2. Hook-and-line vessels with EM (*EM HAL* stratum).'}`     
-`r if(tech.memo){'3. Pot vessels with EM (*EM POT* stratum).'}`
-`r if(tech.memo){'4. Trawl vessels (*TRW* stratum).'}`
-`r if(tech.memo){'5. Trawl vessels participating in an exempted fishing permit (*EM TRW EFP* stratum).'}`
+`r if(tech.memo){'1. Hook-and-line vessels (*OB HAL* stratum).'}`    
+`r if(tech.memo){'2. Hook-and-line vessels with EM (*EM HAL* stratum).'}`
+`r if(tech.memo){'3. Pot vessels (*OB POT* stratum).'}`
+`r if(tech.memo){'4. Pot vessels with EM (*EM POT* stratum).'}`
+`r if(tech.memo){'5. Trawl vessels (*OB TRW* stratum).'}`
+`r if(tech.memo){'6. Trawl vessels participating in an exempted fishing permit (*EM TRW EFP* stratum).'}`
+
+`r if(tech.memo){'The NMFS used only the trip-selection method (i.e., no vessel-selection) to assign observers and EM to vessels in the partial-coverage category for 2023.'}`
 
 `r if(tech.memo){'In this report we attempt to evaluate the deployment of EM onto fixed gear vessels to the same degree as we evaluate the deployment of observers since catch accounting has used data collected through the *EM HAL* stratum since 2018 and the *EM POT* stratum since 2019. NMFS also sought vessels to participate in EM research and development activities. Vessels that volunteered for the fixed gear EM Program or EM research activities and were selected by the NMFS were not required to carry observers but were required to continue to log their fishing trips into the Observer Declare and Deploy System (ODDS).'}`
 
 `r if(tech.memo){'The *EM TRW EFP* stratum is represented by vessels participating in an Exempted Fishing Permit (EFP) to evaluate the efficacy of EM on pollock catcher vessels using pelagic trawl gear in the Bering Sea and Gulf of Alaska. The EFP allows pollock catcher vessels using pelagic trawl gear to use EM systems *in lieu* of at-sea observers.  While we report some findings on these vessel activities here, we do not evaluate them fully sine the EFP is not part of the regulated fishery monitoring program.'}`
 
-`r if(tech.memo){'The NMFS used only the trip-selection method (i.e., no vessel-selection) to assign observers and EM to vessels in the partial-coverage category for 2020. However, revisions to observer deployment were enacted in 2020 due to COVID-19. Starting in March, 2020, the COVID-19 pandemic created limitations on available air travel and “shelter in place” restrictions, particularly in many remote Alaskan communities. Under the emergency rule signed on March 24, 2020, NMFS temporarily waived the requirement for vessels in the Partial Coverage Category to carry a fishery observer from March 27 through April 19, 2020. On April 18, 2020, NMFS announced a limited extension of the temporary waiver of observer requirements, which narrowed the scope and reinitiated deployment of observers on trips departing from the port of Kodiak, Alaska (the majority of GOA trawl fisheries occurred out of Kodiak during this timeframe). On June 28, 2020, NMFS expanded observer deployment in the partial coverage category to include 13 ports in addition to Kodiak, which further reduced the scope of waivers issued. Observers were to be deployed on randomly selected trips from the following ports: (1) Akutan, (2) Dutch Harbor/Unalaska, (3) False Pass, (4) Homer, (5) Juneau, (6) Ketchikan, (7) King Cove, (8) Kodiak, (9) Nome, (10) Petersburg, (11) Sand Point, (12) Seward, (13) Sitka, and (14) Yakutat.  These ports were identified because travel and lodging conditions allow observers to meet and maintain applicable health mandates for deployment into the commercial fisheries and because of the volume of fishing trips that are expected to originate and end in these locations.'}` 
-
-`r if(tech.memo){'The largest component of the Alaskan groundfish fisheries, vessels, and processors in the full coverage category (including catcher processors and participants in limited access privilege programs), were not issued waivers in 2020. Additionally, requirements for deployment of EM was not waived for trawl catcher vessels fishing under the trawl EM exempted fishing permit and only a few trips were released from coverage under the fixed gear EM portion of the partial coverage category for circumstances when an EM service technician was unable to travel.'}`
-
-`r if(tech.memo){'These changes to the original deployment plan resulted in three time periods to evaluate fishery monitoring deployment for each partial coverage stratum.'}`
-
 #Performance Review Objectives  
-`r if(tech.memo){'The following sections contain the FMSC review of the deployment of observers in'}` `r if(tech.memo){year}` `r if(tech.memo){'relative to the intended sampling plan and goals of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS'}` `r if(tech.memo){year-1}` `r if(tech.memo){'). This report identifies where potential mechanisms for biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(tech.memo){year+2}` `r if(tech.memo){'ADP.'}`  
+`r if(tech.memo){'The following sections contain the FMSC review of the deployment of observers in'}` `r if(tech.memo){year}` `r if(tech.memo){'relative to the intended sampling plan and goals of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS'}` `r if(tech.memo){year-1}` `r if(tech.memo){'). This report identifies where potential mechanisms for biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(tech.memo){year + 2}` `r if(tech.memo){'ADP.'}`  
 The following items from the `r year` ADP have been identified as objectives for evaluation in this report:  
 
 ```{r actual_observerdays_paid, include=FALSE}
@@ -184,14 +187,12 @@ eval.2023 <- data.frame(ActualYR.2023, AvailableYR.2023) %>%
                                  " greater than ")))
 
 rm(Nnd_tbl.2022, Nnd_tbl.2023)
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
 ```
 
-* Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format="d", big.mark=",")` days in `r year`.      
+* Deploy for the planned number of sea days. This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP. The Observer Program’s budget was expected to cover `r formatC(AvailableYR, format = "d", big.mark = ",")` days in `r year`.      
   
-* Deploy at the coverage rates specified in the `r year` ADP. Following the `r year` ADP, ODDS was programmed to randomly select logged trips at a rate of 23.70% in the *TRW - No Tender* stratum, 17.71% in the *HAL* stratum, 15.43% in the *POT - No Tender* stratum, 27.12% in the *TRW - Tender* stratum, 16.11% in the *POT - Tender* stratum, and 30% in the EM strata. Under a randomized deployment scheme, these partial coverage selection rates are expected to be within a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips).    
-  
-* Collect tissue samples from Chinook and chum salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin. The sampling protocol established in the 2014 ADP (NMFS 2013) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA trawl walleye pollock (*Gadus chalcogrammus*, hereafter referred to as simply ‘pollock’) fishery monitor the offload to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch.    
+* Deploy at the coverage rates specified in the `r year` ADP. Following the `r year` ADP, ODDS was programmed to randomly select logged trips at a rate of 22.68% in the *OB TRW* stratum, 17.87% in the *OB HAL* stratum, 17.09% in the *OB POT* stratum, and 30% in the EM strata. Under a randomized deployment scheme, these partial coverage selection rates are expected to be within a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips).    
+* Collect tissue samples from Chinook and chum salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin. The sampling protocol established in the 2014 ADP (NMFS 2013) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA trawl walleye pollock (*Gadus chalcogrammus*, hereafter referred to as ‘pollock’) fishery monitor the offload to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch.    
   
 * Randomize deployment of observers into the partial coverage category of fishing activities. This randomization is used to collect observer and EM samples that are representative of the entire fishing fleet (observed and monitored trips are equivalent to unobserved and unmonitored trips within a stratum). Evaluation of this objective is focused on the randomization of observer and EM deployments into primary sampling units, and how departures from a random sample affect data quality.      
   
@@ -242,10 +243,12 @@ Although these metrics can identify places where observed results differ from ex
 
 #Changes to This Report from Last Year  
 <!-- Manually update this section -->  
-Changes to our analyses were necessary to properly address the changes to the deployment of observers caused by COVID-19.  Effectively, the necessary policy changes made throughout the year by NMFS created three separate time periods that needed to be considered.  In the first time period, deployment was based on trips among all ports of departure, and followed the 2020 ADP.  During the second time period, there is no expectation of monitoring.  During the third time period, there was an expectation of monitoring at a certain rate measured in trips across all ports, but the sampling frame was reduced to thirteen ports of departure, and only included those trips with the same departure and arrival port.  Unfortunately, the information necessary to identify the group of trips belonging to the third time period sampling frame is not available in any database except ODDS.  However ODDS does not directly link to actual fishing activities such as those used in this report.  Therefore, after review by the Fisheries Monitoring Science Committee (FMSC), it was decided that we could not perform a statistical review of whether or not fisheries monitoring in the third time period met the expectations of the sampling design in terms of evaluating spatial bias.  Therefore this chapter does not include any spatial maps nor accompanying spatial analyses. Nonetheless, the FMSC agreed that promotion of past analyses showing overlap in time and space between total fishing effort and monitored fishing effort was appropriate as originally proposed in Chapter 3 of the 2019 Annual Report.  The methods used in this analysis are similar to those employed in the gap analysis in Appendix C of the 2020 Draft Annual Deployment Plan and Appendix B of the 2019 Annual Report and are published in Ganz et al. (2020). Partial coverage fishing effort data from 2020 was used to quantify the degree to which data from monitored trips are available within specified spatiotemporal distances to unmonitored fishing trips.  Prior versions of this analysis had quantified the degree of overlap in terms of an index.  Here, we only use presence and absence of fishing effort and monitored fishing effort in each week, each NMFS area, and each stratum.  More detailed versions of these plots with species target are planned to be available to stock assessment authors separate from this document.  One additional change was made to the presentation of the likelihood of having no observed trips within a NMFS Area and partial coverage stratum combination; they are now presented in their entirety as a histogram to show relative proportions and not as a line plot to show trends.
+Changes to our analyses were necessary to properly address the changes to the deployment of observers caused by *UPDATE* 
+The methods used in this analysis are similar to those employed in the gap analysis in Appendix C of the 2020 Draft Annual Deployment Plan and Appendix B of the 2019 Annual Report and are published in Ganz et al. (2020). Partial coverage fishing effort data from 2020 was used to quantify the degree to which data from monitored trips are available within specified spatiotemporal distances to unmonitored fishing trips. Prior versions of this analysis had quantified the degree of overlap in terms of an index. Here, we only use presence and absence of fishing effort and monitored fishing effort in each week, each NMFS area, and each stratum. More detailed versions of these plots with species target are planned to be available to stock assessment authors separate from this document.
 
 #Evaluation of Deployment in `r year`  
-The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).                
+The deployment of observers into the `r year` Federal fisheries in Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed from a trip. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
+
 ##Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
 
@@ -267,7 +270,7 @@ outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(2000, 3500, 500)) +
@@ -292,7 +295,7 @@ outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(limits = c(2250, 3750), breaks = seq(2000, 3500, 500)) +
@@ -332,7 +335,7 @@ costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(3750000, 4750000, 500000),
@@ -372,7 +375,7 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   theme(text = element_text(size = 14),
         axis.title.x = element_text(size = 12),
         axis.title.y = element_text(size = 12),
-        axis.line = element_line(size = 0.5, color = "black"),
+        axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(4000000, 6000000, 500000),
@@ -384,7 +387,6 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 ```
 
 ```{r budget_eval, include=FALSE}
-#' `------------ALL--------------`
 
 #' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata in 2020.*
 #' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
@@ -438,16 +440,6 @@ trip.budget.table.2022 <-
          diff = format(diff, digits = 1, nsmall = 0))
 
 #' `------------2023--------------`
-#'*------PLACE HOLDERS TO GET CODE RUNNING-------------------------------------*
-
-# We have zero-coverage trips that were monitored. Phil is working on these. We're just gonna throw them into the observer strata for now.
-unique(work.data[ADP == 2023 & LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y", .(
-  VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, AGENCY_GEAR_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL
-)])[order(TRIP_ID)]
-work.data[TRIP_ID %in% c(2170855, 2170858), STRATA := "OB POT"]
-work.data[TRIP_ID %in% c(2307113, 2307114), STRATA := "OB HAL"]
-
-#'*----------------------------------------------------------------------------*
 
 # Evaluate why we were off budget
 trip.budget.table.2023 <- 
@@ -494,9 +486,9 @@ trip.budget.table.2023 <-
 
 ```
 
-Each year, the NMFS sets an annual budget for the Observer Program in terms of cost and observer days. The partial coverage observer day budget for `r year` was set at \$`r formatC(BUDGET, format="d", big.mark=",")` and `r formatC(AvailableYR, format="d", big.mark=",")` days in the `r year` ADP, and the NMFS expected to spend \$`r formatC(days_paid_sum$Total.Dollars, format="d", big.mark=",")` observing `r formatC(PredictedYR, format="d", big.mark=",")` days (NMFS `r year-1`). The expected number of observer days is determined by the expected number of fishing days and the rate at which trips are selected for coverage. The number of fishing days expected to occur in `r year` was estimated using data on annual fishing effort from 2013 to 2018 (Ganz and Faunce 2019). Based on simulations using trip durations from 2017 and 2018, the NMFS then set selection rates so that the average cost from simulations was equal to the available budget (NMFS `r year-1`).  
+Each year, the NMFS sets an annual budget for the deployment of partial coverage at-sea observers in terms of cost and observer days. The partial coverage observer budget for `r year` was set at \$`r formatC(BUDGET.2023, format = "d", big.mark = ",")` and `r formatC(AvailableYR.2023, format = "d", big.mark = ",")` days in the `r year` ADP.
 
-In `r year`, the FMA paid for `r formatC(round(ActualYR), format="d", big.mark=",")` observer days, which was `r ifelse(eval$pct.budget.remain != 0, abs(eval$pct.budget.remain), " ")` `r ifelse(eval$pct.budget.remain != 0, "%", "")` `r eval$more.or.less` predicted by the average simulation, but well within the range of possibilities predicted in the `r year` ADP (`r fig_nums('outcomes.plot', display = "cite")`, top panel). This is explained by the fact that there was more effort in *HAL*, *POT – Tender*, and *TRW – Tender* than expected (`r tbl_nums('trip.budget.table', display="cite")`). Despite observing more days than predicted, expenditures for partial observer coverage were under budget (`r fig_nums('outcomes.plot', display = "cite")`, bottom panel). This resulted because the cost of a partial coverage observer day in `r year` was less than the expected cost that was estimated in the `r year` ADP.     
+In `r year`, the FMA paid for `r formatC(round(ActualYR.2023), format = "d", big.mark = ",")` observer days, which was `r ifelse(eval.2023$pct.budget.remain != 0, abs(eval.2023$pct.budget.remain), " ")` `r ifelse(eval.2023$pct.budget.remain != 0, "%", "")` `r eval.2023$more.or.less` predicted by the average simulation, but well within the range of possibilities predicted in the `r year` ADP (`r fig_nums('outcomes.plot.2023', display = "cite")`, top panel). This is explained by the fact that there was *UPDATE* more effort in *HAL*, *POT – Tender*, and *TRW – Tender* than expected (`r tbl_nums('trip.budget.table.2023', display = "cite")`). *UPDATE* Despite observing more days than predicted, expenditures for partial observer coverage were under budget (`r fig_nums('outcomes.plot.2023', display = "cite")`, bottom panel). This resulted because the cost of a partial coverage observer day in `r year` was less than the expected cost that was estimated in the `r year` ADP.     
 
 #Performance of the Observer Declare and Deploy System in Trip-Selection  
 The random selection of trips for monitoring is made by the ODDS for logged trips within the observer and EM trip selection pools. The ODDS generates a random number according to the pre-determined rates and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories.       
@@ -596,6 +588,7 @@ disposition <- odds.dat %>%
             Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
             Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
+
 # Add yearly totals and summary statistics
 disposition <- merge(
   disposition,
@@ -907,9 +900,9 @@ odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 #ODDS by date plot (Cumulative coverage percent by strata over the year)
 odds.by.date.plot <- ggplot(odds.ts.daily.cuml, aes(x = Date,  col = TYPE)) +
      # Add lines for selection rates  
-     geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, size = 1) +
+     geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
      geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
-     geom_line(aes(y = running.pct), size = 1.5) +
+     geom_line(aes(y = running.pct), linewidth = 1.5) +
      scale_color_manual(name = "Rate Type", values = c("black", "gray70")) +
      ylab("Cumulative Coverage Percent\n") +
      coord_cartesian(ylim = c(0, 70)) +
@@ -994,9 +987,9 @@ sel.max.canc <- disposition %>%
                 mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 ```
 
-Logged trips have different dispositions. When initially logged, trips are considered pending, subsequently have two dispositions: closed or cancelled.  A trip can be closed by selecting landing reports from a menu or manually entering the end of the trip information for observed trips or cancelled. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP.  Trips that were selected to be monitored by ODDS and are subsequently cancelled trigger the next logged trip to automatically inherit the selected status.  These trips are termed inherited trips.  
+Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or cancelled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP. Trips that were selected to be monitored by ODDS and are subsequently cancelled trigger the next logged trip to automatically inherit the selected status. These trips are termed inherited trips.  
 
-The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('Selection.table', display = "cite")`.  Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total"]), format = "d", big.mark = ",")` total trips logged, `r sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign == "Selected"])` were selected, and `r formatC(totl.canc, format = "d", big.mark = ",")` were cancelled: `r formatC(disposition$Trips.cancelled.bysystem[disposition$STRATA == "Total" & disposition$random.assign == "Selected"], format = "d", big.mark = ",")` by ODDS (`r perc.syst.canc`%) and `r formatC(disposition$Trips.cancelled.byuser[disposition$STRATA == "Total" & disposition$random.assign == "Selected"], format = "d", big.mark = ",")` by users (`r perc.user.canc`%).  The user cancellation rate for selected trips ranged from 1.9% for *EM POT* to 26.7% for *TRW - Tender*.          
+The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('Selection.table', display = "cite")`. Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total"]), format = "d", big.mark = ",")` total trips logged, `r sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign == "Selected"])` were selected, and `r formatC(totl.canc, format = "d", big.mark = ",")` were cancelled: `r formatC(disposition$Trips.cancelled.bysystem[disposition$STRATA == "Total" & disposition$random.assign == "Selected"], format = "d", big.mark = ",")` by ODDS (`r perc.syst.canc.2023`%) and `r formatC(disposition$Trips.cancelled.byuser[disposition$STRATA == "Total" & disposition$random.assign == "Selected"], format = "d", big.mark = ",")` by users (`r perc.user.canc.2023`%).  The user cancellation rate for selected trips ranged from **UPDATE** 1.9% for *EM POT* to 26.7% for *TRW - Tender*.          
 
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
@@ -1066,14 +1059,14 @@ final_pvals <- merge(p.table
                select(YEAR, p, formatted_strat)
 ```
 
-The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from 1) random selection of all logged trips (initial random selection) and 2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exceptions – the initial selection rate was 33.91% (*p*-value = 0.011) for the *EM HAL* stratum, and 39.47% (*p*-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
+The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from (1) random selection of all logged trips (initial random selection) and (2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated p-value based on the binomial distribution) in the initial selection process were **UPDATE** within expected ranges with the following exceptions – the initial selection rate was 33.91% (*p*-value = 0.011) for the *EM HAL* stratum, and 39.47% (*p*-value = 0.020) for the *TRW - Tender* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *EM HAL* and *TRW - Tender* strata were being over-selected in ODDS, and that we should interpret high final coverage rates in these strata with caution.  
 
-The final selection rate after trips were closed, cancelled, or waived were within expected bounds with the exception of the *HAL* stratum 20.47% (*p*-value = 0.006), the *EM HAL* stratum, 34.80% (*p*-value = 0.002)  and the *TRW - Tender* stratum 46.55% (*p*-value = 0.002; `r tbl_nums('Selection.table', display = "cite")`). Given the high initial selection rates, we can safely disregard these final selection rates with the exception of the *HAL* stratum.    
+The final selection rate after trips were closed, cancelled, or waived were **UPDATE** within expected bounds with the exception of the *HAL* stratum 20.47% (*p*-value = 0.006), the *EM HAL* stratum, 34.80% (*p*-value = 0.002)  and the *TRW - Tender* stratum 46.55% (*p*-value = 0.002; `r tbl_nums('Selection.table', display = "cite")`). Given the high initial selection rates, we can safely disregard these final selection rates with the exception of the *HAL* stratum.    
 
 In addition to the inherit process, the lack of linkage between the ODDS and eLandings contributes to the differences between programmed selection rates in ODDS and trips that are ultimately observed. Currently, ODDS provides users with a list of Report IDs from eLandings from which to close their logged trips. However, these data are not validated, or error checked, making them unreliable in their current state. This linkage between the logged (ODDS) trip (with its selection probability) and its associated landing information is necessary to evaluate potential improvements in deployment efficiency within the partial coverage fleet.            
 
 ##Evaluation of Deployment Rates  
-This section compares the coverage rate achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS, managed by the AKRO), the Observer Program database (NORPAC, managed by the AFSC), and eLandings (under joint management by Alaska Department of Fish and Game - ADF&G; the International Pacific Halibut Commission - IPHC; and the NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.            
+This section compares the coverage rate achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS, managed by the AKRO), the Observer Program database (NORPAC, managed by the AFSC), and eLandings (under joint management by Alaska Department of Fish and Game [ADF&G]; the International Pacific Halibut Commission [IPHC]; and the NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.            
 
 ###At-sea Deployments  
 ```{r Coverage.tbl, message=FALSE, warning=FALSE, include=FALSE}
@@ -1085,7 +1078,7 @@ Coverage.Table.full <- bind_rows(
   # and voluntary full coverage)
   work.data %>%
     filter(COVERAGE_TYPE == "FULL") %>% 
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1094,13 +1087,14 @@ Coverage.Table.full <- bind_rows(
            deployment.method = "Trip-Selection",
            Rate = 1,
            meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%#,
-    select(COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, meets.expected) %>% 
-    arrange(desc(STRATA))
+    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
+           V, v, N, n, Pct.obs, Rate, meets.expected) #%>% 
+    #arrange(ADP, desc(STRATA))
     ,
     # Totals for vessels in the full coverage category
     work.data %>%
       filter(COVERAGE_TYPE == "FULL") %>%
+    group_by(ADP) %>%
       summarize(V = length(unique(VESSEL_ID)),
                 v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
                 N = length(unique(TRIP_ID)),
@@ -1108,15 +1102,17 @@ Coverage.Table.full <- bind_rows(
       mutate(COVERAGE_TYPE = "Full coverage total",
              Pct.obs = (n/N) * 100,
              deployment.method = "Trip-Selection")
-)
+) %>%
+  arrange(ADP, desc(STRATA)) %>%
+  ungroup()
 
 #' *PARTIAL COVERAGE TRIP-SELECTION*
 Coverage.Table.partial <- bind_rows(
   # By strata for vessels in the partial coverage category (trip-selection)
   work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    left_join(select(partial, c(STRATA, Rate)), by = "STRATA") %>%
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    left_join(select(partial, c(YEAR, STRATA, Rate)), by = join_by(ADP == YEAR, STRATA)) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1125,7 +1121,7 @@ Coverage.Table.partial <- bind_rows(
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") %>% 
     # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     mutate(
       min.expected = round(
         stats::binom.test(x = n, 
@@ -1140,14 +1136,15 @@ Coverage.Table.partial <- bind_rows(
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                  Rate * 100 < min.expected ~ "No - higher than expected",
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
-    select(COVERAGE_TYPE, STRATA, deployment.method, 
+    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, 
-           min.expected, max.expected, meets.expected) %>% 
-    arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
+           min.expected, max.expected, meets.expected) #%>% 
+    #arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
   ,
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
-    filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>% 
+    filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
+    group_by(ADP) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1155,7 +1152,9 @@ Coverage.Table.partial <- bind_rows(
     mutate(COVERAGE_TYPE = "Partial coverage total",
            Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") 
-)
+) %>%
+  arrange(ADP, match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW"))) %>%
+  ungroup()
 
 #' *ZERO COVERAGE* 
 Coverage.Table.zero <-
@@ -1163,7 +1162,7 @@ Coverage.Table.zero <-
     filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #' *NO ZERO EM Research in 2023*
     mutate(STRATA = as.character(STRATA)) %>% 
     mutate(STRATA = ifelse(STRATA == "ZERO", "Zero coverage", STRATA)) %>% 
-    group_by(COVERAGE_TYPE, STRATA) %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1172,11 +1171,13 @@ Coverage.Table.zero <-
            deployment.method = "Trip-Selection",
            Rate = 0,
            meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%#,
-    select(COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, meets.expected)
+    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
+           V, v, N, n, Pct.obs, Rate, meets.expected) %>%
+  ungroup()
 
 # Totals with EM (number of vessels is not additive)
 Coverage.Table.TOTALS <- work.data %>%
+  group_by(ADP) %>%
   summarize(V = length(unique(VESSEL_ID)),
             v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
             N = length(unique(TRIP_ID)),
@@ -1186,7 +1187,8 @@ Coverage.Table.TOTALS <- work.data %>%
          STRATA = "Total",
          Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
          Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
-         Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) 
+         Pct.obs = paste0(Pct.obs.trips, "% trips; ", Pct.obs.vessels, "% vessels")) %>%
+  ungroup()
 
 #' *Combine all the coverage tables*
 Coverage.Table <- bind_rows(Coverage.Table.full, 
@@ -1216,20 +1218,23 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                                ifelse(deployment.method == "Trip-Selection", 
                                       format(max.expected, digits = 1, nsmall = 1),
                                       format(max.expected, digits = 0, nsmall = 0))),
-         STRATA = fct_recode(factor(STRATA),
-                             Full = "FULL"),
-         COVERAGE_TYPE = case_when(STRATA == "Zero coverage" ~ "Zero coverage", TRUE ~ COVERAGE_TYPE),
-         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), 
-                                    "Full coverage" = "FULL",
-                                    "Partial coverage" = "PARTIAL")) %>%
-  select(`Coverage` = COVERAGE_TYPE, 
+         STRATA = case_when(STRATA == "FULL" ~ "Full", TRUE ~ STRATA),
+         COVERAGE_TYPE = case_when(STRATA == "Zero coverage" ~ "Zero coverage",
+                                   COVERAGE_TYPE == "FULL" ~ "Full coverage",
+                                   COVERAGE_TYPE == "PARTIAL" ~ "Partial coverage",
+                                   TRUE ~ COVERAGE_TYPE)) %>%
+  mutate(STRATA = as.factor(STRATA),
+         COVERAGE_TYPE = as.factor(COVERAGE_TYPE)) %>%
+  select(`Year` = ADP,
+         `Coverage` = COVERAGE_TYPE, 
          Strata = STRATA, 
          `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
          `Lower limit`= min.expected,
          `Upper limit` = max.expected, 
-         `Realized meets expected?` = meets.expected)
+         `Realized meets expected?` = meets.expected) %>%
+  arrange(Year)
 
 # Create an empty factor level so that you can get rid of NAs in the table.
 Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels = c(levels(Coverage.Table$Coverage), " "))
@@ -1243,20 +1248,35 @@ rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Co
 # Objects referenced in-text:
 
 # Coverage trip and vessel totals (including EM)
-totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*n*`) %>% as.numeric()
+#' `------2022------`
+totl_obs_trips.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(`*n*`) %>% as.numeric()
 
-perc_trips_obs <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total") %>% 
+perc_trips_obs.2022 <- Coverage.Table %>% 
+  filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% 
   transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
-totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(`*v*`) %>% as.numeric()
+totl_obs_vessels.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(`*v*`) %>% as.numeric()
 
-perc_vessels_obs <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total") %>%
+perc_vessels_obs.2022 <- Coverage.Table %>% 
+  filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>%
   transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
+#' `------2023------`
+totl_obs_trips.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(`*n*`) %>% as.numeric()
+
+perc_trips_obs.2023 <- Coverage.Table %>% 
+  filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% 
+  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, digits = 1, nsmall = 1)) %>% 
+  as.numeric()
+
+totl_obs_vessels.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(`*v*`) %>% as.numeric()
+
+perc_vessels_obs.2023 <- Coverage.Table %>% 
+  filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>%
+  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, digits = 1, nsmall = 1)) %>% 
+  as.numeric()
 ```
 
 The `r year` Observer Program had `r total.strat` different deployment strata to be evaluated (`r tbl_nums('Coverage.Table', display = "cite")`). There was one *Full* coverage stratum comprised of trips taken both by vessels that were required to have full coverage (e.g., AFA vessels) and those fishing in the BSAI that opted into full coverage. There were seven partial coverage strata: five observed strata defined by gear and tender designation and two EM strata defined by gear designation. There were also two zero coverage strata: one zero coverage EM research stratum and one *Zero Coverage* stratum for jig vessels and vessels under 40 ft. length overall.      
@@ -1299,11 +1319,11 @@ em.times.figure <- ggplot(em_times, aes(x=value)) +
   theme_bw() 
 ```
 
-Evaluations for the full coverage category and zero-selection pool are straightforward - either the coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved 99.9% coverage in its full coverage category (`r tbl_nums('Coverage.Table', display = "cite")`). Five trips were not monitored in the full coverage category – four of these occurred on a single catcher vessel fishing CDQ halibut with hook and line gear that retained Pacific cod above the Maximum Retainable Amount and therefore met the criteria for full coverage fishing but failed to obtain a full coverage observer. The program achieved perfect compliance with the *Zero Coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips) will contain the actual deployment rate 95% percent of the time.  If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal. Coverage rates were consistent with expected values in six of the seven partial coverage strata, but were higher than expected within the *POT - Tender* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). There are two reasons why this result is of little concern.  First, there is no clear evidence of trip manipulation in ODDS data from this stratum.  Secondly, the achieved rate was only slightly outside of the 95% range of expected outcomes (16.1% achieved vs. a lower bound of 16.8%).  Given the low number of total trips in this stratum (44), a change in a single observed trip, from 13 observed to 12 would have resulted in an expected result for this stratum since new confidence bounds would have included the expected rate.  
+Evaluations for the full coverage category and zero-selection pool are straightforward — either the coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved 99.9% coverage in its full coverage category (`r tbl_nums('Coverage.Table', display = "cite")`). **UPDATE**Five trips were not monitored in the full coverage category — four of these occurred on a single catcher vessel fishing CDQ halibut with hook and line gear that retained Pacific cod above the Maximum Retainable Amount and therefore met the criteria for full coverage fishing but failed to obtain a full coverage observer. The program achieved perfect compliance with the *Zero Coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips) will contain the actual deployment rate 95% percent of the time.  If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal. **UPDATE**Coverage rates were consistent with expected values in six of the seven partial coverage strata, but were higher than expected within the *POT - Tender* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). There are two reasons why this result is of little concern. First, there is no clear evidence of trip manipulation in ODDS data from this stratum. Secondly, the achieved rate was only slightly outside of the 95% range of expected outcomes (16.1% achieved vs. a lower bound of 16.8%).  Given the low number of total trips in this stratum (44), a change in a single observed trip, from 13 observed to 12 would have resulted in an expected result for this stratum since new confidence bounds would have included the expected rate.  
 
 Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSMFC) that is available to analysts in the NORPAC database. In `r year`, the median time between receipt and completion of review was 24 days for *EM HAL* and 60 days for *EM POT* (`r fig_nums('em.times.figure', display = "cite")`). This is compared to a median of 7 days during pre-implementation in 2016 (NMFS 2017a, p. 87).  
 
-In combination across all strata, coverage levels, and fishery monitoring tools, 4,497 trips (43.3%) and 510 vessels (47.0%) were successfully monitored at-sea among all fishing in Federal fisheries of Alaska in 2019 (`r tbl_nums('Coverage.Table', display = "cite")`).  
+In combination across all strata, coverage levels, and fishery monitoring tools, **UPDATE**4,497 trips (43.3%) and 510 vessels (47.0%) were successfully monitored at-sea among all fishing in Federal fisheries of Alaska in 2023 (`r tbl_nums('Coverage.Table', display = "cite")`).  
 
 ###Coverage Rates for Dockside Monitoring
 Observers were assigned to monitor shoreside deliveries of pollock. The objective of this monitoring was to obtain a count of the number of salmon caught as bycatch and to obtain tissue samples for genetic analysis from these fish in each observed pollock delivery. The sampling design used for this objective in 2019 remained unchanged from that used since 2011 (Faunce 2015); all deliveries of pollock that were observed at sea were also observed dockside. While all Bering Sea pollock trips and deliveries are observed, this is not the case in the GOA (NMFS 2015), where pollock trips randomly selected for at-sea monitoring are also expected to be sampled shoreside for salmon. For this analysis, pollock deliveries are defined as any delivery where the predominant species is pollock in eLandings.     
@@ -1315,78 +1335,84 @@ Pollock.landing.data <- work.data %>%
   filter(SOURCE_TABLE == "Y" & # Retained catch
          TENDER == "N" &
          AGENCY_GEAR_CODE %in% c("PTR", "NPT") &   
-         PROCESSING_SECTOR=="S" &                  
+         PROCESSING_SECTOR == "S" &                  
          TRIP_TARGET_CODE %in% c("B", "P") & 
          MANAGEMENT_PROGRAM_CODE != "RPP") %>% 
-  distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
+  distinct(ADP, REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
   # salmon.landings.obs is a list of REPORT_IDs for which dockside sampling for salmon occurred (all sectors)
   mutate(Observed.type = ifelse(REPORT_ID %in% salmon.landings.obs$REPORT_ID, "Observed", "Not_Observed"),
          FMP = fct_recode(factor(FMP), `Bering Sea` = "BSAI", `Gulf of Alaska` = "GOA"),
          PORT_CODE = fct_recode(factor(PORT_CODE),
                                 `Kodiak` = "KOD", 
-                                `Dutch Hbr.` = "DUT", 
+                                `Dutch Harbor` = "DUT", 
                                 `Akutan` = "AKU", 
                                 `Sand Point` = "SPT", 
-                                `King Cove` = "KCO"),
+                                `King Cove` = "KCO",
+                                `Inshore floating processor` = "IFP"),
          COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), `Full` = "FULL", `Partial` = "PARTIAL")) 
 
-# table(Pollock.landing.data$COVERAGE_TYPE, Pollock.landing.data$Observed.type, Pollock.landing.data$TENDER)
+# table(Pollock.landing.data$COVERAGE_TYPE, Pollock.landing.data$Observed.type, Pollock.landing.data$TENDER, Pollock.landing.data$ADP)
 
 # Summarise landings by FMP, coverage type, port, and observed status
 Pollock.monitored <- rbind(
-          Pollock.landing.data %>%
-          group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
-          summarize(N.Pollock = n_distinct(REPORT_ID),
-                    N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
-          mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock)*100, digits=1, nsmall=1)) %>% 
-          select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
-          ungroup(),
-          Pollock.landing.data %>%
-          group_by(COVERAGE_TYPE, STRATA) %>%
-          summarize(FMP = as.factor("Total"),
-                    PORT_CODE = as.factor(""),
-                    N.Pollock = n_distinct(REPORT_ID),
-                    N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
-          mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock)*100, digits=1, nsmall=1)) %>%
-          select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
-          ungroup())
+  Pollock.landing.data %>%
+    group_by(ADP, FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
+    summarize(N.Pollock = n_distinct(REPORT_ID),
+              N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
+    mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock) * 100, digits = 1, nsmall = 1)) %>% 
+    select(ADP, FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>%
+    ungroup()
+  ,
+  Pollock.landing.data %>%
+    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
+    summarize(FMP = as.factor("Total"),
+              PORT_CODE = as.factor(""),
+              N.Pollock = n_distinct(REPORT_ID),
+              N.Pollock.Obs = n_distinct(REPORT_ID[Observed.type == "Observed"])) %>%
+    mutate(Pct.Obs = format((N.Pollock.Obs / N.Pollock) * 100, digits = 1, nsmall = 1)) %>%
+    select(ADP, FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.Pollock, N.Pollock.Obs, Pct.Obs) %>% 
+    ungroup())
 
 # Isolate observed strata
 Pollock.observed <- rbind(
-                    filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA != "EM TRW EFP"),
-                    filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA != "EM TRW EFP"))
+  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA != "EM TRW EFP"),
+  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA != "EM TRW EFP"))
 
 # Rename columns and format
 Pollock.observed.table <- Pollock.observed %>% 
   mutate(N.Pollock = as.character(N.Pollock),
          N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
-  select(`FMP` = FMP, 
+  select(`Year` = ADP,
+         `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
-         `% Observed` = Pct.Obs)
+         `% Observed` = Pct.Obs) %>%
+  arrange(Year)
 
 # Isolate EFP strata
 Pollock.efp <- rbind(
-               filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA == "EM TRW EFP"),
-               filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA == "EM TRW EFP"))
+  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA == "EM TRW EFP"),
+  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA == "EM TRW EFP"))
 
 # Rename columns and format
 Pollock.efp.table <- Pollock.efp %>% 
   mutate(N.Pollock = as.character(N.Pollock),
          N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
-  select(`FMP` = FMP, 
+  select(`Year` = ADP,
+         `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
-         `% Observed` = Pct.Obs)
+         `% Observed` = Pct.Obs) %>%
+  arrange(Year)
 ```
 
-Given the design, the level of dockside observation of walleye pollock deliveries should be 100% in the full coverage category. In `r year`, 100% of full coverage walleye pollock deliveries were observed (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).   
+Given the design, the level of dockside observation of pollock deliveries should be 100% in the full coverage category. In `r year`, 100% of full coverage walleye pollock deliveries were observed (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).   
 
-While expectations of the full coverage category are straightforward, evaluations of the partial coverage category are more complex. As a matter of policy, no tender deliveries are observed. While it may seem intuitive that the expected coverage rate for non-tendered deliveries within the *TRW* stratum should be equal to the programmed trip selection rate of 19.59%, this assumption is likely untrue because observers are not deployed into the pollock fishery but into the entire trawl fishery, and the relationship between the number of deliveries and trips is not expected to be constant, especially when measured across ports. Therefore, we present the dockside observation rates for non-tendered *TRW* pollock landings but make no comparison to deployment rates (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).    
+While expectations of the full coverage category are straightforward, evaluations of the partial coverage category are more complex. As a matter of policy, no tender deliveries are observed. While it may seem intuitive that the expected coverage rate for non-tendered deliveries within the *OB TRW* stratum should be equal to the programmed trip selection rate of 22.68%, this assumption is likely untrue because observers are not deployed into the pollock fishery but into the entire trawl fishery, and the relationship between the number of deliveries and trips is not expected to be constant, especially when measured across ports. Therefore, we present the dockside observation rates for non-tendered *OB TRW* pollock landings but make no comparison to deployment rates (`r tbl_nums('Pollock.observed.table', display = "cite")`, `r tbl_nums('Pollock.efp.table', display = "cite")`).    
 
 Bycatch estimates of Chinook salmon in the GOA are estimated using methods described in Cahalan et al. (2014). In the event that a delivery cannot be monitored (e.g., the case in a tendered delivery or non-pollock delivery), then estimation of bycatch comes by applying salmon bycatch rates to landed catch. Estimates of stock of origin from salmon bycatch are produced by the AFSC’s Auke Bay Laboratory (e.g., Guthrie et al. 2019).               
 
@@ -1405,124 +1431,117 @@ Max.ts.date <- work.data %>%
 
 # Count the number of total and monitored trips that occurred at each date
 For.ts.temporal.plot <- Max.ts.date  %>%
-                        group_by(STRATA, Date=MAX_TARGET_DATE) %>%
-                        summarise(N=length(unique(TRIP_ID)),
-                                  n=length(unique(TRIP_ID[OBSERVED_FLAG=="Y"]))) %>% 
-                        ungroup()
+  group_by(STRATA, Date = MAX_TARGET_DATE) %>%
+  summarise(N = length(unique(TRIP_ID)), # Number of total trips
+            n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>% # Number of observed trips 
+  ungroup()
 
 # Fill in missing dates using tidyr::complete()
 For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-         mutate(Date=as.Date(Date)) %>% 
-         complete(nesting(STRATA), Date=seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by="day")) 
+  mutate(Date = as.Date(Date)) %>% 
+  complete(nesting(STRATA), Date = seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by = "day")) %>%
+  mutate(YEAR = year(Date))
 
-# Fill in rates, effective dates, and expiration dates  
-For.ts.temporal.plot <- merge(For.ts.temporal.plot,
-                              select(partial_time, c(STRATA, Rate, Effective_Date, Expire_After))) %>%
-                        filter(Date >= Effective_Date & Date <= Expire_After)
+# Fill in rates
+For.ts.temporal.plot <- left_join(For.ts.temporal.plot,
+                              select(partial, c(YEAR, STRATA, Rate)), by = c("YEAR", "STRATA"))
 
-# Count cumulative number of trips by time period
-For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-                        group_by(STRATA, Effective_Date, Expire_After) %>%
-                        mutate(N = ifelse(is.na(N), 0, N),
-                               n = ifelse(is.na(n), 0, n)) %>% 
-                        mutate(N.cuml = cumsum(N)) %>% 
-                        group_by(STRATA) %>% 
-                        # Count cumulative number of monitored trips by stratum
-                        mutate(n.cuml = cumsum(n), 
-                               # Count the number of monitored trips that occured prior to the last time period  
-                               n.after.waivers = sum(n[Date < as.Date("2020-07-01")]),
-                               n.after.waivers = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-07-01"), n.after.waivers, 0)) %>% 
-                        ungroup()
+# Count cumulative number of trips by stratum and year
+For.ts.temporal.plot <- 
+  For.ts.temporal.plot %>% 
+  group_by(YEAR, STRATA) %>%
+  mutate(N = ifelse(is.na(N), 0, N),
+         n = ifelse(is.na(n), 0, n)) %>% 
+  mutate(N.cuml = cumsum(N),
+         n.cuml = cumsum(n)) %>% 
+  ungroup()
 
 # Calculate the expected number of trips  
 # The number of trips that occured prior to the third time period
 # is used as a vertical adjustment for the expectations on the plot  
-For.ts.temporal.plot <- For.ts.temporal.plot %>% 
-                        mutate(n.expected = round((N.cuml * Rate) + n.after.waivers, 0),
-                               Low95 = qbinom(0.025, N.cuml, Rate) + n.after.waivers,
-                               High95 = qbinom(0.975,N.cuml, Rate) + n.after.waivers,
-                        Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
-                        Observed.days = ifelse(n > 0, 1, NA)) %>% 
-                        data.frame()
-
-# Remove values that aren't applicable for the waiver period
-For.ts.temporal.plot <- mutate(For.ts.temporal.plot,
-                               n.expected = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, n.expected),
-                               Low95 = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, Low95),
-                               High95 = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, High95),
-                               Outside.bounds = ifelse(STRATA %in% c("HAL", "POT", "TRW") & Date >= as.Date("2020-03-26") & Date < as.Date("2020-07-01"), NA, Outside.bounds))
+For.ts.temporal.plot <- 
+  For.ts.temporal.plot %>%
+  group_by(YEAR) %>%
+  mutate(n.expected = round((N.cuml * Rate), 0),
+         Low95 = qbinom(0.025, N.cuml, Rate),
+         High95 = qbinom(0.975,N.cuml, Rate),
+         Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
+         Observed.days = ifelse(n > 0, 1, NA)) %>% 
+  data.frame()
 
 # Summarise days and portion of the year outside of expected
-For.ts.temporal.summary <- For.ts.temporal.plot %>% 
-                           group_by(STRATA) %>% 
-                           summarise(N.outside = sum(Outside.bounds, na.rm = TRUE), 
-                                     Days = ifelse(STRATA %in% c("EM HAL", "EM POT"), 
-                                            sum(Date >= as.Date("2020-01-01")), 
-                                            # Only count non-waiver period days for observed strata 
-                                            sum(Date < as.Date("2020-03-26") | Date >= as.Date("2020-07-01")))) %>% 
-                           distinct() %>% 
-                           mutate(`% Outside` = round(100*N.outside/Days, 1))
+For.ts.temporal.summary <- 
+  For.ts.temporal.plot %>% 
+  group_by(YEAR, STRATA) %>% 
+  reframe(N.outside = sum(Outside.bounds, na.rm = TRUE),
+          Days = ifelse(YEAR == 2022,
+                        sum(Date >= as.Date("2022-01-01")),
+                        sum(Date >= as.Date("2023-01-01")))) %>%
+  distinct() %>% 
+  mutate(`% Outside` = round(N.outside / Days * 100, 1))
 
-#Calculate and store the p.value from a binomial
-for.binom <- For.ts.temporal.plot %>% 
-                     group_by(STRATA, Effective_Date, Rate) %>% 
-                     summarize(n = sum(n), 
-                               N = sum(N)) %>% 
-                     mutate(p = format(round(stats::binom.test(n, N, Rate)$p.value[1],3), nsmall=3),
-                            estimate = format(round(stats::binom.test(n, N, Rate)$estimate[1],3), digits=3, nsmall=3),
-                            # Results text with probability of success (estimate) & p-value
-                            text = paste0("*", STRATA, "* stratum expected rate = ", round(Rate, 3), ", realized rate = ", estimate, ", *p*-value = ", p)) %>% 
+# Calculate and store the p.value from a binomial
+for.binom <- 
+  For.ts.temporal.plot %>% 
+  group_by(YEAR, STRATA, Rate) %>% 
+  summarize(n = sum(n), 
+            N = sum(N)) %>% 
+  mutate(p = format(round(stats::binom.test(n, N, Rate)$p.value[1], 3), nsmall = 3),
+         estimate = format(round(stats::binom.test(n, N, Rate)$estimate[1], 3), digits = 3, nsmall = 3),
+         # Results text with probability of success (estimate) & p-value
+         text = paste0("*", STRATA, "* stratum expected rate = ", round(Rate, 3), 
+                       ", realized rate = ", estimate, ", *p*-value = ", p)) %>% 
   ungroup()
 
-# Remove significance tests for the waiver period  
-for.binom <- mutate(for.binom, p = ifelse(Effective_Date == as.Date("2020-03-26"), NA, p),
-                               text = ifelse(Effective_Date == as.Date("2020-03-26"), NA, text))
-
-#Interpretive text indicating whether the strata "were" or "were not" within
-#expectations of the binomial distribution
+# Interpretive text indicating whether the strata "were" or "were not" within
+# expectations of the binomial distribution
 passfail <- ifelse(any(for.binom$p < 0.05), "were not", "were")
 
 ```
 
 ```{r cum.temporal.plot, message=FALSE, warning=FALSE, include=FALSE}
 # Add p-value to data.frame
-For.ts.temporal.plot <- merge(For.ts.temporal.plot, select(for.binom, STRATA, Effective_Date, p))
+For.ts.temporal.plot <- left_join(For.ts.temporal.plot,
+                                  select(for.binom, c(YEAR, STRATA, p)), by = c("YEAR", "STRATA"))
 
 # Order strata for plot
 For.ts.temporal.plot <- transform(For.ts.temporal.plot,
-                                STRATA=factor(STRATA,levels=c("EM HAL", "EM POT", "HAL", "POT", "TRW")))
+                                  STRATA = factor(STRATA,levels = c("EM HAL", "EM POT", "OB HAL", "OB POT", "OB TRW")))
 
 # Add column for dates where coverage is outside expectation, and format p-values
 For.ts.temporal.plot <- For.ts.temporal.plot %>%
                         mutate(Date.outside = if_else(Outside.bounds == 1, Date, as.Date(NA))) %>% 
                         mutate(p = ifelse(as.numeric(p) < 0.05, paste0(p, "*"), p)) %>%
-                        mutate(p = ifelse(p=="0.000*", paste0("italic(p) < '0.001*'"), paste0("italic(p) == '", p, "'")))
+                        mutate(p = ifelse(p == "0.000*", paste0("italic(p) < '0.001*'"), paste0("italic(p) == '", p, "'")))
+
+# Create "dummy" dataframe to set limits for x axes
+Temporal.plot.x_range <- data.frame(YEAR = rep(year + -1:0,2) ) %>%
+  mutate(Date = as.Date(paste0(YEAR, c("-01-01", "-12-31"))))
 
 # Plot
-Temporal.plot <- ggplot(For.ts.temporal.plot, aes(x=Date)) +
-  # Add waiver period
-  geom_rect(data = filter(For.ts.temporal.plot, STRATA %in% c("HAL", "POT", "TRW")), aes(xmin=as.Date("2020-03-25"), xmax = as.Date("2020-07-01"), ymin=-Inf, ymax=Inf), alpha = 0.005, col = "gray") +
-  geom_vline(data = filter(For.ts.temporal.plot, STRATA %in% c("HAL", "POT", "TRW")), aes(xintercept = as.Date("2020-03-25")), lty = 2) +
-  geom_vline(data = filter(For.ts.temporal.plot, STRATA %in% c("HAL", "POT", "TRW")), aes(xintercept = as.Date("2020-07-01")), lty = 2) +
+Temporal.plot <- 
+  ggplot(For.ts.temporal.plot, aes(x = Date)) +
   # Add lines for coverage rates
-  geom_line(aes(y = n.cuml), col="black", size=2) +
+  geom_line(aes(y = n.cuml), col = "black", linewidth = 2) +
   geom_line(aes(y = n.expected), col = "gray") +
-  geom_ribbon(aes(ymin = Low95, ymax = High95), alpha=0.2) +
-  geom_rug(aes(x = Date.outside), sides="b") +
-  # Annotate p-values
-  geom_text(aes(x = Effective_Date + months(1),
-                y = Inf, vjust = 1.25, 
-                label = p), size = 4, parse=T, check_overlap = T) +
-  facet_wrap(~ STRATA, ncol=1, scale="free_y") +
+  geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
+  geom_rug(aes(x = Date.outside), sides = "b") +
+  facet_grid(STRATA ~ YEAR, scales = "free", space = "free_x") +
+    # Annotate p-values
+  geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
+            hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
+  # Plot invisbile points to ensure x-facets span the entire year
+  geom_point(data = Temporal.plot.x_range, y = 0, alpha = 0) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
   ylab("Cumulative Trips in Trip-selection Strata\n") +
   xlab("\nDate")
 
 Temporal.plot
+
 ```
 
-The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in only one of the seven partial coverage strata: *POT - Tender* (expected rate = 0.161, realized rate = 0.295, p-value = 0.023; `r tbl_nums('Coverage.Table', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). Coverage rates were outside of the expected range for 15.9%, 9.3%, 31.2%, 28.2%, and 7.9% of the year for the *EM HAL*, *EM POT*, *POT – No Tender*, *POT - Tender* and *TRW – No Tender* strata, respectively. The *EM HAL*, *POT – No Tender*, and *TRW – No Tender* strata were outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *HAL* (expected rate = 0.177, realized rate = 0.176, *p*-value = 0.925) and *TRW - Tender* (expected rate = 0.271, realized rate = 0.357, *p*-value = 0.175) strata. Overall, there appeared to be less temporal bias in 2019 than in 2018, when three of six partial coverage strata had coverage rates outside of the expected range at the end of the year (AFSC and AKRO 2019).         
+The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. **UPDATE**At the end of `r year` the number of observed trips was outside of this expected range in only one of the seven partial coverage strata: *POT - Tender* (expected rate = 0.161, realized rate = 0.295, p-value = 0.023; `r tbl_nums('Coverage.Table', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). Coverage rates were outside of the expected range for 15.9%, 9.3%, 31.2%, 28.2%, and 7.9% of the year for the *EM HAL*, *EM POT*, *POT – No Tender*, *POT - Tender* and *TRW – No Tender* strata, respectively. The *EM HAL*, *POT – No Tender*, and *TRW – No Tender* strata were outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *OB HAL* (expected rate = 0.177, realized rate = 0.176, *p*-value = 0.925) and *TRW - Tender* (expected rate = 0.271, realized rate = 0.357, *p*-value = 0.175) strata. Overall, there appeared to be less temporal bias in 2019 than in 2018, when three of six partial coverage strata had coverage rates outside of the expected range at the end of the year (AFSC and AKRO 2019).         
 
 ##Spatial Patterns in Trip-Selection  
 Under a strictly random selection of trips and with a large enough sample size, the spatial distribution of monitored trips should reflect the spatial distribution of all trips. The hypergeometric distribution was used to describe the results of sampling from a population of items (fishing trips) with different characteristics (NMFS Area fished). Based on this distribution, the expected number of monitored trips in a stratum and area is the realized monitoring rate (not selection rate) for the stratum multiplied by the total number of trips from that stratum that occurred in the area of interest. Using this method, we compared the expected number of monitored trips to the realized number of monitored trips in each NMFS Area and stratum combination and found that in most cases, the realized number of monitored trips was close to the expected result. As part of this evaluation, we calculated the probability of monitoring the realized number of monitored trips within each stratum and NMFS Area. For the purposes of the following discussion, NMFS Areas with an unexpected number of trips (probability of our result is less than 0.05) are referred to as “low-p” areas.  
@@ -2039,21 +2058,21 @@ for (i in as.character(unique(strata.cell.dat$STRATA))) {
 rm(trip.strata.dat, trips.within.cells, trip.totls)
 ```
 
-Over the course of an entire year, some NMFS Areas have low fishing effort and as a result have a relatively high probability of being missed by the simple random sampling represented by observer deployments and EM. The fishing effort data for each stratum and the number of monitored trips over the course of `r year` were used to illustrate their combined effect on the probability of a NMFS Area containing monitoring data using the hypergeometric distribution (`r fig_nums('prob.bynumber.plot', display = "cite")`). From this figure it can be seen how 1) the likelihood of at least one monitored trip is increased with fishing effort and 2) is also increased with an increase in the selection rate. Given our sampling rates in the `r length(partial$STRATA)` partial coverage trip-selection strata, the probability of having no monitored trips in a NMFS Reporting Areas increases quickly above `r tolerance` when there are fewer than `r wordlist(trips_by_tolerance$interp)` in a given area. Including additional factors such as week, gear, and target will decrease the number of trips with the same characteristics and hence increase the probabilities of obtaining no monitoring data of that character (post-strata of the CAS).  
+Over the course of an entire year, some NMFS Areas have low fishing effort and as a result have a relatively high probability of being missed by the simple random sampling represented by observer deployments and EM. The fishing effort data for each stratum and the number of monitored trips over the course of `r year` were used to illustrate their combined effect on the probability of a NMFS Area containing monitoring data using the hypergeometric distribution (`r fig_nums('prob.bynumber.plot', display = "cite")`). From this figure it can be seen how (1) the likelihood of at least one monitored trip is increased with fishing effort and (2) is also increased with an increase in the selection rate. Given our sampling rates in the `r length(partial$STRATA)` partial coverage trip-selection strata, the probability of having no monitored trips in a NMFS Reporting Areas increases quickly above `r tolerance` when there are fewer than `r wordlist(trips_by_tolerance$interp)` in a given area. Including additional factors such as week, gear, and target will decrease the number of trips with the same characteristics and hence increase the probabilities of obtaining no monitoring data of that character (post-strata of the CAS).  
 
 A new analysis presented in Appendix B – Gap Analysis examines the deployment of observers and EM systems at finer spatiotemporal scales than presented in Chapter 3. This analysis evaluates the availability of monitoring coverage within and between the partial coverage selection pools and highlights instances where sampling effort was disproportionately distributed in space and time between post-strata defined by gear, NMFS Area, and dominant species landed (trip target). For example, the spatial patterns in the *HAL* stratum appear to be due to disproportionately high monitoring rates in the GOA for trips targeting halibut and lower monitoring rates for halibut-target trips in the BSAI, especially in the Aleutian Island areas. Additionally, the low number of observed trips in area 620 in the *TRW – No Tender* stratum was due to disproportionately low monitoring rates among arrowtooth-target trips where only 2 of 42 trips were observed (Appendix B – Gap Analysis).  
 
 #Response to Council and SSC Comments
 
-The SSC has requested that a specific section with responses to SSC comments be provided in the written report, as is done for SAFE documents. Normally, this section would addresses FMSC responses (in italics) to comments relative to this chapter made by the Council and the SSC after the presentation of the `r year-1` Annual Report during the June `r year` Council meeting.  However, the 2019 Annual Report was not released at that meeting, and instead the deployment performance review was published separately (Ganz et al., 2020).  Therefore, there is nothing to respond to in this Chapter.   
+The SSC has requested that a specific section with responses to SSC comments be provided in the written report, as is done for SAFE documents. This section addresses FMSC responses (in italics) to comments relevant to this chapter made by the Council and the SSC after the presentation of the `r year - 1` Annual Report during the June `r year` Council meeting. 
 
 #FMSC Recommendations to Improve Data Quality  
   
-##Recommendations from the `r year-1` Annual Deployment Review
+##Recommendations from the `r year - 1` Annual Deployment Review
 
-The Fisheries Monitoring Science Committee (formerly the Observer Science Committee) made the following recommendations in its `r year-1` review of observer deployment to be considered in developing the `r year+1` ADP (NMFS `r year`b). Following each recommendation is the italicized outcome of that recommendation.  
+The Fisheries Monitoring Science Committee (formerly the Observer Science Committee) made the following recommendations in its `r year - 1` review of observer deployment to be considered in developing the `r year + 1` ADP (NMFS `r year`b). Following each recommendation is the italicized outcome of that recommendation.  
 
-The Fishery Monitoring Science Committee’s Recommendations to improve the `r year+1` ADP were as follows:  
+The Fishery Monitoring Science Committee’s Recommendations to improve the `r year + 1` ADP were as follows:  
 
 **1. The ADP fully integrate EM and observer deployment into one fishery monitoring program.**  This recommendation echoes the SSC recommendation made at their June 2019 meeting, and is based on the recognition that EM and observers are two tools at the disposal of the NMFS to monitor fisheries and each has its advantages and disadvantages. Issues due to incomplete integration of fishery monitoring tools occurred in 2019 when only EM trips were monitored in the pot gear Pacific cod Central Gulf (Area 630) fishery, introducing a data gap for the GOA Pacific cod stock assessment. In 2020, observer coverage has been reduced further as a result of COVID-19 precautions.
 *NMFS plans to pause on incremental changes and instead draft a more comprehensive ADP sampling plan to address this issue in future years*.
@@ -2061,7 +2080,7 @@ The Fishery Monitoring Science Committee’s Recommendations to improve the `r y
 **2. We continue to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council.** The analyses contained in the Annual Report attempt to identify fishing trips, which is the unit of measurement for deployment.  However, there are some instances when realized deployments do not match intended deployments. In some cases, it may be that there were no differences, but the accounting of trips between ODDS and eLandings data are incongruent.
 *No progress was made on this issue*
 
-##Recommendations to Improve Data Quality and Guide the `r year+2` ADP    
+##Recommendations to Improve Data Quality and Guide the `r year + 2` ADP    
 **1. For the 8th consecutive year, we continue to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council.**  Lack of action on this activity has now resulted in the inabilty for NMFS to statistically evaluate whether bias occurred in the observer deployments in the last part of 2020 and this will also be the case for most, if not all of 2021.  This is especially troubling given that it is a 2021 NMFS National Priority to Increase the use of electronic reporting, electronic monitoring, and artificial intelligence technology for commercial and recreational fisheries.  Leveraging existing systems, such as ODDS and *e*Landings should be an achievable goal.
 
 **2. The sampling design for the next ADP should use trip as the primary sampling unit and should not be constrained by port of departure or landing unless doing so jeapordizes health and safety.  We support a rollover of the final 2020 ADP as originally proposed for 2022.** 
@@ -2109,14 +2128,25 @@ NMFS. 2013. 2014 Annual deployment plan for observers in the groundfish and hali
 
 ```{r trip.budget.tbl, echo=FALSE}
 # Add commas to numbers >= 1000
-trip.budget.table[2:4] <- lapply(trip.budget.table[,2:4], prettyNum, trim=TRUE, big.mark=",")
+trip.budget.table.2022[2:4] <- lapply(trip.budget.table.2022[, 2:4], prettyNum, trim = TRUE, big.mark = ",")
+trip.budget.table.2023[2:4] <- lapply(trip.budget.table.2023[, 2:4], prettyNum, trim = TRUE, big.mark = ",")
 
 # Italicize strata
-trip.budget.table$Strata <- cell_spec(trip.budget.table$STRATA, italic = ifelse(trip.budget.table$STRATA != "Total", TRUE, FALSE))
+trip.budget.table.2022$Strata <- cell_spec(trip.budget.table.2022$STRATA, 
+                                           italic = ifelse(trip.budget.table.2022$STRATA != "Total", TRUE, FALSE))
+trip.budget.table.2023$Strata <- cell_spec(trip.budget.table.2023$STRATA, 
+                                           italic = ifelse(trip.budget.table.2023$STRATA != "Total", TRUE, FALSE))
 
 # Print table
 kbl(
-  select(trip.budget.table, Strata, pred_days, act_days, diff, perc) %>% 
+  select(trip.budget.table.2022, Strata, pred_days, act_days, diff, perc) %>% 
+  rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
+  kable_paper() %>%
+  # Group columns 
+  add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
+
+kbl(
+  select(trip.budget.table.2023, Strata, pred_days, act_days, diff, perc) %>% 
   rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
   kable_paper() %>%
   # Group columns 
@@ -2129,15 +2159,16 @@ kbl(
 ```{r disposition.table, echo=FALSE, include=FALSE}
 # Table 2 from 2019 Annual Report
 #' *NOT INCLUDED SINCE 2019 - This chunk has not been updated for the 2023 AR*
-if(F){
+if(FALSE){
   ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
   
-  disposition.table[c(4,6,7)] <- lapply(disposition.table[,c(4,6,7)], prettyNum, trim=TRUE, big.mark=",")
-  disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`==" NA"] <- " "
-  disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)`=="NA"] <- " "
+  disposition.table[c(4, 6, 7)] <- lapply(disposition.table[,c(4, 6, 7)], prettyNum, trim = TRUE, big.mark = ",")
+  disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`=="   NA"] <- " "
+  disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)` == " NA"] <- " "
   disposition.table$Strata <- cell_spec(disposition.table$Strata, italic = ifelse(disposition.table$Strata != "Total", TRUE, FALSE))    # Italicize strata
   
-  kable(disposition.table, escape=F)
+kbl(disposition.table, escape = FALSE) %>%
+  kable_paper()
 }
 ```
 
@@ -2147,13 +2178,14 @@ if(F){
 ```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
 # Table 3 from 2019 Annual Report
 #' *NOT INCLUDED SINCE 2019 - This chunk has not been updated for the 2023 AR**
-if(F){
+if(FALSE){
   ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
   
-  logged.table[c(3:7)] <- lapply(logged.table[,3:7], prettyNum, trim=TRUE, big.mark=",")
-  logged.table$Strata <- cell_spec(logged.table$Strata, italic=TRUE) # Italicize strata
+  logged.table[c(3:7)] <- lapply(logged.table[, 3:7], prettyNum, trim = TRUE, big.mark = ",")
+  logged.table$Strata <- cell_spec(logged.table$Strata, italic = TRUE) # Italicize strata
   
-  kable(logged.table, escape=F)
+  kbl(logged.table, escape = FALSE) %>%
+    kable_paper()
 }
 ```
 
@@ -2162,14 +2194,16 @@ if(F){
 ####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Initial Random Selection) and those that remained after user manipulation (After Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
 
 ```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
-Selection.table[c(4:5)] <- lapply(Selection.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
+Selection.table[c(4:5)] <- lapply(Selection.table[, 4:5], prettyNum, trim = TRUE, big.mark = ",")
 Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
 
-kable(
+kbl(
   Selection.table %>% arrange(Year, Strata, `Trip disposition`),
-  col.names=c("Year" , "Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"), 
-  escape=F, align="lllrrrrr"
-) %>% kable_paper() 
+  col.names = c(
+    "Year" , "Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", 
+    "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"),
+  escape = FALSE, align = "lllrrrrr") %>% 
+  kable_paper() 
 
 ```
 
@@ -2178,12 +2212,12 @@ kable(
 ####`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
 ```{r Coverage.Table, echo=FALSE, tab.cap=""}
-Coverage.Table[c(5:8)] <- lapply(Coverage.Table[,5:8], prettyNum, trim=TRUE, big.mark=",")
+Coverage.Table[c(4:7)] <- lapply(Coverage.Table[, 4:7], prettyNum, trim = TRUE, big.mark = ",")
 
 # For 2020, shift totals over so that coverage column can be eliminated later
 Coverage.Table <- Coverage.Table %>% 
   mutate(Strata = as.character(Strata)) %>% 
-  mutate(Strata = ifelse(Coverage %in% c("Full Coverage Total", "Gear-based Total"), as.character(Coverage), Strata))
+  mutate(Strata = ifelse(Coverage %in% c("Full coverage total", "Partial coverage total"), as.character(Coverage), Strata))
 
 # Italicize strata
 Coverage.Table$Strata <- cell_spec(Coverage.Table$Strata, italic = ifelse(Coverage.Table$Strata != "Total", TRUE, FALSE))
@@ -2192,15 +2226,18 @@ Coverage.Table$Strata <- cell_spec(Coverage.Table$Strata, italic = ifelse(Covera
 kbl(Coverage.Table, escape = FALSE) %>% 
   kable_paper() %>% 
   # Remove columns
-  remove_column(c(1,3,4)) %>% 
+  remove_column(2) %>% 
   # Group columns
-  add_header_above(c(" " = 5, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1)) %>% 
+  add_header_above(c(" " = 6, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1)) %>% 
   # Group rows
-  pack_rows("Full coverage: Jan. 1 - Dec. 31", 1, 3, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage EM: Jan. 1 - Dec. 31", 4, 6, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed: Jan. 1 - Mar. 25", 7, 9, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed: Mar. 26 - Jun. 30", 10, 12, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed: Jul. 1 - Dec. 31", 13, 15, label_row_css = "text-align: center") %>%   pack_rows("Zero coverage: Jan. 1 - Dec. 31", 17, 18, label_row_css = "text-align: center")
+  pack_rows("Full coverage", 1, 3, label_row_css = "text-align: center") %>% 
+  pack_rows("Partial coverage EM", 4, 6, label_row_css = "text-align: center") %>% 
+  pack_rows("Partial coverage observed", 7, 9, label_row_css = "text-align: center") %>%
+  pack_rows("Zero coverage", 11, 12, label_row_css = "text-align: center") %>%
+  pack_rows("Full coverage", 13, 15, label_row_css = "text-align: center") %>% 
+  pack_rows("Partial coverage EM", 16, 18, label_row_css = "text-align: center") %>% 
+  pack_rows("Partial coverage observed", 19, 22, label_row_css = "text-align: center") %>%
+  pack_rows("Zero coverage", 23, 24, label_row_css = "text-align: center")
 ```
 
 #####
@@ -2244,7 +2281,7 @@ kable(em.summary.table)
 ####`r tbl_nums('Pollock.observed.table', caption = "The number of pollock deliveries made by vessels in the *TRW* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
-Pollock.observed.table[c(4:5)] <- lapply(Pollock.observed.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
+Pollock.observed.table[c(4:5)] <- lapply(Pollock.observed.table[, 4:5], prettyNum, trim = TRUE, big.mark = ",")
 
 kable(Pollock.observed.table)
 ```
@@ -2254,7 +2291,7 @@ kable(Pollock.observed.table)
 ####`r tbl_nums('Pollock.efp.table', caption = "The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.efp.table, echo=FALSE, tab.cap=""}
-Pollock.efp.table[c(4:5)] <- lapply(Pollock.efp.table[,4:5], prettyNum, trim=TRUE, big.mark=",")
+Pollock.efp.table[c(4:5)] <- lapply(Pollock.efp.table[, 4:5], prettyNum, trim = TRUE, big.mark = ",")
 
 kable(Pollock.efp.table)
 ```
@@ -2268,9 +2305,9 @@ kable(Pollock.efp.table)
 # Italicize strata
 OBSERVED_FLAG.results$Strata <- cell_spec(OBSERVED_FLAG.results$Strata, italic = TRUE)
 
-kbl(OBSERVED_FLAG.results, escape = FALSE, align=c('l','r','r','l',rep("r",times=6)))  %>% 
+kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r", times = 6)))  %>% 
   kable_paper() %>%
-  collapse_rows(columns=1:3, valign="top")
+  collapse_rows(columns = 1:3, valign = "top")
 ```
 
 #####
@@ -2278,7 +2315,8 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align=c('l','r','r','l',rep("r",times
 `r if(tech.memo){'# Figures'}`
 
 ```{r outcomes, echo = FALSE, warning = FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
-print(grid.arrange(outcomes.plot, costs.plot, nrow=2))
+print(grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2))
+print(grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2))
 ```
 
 ####`r fig_nums('outcomes.plot', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
@@ -2375,5 +2413,5 @@ suppressMessages(print(prob.bynumber.plot))
 #####
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
-save.image(file="4_AR_report.Rdata")
+save.image(file = "4_AR_report.Rdata")
 ```

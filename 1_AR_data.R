@@ -94,10 +94,8 @@ predicted <- Nnd_tbl[
 
 # * Valhalla ----
 
-#' Initial upload of [2022] Valhalla to the Shared Gdrive. Originally obtained from the 2024 ADP data folder, keeping 
-#' 2022 only (run date of 2023-04-10 15:15:15 PDT)
-#' [https://drive.google.com/drive/folders/1em6NDOvfPIkgT7FlZkdUYh1S-_z7v2PE]. 
-#' *NOTE* Downloaded version 6 (instead of the current version, which returns an error during loading!). Renamed to
+#' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.
+#' (run date of 2023-04-10 15:15:15 PDT)
 if(FALSE){
   valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
   valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
@@ -177,13 +175,16 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
 mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
 ][STRATA == "ZERO", STRATA := "OB HAL"]
+mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
 obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
+obs_act_days <- mutate(obs_act_days, ADP = as.numeric(as.character(ADP)))
+if(!any(obs_act_days$STRATA %like% "OB ")) stop("You still have non-observer strata in 'obs_act_days'")
 
 rm(td_mod0, mod_dat, mod_dat_copy, model_trip_duration)
 
@@ -202,16 +203,16 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year, "' AND '31-DEC-", year, "'
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year - 1, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
-#The following query returns all landing ID's for offloads monitored for salmon all sectors.
+# The following query returns all landing ID's for offloads monitored for salmon all sectors.
 salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 
 # Data checks and clean up
 
-#Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
-salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
+# Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
+salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 
 # * ODDS ----
 
@@ -315,7 +316,7 @@ partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
-                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.data <- dbGetQuery(channel_afsc, script)
 
@@ -344,7 +345,7 @@ rm(transform.EM.data.vessel)
 
 # Get gear type for EM data
 script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
-                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
@@ -540,7 +541,7 @@ if(F){
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
-                                              and adp =", year))
+                                              and adp IN(", paste(year + -1:0, collapse = ","), ")" ))
 
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
@@ -548,7 +549,7 @@ work.data <- work.data %>%
 
 # * Shapefiles ----
 # Initial upload to Shared Gdrive
-if(F) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 ## Load land and NMFS stat area shapefiles 
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
