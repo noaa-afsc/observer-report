@@ -22,7 +22,7 @@ editor_options:
 source("3_helper.R")
 ```
 
-```{r, eval=FALSE}
+```{r, include=FALSE, eval=FALSE}
 #' Download data. Run this line manually during development, but it won't run during knitting.
 gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
 ```
@@ -1660,7 +1660,7 @@ cell.plot <- ggplot(filter(strata.cell.dat),
 #table(strata.cell.dat$P_extreme_more_cat, strata.cell.dat$STRATA)
 ```
 
-```{r map_generation, message=FALSE, warning=FALSE, eval=FALSE}
+```{r map_generation, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
 # Map generation
 # This chunk only needs to be run for initial figure generation, then use eval=FALSE
 for (i in levels(strata.cell.dat$STRATA)) {
@@ -1783,7 +1783,7 @@ results <- cbind(results, strat_interp = c(
   "These results mean that there was some clustering of observed trips among NMFS Areas that was different from expected. Some spatial bias appears to have occurred in the *TRW* stratum."))
 ```
 
-```{r strata_patterns_by_stratum_text, message=FALSE, warning=FALSE, eval=FALSE}
+```{r strata_patterns_by_stratum_text, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
 
 #This for loop creates the sections of markdown text for the stratum-specific spatial bias summary...  knit_expand() is the work-horse here.
 out <- NULL #create empty object
@@ -2317,7 +2317,7 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r"
 
 `r if(tech.memo){'# Figures'}`
 
-```{r outcomes, echo = FALSE, warning = FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
+```{r outcomes, echo = FALSE, warning = FALSE, fig.width = 7.5, fig.height = 9, dpi = 600, include=FALSE}
 print(grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2))
 print(grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2))
 ```
