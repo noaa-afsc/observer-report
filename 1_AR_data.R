@@ -401,7 +401,8 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
   arrange(VESSEL_ID, TRIP_START_DATE_TIME)
 
-# Fix NAs in AGENCY_GEAR_CODE for EM.data
+#' *Fix NAs in AGENCY_GEAR_CODE for EM.data*
+#' *TODO We should make the query more robust, filter out non-fishing trips and when gear is NA but ODDS has it as trawl.*
 EM.data <- 
   EM.data %>% 
   # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
