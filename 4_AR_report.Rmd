@@ -1468,9 +1468,9 @@ For.ts.temporal.summary <-
   For.ts.temporal.plot %>% 
   group_by(YEAR, STRATA) %>% 
   reframe(N.outside = sum(Outside.bounds, na.rm = TRUE),
-            Days = ifelse(YEAR == 2022,
-                          sum(Date >= as.Date("2022-01-01")),
-                          sum(Date >= as.Date("2023-01-01")))) %>%
+          Days = ifelse(YEAR == 2022,
+                        sum(Date >= as.Date("2022-01-01")),
+                        sum(Date >= as.Date("2023-01-01")))) %>%
   distinct() %>% 
   mutate(`% Outside` = round(N.outside / Days * 100, 1))
 
@@ -1509,10 +1509,8 @@ For.ts.temporal.plot <- For.ts.temporal.plot %>%
                         mutate(p = ifelse(p == "0.000*", paste0("italic(p) < '0.001*'"), paste0("italic(p) == '", p, "'")))
 
 # Create "dummy" dataframe to set limits for x axes
-YEAR <- c(2022, 2023)
-Date <- as.Date(c("2022-01-01", "2023-01-01",  # Lower limit
-                  "2022-12-31", "2023-12-31")) # Upper limit
-ff <- data.frame(Date, YEAR)
+Temporal.plot.x_range <- data.frame(YEAR = rep(year + -1:0,2) ) %>%
+  mutate(Date = as.Date(paste0(YEAR, c("-01-01", "-12-31"))))
 
 # Plot
 Temporal.plot <- 
@@ -1526,7 +1524,8 @@ Temporal.plot <-
     # Annotate p-values
   geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
             hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
-  geom_point(data = ff, y = NA) + # Dummy variable to set x axis limits
+  # Plot invisbile points to ensure x-facets span the entire year
+  geom_point(data = Temporal.plot.x_range, y = 0, alpha = 0) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
   ylab("Cumulative Trips in Trip-selection Strata\n") +
