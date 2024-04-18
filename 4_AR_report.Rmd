@@ -20,11 +20,16 @@ editor_options:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load packages and functions 
 source("3_helper.R")
+```
 
-# Load data
+```{r, eval=FALSE}
+#' Download data. Run this line manually during development, but it won't run during knitting.
 gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
-load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
+```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#' Load data and set parameters
+load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
 # Avoid scientific notation
 options(scipen = 10000)
@@ -108,8 +113,6 @@ More information on the sampling design used by observers and the relationship b
 `r if(tech.memo){'In this report we attempt to evaluate the deployment of EM onto fixed gear vessels to the same degree as we evaluate the deployment of observers since catch accounting has used data collected through the *EM HAL* stratum since 2018 and the *EM POT* stratum since 2019. NMFS also sought vessels to participate in EM research and development activities. Vessels that volunteered for the fixed gear EM Program or EM research activities and were selected by the NMFS were not required to carry observers but were required to continue to log their fishing trips into the Observer Declare and Deploy System (ODDS).'}`
 
 `r if(tech.memo){'The *EM TRW EFP* stratum is represented by vessels participating in an Exempted Fishing Permit (EFP) to evaluate the efficacy of EM on pollock catcher vessels using pelagic trawl gear in the Bering Sea and Gulf of Alaska. The EFP allows pollock catcher vessels using pelagic trawl gear to use EM systems *in lieu* of at-sea observers.  While we report some findings on these vessel activities here, we do not evaluate them fully sine the EFP is not part of the regulated fishery monitoring program.'}`
-
-*PROBABLY NO LONGER RELEVANT:* `r if(tech.memo){'The largest component of the Alaskan groundfish fisheries, vessels and processors in the full coverage category (including catcher processors and participants in limited access privilege programs), were not issued waivers in 2020. Additionally, requirements for deployment of EM was not waived for trawl catcher vessels fishing under the trawl EM exempted fishing permit and only a few trips were released from coverage under the fixed gear EM portion of the partial coverage category for circumstances when an EM service technician was unable to travel.'}`
 
 #Performance Review Objectives  
 `r if(tech.memo){'The following sections contain the FMSC review of the deployment of observers in'}` `r if(tech.memo){year}` `r if(tech.memo){'relative to the intended sampling plan and goals of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS'}` `r if(tech.memo){year-1}` `r if(tech.memo){'). This report identifies where potential mechanisms for biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(tech.memo){year + 2}` `r if(tech.memo){'ADP.'}`  
