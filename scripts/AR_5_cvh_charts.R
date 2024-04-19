@@ -700,7 +700,7 @@ OPS_number_rainplot <- {
 OPS_number_rainplot
 
 # Save the plot
-ggsave(filename = 'Plots/OPS_number_rainplot.png',
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/OPS_number_rainplot.png',
        plot = OPS_number_rainplot,
        width = 9,
        height = 8)
@@ -766,7 +766,7 @@ OLEPIP_number_rainplot <- {
 OLEPIP_number_rainplot
 
 # Save the plot
-ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/OLEPIP_number_rainplot.png',
        plot = OLEPIP_number_rainplot,
        width = 9,
        height = 8)
@@ -840,7 +840,7 @@ river_oldcat_23 <- {
 river_oldcat_23
 
 # Save the plot
-ggsave(filename = 'Plots/river_oldcat_23.png',
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/river_oldcat_23.png',
        plot = river_oldcat_23,
        width = 14,
        height = 10)
@@ -923,7 +923,7 @@ river_newcat_safety <- {
 river_newcat_safety
 
 # Save the plot
-ggsave(filename = 'Plots/river_newcat_safety.png',
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/river_newcat_safety.png',
        plot = river_newcat_safety,
        width = 20,
        height = 10)
@@ -1017,7 +1017,7 @@ river_newcat_nonsafety <- {
 river_newcat_nonsafety
 
 # Save the plot
-ggsave(filename = 'Plots/river_newcat_nonsafety.png',
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/river_newcat_nonsafety.png',
        plot = river_newcat_nonsafety,
        width = 20,
        height = 10)
@@ -1142,7 +1142,7 @@ pareto_facet <-
 pareto_facet
 
 # Save the wrap
-ggsave(filename = 'Plots/ODDS_pareto_facet_year.png',
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/ODDS_pareto_facet_year.png',
        plot = pareto_facet,
        width = 11,
        height = 13)
