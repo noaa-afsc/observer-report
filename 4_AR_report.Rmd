@@ -2161,25 +2161,61 @@ kbl(
 
 #####
 
-
-```{r disposition.table, echo=FALSE, include=FALSE}
+####`r tbl_nums('disposition.table.2022' , caption = paste0('Trip cancellation rates in the ODDS for ', year - 1, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+  
+```{r disposition.table.2022, echo=FALSE, tab.cap=""}
 # Table 2 from 2019 Annual Report
-#' *NOT INCLUDED SINCE 2019 - This chunk has not been updated for the 2023 AR*
-if(FALSE){
-  ####`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))`  
-  
-  disposition.table[c(4, 6, 7)] <- lapply(disposition.table[,c(4, 6, 7)], prettyNum, trim = TRUE, big.mark = ",")
-  disposition.table$`Trips remaining (*c* = *a*-*b*)`[disposition.table$`Trips remaining (*c* = *a*-*b*)`=="   NA"] <- " "
-  disposition.table$`Cancelled by user (*d*)`[disposition.table$`Cancelled by user (*d*)` == " NA"] <- " "
-  disposition.table$Strata <- cell_spec(disposition.table$Strata, italic = ifelse(disposition.table$Strata != "Total", TRUE, FALSE))    # Italicize strata
-  
-kbl(disposition.table, escape = FALSE) %>%
-  kable_paper()
-}
+#' *NOT INCLUDED SINCE 2019*
+
+disposition.table <- disposition.table %>%
+  mutate(Year = as.factor(Year),
+         `Logged (*a*)` = as.numeric(`Logged (*a*)`),
+         `Trips remaining (*c* = *a*-*b*)` = as.numeric(`Trips remaining (*c* = *a*-*b*)`)) %>%
+  arrange(factor(Strata, levels = c("EM HAL", "EM POT", "OB HAL", "OB POT", "OB TRW", "Total")))
+
+# 2022
+
+disposition.table.2022 <- disposition.table %>%
+  filter(Year == 2022) %>%
+  select(-Year)
+
+flextable(disposition.table.2022) %>%
+  align(part = "all", align = "center") %>%
+  italic(j = "Strata", i = c(1:10)) %>%
+  bold(bold = TRUE, part = "header") %>%
+  merge_v(j = "Strata") %>%
+  hline(i = seq(2, nrow(disposition.table.2022), 2)) %>%
+  hline(i = c(4, 10, nrow(disposition.table.2022)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
 ```
 
 #####
 
+####`r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+  
+```{r disposition.table.2023, echo=FALSE, tab.cap=""}
+# Table 2 from 2019 Annual Report
+#' *NOT INCLUDED SINCE 2019*
+
+# 2023
+
+disposition.table.2023 <- disposition.table %>%
+  filter(Year == 2023) %>%
+  select(-Year)
+
+flextable(disposition.table.2023) %>%
+  align(part = "all", align = "center") %>%
+  italic(j = "Strata", i = c(1:10)) %>%
+  bold(bold = TRUE, part = "header") %>%
+  merge_v(j = "Strata") %>%
+  hline(i = seq(2, nrow(disposition.table.2023), 2)) %>%
+  hline(i = c(4, 10, nrow(disposition.table.2023)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
+```
+
+#####
 
 ```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
 # Table 3 from 2019 Annual Report
@@ -2193,6 +2229,8 @@ if(FALSE){
   kbl(logged.table, escape = FALSE) %>%
     kable_paper()
 }
+
+
 ```
 
 #####
@@ -2220,6 +2258,7 @@ flextable(Selection.table.2022) %>%
     `*p*` = "*p*-value")) %>%
   align(part = "all", align = "center") %>%
   align(j = "Trip disposition", align = "left") %>%
+  bold(bold = TRUE, part = "header") %>%
   italic(j = "Strata") %>%
   merge_v(j = "Strata") %>%
   hline(i = seq(4, nrow(Selection.table.2022), 4)) %>%
@@ -2250,6 +2289,7 @@ flextable(Selection.table.2023) %>%
     `*p*` = "*p*-value")) %>%
   align(part = "all", align = "center") %>%
   align(j = "Trip disposition", align = "left") %>%
+  bold(bold = TRUE, part = "header") %>%
   italic(j = "Strata") %>%
   merge_v(j = "Strata") %>%
   hline(i = seq(4, nrow(Selection.table.2023), 4)) %>%
