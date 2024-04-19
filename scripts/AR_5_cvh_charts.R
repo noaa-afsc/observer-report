@@ -115,8 +115,8 @@ drive_download(
   # IMPORTANT: comment out the below code and recreate the function call with
   # YOUR SPECIFIC FILE PATH
 # the map function allows for multiple sheets to be clumped into one list
-odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
-  map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
+odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
+  map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
 
 # create dataset for 2023
   # the number corresponds to the sheet # in the spreadsheet
@@ -1166,10 +1166,26 @@ for (i in 2:(length(odds_data) - 1)) {
 }
 
 # rename columns, combine date columns, summarize data
-odds_df <- odds_df %>%
+odds_df_formatted <- odds_df %>%
   rename(ISSUE_CATEGORY = `Issue Category`) %>%
   mutate(YEAR = as.numeric(format(coalesce(Date, # add columns if necessary
                                            `Date OLE Notified`), '%Y')),
+         ISSUE_CATEGORY = replace(ISSUE_CATEGORY, 
+                                  ISSUE_CATEGORY == 
+                                    'EM Cameras Not Turned on For Selected Trip', 
+                                  'Leave without observer'),
+         ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
+                                  ISSUE_CATEGORY ==
+                                    'Fished on a Canceled Observed Trip',
+                                  'Fished on a Canceled Trip'),
+         ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
+                                  ISSUE_CATEGORY ==
+                                    'Fished on a canceled selected trip',
+                                  'Fished on a Canceled Trip'),
+         ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
+                                  ISSUE_CATEGORY == 
+                                    'Tender trip definition',
+                                  'Incorrect Tender'),
          ISSUE_CATEGORY = str_wrap(ISSUE_CATEGORY, width = 20)) %>%
   select(YEAR, ISSUE_CATEGORY) %>%
   group_by(YEAR, ISSUE_CATEGORY) %>%
@@ -1182,7 +1198,7 @@ odds_df <- odds_df %>%
 
 # Make the plot
 odds_heatmap <- {
-  ggplot(data = odds_df %>%
+  ggplot(data = odds_df_formatted %>%
            filter(YEAR > 2015),
          aes(x = 1,
              y = 1)) +
@@ -1198,7 +1214,7 @@ odds_heatmap <- {
     theme_minimal() +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_discrete(expand = c(0, 0)) +
-    scale_fill_gradientn(name = 'Proportion of\nOccurrences Within\na Year',
+    scale_fill_gradientn(name = 'Proportion of\nOccurrences\nWithin a Year',
                          colors = rev(colors),
                          limits = c(0, 1.000),
                          breaks = c(0, 0.250, 0.500, 0.750, 1.000)) +
@@ -1217,7 +1233,7 @@ odds_heatmap <- {
 odds_heatmap
 
 # Save the plot
-ggsave(file = 'Plots/odds_issues_heatmap.png',
+ggsave(file = '2023_outputs/charts_and_tables/Plots/odds_issues_heatmap.png',
        plot = odds_heatmap,
        width = 14,
        height = 12)
