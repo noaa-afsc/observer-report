@@ -772,6 +772,23 @@ ggsave(filename = '2023_outputs/charts_and_tables/Plots/OLEPIP_number_rainplot.p
        height = 8)
 
 
+# Facet rain cloud plots -------------------------------------------------------
+# Wrap the plots
+raincloud_facet <- 
+  (OPS_number_rainplot + theme(axis.text.x = element_blank(),
+                               axis.ticks.x = element_blank())) / 
+  (OLEPIP_number_rainplot) +
+  plot_layout(axis_titles = 'collect')
+
+# View the wrap
+raincloud_facet
+
+# Save the wrap
+ggsave(filename = '2023_outputs/charts_and_tables/Plots/OPS_category_facet.png',
+       plot = raincloud_facet,
+       width = 9,
+       height = 14)
+
 # Alluvial plot of old data, 2023 ----------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
 
