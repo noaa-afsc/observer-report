@@ -22,7 +22,7 @@ editor_options:
 source("3_helper.R")
 
 # Set table output default settings
-set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
+set_flextable_defaults(font.family = "Times New Roman", font.size = 11, layout = "autofit")
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -2215,35 +2215,67 @@ kbl(
 
 #####
 
-####`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
+####`r tbl_nums('Coverage.Table.2022', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*), sampled trips (*n*) for each stratum in ', year - 1, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
-```{r Coverage.Table, echo=FALSE, tab.cap=""}
-Coverage.Table[c(4:7)] <- lapply(Coverage.Table[, 4:7], prettyNum, trim = TRUE, big.mark = ",")
+```{r Coverage.Table.2022, echo=FALSE, tab.cap=""}
 
-# For 2020, shift totals over so that coverage column can be eliminated later
 Coverage.Table <- Coverage.Table %>% 
-  mutate(Strata = as.character(Strata)) %>% 
-  mutate(Strata = ifelse(Coverage %in% c("Full coverage total", "Partial coverage total"), as.character(Coverage), Strata))
+  mutate(Strata = as.character(Strata),
+         Year = as.factor(Year),
+         `*V*` = as.numeric(`*V*`),
+         `*v*` = as.numeric(`*v*`),
+         `*N*` = as.numeric(`*N*`),
+         `*n*` = as.numeric(`*n*`)) %>% 
+  mutate(Strata = ifelse(Coverage %in% c("Full coverage total", "Partial coverage total"), as.character(Coverage), Strata)) %>%
+  mutate(Coverage = case_when(Coverage == "Partial coverage total" ~ "Partial coverage",
+                              Coverage == "Full coverage total" ~ "Full coverage",
+                              Coverage == "Total" ~ "Zero coverage",
+                              TRUE ~ Coverage))
 
-# Italicize strata
-Coverage.Table$Strata <- cell_spec(Coverage.Table$Strata, italic = ifelse(Coverage.Table$Strata != "Total", TRUE, FALSE))
+# 2022
+Coverage.Table.2022 <- Coverage.Table %>%
+  filter(Year == 2022) %>%
+  select(-Year)
 
-# Print table
-kbl(Coverage.Table, escape = FALSE) %>% 
-  kable_paper() %>% 
-  # Remove columns
-  remove_column(2) %>% 
-  # Group columns
-  add_header_above(c(" " = 6, "Coverage" = 2, "95% Confidence interval" = 2, " " = 1)) %>% 
-  # Group rows
-  pack_rows("Full coverage", 1, 3, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage EM", 4, 6, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed", 7, 9, label_row_css = "text-align: center") %>%
-  pack_rows("Zero coverage", 11, 12, label_row_css = "text-align: center") %>%
-  pack_rows("Full coverage", 13, 15, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage EM", 16, 18, label_row_css = "text-align: center") %>% 
-  pack_rows("Partial coverage observed", 19, 22, label_row_css = "text-align: center") %>%
-  pack_rows("Zero coverage", 23, 24, label_row_css = "text-align: center")
+as_grouped_data(Coverage.Table.2022, groups = "Coverage") %>%
+  as_flextable(hide_grouplabel = TRUE) %>%
+  align(part = "all", align = "center") %>%
+  align(i = ~ !is.na(Coverage), align = "left") %>%
+  align(j = "Realized meets expected?", align = "left") %>%
+  bold(bold = TRUE, part = "header") %>%
+  bold(i = ~ !is.na(Coverage)) %>%
+  italic(j = "Strata", i = c(2:4, 6:12, 14)) %>%
+  italic(j = c(2:5), part = "header") %>%
+  hline(i = c(3, 11)) %>%
+  hline(i = 14, border = officer::fp_border(width = 2)) %>%
+  surround(i = ~ !is.na(Coverage), border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1))
+
+```
+
+####`r tbl_nums('Coverage.Table.2023', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*), sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
+
+```{r Coverage.Table.2023, echo=FALSE, tab.cap=""}
+  
+# 2023
+Coverage.Table.2023 <- Coverage.Table %>%
+  filter(Year == 2023) %>%
+  select(-Year)
+
+as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
+  as_flextable(hide_grouplabel = TRUE) %>%
+  align(part = "all", align = "center") %>%
+  align(i = ~ !is.na(Coverage), align = "left") %>%
+  align(j = "Realized meets expected?", align = "left") %>%
+  bold(bold = TRUE, part = "header") %>%
+  bold(i = ~ !is.na(Coverage)) %>%
+  italic(j = "Strata", i = c(2:4, 6:12, 14)) %>%
+  italic(j = c(2:5), part = "header") %>%
+  hline(i = c(3, 11)) %>%
+  hline(i = 14, border = officer::fp_border(width = 2)) %>%
+  surround(i = ~ !is.na(Coverage), border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1))
+
 ```
 
 #####
@@ -2287,9 +2319,20 @@ kable(em.summary.table)
 ####`r tbl_nums('Pollock.observed.table', caption = "The number of pollock deliveries made by vessels in the *TRW* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
-Pollock.observed.table[c(4:5)] <- lapply(Pollock.observed.table[, 4:5], prettyNum, trim = TRUE, big.mark = ",")
 
-kable(Pollock.observed.table)
+Pollock.observed.table <- 
+  Pollock.observed.table %>%
+  mutate(Year = as.factor(Year),
+         `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
+         `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`)) 
+
+flextable(Pollock.observed.table) %>%
+  align(part = "all", align = "center") %>%
+  merge_v(j = "Year") %>%
+  hline(i = c(8, nrow(Pollock.observed.table)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
+  
 ```
 
 #####
@@ -2297,9 +2340,20 @@ kable(Pollock.observed.table)
 ####`r tbl_nums('Pollock.efp.table', caption = "The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
 
 ```{r Pollock.efp.table, echo=FALSE, tab.cap=""}
-Pollock.efp.table[c(4:5)] <- lapply(Pollock.efp.table[, 4:5], prettyNum, trim = TRUE, big.mark = ",")
 
-kable(Pollock.efp.table)
+Pollock.efp.table <-
+  Pollock.efp.table %>%
+    mutate(Year = as.factor(Year),
+         `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
+         `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
+
+flextable(Pollock.efp.table) %>%
+  align(part = "all", align = "center") %>%
+  merge_v(j = "Year") %>%
+  hline(i = c(10, nrow(Pollock.efp.table)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
+
 ```
 
 #####
