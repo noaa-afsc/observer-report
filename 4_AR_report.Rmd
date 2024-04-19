@@ -20,6 +20,9 @@ editor_options:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load packages and functions 
 source("3_helper.R")
+
+# Set table output default settings
+set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -2317,7 +2320,7 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r"
 
 `r if(tech.memo){'# Figures'}`
 
-```{r outcomes, echo = FALSE, warning = FALSE, fig.width = 7.5, fig.height = 9, dpi = 600, include=FALSE}
+```{r outcomes, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
 print(grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2))
 print(grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2))
 ```
