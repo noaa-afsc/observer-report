@@ -2197,19 +2197,65 @@ if(FALSE){
 
 #####
 
-####`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum that were selected using the initial random number generator (Initial Random Selection) and those that remained after user manipulation (After Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
+####`r tbl_nums('Selection.table.2022', caption = paste0('Number of logged trips in each partial coverage stratum in ', year - 1, ' that were selected using the initial random number generator (Initial Random Selection) and those that remained after user manipulation (After Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
 
-```{r Selection.table, echo=FALSE, tab.cap="", tab.width=11}
-Selection.table[c(4:5)] <- lapply(Selection.table[, 4:5], prettyNum, trim = TRUE, big.mark = ",")
-Selection.table$Strata <- cell_spec(Selection.table$Strata, italic = TRUE)    # Italicize strata
+```{r Selection.table.2022, echo=FALSE, tab.cap="", tab.width=11}
 
-kbl(
-  Selection.table %>% arrange(Year, Strata, `Trip disposition`),
-  col.names = c(
-    "Year" , "Strata", "Trip disposition", "Selected<br>trips", "Total<br>trips", 
-    "Actual<br>(%)", "Programmed<br>(%)", "*p*-value"),
-  escape = FALSE, align = "lllrrrrr") %>% 
-  kable_paper() 
+Selection.table <- Selection.table %>%
+  mutate(Year = as.factor(Year)) %>%
+  arrange(factor(Strata, levels = c("EM HAL", "EM POT", "OB HAL", "OB POT", "OB TRW")))
+
+# 2022
+
+Selection.table.2022 <- Selection.table %>%
+  filter(Year == 2022) %>%
+  select(-Year)
+
+flextable(Selection.table.2022) %>%
+  set_header_labels(values = list(
+    n = "Selected trips",
+    N = "Total trips",
+    Actu = "Actual (%)",
+    Prog = "Programmed (%)",
+    `*p*` = "*p*-value")) %>%
+  align(part = "all", align = "center") %>%
+  align(j = "Trip disposition", align = "left") %>%
+  italic(j = "Strata") %>%
+  merge_v(j = "Strata") %>%
+  hline(i = seq(4, nrow(Selection.table.2022), 4)) %>%
+  hline(i = nrow(Selection.table.2022), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
+
+```
+
+#####
+
+####`r tbl_nums('Selection.table.2023', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator (Initial Random Selection) and those that remained after user manipulation (After Cancellations). The relative impact of inherits and waivers in trip-selection is also shown (With Inherits, After Waivers). Note that observer strata were split into three separate time periods to reflect when waivers were put in place and when ODDS selection rates were adjusted to account for changes to the sample frame from port-based trip deployment'))`  
+
+```{r Selection.table.2023, echo=FALSE, tab.cap=""}
+
+# 2023
+
+Selection.table.2023 <- Selection.table %>%
+  filter(Year == 2023) %>%
+  select(-Year)
+
+flextable(Selection.table.2023) %>%
+  set_header_labels(values = list(
+    n = "Selected trips",
+    N = "Total trips",
+    Actu = "Actual (%)",
+    Prog = "Programmed (%)",
+    `*p*` = "*p*-value")) %>%
+  align(part = "all", align = "center") %>%
+  align(j = "Trip disposition", align = "left") %>%
+  italic(j = "Strata") %>%
+  merge_v(j = "Strata") %>%
+  hline(i = seq(4, nrow(Selection.table.2023), 4)) %>%
+  hline(i = nrow(Selection.table.2023), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
 
 ```
 
@@ -2252,6 +2298,8 @@ as_grouped_data(Coverage.Table.2022, groups = "Coverage") %>%
   add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1))
 
 ```
+
+#####
 
 ####`r tbl_nums('Coverage.Table.2023', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*), sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
