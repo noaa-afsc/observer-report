@@ -70,8 +70,8 @@ fn_dist_plot_1000_gg <-
     ggplot(data = rate_by_subcat_cruise_priority, 
            aes(x = STATEMENT_TYPE, 
                y = OCCURRENCES_PER_ASSIGNMENT
-               )
-           ) +
+           )
+    ) +
       geom_boxplot() +
       facet_nested(OLD_OLE_CATEGORY ~ CALENDAR_YEAR + OLE_SYSTEM,
                    scales = "free") +
@@ -90,11 +90,11 @@ fn_dist_plot_1000_gg <-
 
 ### Incidents Per 1000 Deployed Days ----------------------------------------
 # incis_per_1000_days_priority <-
-  fn_heatmap_1000_gg(
-    ggdf = rate_by_subcat_priority,
-    ggcategory = '',
-    ggtitle    = "OLE PRIORITY Statement Category Groups"
-  )
+fn_heatmap_1000_gg(
+  ggdf = rate_by_subcat_priority,
+  ggcategory = '',
+  ggtitle    = "OLE PRIORITY Statement Category Groups"
+)
 
 ### Incidents Per assignment ----------------------------------------
 # incis_per_1000_days_priority <-
