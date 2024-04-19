@@ -2217,19 +2217,57 @@ flextable(disposition.table.2023) %>%
 
 #####
 
-```{r logged.table, echo=FALSE, tab.cap="", include=FALSE}
-# Table 3 from 2019 Annual Report
-#' *NOT INCLUDED SINCE 2019 - This chunk has not been updated for the 2023 AR**
-if(FALSE){
-  ####`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected). The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))`  
-  
-  logged.table[c(3:7)] <- lapply(logged.table[, 3:7], prettyNum, trim = TRUE, big.mark = ",")
-  logged.table$Strata <- cell_spec(logged.table$Strata, italic = TRUE) # Italicize strata
-  
-  kbl(logged.table, escape = FALSE) %>%
-    kable_paper()
-}
+####`r tbl_nums('logged.table.2022', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected) in ', year - 1, '. The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))` 
 
+```{r logged.table.2022, echo=FALSE, tab.cap=""}
+# Table 3 from 2019 Annual Report
+#' *NOT INCLUDED SINCE 2019*
+
+logged.table <- logged.table %>%
+  mutate(Year = as.factor(Year),
+         `Total Trips` = as.numeric(`Total Trips`)) %>%
+  arrange(factor(Strata, levels = c("EM HAL", "EM POT", "OB HAL", "OB POT", "OB TRW", "Total"))) %>%
+  ungroup() #' *SHOULD PROBABLY DEAL WITH THIS GROUPING EARLIER*
+
+# 2022
+
+logged.table.2022 <- logged.table %>%
+  filter(Year == 2022) %>%
+  select(-Year)
+
+flextable(logged.table.2022) %>%
+  align(part = "all", align = "center") %>%
+  italic(j = "Strata", i = c(1:5)) %>%
+  bold(bold = TRUE, part = "header") %>%
+  merge_v(j = "Strata") %>%
+  hline(i = c(2, 5, nrow(logged.table.2022)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
+
+```
+
+#####
+
+####`r tbl_nums('logged.table.2023', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator (Random Number Selection) and those that remained after user manipulation (Total Final Selected) in ', year, '. The relative impact of waivers in trip-selection is also shown (% Reduction of Selected Trips due to Waivers). **Not from random numbers.'))` 
+
+```{r logged.table.2023, echo=FALSE, tab.cap=""}
+# Table 3 from 2019 Annual Report
+#' *NOT INCLUDED SINCE 2019*
+
+# 2023
+
+logged.table.2023 <- logged.table %>%
+  filter(Year == 2023) %>%
+  select(-Year)
+
+flextable(logged.table.2023) %>%
+  align(part = "all", align = "center") %>%
+  italic(j = "Strata", i = c(1:5)) %>%
+  bold(bold = TRUE, part = "header") %>%
+  merge_v(j = "Strata") %>%
+  hline(i = c(2, 5, nrow(logged.table.2023)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues()
 
 ```
 
