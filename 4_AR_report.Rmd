@@ -22,7 +22,8 @@ editor_options:
 source("3_helper.R")
 
 # Set table output default settings
-set_flextable_defaults(font.family = "Times New Roman", font.size = 11, layout = "autofit")
+#set_flextable_defaults(font.family = "Times New Roman", font.size = 11, layout = "autofit")
+set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -611,7 +612,7 @@ disposition <- disposition %>% mutate(across(
 # Redefine values in random.assign
 disposition <- disposition %>% mutate(random.assign = case_when(
   is.na(random.assign) | random.assign == 1 ~ "Selected",
-  random.assign == 0 ~ "Not Selected"
+  random.assign == 0 ~ "Not selected"
 ))
 
 # Then rename some columns for the table
@@ -1230,8 +1231,9 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
          COVERAGE_TYPE = as.factor(COVERAGE_TYPE)) %>%
   select(`Year` = ADP,
          `Coverage` = COVERAGE_TYPE, 
-         Strata = STRATA, 
-         `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
+         Strata = STRATA,
+         V, v, N, n,
+        # `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
          `Lower limit`= min.expected,
@@ -1252,33 +1254,33 @@ rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Co
 
 # Coverage trip and vessel totals (including EM)
 #' `------2022------`
-totl_obs_trips.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(`*n*`) %>% as.numeric()
+totl_obs_trips.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(n) %>% as.numeric()
 
 perc_trips_obs.2022 <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% 
-  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(n)/as.numeric(N) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
-totl_obs_vessels.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(`*v*`) %>% as.numeric()
+totl_obs_vessels.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(v) %>% as.numeric()
 
 perc_vessels_obs.2022 <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>%
-  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(v)/as.numeric(V) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
 #' `------2023------`
-totl_obs_trips.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(`*n*`) %>% as.numeric()
+totl_obs_trips.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(n) %>% as.numeric()
 
 perc_trips_obs.2023 <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% 
-  transmute(percent.obs = format(as.numeric(`*n*`)/as.numeric(`*N*`) * 100, digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(n)/as.numeric(N) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
-totl_obs_vessels.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(`*v*`) %>% as.numeric()
+totl_obs_vessels.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(v) %>% as.numeric()
 
 perc_vessels_obs.2023 <- Coverage.Table %>% 
   filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>%
-  transmute(percent.obs = format(as.numeric(`*v*`)/as.numeric(`*V*`) * 100, digits = 1, nsmall = 1)) %>% 
+  transmute(percent.obs = format(as.numeric(v)/as.numeric(V) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 ```
 
@@ -1391,7 +1393,7 @@ Pollock.observed.table <- Pollock.observed %>%
          `Port` = PORT_CODE, 
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
-         `% Observed` = Pct.Obs) %>%
+         `% observed` = Pct.Obs) %>%
   arrange(Year)
 
 # Isolate EFP strata
@@ -1409,7 +1411,7 @@ Pollock.efp.table <- Pollock.efp %>%
          `Port` = PORT_CODE, 
          `Total deliveries (*N*)` = N.Pollock,
          `Observed deliveries (*n*)` = N.Pollock.Obs,
-         `% Observed` = Pct.Obs) %>%
+         `% observed` = Pct.Obs) %>%
   arrange(Year)
 ```
 
@@ -2148,12 +2150,14 @@ flextable(trip.budget.table.2022) %>%
     diff = "Actual",
     perc = "Percent")) %>%
   align(part = "all", align = "center") %>%
-  italic(j = "STRATA", i = c(1:6)) %>%
+  italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
   hline(i = c(3, 6, nrow(trip.budget.table.2022)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
   add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
-  colformat_num(j = 3, i = c(1:3, 5, 7), digits = 0)
+  colformat_num(j = 3, i = c(1:3, 5, 7), digits = 0) %>%
+  width(j = 1, 1.125, unit = "in") %>%
+  width(j = 2, 0.8, unit = "in")
 
 ```
 
@@ -2177,11 +2181,13 @@ flextable(trip.budget.table.2023) %>%
     diff = "Actual",
     perc = "Percent")) %>%
   align(part = "all", align = "center") %>%
-  italic(j = "STRATA", i = c(1:6)) %>%
+  italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
   hline(i = c(3, 6, nrow(trip.budget.table.2023)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2))
+  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
+  width(j = 1, 1.125, unit = "in") %>%
+  width(j = 2, 0.8, unit = "in")
 
 ```
 
@@ -2206,14 +2212,31 @@ disposition.table.2022 <- disposition.table %>%
   select(-Year)
 
 flextable(disposition.table.2022) %>%
+  mk_par(j = 3, part = "header",
+         value = as_paragraph("Logged (", as_i("a"), ")")) %>%
+  mk_par(j = 4, part = "header",
+         value = as_paragraph("Cancelled by system (", as_i("b"), ")")) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Trips remaining (", as_i("c"), " = ", as_i("a"), " - ", as_i("b"), ")")) %>%
+  mk_par(j = 6, part = "header",
+         value = as_paragraph("Cancelled by user (", as_i("d"), ")")) %>%
+  mk_par(j = 9, part = "header",
+         value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
-  italic(j = "Strata", i = c(1:10)) %>%
+  italic(j = 1, i = 1:10) %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = "Strata") %>%
+  merge_v(j = 1) %>%
   hline(i = seq(2, nrow(disposition.table.2022), 2)) %>%
   hline(i = c(4, 10, nrow(disposition.table.2022)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = 1, 0.7, unit = "in") %>%
+  width(j = c(2, 9), 0.94, unit = "in") %>%
+  width(j = c(3, 10), 0.63, unit = "in") %>%
+  width(j = 4:6, 0.81, unit = "in") %>%
+  width(j = 7, 0.69, unit = "in") %>%
+  width(j = 8, 0.56, unit = "in")
+
 ```
 
 #####
@@ -2231,14 +2254,30 @@ disposition.table.2023 <- disposition.table %>%
   select(-Year)
 
 flextable(disposition.table.2023) %>%
+  mk_par(j = 3, part = "header",
+         value = as_paragraph("Logged (", as_i("a"), ")")) %>%
+  mk_par(j = 4, part = "header",
+         value = as_paragraph("Cancelled by system (", as_i("b"), ")")) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Trips remaining (", as_i("c"), " = ", as_i("a"), " - ", as_i("b"), ")")) %>%
+  mk_par(j = 6, part = "header",
+         value = as_paragraph("Cancelled by user (", as_i("d"), ")")) %>%
+  mk_par(j = 9, part = "header",
+         value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
-  italic(j = "Strata", i = c(1:10)) %>%
+  italic(j = 1, i = 1:10) %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = "Strata") %>%
+  merge_v(j = 1) %>%
   hline(i = seq(2, nrow(disposition.table.2023), 2)) %>%
   hline(i = c(4, 10, nrow(disposition.table.2023)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = 1, 0.7, unit = "in") %>%
+  width(j = c(2, 9), 0.94, unit = "in") %>%
+  width(j = c(3, 10), 0.63, unit = "in") %>%
+  width(j = 4:6, 0.81, unit = "in") %>%
+  width(j = 7, 0.69, unit = "in") %>%
+  width(j = 8, 0.56, unit = "in")
 ```
 
 #####
@@ -2262,13 +2301,34 @@ logged.table.2022 <- logged.table %>%
   select(-Year)
 
 flextable(logged.table.2022) %>%
+  mk_par(j = 3, part = "header",
+         value = as_paragraph("Random number selection (", as_i("r"), ")")) %>%
+  mk_par(j = 4, part = "header",
+         value = as_paragraph("Inherited selection **(", as_i("i"), ")")) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Waived (", as_i("w"), ")")) %>%
+  mk_par(j = 6, part = "header",
+         value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", 
+                              as_i("i"), " - ", as_i("w"), " - ", as_i("n"), ")")) %>%
+  mk_par(j = 7, part = "header",
+         value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
+  mk_par(j = 8, part = "header",
+         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), " + ", 
+                              as_i("n"), "/(", as_i("T"), " + ", as_i("w"), " + ", as_i("n"), ") \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
-  italic(j = "Strata", i = c(1:5)) %>%
+  italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = "Strata") %>%
+  merge_v(j = 1) %>%
   hline(i = c(2, 5, nrow(logged.table.2022)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = 1, 0.69, unit = "in") %>%
+  width(j = 2, 0.5, unit = "in") %>%
+  width(j = 3:4, 0.75, unit = "in") %>%
+  width(j = 5, 0.66, unit = "in") %>%
+  width(j = 6, 1.25, unit = "in") %>%
+  width(j = 7, 0.94, unit = "in") %>%
+  width(j = 8, 1.81, unit = "in")
 
 ```
 
@@ -2287,13 +2347,34 @@ logged.table.2023 <- logged.table %>%
   select(-Year)
 
 flextable(logged.table.2023) %>%
+  mk_par(j = 3, part = "header",
+         value = as_paragraph("Random number selection (", as_i("r"), ")")) %>%
+  mk_par(j = 4, part = "header",
+         value = as_paragraph("Inherited selection **(", as_i("i"), ")")) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Waived (", as_i("w"), ")")) %>%
+  mk_par(j = 6, part = "header",
+         value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", 
+                              as_i("i"), " - ", as_i("w"), " - ", as_i("n"), ")")) %>%
+  mk_par(j = 7, part = "header",
+         value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
+  mk_par(j = 8, part = "header",
+         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), " + ", 
+                              as_i("n"), "/(", as_i("T"), " + ", as_i("w"), " + ", as_i("n"), ") \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
-  italic(j = "Strata", i = c(1:5)) %>%
+  italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = "Strata") %>%
+  merge_v(j = 1) %>%
   hline(i = c(2, 5, nrow(logged.table.2023)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = 1, 0.69, unit = "in") %>%
+  width(j = 2, 0.5, unit = "in") %>%
+  width(j = 3:4, 0.75, unit = "in") %>%
+  width(j = 5, 0.66, unit = "in") %>%
+  width(j = 6, 1.25, unit = "in") %>%
+  width(j = 7, 0.94, unit = "in") %>%
+  width(j = 8, 1.81, unit = "in")
 
 ```
 
@@ -2318,17 +2399,31 @@ flextable(Selection.table.2022) %>%
     n = "Selected trips",
     N = "Total trips",
     Actu = "Actual (%)",
-    Prog = "Programmed (%)",
-    `*p*` = "*p*-value")) %>%
+    Prog = "Programmed (%)")) %>%
+  mk_par(j = 7, part = "header",
+         value = as_paragraph(as_i("p"), "-value")) %>%
+  mk_par(j = 2, i = seq(1, nrow(Selection.table.2022), 4), part = "body",
+         value = as_paragraph("Initial random selection, ", as_i("a"))) %>%
+  mk_par(j = 2, i = seq(2, nrow(Selection.table.2022), 4), part = "body",
+         value = as_paragraph("After cancellations, ", as_i("b"), " (", as_i("a"), " - ", as_i("b"), ")")) %>%
+  mk_par(j = 2, i = seq(3, nrow(Selection.table.2022), 4), part = "body",
+         value = as_paragraph("With inherits, ", as_i("c"), " (", as_i("a"), " - ", as_i("b"), " + ", as_i("c"), ")")) %>%
+  mk_par(j = 2, i = seq(4, nrow(Selection.table.2022), 4), part = "body",
+         value = as_paragraph("After waivers, ", as_i("d"), " (", as_i("a"), " - ", as_i("b"), " + ", 
+                              as_i("c"), " - ", as_i("d"), ")")) %>%
   align(part = "all", align = "center") %>%
-  align(j = "Trip disposition", align = "left") %>%
+  align(j = 1, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
-  italic(j = "Strata") %>%
-  merge_v(j = "Strata") %>%
+  italic(j = 1) %>%
+  merge_v(j = 1) %>%
   hline(i = seq(4, nrow(Selection.table.2022), 4)) %>%
-  hline(i = nrow(Selection.table.2022), border = officer::fp_border(width = 2)) %>%
+  hline(i = c(8, nrow(Selection.table.2022)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = c(1, 3), 0.69, unit = "in") %>%
+  width(j = 2, 2.21, unit = "in") %>%
+  width(j = c(4, 5, 7), 0.63, unit = "in") %>%
+  width(j = 6, 1.06, unit = "in")
 
 ```
 
@@ -2349,17 +2444,31 @@ flextable(Selection.table.2023) %>%
     n = "Selected trips",
     N = "Total trips",
     Actu = "Actual (%)",
-    Prog = "Programmed (%)",
-    `*p*` = "*p*-value")) %>%
+    Prog = "Programmed (%)")) %>%
+  mk_par(j = 7, part = "header",
+         value = as_paragraph(as_i("p"), "-value")) %>%
+  mk_par(j = 2, i = seq(1, nrow(Selection.table.2023), 4), part = "body",
+         value = as_paragraph("Initial random selection, ", as_i("a"))) %>%
+  mk_par(j = 2, i = seq(2, nrow(Selection.table.2023), 4), part = "body",
+         value = as_paragraph("After cancellations, ", as_i("b"), " (", as_i("a"), " - ", as_i("b"), ")")) %>%
+  mk_par(j = 2, i = seq(3, nrow(Selection.table.2023), 4), part = "body",
+         value = as_paragraph("With inherits, ", as_i("c"), " (", as_i("a"), " - ", as_i("b"), " + ", as_i("c"), ")")) %>%
+  mk_par(j = 2, i = seq(4, nrow(Selection.table.2023), 4), part = "body",
+         value = as_paragraph("After waivers, ", as_i("d"), " (", as_i("a"), " - ", as_i("b"), " + ", 
+                              as_i("c"), " - ", as_i("d"), ")")) %>%
   align(part = "all", align = "center") %>%
-  align(j = "Trip disposition", align = "left") %>%
+  align(j = 2, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
-  italic(j = "Strata") %>%
-  merge_v(j = "Strata") %>%
+  italic(j = 1) %>%
+  merge_v(j = 1) %>%
   hline(i = seq(4, nrow(Selection.table.2023), 4)) %>%
-  hline(i = nrow(Selection.table.2023), border = officer::fp_border(width = 2)) %>%
+  hline(i = c(8, nrow(Selection.table.2023)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = c(1, 3), 0.69, unit = "in") %>%
+  width(j = 2, 2.21, unit = "in") %>%
+  width(j = c(4, 5, 7), 0.63, unit = "in") %>%
+  width(j = 6, 1.06, unit = "in")
 
 ```
 
@@ -2372,10 +2481,10 @@ flextable(Selection.table.2023) %>%
 Coverage.Table <- Coverage.Table %>% 
   mutate(Strata = as.character(Strata),
          Year = as.factor(Year),
-         `*V*` = as.numeric(`*V*`),
-         `*v*` = as.numeric(`*v*`),
-         `*N*` = as.numeric(`*N*`),
-         `*n*` = as.numeric(`*n*`)) %>% 
+         V = as.numeric(V),
+         v = as.numeric(v),
+         N = as.numeric(N),
+         n = as.numeric(n)) %>% 
   mutate(Strata = ifelse(Coverage %in% c("Full coverage total", "Partial coverage total"), as.character(Coverage), Strata)) %>%
   mutate(Coverage = case_when(Coverage == "Partial coverage total" ~ "Partial coverage",
                               Coverage == "Full coverage total" ~ "Full coverage",
@@ -2391,15 +2500,26 @@ as_grouped_data(Coverage.Table.2022, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
   align(part = "all", align = "center") %>%
   align(i = ~ !is.na(Coverage), align = "left") %>%
-  align(j = "Realized meets expected?", align = "left") %>%
+  align(j = 10, align = "left") %>%
+  align(j = 1, i = 15, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
-  italic(j = "Strata", i = c(2:4, 6:12, 14)) %>%
-  italic(j = c(2:5), part = "header") %>%
-  hline(i = c(3, 11)) %>%
+  bold(j = 1, i = 15) %>%
+  italic(j = 1, i = c(2:4, 6:12, 14)) %>%
+  italic(j = 2:5, part = "header") %>%
+  hline(i = c(3, 8, 11)) %>%
   hline(i = 14, border = officer::fp_border(width = 2)) %>%
   surround(i = ~ !is.na(Coverage), border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1))
+  add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
+  width(j = 1, 1.5, unit = "in") %>%
+  width(j = 2:3, 0.38, unit = "in") %>%
+  width(j = 4:5, 0.5, unit = "in") %>%
+  width(j = 6:7, 0.75, unit = "in") %>%
+  width(j = 8:9, 0.58, unit = "in") %>%
+  width(j = 10, 1.77, unit = "in") %>%
+  merge_at(j = 7:10, i = 15) %>%
+  align(j = 7, i = 15, align = "left") %>% 
+  padding(j = 7, i = 15, part = "body", padding.left = 20)
 
 ```
 
@@ -2418,15 +2538,26 @@ as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
   align(part = "all", align = "center") %>%
   align(i = ~ !is.na(Coverage), align = "left") %>%
-  align(j = "Realized meets expected?", align = "left") %>%
+  align(j = 10, align = "left") %>%
+  align(j = 1, i = 15, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
-  italic(j = "Strata", i = c(2:4, 6:12, 14)) %>%
-  italic(j = c(2:5), part = "header") %>%
-  hline(i = c(3, 11)) %>%
+  bold(j = 1, i =15) %>%
+  italic(j = 1, i = c(2:4, 6:12, 14)) %>%
+  italic(j = 2:5, part = "header") %>%
+  hline(i = c(3, 8, 11)) %>%
   hline(i = 14, border = officer::fp_border(width = 2)) %>%
   surround(i = ~ !is.na(Coverage), border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1))
+  add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
+  width(j = 1, 1.5, unit = "in") %>%
+  width(j = 2:3, 0.38, unit = "in") %>%
+  width(j = 4:5, 0.5, unit = "in") %>%
+  width(j = 6:7, 0.75, unit = "in") %>%
+  width(j = 8:9, 0.58, unit = "in") %>%
+  width(j = 10, 1.77, unit = "in") %>%
+  merge_at(j = 7:10, i = 15) %>%
+  align(j = 7, i = 15, align = "left") %>% 
+  padding(j = 7, i = 15, part = "body", padding.left = 20)
 
 ```
 
@@ -2479,11 +2610,22 @@ Pollock.observed.table <-
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`)) 
 
 flextable(Pollock.observed.table) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
+  mk_par(j = 6, part = "header",
+         value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
   align(part = "all", align = "center") %>%
+  bold(bold = TRUE, part = "header") %>%
   merge_v(j = "Year") %>%
+  hline(i = c(4, 12)) %>%
   hline(i = c(8, nrow(Pollock.observed.table)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = 1, 0.5, unit = "in") %>%
+  width(j = 2, 1.06, unit = "in") %>%
+  width(j = c(3, 5:6), 0.81, unit = "in") %>%
+  width(j = 4, 1, unit = "in") %>%
+  width(j = 7, 0.75, unit = "in")
   
 ```
 
@@ -2500,11 +2642,22 @@ Pollock.efp.table <-
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
 
 flextable(Pollock.efp.table) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
+  mk_par(j = 6, part = "header",
+         value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
   align(part = "all", align = "center") %>%
+  bold(bold = TRUE, part = "header") %>%
   merge_v(j = "Year") %>%
+  hline(i = c(5, 14)) %>%
   hline(i = c(10, nrow(Pollock.efp.table)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  fix_border_issues()
+  fix_border_issues() %>%
+  width(j = 1, 0.5, unit = "in") %>%
+  width(j = 2, 1.06, unit = "in") %>%
+  width(j = c(3, 5:6), 0.82, unit = "in") %>%
+  width(j = 4, 1.78, unit = "in") %>%
+  width(j = 7, 0.75, unit = "in")
 
 ```
 
