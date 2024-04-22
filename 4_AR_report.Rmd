@@ -2130,33 +2130,59 @@ NMFS. 2013. 2014 Annual deployment plan for observers in the groundfish and hali
 
 `r if(tech.memo){'# Tables'}`  
 
-####`r tbl_nums('trip.budget.table', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
+####`r tbl_nums('trip.budget.tbl.2022', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year - 1,'.  Predicted values come from the ', year - 1,' Annual Deployment Plan (ADP).'))`  
 
-```{r trip.budget.tbl, echo=FALSE}
-# Add commas to numbers >= 1000
-trip.budget.table.2022[2:4] <- lapply(trip.budget.table.2022[, 2:4], prettyNum, trim = TRUE, big.mark = ",")
-trip.budget.table.2023[2:4] <- lapply(trip.budget.table.2023[, 2:4], prettyNum, trim = TRUE, big.mark = ",")
+```{r trip.budget.tbl.2022, echo=FALSE}
 
-# Italicize strata
-trip.budget.table.2022$Strata <- cell_spec(trip.budget.table.2022$STRATA, 
-                                           italic = ifelse(trip.budget.table.2022$STRATA != "Total", TRUE, FALSE))
-trip.budget.table.2023$Strata <- cell_spec(trip.budget.table.2023$STRATA, 
-                                           italic = ifelse(trip.budget.table.2023$STRATA != "Total", TRUE, FALSE))
+trip.budget.table.2022 <- trip.budget.table.2022 %>%
+  mutate(pred_days = as.numeric(pred_days),
+         act_days = as.numeric(act_days))
 
-# Print table
-kbl(
-  select(trip.budget.table.2022, Strata, pred_days, act_days, diff, perc) %>% 
-  rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
-  kable_paper() %>%
-  # Group columns 
-  add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
+# 2022
 
-kbl(
-  select(trip.budget.table.2023, Strata, pred_days, act_days, diff, perc) %>% 
-  rename(Predicted = pred_days, Actual = act_days, `Actual ` = diff, Percent = perc), escape = FALSE) %>% 
-  kable_paper() %>%
-  # Group columns 
-  add_header_above(c(" " = 1, "Trip Days" = 2, "Difference" = 2))
+flextable(trip.budget.table.2022) %>%
+  set_header_labels(values = list(
+    STRATA = "Strata",
+    pred_days = "Predicted",
+    act_days = "Actual",
+    diff = "Actual",
+    perc = "Percent")) %>%
+  align(part = "all", align = "center") %>%
+  italic(j = "STRATA", i = c(1:6)) %>%
+  bold(bold = TRUE, part = "header") %>%
+  hline(i = c(3, 6, nrow(trip.budget.table.2022)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
+  colformat_num(j = 3, i = c(1:3, 5, 7), digits = 0)
+
+```
+
+#####
+
+####`r tbl_nums('trip.budget.tbl.2023', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
+
+```{r trip.budget.tbl.2023, echo=FALSE}
+
+trip.budget.table.2023 <- trip.budget.table.2023 %>%
+  mutate(pred_days = as.numeric(pred_days),
+         act_days = as.numeric(act_days))
+
+# 2023
+
+flextable(trip.budget.table.2023) %>%
+  set_header_labels(values = list(
+    STRATA = "Strata",
+    pred_days = "Predicted",
+    act_days = "Actual",
+    diff = "Actual",
+    perc = "Percent")) %>%
+  align(part = "all", align = "center") %>%
+  italic(j = "STRATA", i = c(1:6)) %>%
+  bold(bold = TRUE, part = "header") %>%
+  hline(i = c(3, 6, nrow(trip.budget.table.2023)), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2))
+
 ```
 
 #####
