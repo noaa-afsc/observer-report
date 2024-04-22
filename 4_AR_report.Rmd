@@ -907,7 +907,7 @@ odds.by.date.plot <- ggplot(odds.ts.daily.cuml, aes(x = Date,  col = TYPE)) +
      geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
      geom_line(aes(y = running.pct), linewidth = 1.5) +
      scale_color_manual(name = "Rate Type", values = c("black", "gray70")) +
-     ylab("Cumulative Coverage Percent\n") +
+     ylab("Cumulative coverage percent\n") +
      coord_cartesian(ylim = c(0, 70)) +
      xlab("\nDate") +
      geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray") + 
