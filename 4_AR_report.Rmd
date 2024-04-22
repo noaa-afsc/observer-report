@@ -2535,11 +2535,13 @@ print(grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2))
 
 #####
 
-```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600, eval=FALSE}
+####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
+
+```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
 suppressWarnings(print(odds.by.date.plot))   
 
 # Figure 2 in 2019 Annual Report
-####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))`  
+ 
 ```
 
 #####
