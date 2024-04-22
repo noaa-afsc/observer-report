@@ -1537,7 +1537,7 @@ Temporal.plot <-
   geom_point(data = Temporal.plot.x_range, y = 0, alpha = 0) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
-  ylab("Cumulative Trips in Trip-selection Strata\n") +
+  ylab("Cumulative trips in trip-selection strata\n") +
   xlab("\nDate")
 
 Temporal.plot
