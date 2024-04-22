@@ -2132,7 +2132,7 @@ NMFS. 2013. 2014 Annual deployment plan for observers in the groundfish and hali
 
 ####`r tbl_nums('trip.budget.tbl.2022', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year - 1,'.  Predicted values come from the ', year - 1,' Annual Deployment Plan (ADP).'))`  
 
-```{r trip.budget.tbl.2022, echo=FALSE}
+```{r trip.budget.tbl.2022, echo=FALSE, tab.cap=""}
 
 trip.budget.table.2022 <- trip.budget.table.2022 %>%
   mutate(pred_days = as.numeric(pred_days),
@@ -2161,7 +2161,7 @@ flextable(trip.budget.table.2022) %>%
 
 ####`r tbl_nums('trip.budget.tbl.2023', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
-```{r trip.budget.tbl.2023, echo=FALSE}
+```{r trip.budget.tbl.2023, echo=FALSE, tab.cap=""}
 
 trip.budget.table.2023 <- trip.budget.table.2023 %>%
   mutate(pred_days = as.numeric(pred_days),
