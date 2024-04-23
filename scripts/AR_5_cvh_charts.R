@@ -6,7 +6,6 @@
 # TODO's:
   # Fix label wraps (ultimately reduces lines) []
   # Separate script for unused materials? []
-  # add google drive script for downloading data []
   # add google drive script for outputting plots []
   # delete tables from repo []
   # remove unused libraries []
@@ -1224,10 +1223,12 @@ odds_heatmap <- {
     labs(y = 'Issue Category',
          fill = 'Occurrences',
          x = '') +
-    geom_tile(aes(fill = PROPORT_FREQ)) +
+    geom_tile(aes(fill = PROPORT_FREQ),
+              color = 'black') +
     geom_text(aes(label = FREQ),
               color = 'white',
-              family = 'Gill Sans MT') +
+              family = 'Gill Sans MT',
+              size = 7) +
     theme_minimal() +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_discrete(expand = c(0, 0)) +
@@ -1236,11 +1237,13 @@ odds_heatmap <- {
                          limits = c(0, 1.000),
                          breaks = c(0, 0.250, 0.500, 0.750, 1.000)) +
     theme(strip.text.y.left = element_text(angle = 0),
-          strip.background = element_rect(fill = 'black'),
-          strip.text = element_text(color = 'white'),
           text = element_text(size = 20, family = 'Gill Sans MT'),
+          strip.background = element_rect(color = 'black'),
           axis.ticks = element_blank(),
           axis.text = element_blank(),
+          legend.title = element_text(vjust = 3),
+          legend.text = element_text(size = 20),
+          legend.key.size = unit(1, 'cm'),
           panel.grid = element_blank(),
           panel.background = element_rect(color = 'black',
                                           fill = 'gray'))
