@@ -1385,7 +1385,12 @@ Pollock.observed <- rbind(
 # Rename columns and format
 Pollock.observed.table <- Pollock.observed %>% 
   mutate(N.Pollock = as.character(N.Pollock),
-         N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
+         N.Pollock.Obs = as.character(N.Pollock.Obs),
+         FMP = case_when(FMP == "Bering Sea" ~ "BSAI",
+                         COVERAGE_TYPE == "Full" ~ "BSAI total",
+                         FMP == "Gulf of Alaska" ~ "GOA",
+                         COVERAGE_TYPE == "Partial" ~ "GOA total",
+                         TRUE ~ FMP)) %>% 
   select(`Year` = ADP,
          `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
@@ -1403,7 +1408,12 @@ Pollock.efp <- rbind(
 # Rename columns and format
 Pollock.efp.table <- Pollock.efp %>% 
   mutate(N.Pollock = as.character(N.Pollock),
-         N.Pollock.Obs = as.character(N.Pollock.Obs)) %>% 
+         N.Pollock.Obs = as.character(N.Pollock.Obs),
+         FMP = case_when(FMP == "Bering Sea" ~ "BSAI",
+                         COVERAGE_TYPE == "Full" ~ "BSAI total",
+                         FMP == "Gulf of Alaska" ~ "GOA",
+                         COVERAGE_TYPE == "Partial" ~ "GOA total",
+                         TRUE ~ FMP)) %>% 
   select(`Year` = ADP,
          `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
@@ -2158,7 +2168,7 @@ flextable(trip.budget.table.2022) %>%
   hline(i = c(3, 6, nrow(trip.budget.table.2022)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
   add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
-  colformat_num(j = 3, i = c(2, 4:7), digits = 0) %>%
+  colformat_num(j = 3, i = c(2, 4:7), digits = 0) %>% # This year has half day realized increments for actual trip days
   width(j = 1, 1.125, unit = "in") %>%
   width(j = 2, 0.8, unit = "in")
 
@@ -2416,7 +2426,7 @@ flextable(Selection.table.2022) %>%
          value = as_paragraph("After waivers, ", as_i("d"), " (", as_i("a"), " - ", as_i("b"), " + ", 
                               as_i("c"), " - ", as_i("d"), ")")) %>%
   align(part = "all", align = "center") %>%
-  align(j = 1, align = "left") %>%
+  align(j = 2, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   italic(j = 1) %>%
   merge_v(j = 1) %>%
@@ -2622,13 +2632,13 @@ flextable(Pollock.observed.table) %>%
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
   align(part = "all", align = "center") %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = "Year") %>%
+  merge_v(j = c("Year", "FMP", "Coverage category")) %>%
   hline(i = c(4, 12)) %>%
   hline(i = c(8, nrow(Pollock.observed.table)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.5, unit = "in") %>%
-  width(j = 2, 1.06, unit = "in") %>%
+  width(j = 2, 0.84, unit = "in") %>%
   width(j = c(3, 5:6), 0.81, unit = "in") %>%
   width(j = 4, 1, unit = "in") %>%
   width(j = 7, 0.75, unit = "in")
@@ -2654,13 +2664,13 @@ flextable(Pollock.efp.table) %>%
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
   align(part = "all", align = "center") %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = "Year") %>%
+  merge_v(j = c("Year", "FMP", "Coverage category")) %>%
   hline(i = c(5, 14)) %>%
   hline(i = c(10, nrow(Pollock.efp.table)), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.5, unit = "in") %>%
-  width(j = 2, 1.06, unit = "in") %>%
+  width(j = 2, 0.84, unit = "in") %>%
   width(j = c(3, 5:6), 0.82, unit = "in") %>%
   width(j = 4, 1.78, unit = "in") %>%
   width(j = 7, 0.75, unit = "in")
@@ -2686,15 +2696,19 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r"
 `r if(tech.memo){'# Figures'}`
 
 ```{r outcomes, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
-grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2)
-grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2)
-
-#grid.arrange(grobs = list(outcomes.plot.2022, costs.plot.2022), ncol = 1, widths = c(0.9, 1))
 
 # Make a list of grobs of your figures, set the widths as the maximum among the figures.
-#plot_grobs <- lapply(list(fig1, fig2), ggplotGrob)
-#plot_grobs_widths <- do.call(unit.pmax, plot_grobs, function(x) x[["widths"]] ))
+#plot_grobs <- lapply(list(outcomes.plot.2022, costs.plot.2022), ggplotGrob)
+
+#plot_grobs_widths <- do.call(unit.pmax, plot_grobs, function(x) x[["widths"]])
+
 #for(i in 1:length(plot_grobs)) plot_grobs[[i]]$widths <- plot_grobs_widths
+
+
+
+
+grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2)
+grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2)
 
 ```
 
