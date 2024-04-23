@@ -23,6 +23,9 @@ source("3_helper.R")
 
 # Set table output default settings
 set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
+
+# Set order of strata
+strata.order <- c("Full", "OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT", "EM TRW EFP", "Zero coverage", "Total")
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -2140,9 +2143,6 @@ NMFS. 2013. 2014 Annual deployment plan for observers in the groundfish and hali
 ####`r tbl_nums('trip.budget.tbl.2022', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year - 1,'.  Predicted values come from the ', year - 1,' Annual Deployment Plan (ADP).'))`  
 
 ```{r trip.budget.tbl.2022, echo=FALSE, tab.cap=""}
-
-# Set order of strata for all tables
-strata.order <- c("Full", "OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT", "EM TRW EFP", "Zero coverage", "Total")
 
 trip.budget.table.2022 <- trip.budget.table.2022 %>%
   mutate(pred_days = as.numeric(pred_days),
