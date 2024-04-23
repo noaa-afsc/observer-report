@@ -702,12 +702,20 @@ OPS_number_rainplot <- {
 # View the plot
 OPS_number_rainplot
 
-# Save the plot
+# Save the plot to GitHub
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/OPS_number_rainplot.png',
        plot = OPS_number_rainplot,
        width = 9,
        height = 8)
 
+# Save the plot to Google Drive
+  # comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/OPS_number_rainplot.png',
+  path = project_dribble,
+  name = 'OPS_number_rainplot.png',
+  overwrite = T
+)
 
 # Rain cloud plots of OLE Priority IP ------------------------------------------
 # Set colors
@@ -768,12 +776,20 @@ OLEPIP_number_rainplot <- {
 # View the plot
 OLEPIP_number_rainplot
 
-# Save the plot
+# Save the plot to GitHub
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/OLEPIP_number_rainplot.png',
        plot = OLEPIP_number_rainplot,
        width = 9,
        height = 8)
 
+# Save the plot to Google Drive
+# comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/OLEPIP_number_rainplot.png',
+  path = project_dribble,
+  name = 'OLEPIP_number_rainplot.png',
+  overwrite = T
+)
 
 # Facet rain cloud plots -------------------------------------------------------
 # Wrap the plots
@@ -786,11 +802,20 @@ raincloud_facet <-
 # View the wrap
 raincloud_facet
 
-# Save the wrap
+# Save the wrap to GitHub
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/OPS_category_facet.png',
        plot = raincloud_facet,
        width = 9,
        height = 14)
+
+# Save the wrap to Google Drive
+# comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/OPS_category_facet.png',
+  path = project_dribble,
+  name = 'OPS_category_facet.png',
+  overwrite = T
+)
 
 # Alluvial plot of old data, 2023 ----------------------------------------------
 # flow: STATEMENT_TYPE -> OLD_OLE_CATEGORY (filtered for OLD OLE SYSTEM)
@@ -859,12 +884,11 @@ river_oldcat_23 <- {
 # View the plot
 river_oldcat_23
 
-# Save the plot
+# Save the plot to GitHub (in .gitignore)
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/river_oldcat_23.png',
        plot = river_oldcat_23,
        width = 14,
        height = 10)
-
 
 # Alluvial plot of new data, by safety -----------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
@@ -942,7 +966,7 @@ river_newcat_safety <- {
 # View the plot
 river_newcat_safety
 
-# Save the plot
+# Save the plot to GitHub (in .gitignore)
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/river_newcat_safety.png',
        plot = river_newcat_safety,
        width = 20,
@@ -1036,7 +1060,7 @@ river_newcat_nonsafety <- {
 # View the plot
 river_newcat_nonsafety
 
-# Save the plot
+# Save the plot to GitHub (in .gitignore)
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/river_newcat_nonsafety.png',
        plot = river_newcat_nonsafety,
        width = 20,
@@ -1161,7 +1185,7 @@ pareto_facet <-
 # View the wrap
 pareto_facet
 
-# Save the wrap
+# Save the wrap to GitHub
 ggsave(filename = '2023_outputs/charts_and_tables/Plots/ODDS_pareto_facet_year.png',
        plot = pareto_facet,
        width = 11,
@@ -1186,35 +1210,37 @@ for (i in 2:(length(odds_data) - 1)) {
 }
 
 # rename columns, combine date columns, summarize data
-odds_df_formatted <- odds_df %>%
-  rename(ISSUE_CATEGORY = `Issue Category`) %>%
-  mutate(YEAR = as.numeric(format(coalesce(Date, # add columns if necessary
-                                           `Date OLE Notified`), '%Y')),
-         ISSUE_CATEGORY = replace(ISSUE_CATEGORY, 
-                                  ISSUE_CATEGORY == 
-                                    'EM Cameras Not Turned on For Selected Trip', 
-                                  'Leave without observer'),
-         ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
-                                  ISSUE_CATEGORY ==
-                                    'Fished on a Canceled Observed Trip',
-                                  'Fished on a Canceled Trip'),
-         ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
-                                  ISSUE_CATEGORY ==
-                                    'Fished on a canceled selected trip',
-                                  'Fished on a Canceled Trip'),
-         ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
-                                  ISSUE_CATEGORY == 
-                                    'Tender trip definition',
-                                  'Incorrect Tender'),
-         ISSUE_CATEGORY = str_wrap(ISSUE_CATEGORY, width = 20)) %>%
-  select(YEAR, ISSUE_CATEGORY) %>%
-  group_by(YEAR, ISSUE_CATEGORY) %>%
-  summarise(FREQ = n()) %>%
-  group_by(YEAR) %>%
-  mutate(YEAR_SUM = sum(FREQ),
-         PROPORT_FREQ = FREQ / YEAR_SUM) %>%
-  filter(YEAR < 2024) %>%
-  ungroup()
+odds_df_formatted <- {
+  odds_df %>%
+    rename(ISSUE_CATEGORY = `Issue Category`) %>%
+    mutate(YEAR = as.numeric(format(coalesce(Date, # add columns if necessary
+                                             `Date OLE Notified`), '%Y')),
+           ISSUE_CATEGORY = replace(ISSUE_CATEGORY, 
+                                    ISSUE_CATEGORY == 
+                                      'EM Cameras Not Turned on For Selected Trip', 
+                                      'Leave without observer'),
+           ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
+                                    ISSUE_CATEGORY ==
+                                      'Fished on a Canceled Observed Trip',
+                                      'Fished on a Canceled Trip'),
+           ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
+                                    ISSUE_CATEGORY ==
+                                      'Fished on a canceled selected trip',
+                                      'Fished on a Canceled Trip'),
+           ISSUE_CATEGORY = replace(ISSUE_CATEGORY,
+                                    ISSUE_CATEGORY == 
+                                      'Tender trip definition',
+                                      'Incorrect Tender'),
+           ISSUE_CATEGORY = str_wrap(ISSUE_CATEGORY, width = 20)) %>%
+    select(YEAR, ISSUE_CATEGORY) %>%
+    group_by(YEAR, ISSUE_CATEGORY) %>%
+    summarise(FREQ = n()) %>%
+    group_by(YEAR) %>%
+    mutate(YEAR_SUM = sum(FREQ),
+           PROPORT_FREQ = FREQ / YEAR_SUM) %>%
+    filter(YEAR < 2024) %>%
+    ungroup()
+}
 
 # Make the plot
 odds_heatmap <- {
@@ -1256,11 +1282,20 @@ odds_heatmap <- {
 # View the plot
 odds_heatmap
 
-# Save the plot
+# Save the plot to GitHub
 ggsave(file = '2023_outputs/charts_and_tables/Plots/odds_issues_heatmap.png',
        plot = odds_heatmap,
        width = 14,
        height = 12)
+
+# Save the plot to Google Drive
+# comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/odds_issues_heatmap.png',
+  path = project_dribble,
+  name = 'odds_issues_heatmap.png',
+  overwrite = T
+)
 
 #####################################
 ##### CONFIDENTIAL DATA REMOVED #####
@@ -1352,6 +1387,14 @@ ggsave(filename = 'Plots/river_oldcat_confid_removed_23.png',
        width = 14,
        height = 10)
 
+# Save the plot to Google Drive
+# comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/river_oldcat_confid_removed_23.png',
+  path = project_dribble,
+  name = 'river_oldcat_confid_removed_23.png',
+  overwrite = T
+)
 
 # Alluvial plot of new data, by safety -----------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
@@ -1455,6 +1498,14 @@ ggsave(filename = 'Plots/river_newcat_safety_confid_removed.png',
        width = 20,
        height = 10)
 
+# Save the plot to Google Drive
+# comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/river_newcat_safety_confid_removed.png',
+  path = project_dribble,
+  name = 'river_newcat_safety_confid_removed.png',
+  overwrite = T
+)
 
 # Alluvial plot of new data, by nonsafety --------------------------------------
 # flow: OLD_OLE_CATEGORY -> NEW_OLE_CATEGORY_STATEMENT_TYPE (filtered for
@@ -1566,3 +1617,12 @@ ggsave(filename = 'Plots/river_newcat_nonsafety_confid_removed.png',
        plot = river_newcat_nonsafety_noconfid,
        width = 20,
        height = 10)
+
+# Save the plot to Google Drive
+# comment out (but leave in!) local filepaths for other project participants
+drive_upload(
+  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/2023_outputs/charts_and_tables/Plots/river_newcat_nonsafety_confid_removed.png',
+  path = project_dribble,
+  name = 'river_newcat_nonsafety_confid_removed.png',
+  overwrite = T
+)
