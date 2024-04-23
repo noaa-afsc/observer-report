@@ -194,35 +194,3 @@ times_figure
 if(!file.exists("figures/data_timeliness.png")){
   ggsave(filename = "figures/data_timeliness.png", width = 6, height = 5, units = 'in')}
 ```
-
-# Creating a Function
-I created a function that uses stratum-specific mean data timeliness to estimate the mean data timeliness of all (monitored and unmonitored) non-jig trips within a data set.   
-```{r table}
-strata_timeliness <- setDT(times_smry)[, .(COVERAGE_TYPE, STRATA, mean_data_timeliness)]
-
-save(strata_timeliness, file = "source_data/strata_timeliness.RData")   # https://drive.google.com/file/d/1WjmGwo5qx_orqGgC09gm6wAPIh1V9VPl/view?usp=drive_link
-
-strata_timeliness
-```
-
-```{r function}
-data <- setDT(dbGetQuery(channel_akro, "select * from akfish_sf.valhalla where adp = 2022"))
-
-source("common_functions/evaluate_data_timeliness.R")
-```
-
-Unmonitored trips receive the same timeliness as monitored trips within a stratum, since data from monitored trips will be used to generate estimates for unmonitored trips. As an example, the function estimates a mean data timeliness of 26.68 days for all non-jig trips that occurred in 2022:  
-```{r example_1, echo = TRUE}
-evaluate_data_timeliness(data, strata_timeliness)
-```
-
-This can be compared to a design in which data from fixed-gear EM strata are available in half the time it currently takes them to reach CAS:  
-```{r example_2, echo = TRUE}
-evaluate_data_timeliness(data, copy(strata_timeliness)[STRATA %in% c("EM_HAL", "EM_POT"), mean_data_timeliness := round(mean_data_timeliness/2, 2)])
-```
-
-Or we could choose to return mean data timeliness for partial coverage strata only:    
-```{r example_3, echo = TRUE}
-evaluate_data_timeliness(data[COVERAGE_TYPE == "PARTIAL"], strata_timeliness)
-```
-  
