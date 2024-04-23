@@ -21,18 +21,12 @@ options(scipen = 9999)
 
 ```{r get_data}
 em_trip_end <- dbGetQuery(channel_afsc, "
-select distinct e.year, e.odds_trip_number,
+select distinct extract(year from t.trip_start_date_time) year, t.trip_plan_log_seq odds_trip_number,
 trunc(max(t.trip_end_date_time)) as trip_end
-from norpac.odds_logged_trip_summary_v e
-join norpac.odds_em_request_status h on h.status_year = e.year 
-join norpac.odds_monitor i on i.trip_plan_log_seq = e.odds_trip_number
-left join em_pac_review.em_trip t on t.trip_plan_log_seq = e.odds_trip_number
-where e.year = 2022
-and e.observer_status_code <> 'NO'
-and e.trip_status in ('COMPLETED', 'PENDING')
-and i.sample_plan_seq in (13)
-group by e.year, e.odds_trip_number
-order by e.odds_trip_number")
+from em_pac_review.em_trip t
+where extract(year from t.trip_start_date_time) = 2023
+group by extract(year from t.trip_start_date_time), t.trip_plan_log_seq
+order by t.trip_plan_log_seq")
 
 em_data_available <- dbGetQuery(channel_akro, "
 select h.ODDS_TRIP_NUMBER, 
@@ -49,7 +43,7 @@ join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.C
 join AKFISH_REPORT.EM_HAUL h on f.EM_HAUL_PK = h.EM_HAUL_PK
 join AKFISH_REPORT.CALENDAR_DATE c on f.REPORT_DATE_PK = c.CALENDAR_DATE_PK
 join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
-where r.year_pk >= 2021 
+where r.year_pk >= 2022 
 and r.CATCH_REPORT_TYPE_CODE = 'EM'
 and ss.sampling_strata_code != 'N/A'
 group by h.ODDS_TRIP_NUMBER,
@@ -66,7 +60,7 @@ ob_trips <- dbGetQuery(channel_afsc,
    from norpac.atl_fma_trip t
    join norpac.ols_observer_cruise cru on cru.cruise = t.cruise
    join norpac.ols_observer_contract con on con.contract_number = cru.contract_number
-   where extract(year from t.start_date) = 2022
+   where extract(year from t.start_date) = 2023
    and t.did_fishing_occur_flag = 'Y'")
 
 ob_hauls <- dbGetQuery(channel_akro, 
@@ -91,7 +85,7 @@ join AKFISH_REPORT.OBSERVER_HAUL h on f.OBSERVER_HAUL_PK = h.OBSERVER_HAUL_PK
 join AKFISH_REPORT.CALENDAR_DATE c on f.REPORT_DATE_PK = c.CALENDAR_DATE_PK
 join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
 join akfish_report.vessel v on v.vessel_pk = f.vessel_pk
-where r.year_pk >= 2021 
+where r.year_pk >= 2022 
 and r.CATCH_REPORT_TYPE_CODE = 'OBS'
 and ss.sampling_strata_code != 'N/A'
 group by h.cruise, v.vessel_id, h.trip_seq,
@@ -111,7 +105,7 @@ decode(ss.sampling_strata_code,
 afsc_offloads <- dbGetQuery(channel_afsc, 
 "select distinct extract(year from delivery_end_date) as year, to_char(offload_join) offload_join, delivery_end_date, date_of_entry
 from obsint.offload_em_trawl_received_v
-where extract(year from delivery_end_date) = 2022")
+where extract(year from delivery_end_date) = 2023")
 
 akro_offloads <- dbGetQuery(channel_akro, 
 "with j as (
@@ -120,7 +114,7 @@ akro_offloads <- dbGetQuery(channel_akro,
     from akfish_report.catch_report_source
     where expire_date is null
     and catch_report_type_code = 'EM_OFFLOAD'
-    and year_pk = 2022
+    and year_pk = 2023
     ), q as (
     select to_char(r.offload_join) offload_join,
     -- sampling strata information
@@ -133,7 +127,7 @@ akro_offloads <- dbGetQuery(channel_akro,
     join akfish_report.catch_report_species_fact f on f.catch_report_source_pk = r.catch_report_source_pk
     join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
     where r.catch_report_type_code = 'EM_OFFLOAD'
-      and r.year_pk = 2022
+      and r.year_pk = 2023
       and r.offload_join in (select * from j)
       and ss.sampling_strata_code != 'N/A'
 ) select distinct * from q")
@@ -172,6 +166,7 @@ offload_data_timeliness <- afsc_offloads %>%
                                   data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")) + 1)
 
 data_timeliness <- rbind(em_data_timeliness, ob_data_timeliness, offload_data_timeliness) %>% 
+                   filter(STRATA %in% c("EM_POT", "EM_HAL", "EM_TRW_EFP", "HAL", "TRW", "POT")) %>% 
                    mutate(data_timeliness = ifelse(data_timeliness < 0, 0, data_timeliness)) %>% 
                    group_by(TRIP_NUMBER) %>% 
                    filter(n_distinct(COVERAGE_TYPE) == 1 & n_distinct(STRATA) == 1) %>% 
@@ -186,7 +181,7 @@ times_smry <- data_timeliness %>%
               summarise(mean_data_timeliness = round(mean(data_timeliness), 2), .groups = "drop") %>% 
               mutate(label = paste(format(mean_data_timeliness, nsmall = 2)))
 
-times_figure <- ggplot(filter(data_timeliness, COVERAGE_TYPE != "FULL"), aes(x = data_timeliness)) +
+times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
                 facet_wrap(sub("_EFP", "", sub("_", " ", STRATA)) ~ ., scales="free_y", ncol = 2, dir = "v") +
                 geom_histogram(bins = 20, fill="gray70") +
                 geom_vline(data = filter(times_smry, COVERAGE_TYPE != "FULL"), aes(xintercept = mean_data_timeliness), color = "red", lty = 2) +
@@ -196,8 +191,8 @@ times_figure <- ggplot(filter(data_timeliness, COVERAGE_TYPE != "FULL"), aes(x =
 
 times_figure
 
-if(!file.exists("output_figures/data_timeliness.png")){
-  ggsave(filename = "output_figures/data_timeliness.png", width = 6, height = 5, units = 'in')}
+if(!file.exists("figures/data_timeliness.png")){
+  ggsave(filename = "figures/data_timeliness.png", width = 6, height = 5, units = 'in')}
 ```
 
 # Creating a Function
