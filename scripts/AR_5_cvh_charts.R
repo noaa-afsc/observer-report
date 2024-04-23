@@ -6,7 +6,6 @@
 # TODO's:
   # Fix label wraps (ultimately reduces lines) []
   # Separate script for unused materials? []
-  # add google drive script for outputting plots []
   # delete tables from repo []
   # remove unused libraries []
 
