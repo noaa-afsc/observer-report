@@ -22,7 +22,6 @@ editor_options:
 source("3_helper.R")
 
 # Set table output default settings
-#set_flextable_defaults(font.family = "Times New Roman", font.size = 11, layout = "autofit")
 set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 ```
 
@@ -2680,8 +2679,10 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r"
 `r if(tech.memo){'# Figures'}`
 
 ```{r outcomes, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
-print(grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2))
-print(grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2))
+grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2)
+grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2)
+
+#grid.arrange(grobs = list(outcomes.plot.2022, costs.plot.2022), ncol = 1, widths = c(0.9, 1))
 ```
 
 ####`r fig_nums('outcomes.plot', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
