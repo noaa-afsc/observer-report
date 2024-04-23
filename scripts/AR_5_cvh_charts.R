@@ -641,6 +641,10 @@ for (i in 1:length(new_statements_nonsafety)) {
 #####################
 ##### ALL PLOTS #####
 #####################
+# Set google drive output location (IMPORTANT: RUN FIRST!) ---------------------
+# assign google drive location
+project_dribble <- googledrive::drive_get("2023 Observer Program Annual Report/Chap 5 - Enforcement & Compliance/Figures/")
+
 # Rain cloud plot of violations from statements_combined -----------------------
 # Set colors
 colors <- nmfs_palette('regional')(6)
