@@ -277,10 +277,8 @@ outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(2000, 3500, 500)) +
-  labs(y = paste("Density of simulated outcomes (2022 ADP)\n"),
-       #y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
-       x = paste("\nTotal days used in 2022"))
-       #x = paste("\nTotal days used in ", year, sep = ""))
+  labs(y = paste("Density of simulated outcomes (", year - 1, "ADP)\n", sep = ""),
+       x = paste("\nTotal days used in ", year - 1, sep = ""))
 
 #' `------------2023--------------`
 
@@ -301,9 +299,9 @@ outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
         axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(limits = c(2250, 3750), breaks = seq(2000, 3500, 500)) +
-  labs(y = paste("Density of simulated outcomes (2023 ADP)\n"),
-       x = paste("\nTotal days used in 2023"))
+  scale_x_continuous(limits = c(2450, 3750), breaks = seq(2000, 3500, 500)) +
+  labs(y = paste("Density of simulated outcomes (", year, "ADP)\n", sep = ""),
+       x = paste("\nTotal days used in ", year, sep = ""))
 ```
 
 ```{r costs.plot, include=FALSE}
@@ -343,10 +341,8 @@ costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(3750000, 4750000, 500000),
                      labels = dollar) +
-  labs(#y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
-       y = paste("Density of simulated outcomes (2022 ADP)\n"),
-       x = paste("\nTotal contract costs in 2022"))
-       #x = paste("\nTotal contract costs in ", year, sep = ""))
+  labs(y = paste("Density of simulated outcomes (", year - 1, " ADP", ")\n", sep = ""),
+       x = paste("\nTotal contract costs in ", year - 1, sep = ""))
 
 #' `------------2023--------------`
 
@@ -384,8 +380,8 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   scale_x_continuous(breaks = seq(4000000, 6000000, 500000),
                      labels = dollar) +
   scale_y_continuous(breaks = seq(0, 0.0000025, 0.000001)) +
-  labs(y = paste("Density of simulated outcomes (2023 ADP)\n"),
-       x = paste("\nTotal contract costs in 2023"))
+  labs(y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
+       x = paste("\nTotal contract costs in ", year, sep = ""))
 
 ```
 
@@ -2695,28 +2691,38 @@ kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r"
 
 `r if(tech.memo){'# Figures'}`
 
-```{r outcomes, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
+```{r outcomes.plot.2022, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
 
 # Make a list of grobs of your figures, set the widths as the maximum among the figures.
-#plot_grobs <- lapply(list(outcomes.plot.2022, costs.plot.2022), ggplotGrob)
+arrange.plot.fxn <- function(plotA, plotB){
+  plot_grobs <- lapply(list(plotA, plotB), ggplotGrob)
+  
+  lst <- vector(mode = "list", length = 2)
+  for(i in seq_along(plot_grobs)) {
+  lst[[i]] <- plot_grobs[[i]]$widths
+  }
+  
+  for(i in 1:length(plot_grobs)) plot_grobs[[i]]$widths <- do.call(grid::unit.pmax, lst)
+  grid.arrange(plot_grobs[[1]], plot_grobs[[2]], nrow = 2)
+}
 
-#plot_grobs_widths <- do.call(unit.pmax, plot_grobs, function(x) x[["widths"]])
-
-#for(i in 1:length(plot_grobs)) plot_grobs[[i]]$widths <- plot_grobs_widths
-
-
-
-
-grid.arrange(outcomes.plot.2022, costs.plot.2022, nrow = 2)
-grid.arrange(outcomes.plot.2023, costs.plot.2023, nrow = 2)
+arrange.plot.fxn(outcomes.plot.2022, costs.plot.2022)
 
 ```
 
-####`r fig_nums('outcomes.plot', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
+####`r fig_nums('outcomes.plot.2022', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year - 1, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
 
 #####
 
-####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
+```{r outcomes.plot.2023, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
+
+arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
+
+```
+
+####`r fig_nums('outcomes.plot.2023', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
+
+#####
 
 ```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
 suppressWarnings(print(odds.by.date.plot))   
@@ -2724,6 +2730,8 @@ suppressWarnings(print(odds.by.date.plot))
 # Figure 2 in 2019 Annual Report
  
 ```
+
+####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
 
 #####
 
