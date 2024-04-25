@@ -841,12 +841,21 @@ dmn_insp_percentile <- function(realized_insp, prog_sim, real_sim){
   
 }
 
-calculate_density <- function(sim_res, fill_color) {
+calculate_density <- function(sim_res, fill_color, adjust = NULL) {
   # sim_res <- copy(sim.programmed.stratum); fill_color <- "dodgerblue"
+  # sim_res <- copy(sim.programmed.stratum_fmp); fil_color <- "dodgerblue"; adjust = rep(2, times = 24)
   
   year_strata_domains <- attr(sim_res, "year_strata_domains")
   domain_tbl <- setorderv(unique(subset(sim_res, select = year_strata_domains)), year_strata_domains)
   tail_color <- paste0(fill_color, "4")
+  
+  # Adjust the bandwidth. Null will set the bandwidth to the default, 1
+  if(is.null(adjust)) adj <- rep(1, times = nrow(domain_tbl)) else {
+    if(length(adjust) == 1) adj <- rep(adjust, times = nrow(domain_tbl)) else {
+      if(length(adjust) != nrow(domain_tbl)) stop("'adjust' needs to be the same as `nrow(domain_tbl)`")
+      adj <- adjust
+    }
+  }
   
   domain_density <- vector(mode = "list", length = nrow(domain_tbl))
   for(i in 1:nrow(domain_tbl)) {
@@ -862,7 +871,12 @@ calculate_density <- function(sim_res, fill_color) {
     
     # Run geom_density and extract the result
     dmn_density <- ggplot_build(
-      ggplot(dmn_subset, aes(x = INSP)) + geom_density(bounds = c(0, 1))
+      #' *ORIGINAL* ggplot(dmn_subset, aes(x = INSP)) + geom_density(bounds = c(0, 1))
+      
+      ggplot(dmn_subset, aes(x = INSP)) + geom_density(bounds = c(0, 1), adjust = adj[i])
+
+  
+      
     )$data[[1]]
     dmn_density <- data.table(domain_tbl[i,], X = dmn_density$x, Y = dmn_density$y)
     
@@ -918,7 +932,7 @@ combine_distributions <- function(realized, programmed) {
 
 
 # Generate summary plots of interspersion density. Use facet_ functions to separate year and strata and FMP if desired.
-plot_interspersion_density <- function(den, real_interspersion, dmn_N){
+plot_interspersion_density <- function(den, real_interspersion, dmn_N, strata_levels){
   # den <- copy(density.stratum); real_interspersion <- copy(real_interspersion.stratum); dmn_N <- copy(dmn_N.stratum)
   
   # ggplot(den, aes(x = X)) + 
@@ -940,6 +954,9 @@ plot_interspersion_density <- function(den, real_interspersion, dmn_N){
   
   # Identify the fill colors of the distributions
   fill_breaks <- unique(den$FILL)[!(unique(den$FILL) %like% '4')]
+  den[, STRATA := factor(STRATA, levels = strata_levels)]
+  real_interspersion[, STRATA := factor(STRATA, levels = strata_levels)]
+  dmn_N[, STRATA := factor(STRATA, levels = strata_levels)]
   
   ggplot(den, aes(x = X)) + 
     geom_hline(yintercept = 0, color = "gray") + 
@@ -1097,6 +1114,102 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
   
   map_out_lst
   
+}
+
+
+# For spatial analyses, summarize the coverage achieved in each HEX_ID
+plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, strata_levels){
+  # box_def <- copy(box_def.stratum);  sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum)
+  
+  #' [NOTE] *sim.real and sim.prog must have been created by simulate_interspersion with hex_smry = T*
+  
+  year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
+  year_strata_dt <- box_def$dmn$geom_dmn_df %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
+  
+  # Extract the geometries of the HEX_IDs
+  hex_id_geom <- box_def$geom_sf %>% select(HEX_ID, geometry) %>% unique()
+  # Get the bounding box of the HEX_IDs
+  hex_bbox <- hex_id_geom %>% st_bbox()
+  
+  #' *Create summary of realized monitoring by hex_id*
+  
+  # By HEX_ID, Total the weight of trips in each HEX_ID
+  realized_mon.hex <- box_def$dt_out[, .(HEX_w_total = sum(BOX_w)), keyby = c(year_strata, "HEX_ID")]
+  # Using `realized_mon`, identify the boxes that were monitored in each year x stratum
+  realized_mon.box <- unique(copy(box_def$og_data)[TRIP_ID %in% realized_mon$TRIP_ID, .(ADP, STRATA, BOX_ID)])
+  # Identify the BOX_IDs of monitored neighborhoods
+  realized_mon.nbr <- rbindlist(lapply(
+    split(realized_mon.box, by = c(year_strata)), 
+    FUN = function(x) cbind(unique(x[, ..year_strata]), BOX_ID = unique(as.integer(unlist(box_def$nbr_lst[x$BOX_ID]))))
+  ))
+  realized_mon.nbr[, MON := T]
+  # Total the weight of trips in monitored neighborhoods
+  realized_mon.nbr <- realized_mon.nbr[
+  ][box_def$dt_out, on = c(year_strata, "BOX_ID")
+  ][, .(REAL_w = sum(BOX_w[MON], na.rm = T)), keyby = c(year_strata, "HEX_ID") ]
+  realized_mon.hex <- realized_mon.hex[realized_mon.nbr]
+  
+  #' *Realized Rates Distribution*
+  
+  # Merge the realized monitoring with the simulations using the realized rates
+  sim.real.perc <- realized_mon.hex[
+  ][attr(sim.real, "hex_smry"), on = c(year_strata, "HEX_ID")]
+  sim.real.perc[
+    # Calculate the mean across simuation iterations
+  ][, MED_w := median(HEX_w), keyby = c(year_strata, "HEX_ID")
+    # Identify the directionality of the realized value relative to the median
+  ][, DIR := sign(REAL_w - MED_w), keyby = c(year_strata, "HEX_ID")]
+  # Sum up iterations where the realized value was more extreme
+  sim.real.perc <- sim.real.perc[, .(MORE_EXTREME = fcase(
+    DIR == 1, sum(REAL_w > HEX_w)/.N,
+    DIR == -1, -sum(REAL_w < HEX_w)/.N,
+    DIR == 0, 0
+  )), keyby = c(year_strata, "HEX_ID", "HEX_w_total", "REAL_w", "DIR", "MED_w")]
+  sim.real.perc[
+    # Calculate the difference of the realized rate to the median of the simulations
+  ][, MED_DIFF := REAL_w - MED_w
+    # Merge STRATA_N in
+  ][, STRATA_N := box_def$strata_n_dt[sim.real.perc, STRATA_N, on = c(year_strata)]
+    # Flag results that were in the outer 5%
+  ][, TAIL := abs(MORE_EXTREME) > 0.95
+  ][, STRATA := factor(STRATA, levels = strata_levels)]
+  # Merge the geometry in
+  sim.real.perc <- merge(hex_id_geom, sim.real.perc, by = "HEX_ID")
+  
+  
+  # 2022
+  spatial.2022 <- ggplot(sim.real.perc %>% filter(ADP == 2022)) + 
+    facet_nested_wrap(. ~ STRATA, nrow = 3, dir = "v", labeller = labeller(STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x)))) + 
+    geom_sf(data = ak_low_res) + 
+    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
+    geom_sf(data = fmp_low_res, fill = NA, linetype = 2) + 
+    stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == 2022 & TAIL == T), shape = 21) + 
+    scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
+    coord_sf(xlim = hex_bbox[c(1,3)], ylim = hex_bbox[c(2,4)]) +
+    theme(
+      legend.position = "bottom", legend.key.width = unit(0.5, "in"),
+      axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 
+    labs(fill = "Difference in coverage\nrelative to expectation")
+  
+  # 2023
+  spatial.2023 <- ggplot(sim.real.perc %>% filter(ADP == 2023)) + 
+    facet_nested_wrap(. ~ STRATA, nrow = 3, dir = "v", labeller = labeller(STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x)))) + 
+    geom_sf(data = ak_low_res) + 
+    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
+    geom_sf(data = fmp_low_res, fill = NA, linetype = 2) + 
+    stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == 2023 & TAIL == T), shape = 21) + 
+    scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
+    coord_sf(xlim = hex_bbox[c(1,3)], ylim = hex_bbox[c(2,4)]) +
+    theme(
+      legend.position = "bottom", legend.key.width = unit(0.5, "in"),
+      axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 
+    labs(fill = "Difference in coverage\nrelative to expectation")
+  
+  
+  list(
+    st_2022 = spatial.2022,
+    st_2023 = spatial.2023
+  )
 }
 
 
