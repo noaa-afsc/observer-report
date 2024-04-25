@@ -5,6 +5,9 @@ library(data.table)   # For data wrangling, very efficient with joins, especiall
 library(dplyr)        # For data wrangling/piping with sf package
 library(sf)           # For spatial statistics
 
+#' TODO
+#' [] Make the params also store the class of each column (i.e., integer for ADP, character for stratum etc)
+
 #======================================================================================================================#
 # Data Preparation -----------------------------------------------------------------------------------------------------
 #======================================================================================================================#
@@ -675,12 +678,13 @@ calculate_expected_interspersion <- function(box_def, sample_rates){
   out
 }
 
+
 # TODO I think this function is doing what I've asked to do so far, but it probably isn't handling non-spatiotemporal
 # domains correctly! I have since updated define_boxes to have $dmn$og_data so that each TRIP_ID and the domains it 
 # belongs to are specified. 
 calculate_realized_interspersion <- function(box_def, monitored_trips) {
-  # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon); 
-  # box_def <- copy(box_def.stratum_fmp); monitored_trips <- copy(realized_mon); 
+  # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon)
+  # box_def <- copy(box_def.stratum_fmp); monitored_trips <- trips[unlist(sample_lst)]
   
   year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
   domains <- unlist(box_def$params[c("year_col", "stratum_cols", "dmn_cols")], use.names = F)
@@ -716,19 +720,21 @@ calculate_realized_interspersion <- function(box_def, monitored_trips) {
 
 
 # A wrapper for calculate_realized_interspersion, but randomly samples to create new `monitored_trips` object
-simulate_interspersion <- function(box_def, sample_rates, iter, seed) {
+simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry = F) {
   # box_def <- copy(box_def.stratum); sample_rates <- copy(programmed_rates); iter <- 1; seed <- 12345
+  # box_def <- copy(box_def.stratum_fmp); sample_rates <- copy(programmed_rates); iter <- 1000; i <- 1; seed <- 12345
   
   year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
   domains <- box_def$params$dmn_cols
   sim_lst <- vector(mode = "list", length = iter)
+  mon_lst <- vector(mode = "list", length = iter)  # A list of TRIP_IDs sampled
+  
   set.seed(seed)
   
-  #' TODO Make sure `sample rates` and `trips` are ordered the same way
-  
+  # Iterate sampling of trips, then calculate the interspersion achieved from each iteration of sampling
   for(i in seq_len(iter)){
     
-    if(i %% 100 == 0) cat(paste0(i, ", "))
+    if(i %% round(iter/10) == 0) cat(paste0(i, ", "))
     
     # Sample according to sample rates, 
     sample_lst <- apply(setorderv(sample_rates, year_strata), 1, function(x) runif(x[["STRATA_N"]]) < x[["SAMPLE_RATE"]])
@@ -736,17 +742,104 @@ simulate_interspersion <- function(box_def, sample_rates, iter, seed) {
     trips <- setorderv(unique(subset(box_def$og_data, select = c(year_strata, "TRIP_ID"))), year_strata)
     #trips$SAMPLE <- unlist(sample_lst)
     
+    mon_lst[[i]] <- trips[unlist(sample_lst), TRIP_ID]
     sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])
   } 
   
   sim_dt <- rbindlist(sim_lst, idcol = "ITER")
+  
   # sim_dt[, .(MEAN = mean(INSP)), keyby = year_strata] 
   # Capture the domains as an attribute
   setattr(sim_dt, "year_strata_domains", c(year_strata, domains))
+  setattr(sim_dt, "mon_lst", mon_lst)
   
+  # If you want a hex-level summary of each, count the number of times each BOX was sampled
+  if(hex_smry) {
+    # For each simulation, total monitored/neighboring monitored trips for each HEX_ID
+    cat("\nCompiling summary of HEX_IDs for spatial analyses...\n")
+    
+    #' TODO THIS IS WAY TOO SLOW!!! Takes almost a long as the simulations...
+    # I should simply have lists for each stratum_year, list of HEX_ID, and vector of HEX_mon. Everything else I can do afterwards!
+    
+    #' *Faster version?*
+    nbr_smry <- lapply(sim_lst, function(x) {
+      # x <- sim_lst[[1]]
+      mon_box.lst <- lapply(
+        split(setkeyv(attr(x, "sampled_boxes"), year_strata), by = c(year_strata), keep.by = F), 
+        unlist, use.names = F)
+      # Identify neighbors of monitored trips
+      # unique runs a little faster on integers rather than numeric. Should make `nbr_lst` integer...
+      mon_nbr.lst <- lapply(mon_box.lst, function(x) unique(as.integer(unlist(box_def$nbr_lst[x]))))
+    })
+    
+    # Compile results for each year_strata across iterations
+    hex_smry_dt <- rbindlist(lapply(names(nbr_smry[[1]]), function(x) {
+      # x <- year_strata.vec[[1]]
+      cat(paste0(x, ", "))
+      
+      focus_stratum <- setnames(data.table(t(unlist(strsplit(x, split = "[.]")))), year_strata)
+      focus_stratum[, ADP := as.integer(ADP)]
+      focus_stratum_dt <- box_def$dt_out[focus_stratum, on = year_strata]
+      
+      # The
+      rbindlist(lapply(
+        lapply(nbr_smry, "[[", x),
+        function(y) {
+          focus_stratum_dt[, .(HEX_w = sum(BOX_w[BOX_ID %in% y])), keyby = c(year_strata, "HEX_ID")]
+        }
+      ), idcol = "ITER")
+    }))
+    
+    setattr(sim_dt, "hex_smry", hex_smry_dt)
+
+  }
+  
+  # Return the results
   sim_dt
 }
 
+# Function for getting percentile given distribution and realized rates
+insp_percentile <- function(realized_insp, prog_sim, real_sim){
+  # realized_insp <- copy(real_interspersion.stratum_fmp); prog_sim <- copy(sim.programmed.stratum_fmp); real_sim = copy(sim.realized.stratum_fmp)
+  
+  year_strata_domains <- attr(prog_sim, "year_strata_domains")
+  
+  out_lst <- vector(mode = "list", length = nrow(realized_insp))
+  for(i in 1:length(out_lst)) {
+    
+    # Subset the data for each group
+    dat_sub <- realized_insp[i,]
+    # Define functions to calculate percentiles (feed in all simulated interspersion values from both distributions
+    ecdf_fun.prog <- ecdf(prog_sim[dat_sub[, ..year_strata_domains], on = (year_strata_domains), INSP])
+    ecdf_fun.real <- ecdf(real_sim[dat_sub[, ..year_strata_domains], on = (year_strata_domains), INSP])
+    # Calculate the percentiles and send to output list
+    out_lst[[i]] <- cbind(dat_sub, PERC_PROG = ecdf_fun.prog(dat_sub$INSP), PERC_REAL = ecdf_fun.real(dat_sub$INSP))
+  }
+  
+  setorderv(rbindlist(out_lst), year_strata_domains)[]
+  
+}
+
+dmn_insp_percentile <- function(realized_insp, prog_sim, real_sim){
+
+  # realized_insp <- copy(test); prog_sim <- copy(dmn_insp.prog); real_sim <- copy(dmn_insp.real)
+  year_pool_domains <- c("ADP", "POOL", "BSAI_GOA", "GEAR")
+  
+  out_lst <- vector(mode = "list", length = nrow(realized_insp))
+  for(i in 1:length(out_lst)) {
+    
+    # Subset the data for each group
+    dat_sub <- realized_insp[i,]
+    # Define functions to calculate percentiles (feed in all simulated interspersion values from both distributions
+    ecdf_fun.prog <- ecdf(prog_sim$dim_insp.pool[dat_sub[, ..year_pool_domains], on = (year_pool_domains), INSP])
+    ecdf_fun.real <- ecdf(real_sim$dim_insp.pool[dat_sub[, ..year_pool_domains], on = (year_pool_domains), INSP])
+    # Calculate the percentiles and send to output list
+    out_lst[[i]] <- cbind(dat_sub, PERC_PROG = ecdf_fun.prog(dat_sub$INSP), PERC_REAL = ecdf_fun.real(dat_sub$INSP))
+  }
+  
+  setorderv(rbindlist(out_lst), year_pool_domains)[]
+  
+}
 
 calculate_density <- function(sim_res, fill_color) {
   # sim_res <- copy(sim.programmed.stratum); fill_color <- "dodgerblue"
@@ -1004,5 +1097,248 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
   
   map_out_lst
   
+}
+
+
+#' Simulate domain interspersion given monitoring rates and the relationships between strata.
+#' This function would benefit from optimization, especially `calculate_realized_dmn_interspersion()`
+simulate_dmn_interspersion <- function(box_def, sample_rates, ob_em_ze_adl, iter, seed) {
+  # box_def <- copy(box_def.stratum_gear_fmp); sample_rates <- copy(programmed_rates); iter <- 1; seed <- 12345
+  
+  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
+  domains <- box_def$params$dmn_cols
+  sim_lst <- vector(mode = "list", length = iter)
+  set.seed(seed)
+  
+  # Merge the sample rates with the strata
+  sample_rates <- sample_rates[, -"STRATA_N"][box_def$strata_n_dt, on = (year_strata)]
+  
+  for(i in seq_len(iter)){
+    
+    # Print the current iteration number every 10% of progress
+    if(i %% round(iter/10) == 0) cat(paste0(i, ", "))
+    
+    # Sample according to sample rates, 
+    sample_lst <- apply(setorderv(sample_rates, year_strata), 1, function(x) runif(x[["STRATA_N"]]) < x[["SAMPLE_RATE"]])
+    # Make a data.table of trips
+    trips <- setorderv(unique(subset(box_def$og_data, select = c(year_strata, "TRIP_ID"))), year_strata)
+    #trips$SAMPLE <- unlist(sample_lst)
+    
+    sim_lst[[i]] <- calculate_realized_dmn_interspersion(box_def, trips[unlist(sample_lst)], ob_em_ze_adl)
+  } 
+  
+  sim_dt <- rbindlist(sim_lst, idcol = "ITER")
+  # sim_dt[, .(MEAN = mean(INSP)), keyby = year_strata] 
+  # Capture the domains as an attribute
+  
+  # Add Pool so we can summarize by POOL and domain
+  sim_dt[, POOL := fcase(
+    STRATA %like% "EM", "EM",
+    STRATA %like% "OB", "OB",
+    STRATA == "ZERO", "ZERO"
+  )]
+  
+  # Generate summaries by pool and domain (FMP and GEAR). 
+  sim_dt.summary <- sim_dt[
+  ][, .(
+    dmn_N = sum(sum_BOX_DMN_w), 
+    dmn_MAX_INSP = sum(max_INSP),
+    dmn_INSP = sum(dmn_INSP)
+  ), keyby = .(ITER, ADP, POOL, GEAR, BSAI_GOA)
+  ]
+  sim_dt.summary[, ':=' (INSP = dmn_INSP / dmn_N, MAX_INSP = dmn_MAX_INSP / dmn_N)]
+  
+  setattr(sim_dt, "year_pool_domains", c(box_def$params$year_col, "POOL", domains))
+  setattr(sim_dt.summary, "year_pool_domains", c(box_def$params$year_col, "POOL", domains))
+  
+  list(
+    dmn_insp.strata = sim_dt,
+    dim_insp.pool  = sim_dt.summary
+  )
+}
+
+calculate_realized_dmn_interspersion <- function(box_def, monitored_trips, acceptor_donor_lst) {
+  # box_def <- copy(box_def.stratum_gear_fmp); monitored_trips <- copy(realized_mon); acceptor_donor_lst <- copy(ob_em_ze_adl)
+  
+  # Identify the box definition parameters for quick grouping
+  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
+  domains <- unlist(box_def$params[c("dmn_cols")], use.names = F)
+  yst <- c(year_strata, domains)
+  
+  # For each domain, identify sampled boxes and neighbors
+  box_sample <- copy(box_def$dmn$og_data)[monitored_trips, on = c(year_strata,  "TRIP_ID")]
+  box_sample <- unique(subset(box_sample, select = c(yst, "TIME", "HEX_ID", "BOX_ID")))
+  
+  dmn_sample <- split(box_sample, by = c(yst))
+  nbr_sample <- lapply(dmn_sample, function(x) box_def$nbr_lst[ x[["BOX_ID"]] ])
+  nbr_sample <- lapply(nbr_sample, function(x) unique(unlist(x)))
+  
+  yst_col <- paste(yst, collapse = ".")
+  
+  nbr_sample_dt <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = yst_col)[
+  ][, (yst) := tstrsplit(get(yst_col),  split = "[.]")
+  ][, (yst_col) := NULL
+  ][, ADP := as.integer(ADP)][]
+  
+  # Get the total count of trips in each domain
+  strata_domain_n <- box_def$dmn$strata_dmn_n_dt
+  
+  # Use the acceptor_donor_lst to determine which `acceptor` boxes were sampled by `donors`
+  
+  stratum_out_lst <- vector(mode = "list", length = length(acceptor_donor_lst))
+  
+  for(i in 1:length(acceptor_donor_lst)) {
+    # i <- 1
+    
+    # Identify the stratum accepting monitoring data
+    acceptor_stratum <- box_def$dmn$strata_dt[i,]
+    # Get the domain summaries of the acceptor stratum
+    acceptor_stratum.domain <- box_def$dmn$box_dmn_smry_dt[acceptor_stratum, on = box_def$params$stratum_cols]
+    
+    # Identify which strata are donors to the acceptor
+    donor_strata <- box_def$dmn$strata_dt[acceptor_donor_lst[[acceptor_stratum$STRATUM_ID]], ]
+    # Identify all boxes with monitoring by the donor strata
+    donor_strata.boxes <- nbr_sample_dt[donor_strata, on = box_def$params$stratum_cols]
+    
+    # Identify which domains are relevant to the stratum
+    focus_domain_dt <- unique(subset(acceptor_stratum.domain, select = domains))
+    
+    focus_domain_out_lst <- vector(mode = "list", length = nrow(focus_domain_dt))
+    
+    # For each domain, total up trips that were neighboring monitoring from the donor strata
+    for(j in 1:nrow(focus_domain_dt)) {
+      # j <- 1
+      focus_domain <- focus_domain_dt[j,]
+      # Subset the acceptor stratum's boxes to those with fishing effort
+      acceptor.domain.sub <- acceptor_stratum.domain[focus_domain, on = domains][BOX_DMN_n > 0]
+      # Identify which boxes in the domain were monitored by donors
+      donor.domain.monitored_boxes <- unique(donor_strata.boxes[focus_domain, on = domains]$BOX_ID)
+      # Flag the boxes that were monitored by donors
+      acceptor.domain.sub[, MON := BOX_ID %in% donor.domain.monitored_boxes]
+      # Flag the boxes that had potential to be monitored by donors
+      potential_donor.boxes <- unique(box_def$dmn$og_data[donor_strata, on = .(STRATA)][focus_domain, on = c(domains)]$BOX_ID)
+      potential_donor.neighbors <- unique(unlist(box_def$nbr_lst[potential_donor.boxes]))
+      acceptor.domain.sub[, IN_FRAME := BOX_ID %in% potential_donor.neighbors]
+      
+      focus_domain_out_lst [[j]] <- acceptor.domain.sub[
+      ][, .(
+        dmn_INSP = sum(BOX_DMN_w[MON]),  # actually realized trips neighboring monitored donors
+        max_INSP = sum(BOX_DMN_w[IN_FRAME]),  # theoretical max if all donor trips were sampled
+        sum_BOX_DMN_w = sum(BOX_DMN_w)   # Total trips of domain
+      ), keyby = c(year_strata, domains)
+      ]
+      
+    }
+    
+    stratum_out_lst[[i]] <- rbindlist(focus_domain_out_lst)
+    
+  }
+  
+  out <- rbindlist(stratum_out_lst)
+  setattr(out, "sampled_boxes", nbr_sample_dt)
+  out
+  
+}
+
+# Same as calculate_density(), but for domains by pool
+calculate_dmn_density <- function(sim_res, fill_color) {
+  # sim_res <- copy(dmn_insp.prog); fill_color <- "dodgerblue"
+  
+  year_pool_domains  <- attr(sim_res$dim_insp.pool, "year_pool_domains")
+  
+  domain_tbl <- setorderv(unique(subset(sim_res$dim_insp.pool, select =  year_pool_domains)),  year_pool_domains)
+  tail_color <- paste0(fill_color, "4")
+  
+  domain_density <- vector(mode = "list", length = nrow(domain_tbl))
+  for(i in 1:nrow(domain_tbl)) {
+    
+    dmn_subset <- sim_res$dim_insp.pool[domain_tbl[i,], on =  year_pool_domains ]
+    dmn_quantile <- quantile(dmn_subset$INSP, probs = c(0.025, 0.975))
+    dmn_median <- quantile(dmn_subset$INSP, probs = 0.5)
+    
+    # Due to rounding errors, INSP can be above 1.0. Truncate such cases, but make a check that INSP wasn't incorrectly
+    # calculated to be above 1.
+    if(nrow(dmn_subset[INSP > 1 + 1e5])) stop( paste(unname(domain_tbl[i,]), collapse = " "), " had INSP values > 1!")
+    dmn_subset[INSP > 1, INSP := trunc(INSP, 0)]
+    
+    # Run geom_density and extract the result
+    dmn_density <- ggplot_build(
+      ggplot(dmn_subset, aes(x = INSP)) + geom_density(bounds = c(0, 1))
+    )$data[[1]]
+    dmn_density <- data.table(domain_tbl[i,], X = dmn_density$x, Y = dmn_density$y)
+    
+    # Identify the quantiles and assign them to each datapoint
+    dmn_density$quant = factor(findInterval(dmn_density$X, dmn_quantile))
+    # Define plotting fill colors and plotting groups
+    dmn_density[, FILL := as.factor(fcase(quant %in% c(0, 2), tail_color, quant == 1, fill_color))]
+    
+    # Extract the cutoffs of each group
+    cutoffs <- dmn_density[, .SD[c(1, .N),], keyby = c(year_pool_domains, "quant", "FILL")]
+    # For the lower , add the x values of the tails 0 and 3
+    quant_1.min <- cutoffs[quant == 0][.N][, ':=' (FILL = fill_color, quant = 1)][]
+    quant_1.max <- cutoffs[quant == 2][1][, ':=' (FILL = fill_color, quant = 1)][]
+    
+    # Identify the median and split the middle.
+    quant_1 <- rbind(quant_1.min, dmn_density[quant == 1], quant_1.max)
+    quant_1$GROUP <- findInterval(quant_1$X, dmn_median) + 1
+    quant_1_g2 <- copy(quant_1[GROUP == 1][.N])
+    quant_1_g2[, GROUP := 2]
+    quant_1 <- setorder(rbind(quant_1, quant_1_g2), X, GROUP)
+    
+    quant_0 <- dmn_density[quant == 0][, GROUP := 0][]
+    quant_2 <- dmn_density[quant == 2][, GROUP := 3][]
+    
+    # Put it all back together. If distributions are so tight that there are not 3 quantile groups, omit empty groups.
+    dmn_density <- rbind(quant_0, quant_1, quant_2)
+    
+    domain_density[[i]] <-  dmn_density
+  }
+  domain_density <- rbindlist(domain_density)
+  domain_density[, GROUP := as.factor(GROUP)]
+  
+  setattr(domain_density, "year_pool_domains", year_pool_domains)
+  domain_density[]
+}
+
+# same thing but for dmn interspersion. Make the function more general (see which attribute exists)
+# Combine both datasets, scaling them so that y-axis is centered
+combine_dmn_distributions <- function(realized, programmed) {
+  # realized <- copy(realized.density); programmed <- copy(programmed.density)
+  
+  year_strata_domains <- attr(realized, "year_pool_domains")
+  
+  programmed_flipped <- copy(programmed)
+  programmed_flipped[, Y := -Y]
+  dist_dat <- rbind(cbind(DIST = "REAL", realized), cbind(DIST = "PROG", programmed_flipped))
+  
+  dist_dat[, MAX_ABS := max(abs(Y)), keyby = year_strata_domains]
+  dist_dat[, Y := Y/MAX_ABS]
+  setattr(dist_dat, "year_pool_domains", year_strata_domains)
+  dist_dat
+}
+
+# Generate summary plots of interspersion density. Use facet_ functions to separate year and strata and FMP if desired.
+plot_dmn_interspersion_density <- function(den, real_interspersion, dmn_N){
+  # den <- copy(dmn_insp.density.combined); real_interspersion <- copy(realized_dmn_interspersion.summary); dmn_N <- copy(dmn_intperspersion.dmn_N )
+  
+  # Identify the fill colors of the distributions
+  fill_breaks <- unique(den$FILL)[!(unique(den$FILL) %like% '4')]
+  
+  ggplot(den, aes(x = X)) + 
+    geom_hline(yintercept = 0, color = "gray") + 
+    geom_ribbon(aes(ymin = 0, ymax = Y, fill = FILL, group = interaction(DIST, GROUP)), color = "black", outline.type = "full", alpha = 0.8) + 
+    geom_vline(data = real_interspersion, aes(xintercept = INSP, linetype = "Actually Realized"), color = "purple", linewidth = 0.75) + 
+    theme(
+      axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+      panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank() ) + 
+    ylim(c(-1, 1)) + 
+    labs(x = "Interspersion", y = "Density") +  
+    scale_fill_identity(
+      name = "Monitoring Rate", guide = "legend",
+      breaks = fill_breaks, labels = c('Realized', "Programmed")) +
+    scale_linetype_manual(name = NULL, values = 2 ) +
+    theme(legend.position = "bottom", legend.key = element_rect(fill = "white")) + 
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
+    geom_text(data = dmn_N, aes(label = dmn_N, x = -Inf, y = Inf), hjust = -0.1, vjust = 1.1, size = 3.5)
 }
 
