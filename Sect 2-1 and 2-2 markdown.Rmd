@@ -7,17 +7,16 @@ title: "Annual Report Fee Summary Draft"
 # --------------------------------------------------------------------------------------------------------------- #
 # Program:Sect_2-1and2-2markdown.Rmd                                                                              #
 # Project:Observer Program Annual Report                                                                          #
-# Location: S:\Observer Program Annual Report\2022_Annual_Report\Chapt2_Fees&Budget\                              #
-#         (this is the same as G:\FMGROUP\Observer Program Annual Report\2022_Annual_Report\Chapt2_Fees&Budget\ ) #
+# Location: S:\Observer Program Annual Report\2023_Annual_Report\Chapt2_Fees&Budget\                              #
+#         (this is the same as G:\FMGROUP\Observer Program Annual Report\2023_Annual_Report\Chapt2_Fees&Budget\ ) #
 # Location: H:\Observer Program\Annual Report Local GIT Projects\Obs Fee Summary\                                 #
 # Objective:                                                                                                      #
-#   - Summarize fee liability by area, gear, vessel length, and species for 2022 Annual Report                    #
-#   - This code was brainstormed in "2022 Fee Query - DRAFT based on warehouse.sql"                               #
-#     1) it doesn't appear that any fee liabilities were waived by OMD                                            #
+#   - Summarize fee liability by area, gear, vessel length, and species for 2023 Annual Report                    #
+#   - This code was brainstormed in "2023 Fee Query - DRAFT based on warehouse.sql"                               #
 #                                                                                                                 #
 #   Note: Do not include administrative fees or interest for late payments.                                       #
 #                                                                                                                 # 
-#   20,840 records for $4,313,676.32                                                                              #
+#   20,840 records for $4,379,166.                                                                              #
 #                                                                                                                 #
 # Input:                                                                                                          #
 #   - akfish_crf.fee_detail_gf                                                                                    #
@@ -686,6 +685,9 @@ Rounding error sometimes results in slight differences in row and column totals.
 
 
 
+
+
+
 ```{r fees_by_program, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Consider a table that summarizes fees by: At-sea observers, Fixed gear EM, trawl EM
@@ -822,49 +824,57 @@ fee_strata <- dbGetQuery(channel_cas, strata_query)
 
 # Consider a bit of clean-up (some records don't have a strata OR were incorrectly charged fees):
 working_strata <- fee_strata %>% 
-  mutate(SELECTION_POOL = ifelse(is.na(SAMPLING_STRATA_CODE) & LOA_GROUP == '<40', 'No Selection',
-                                 ifelse(is.na(SAMPLING_STRATA_CODE) & LOA_GROUP != '<40', 'Observer Trip Selection',
-                                        ifelse(SAMPLING_STRATA_CODE %in% c('H', 'P', 'TR'), 'Observer Trip Selection', 
-                                               ifelse(SAMPLING_STRATA_CODE %in% c('EM_H', 'EM_P'), 'Fixed-Gear EM',
-                                                      ifelse(SAMPLING_STRATA_CODE == 'N', 'No Selection', 
-                                                             ifelse(SAMPLING_STRATA_CODE == 'EM_TrawlPartialCoverage', 'Trawl EM', 
-                                                                    # I would probably lump the full coverage error as Observer Trip Selection:
-                                                                    ifelse(SAMPLING_STRATA_CODE == 'F', 'Error', 'Ack')))))))) %>% 
-  mutate(MONITORING = ifelse(SELECTION_POOL %in% c('Observer Trip Selection', 'No Selection'), 'At-Sea Observers', 
-                              ifelse(SELECTION_POOL %in% c('Fixed-Gear EM', 'Trawl EM'), 'Electronic Monitoring', 'Other'))) 
+  mutate(FEE_STRATA = ifelse(is.na(SAMPLING_STRATA_CODE) & (LOA_GROUP == '<40' | GEAR_CODE == 'JIG') , 'No Selection',
+                             ifelse(is.na(SAMPLING_STRATA_CODE) & LOA_GROUP != '<40' & GEAR_CODE == 'HAL', 'Hook and Line',
+                                    ifelse(is.na(SAMPLING_STRATA_CODE) & LOA_GROUP != '<40' & GEAR_CODE == 'POT', 'Pot',
+                                           ifelse(SAMPLING_STRATA_CODE == 'H', 'Hook and Line',
+                                                  ifelse(SAMPLING_STRATA_CODE == 'P', 'Pot',
+                                                         ifelse(SAMPLING_STRATA_CODE == 'TR', 'Trawl', 
+                                                                ifelse(SAMPLING_STRATA_CODE %in% c('EM_H', 'EM_P'), 'Fixed-Gear EM',
+                                                                       ifelse(SAMPLING_STRATA_CODE == 'EM_TrawlPartialCoverage', 'Trawl EM', 
+                                                                              ifelse(SAMPLING_STRATA_CODE == 'N', 'No Selection', 'Other')))))))))) %>%
+   mutate(SELECTION_POOL = ifelse(FEE_STRATA %in% c('Hook and Line', 'Pot', 'Trawl'), 'Observer Trip Selection',
+                                  ifelse(FEE_STRATA == 'No Selection', 'No Monitoring',
+                                         ifelse(FEE_STRATA %in% c('Fixed-Gear EM', 'Trawl EM'), 'Electronic Monitoring', 'Other')))) %>% 
+   mutate(MONITORING = ifelse(FEE_STRATA %in% c('Hook and Line', 'Pot', 'Trawl'), 'At-Sea Observers',
+                              ifelse(FEE_STRATA == 'No Selection', 'No Monitoring',
+                                     ifelse(FEE_STRATA %in% c('Fixed-Gear EM', 'Trawl EM'), 'Electronic Monitoring', 'Other')))) 
 
 
-# Summarize fees by selection pool and FMP area:
+# Summarize fees by strata and FMP area:
 pool_summary <- working_strata %>% 
-  group_by(MONITORING, SELECTION_POOL, FMP_AREA) %>% 
+  group_by(MONITORING, SELECTION_POOL, FEE_STRATA, FMP_AREA) %>% 
   summarise(FEE = sum(FEE_AMOUNT), .groups = 'drop') %>% 
-  # Append Selection Pool subtotals:
+  # Append strata 'All Area' subtotals:
   bind_rows(working_strata %>% 
-              group_by(MONITORING, SELECTION_POOL) %>% 
+              group_by(MONITORING, SELECTION_POOL, FEE_STRATA) %>% 
               summarise(FMP_AREA = 'All Areas',
                         FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
-  # Append FMP Area subtotals:
+  # Append Selection Pool subtotals:
   bind_rows(working_strata %>% 
-             group_by(MONITORING, FMP_AREA) %>% 
-             summarise(SELECTION_POOL = 'All Pools',
-                       FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
-  # Append a monitoring pool subtotal:
+             group_by(MONITORING, SELECTION_POOL, FMP_AREA) %>% 
+             summarise(FEE_STRATA = 'All Strata',
+                       FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>%  
+  # Append Selection Pool 'All Area' subtotals:
   bind_rows(working_strata %>% 
-              group_by(MONITORING) %>% 
-              summarize(SELECTION_POOL = 'All Pools',
-                        FMP_AREA = 'All Areas',
-                        FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
+             group_by(MONITORING, SELECTION_POOL) %>% 
+             summarise(FEE_STRATA = 'All Strata',
+                       FMP_AREA = 'All Areas',
+                       FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>%  
+ 
   # Append an area subtotal:
   bind_rows(working_strata %>% 
               group_by(FMP_AREA) %>% 
               summarize(MONITORING = 'All Monitoring',
                         SELECTION_POOL = 'All Partial Coverage',
+                        FEE_STRATA = 'All Strata',
                         FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
-  # Append a total:
+   # Append a total:
   bind_rows(working_strata %>% 
               group_by(.) %>% 
               summarise(MONITORING = 'All Monitoring',
                         SELECTION_POOL = 'All Partial Coverage',
+                        FEE_STRATA = 'All Strata',
                         FMP_AREA = 'All Areas',
                         FEE = sum(FEE_AMOUNT), .groups = 'drop')) %>% 
   # Translate into a wide format:
@@ -872,14 +882,17 @@ pool_summary <- working_strata %>%
   # Sort:
   mutate(SORTORDER1 = ifelse(MONITORING == 'At-Sea Observers', 1,
                             ifelse(MONITORING == 'Electronic Monitoring', 2, 
-                                   ifelse(MONITORING == 'Other', 3, 4)))) %>%
-  mutate(SORTORDER2 = ifelse(SELECTION_POOL == 'Observer Trip Selection', 1,
-                             ifelse(SELECTION_POOL == 'No Selection', 2,
-                                    ifelse(SELECTION_POOL == 'Fixed-Gear EM', 3, 
-                                           ifelse(SELECTION_POOL == 'Trawl EM', 4, 
-                                                  ifelse(SELECTION_POOL == 'All Pools', 6, 5)))))) %>% 
+                                   ifelse(MONITORING == 'No Monitoring', 3, 4)))) %>% 
+  mutate(SORTORDER2 = ifelse(FEE_STRATA == 'Hook and Line', 1,
+                              ifelse(FEE_STRATA == 'Pot', 2,
+                                     ifelse(FEE_STRATA == 'Trawl', 3,
+                                            ifelse(FEE_STRATA == 'Fixed-Gear EM', 1,
+                                                   ifelse(FEE_STRATA == 'Trawl EM', 2, 
+                                                          ifelse(FEE_STRATA == 'No Selection', 1, 4))))))) %>% 
   arrange(SORTORDER1, SORTORDER2) %>% 
-  select(-SORTORDER1, -SORTORDER2)
+  select(-SORTORDER1, -SORTORDER2) %>% 
+  # drop unncessary No Selection subtotal:
+  filter(!(SELECTION_POOL == 'No Monitoring' & FEE_STRATA == 'All Strata'))
 
 
 
@@ -888,29 +901,30 @@ pool_summary <- working_strata %>%
 
 **INSERT PAGE BREAK HERE:**
 
-Table 2-5. -- Observer fees[^9] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by monitoring type, selection pool, and area.[^10]
+Table 2-5. -- Observer fees[^9] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by monitoring type, strata or selection pool, and area.[^10]
 
 
 ```{r table4, echo=FALSE}
 
 # Create a table for the Fee Summaries by selection pool:
 
-flextable(pool_summary %>% select(MONITORING, SELECTION_POOL, GOA, BSAI, 'All Areas')) %>% 
+flextable(pool_summary %>% select(MONITORING, SELECTION_POOL, FEE_STRATA, GOA, BSAI, 'All Areas')) %>% 
   # Adjust column header labels where necessary:
   set_header_labels(MONITORING = "Monitoring",
-                    SELECTION_POOL = "Selection Pool")  %>% 
+                    SELECTION_POOL = "Selection Pool",
+                    FEE_STRATA = 'Strata')  %>% 
   # Format the currency columns:
-  colformat_double(j = c(3,4,5), big.mark = ",", prefix = "$", digits = 0) %>% 
+  colformat_double(j = c(4,5,6), big.mark = ",", prefix = "$", digits = 0) %>% 
   # Bold the headers and monitoring totals:
   bold(part = "header") %>% 
   bold(j = 1) %>% 
-  bold(i = 7) %>%  #THIS SHOULD BE THE LAST ROW number 
+  bold(i = 9) %>%  #THIS SHOULD BE THE LAST ROW number 
   # Merge the monitoring labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Add dashed horizontal lines before monitoring subtotals:
-  border(i = c(2,5), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(3,6), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add solid horizontal lines after monitoring subtotals and add "fix" needed because of cell merges:
-  border(i = c(3,6), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = c(4,7,8), part = "body", border.bottom = fp_border(style = "solid")) %>% 
   fix_border_issues(part = "body") #%>% 
   
 
@@ -932,8 +946,8 @@ flextable(pool_summary %>% select(MONITORING, SELECTION_POOL, GOA, BSAI, 'All Ar
 rm(list= ls()[!(ls() %in% c('fee_detail','fee_total', 'all_areas', 'goa', 'bsai', 'fee_strata', 'pool_summary'))])
 
 # Export data file:
-#save(fee_detail, fee_total, all_areas, goa, bsai,
-#     file = paste0("Observer_Fee_Data_", as.numeric(format(Sys.Date(), "%Y"))-1,".RData"))
+save(fee_detail, fee_total, all_areas, goa, bsai,
+     file = paste0("Observer_Fee_Data_", as.numeric(format(Sys.Date(), "%Y"))-1,".RData"))
 
 ```
 
