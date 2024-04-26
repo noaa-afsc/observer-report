@@ -916,18 +916,18 @@ odds.by.date.plot <-
   geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
   geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
   geom_line(aes(y = running.pct), linewidth = 1.5) +
-  scale_color_manual(name = "Rate Type", values = c("gray70", "black")) +
+  scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
   ylab("Cumulative coverage percent\n") +
   #coord_cartesian(ylim = c(0, 70)) +
   xlab("\nDate") +
-  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray70") + 
+  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray50") + 
   geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0), sides = "t") + 
   #' *==================For multi-year plotting==================================*
   facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free") +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
             hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
-            hjust = 1.02, vjust = 3.2, size = 3, color = "gray60", check_overlap = TRUE) +
+            hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
             hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
   #' *===================For single year plotting================================*
