@@ -487,6 +487,10 @@ trip.budget.table.2023 <-
   mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
          diff = format(diff, digits = 1, nsmall = 0))
 
+#' *2023 fix: changed EM TRW EFP to value presented in 2023 ADP*
+#' *Calculated value was using 30% (what is set in the sampling plan), but ADP used 33% (what is done in practice)*
+trip.budget.table.2023[3, 2] <- 486
+
 ```
 
 Each year, the NMFS sets an annual budget for the deployment of partial coverage at-sea observers in terms of cost and observer days. The partial coverage observer budget for `r year` was set at \$`r formatC(BUDGET.2023, format = "d", big.mark = ",")` and `r formatC(AvailableYR.2023, format = "d", big.mark = ",")` days in the `r year` ADP.
