@@ -82,7 +82,7 @@ predicted <- Nnd_tbl[
 ][, lapply(.SD, mean), keyby = .(YEAR, POOL, STRATA), .SDcols = c("Nh", "nh", "dh")] %>%
   # Remove zero stratum
   filter(POOL != "ZE") %>% 
-  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
+  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP", #' *2023 EM TRW EFP number off from ADP report value for some reason*
                             STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
                             STRATA == "POT" & POOL == "OB" ~ "OB POT",
                             STRATA == "HAL" & POOL == "OB" ~ "OB HAL",

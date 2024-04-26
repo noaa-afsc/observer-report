@@ -21,11 +21,6 @@ editor_options:
 # Load packages and functions 
 source("3_helper.R")
 
-# Set table output default settings
-set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
-
-# Set order of strata
-strata.order <- c("Full", "OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT", "EM TRW EFP", "Zero coverage", "Total")
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -42,6 +37,12 @@ options(scipen = 10000)
 
 # Avoid dplyr summarise warnings
 options(dplyr.summarise.inform = FALSE)
+
+# Set table output default settings
+set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
+
+# Set order of strata
+strata.order <- c("Full", "OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT", "EM TRW EFP", "Zero coverage", "Total")
 
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included and formatting of table/figure captions.
@@ -390,7 +391,7 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 
 ```{r budget_eval, include=FALSE}
 
-#' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata in 2020.*
+#' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata in 2022 and 2023.*
 #' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
 #' this stratum, and using a 33% of sea days as a proxy for 'plant days' is not a good prediction, nor is adding up
 #' sea days of monitored trips a logical estimate of actuals.
