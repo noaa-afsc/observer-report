@@ -90,7 +90,11 @@ predicted <- Nnd_tbl[
                             STRATA == "EM_HAL" ~ "EM HAL",
                             TRUE ~ STRATA)) %>%
   rename(pred_days = dh) %>%
-  select(!c(POOL, Nh, nh)) 
+  select(!c(POOL, Nh, nh))
+
+#' *2023 fix: changed EM TRW EFP to value presented in 2023 ADP*
+#' *Calculated value was using 30% (what is set in the sampling plan), but ADP used 33% (what is done in practice)*
+predicted[8, 3] <- 486
 
 # * Valhalla ----
 
