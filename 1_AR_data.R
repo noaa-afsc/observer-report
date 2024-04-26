@@ -92,10 +92,6 @@ predicted <- Nnd_tbl[
   rename(pred_days = dh) %>%
   select(!c(POOL, Nh, nh))
 
-#' *2023 fix: changed EM TRW EFP to value presented in 2023 ADP*
-#' *Calculated value was using 30% (what is set in the sampling plan), but ADP used 33% (what is done in practice)*
-predicted[8, 3] <- 486
-
 # * Valhalla ----
 
 #' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.

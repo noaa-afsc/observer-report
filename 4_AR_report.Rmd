@@ -396,6 +396,10 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
 #' this stratum, and using a 33% of sea days as a proxy for 'plant days' is not a good prediction, nor is adding up
 #' sea days of monitored trips a logical estimate of actuals.
 
+#' *2023 fix: changed EM TRW EFP to value presented in 2023 ADP*
+#' *Calculated value was using 30% (what is set in the sampling plan), but ADP used 33% (what is done in practice)*
+predicted[8, 3] <- 486
+
 #' `------------2022--------------`
 
 # Evaluate why we were off budget
