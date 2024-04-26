@@ -1552,7 +1552,7 @@ Temporal.plot <-
   geom_line(aes(y = n.expected), col = "gray") +
   geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
   geom_rug(aes(x = Date.outside), sides = "b") +
-  facet_grid(STRATA ~ YEAR, scales = "free", space = "free_x") +
+  facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free", space = "free_x") +
     # Annotate p-values
   geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
             hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
