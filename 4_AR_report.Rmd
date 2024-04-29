@@ -1819,12 +1819,12 @@ for (i in as.character(unique(results$STRATA))) {
 `r fig_nums('effort_monitored_emob_HAL', display="cite")`
 `r fig_nums('effort_monitored_emob_POT', display="cite")` -->
 
-##Trip Metrics  
+## Trip Metrics  
 This section analyses whether monitored trips are similar to unmonitored trips using a permutation test (a.k.a., randomization test). This test evaluates the question “How likely is the difference we found if these two groups have the same distribution (in the metric we are comparing)?” Permutation tests compare the actual difference found between two groups to the distribution of many differences derived by randomizing the labels defining the two groups (e.g., monitored and unmonitored). Difference values in the permutation test were calculated by subtracting the mean metric value for the “No” condition from the mean metric value for the “Yes” condition. For example, the difference between vessel lengths in a permutation test for a monitoring effect would be the mean value for unmonitored trips subtracted from the mean value for all monitored trips. By randomizing group assignments, the combined distribution of randomized differences represents the sampling distribution under the null hypothesis that the two groups are equal. In this report, 1,000 randomized trials were run for the permutation test. The *p*-value from the test is calculated as the number of randomized trials with greater absolute differences than the actual difference divided by the number of randomized trials. Similar to the other statistical tests used in this report, low *p*-values (< 0.05) indicate unlikely events under the hypothesis of equality and are therefore considered evidence against that hypothesis. As stated previously, a Bonferroni adjustment has been applied to these *p*-values by multiplying original *p*-values by the number of metrics being tested (six in this case). These adjusted *p*-values are then compared to the 0.05 significance level. In an attempt to improve clarity, although five values are calculated in the test; 1) the difference between groups, 2) the mean difference between groups from randomized trials, 3) #1 expressed as a percentage of the mean value of the metric being tested, 4) #2 expressed as a percentage of the mean value of the metric being tested, and 5) the *p*-value of the test, only values (1), (3) and (5) are presented.      
 
 Six trip metrics were examined in the permutation test. These metrics were as follows: the number of NMFS Areas visited in a trip, trip duration (days), the weight of the landed catch (t), the vessel length (ft), the number of species in the landed catch, and the proportion (0 to 1) of the total catch that is made up of the most predominant species (pMax). The metric ‘vessel length’ is used to help interpret the results from ‘weight of landed catch’ since fishing power is positively correlated to vessel length. Specifically, differences in weight *and* length are interpreted as a failure to achieve a random sample of vessels of different sizes, whereas differences in weight only lend more evidence that there was a monitoring effect. The number of species within the landed portion of the catch is a measure of species richness. Our pMax metric follows the concepts behind Hill’s diversity number N1 that depicts the number of abundant species (Hill 1973) and is a measure of how “pure” catch is since a value of one would indicate that only the predominant (and presumed desirable) species was landed.  
 
-###Were monitored trips similar to unmonitored trips?  
+### Were monitored trips similar to unmonitored trips?  
 The sample sizes available and the esults of permutation tests are presented in <!--`r tbl_nums('OBSERVED_FLAG.results', display = "cite")`-->.  A visual depiction of individual results of this permutation test for the *HAL*, *POT - No Tender*, and *TRW - No Tender* strata is given in <!--`r fig_nums('Obs.perm.plot', display="cite")`--> for illustration purposes.     
  
 ```{r observed_flag_permutation, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
@@ -2010,7 +2010,7 @@ freq_geartender <-
 
 One of the analyses done by the permutation test is to compare trip lengths (in days) between monitored and unmonitored trips and determine whether there were significant differences. However, these permutation tests do not visually map the data for monitored and tendered states together. To accomplish this, a plot of the trip durations for these states is included as <!--`r fig_nums('freq_geartender', display = "cite")`-->. These plots illustrate *HAL* non-tendered trips were shorter in duration when observed, which was also seen in permutation tests.  In addition, tendered *POT* and *TRW* trips of more than ten days appear to have been observed at a greater frequency than unobserved trips.  If these longer trips also were associated with greater landed weight, then this would explain the permutation results for these strata that showed greater landed weights on observed trips compared to unobserved trips.    
 
-#Adequacy of the Sample Size
+# Adequacy of the Sample Size
 
 In a well-designed sampling program, the monitoring rate should be large enough to reasonably ensure that the range of fishing activities and characteristics are represented in the sample data. The Catch Accounting System post-stratifies data into groups of fishing activities with similar trip characteristics such as gear, trip targets, and NMFS Area (Cahalan et al. 2014). At low numbers of trips and low sampling rates, the probability of no monitoring data within a particular post-stratum is increased and may result in expansions of bycatch rates from one type of fishing activity against landings for a different type of fishing activity. This will result in biased estimates of bycatch. For this reason, it is important to have a large enough sample (monitored trips and vessels) to have reasonable expectation of monitoring all types of fishing.           
 
@@ -2075,13 +2075,13 @@ Over the course of an entire year, some NMFS Areas have low fishing effort and a
 
 A new analysis presented in Appendix B – Gap Analysis examines the deployment of observers and EM systems at finer spatiotemporal scales than presented in Chapter 3. This analysis evaluates the availability of monitoring coverage within and between the partial coverage selection pools and highlights instances where sampling effort was disproportionately distributed in space and time between post-strata defined by gear, NMFS Area, and dominant species landed (trip target). For example, the spatial patterns in the *HAL* stratum appear to be due to disproportionately high monitoring rates in the GOA for trips targeting halibut and lower monitoring rates for halibut-target trips in the BSAI, especially in the Aleutian Island areas. Additionally, the low number of observed trips in area 620 in the *TRW – No Tender* stratum was due to disproportionately low monitoring rates among arrowtooth-target trips where only 2 of 42 trips were observed (Appendix B – Gap Analysis).  
 
-#Response to Council and SSC Comments
+# Response to Council and SSC Comments
 
 The SSC has requested that a specific section with responses to SSC comments be provided in the written report, as is done for SAFE documents. This section addresses FMSC responses (in italics) to comments relevant to this chapter made by the Council and the SSC after the presentation of the `r year - 1` Annual Report during the June `r year` Council meeting. 
 
-#FMSC Recommendations to Improve Data Quality  
+# FMSC Recommendations to Improve Data Quality  
   
-##Recommendations from the `r year - 1` Annual Deployment Review
+## Recommendations from the `r year - 1` Annual Deployment Review
 
 The Fisheries Monitoring Science Committee (formerly the Observer Science Committee) made the following recommendations in its `r year - 1` review of observer deployment to be considered in developing the `r year + 1` ADP (NMFS `r year`b). Following each recommendation is the italicized outcome of that recommendation.  
 
