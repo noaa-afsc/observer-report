@@ -248,10 +248,10 @@ outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
   geom_vline(xintercept = AvailableYR.2022, lty = 2, col = "black") +
   geom_vline(xintercept = ActualYR.2022, lty = 1, col = "blue") +
   annotate("text", x = AvailableYR.2022 - 35, y = 0.002,
-            label = paste("Available Day Budget: ", round(AvailableYR.2022), sep = ""),
+            label = paste("Available day budget: ", round(AvailableYR.2022), sep = ""),
             col = "black", angle = 90) + 
   annotate("text", x = ActualYR.2022 - 35, y = 0.002,
-           label = paste("Actual Days Paid: ", ActualYR.2022, sep = ""),
+           label = paste("Actual days paid: ", ActualYR.2022, sep = ""),
            col = "blue", angle = 90) +
   theme_bw() +
   theme(text = element_text(size = 14),
@@ -271,10 +271,10 @@ outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
   geom_vline(xintercept = AvailableYR.2023, lty = 2, col = "black") +
   geom_vline(xintercept = ActualYR.2023, lty = 1, col = "blue") +
   annotate("text", x = AvailableYR.2023 + 35, y = 0.002,
-            label = paste("Available Day Budget: ", round(AvailableYR.2023), sep = ""),
+            label = paste("Available day budget: ", round(AvailableYR.2023), sep = ""),
             col = "black", angle = 90) + 
   annotate("text", x = ActualYR.2023 - 35, y = 0.002,
-           label = paste("Actual Days Paid: ", ActualYR.2023, sep = ""),
+           label = paste("Actual days paid: ", ActualYR.2023, sep = ""),
            col = "blue", angle = 90) +
   theme_bw() +
   theme(text = element_text(size = 14),
@@ -311,10 +311,10 @@ costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
   geom_vline(xintercept = BUDGET.2022, lty = 2, col = "black") +
   geom_vline(xintercept = days_paid_sum.2022$Total.Dollars, lty = 1, col = "darkgreen") +
   annotate("text", x = BUDGET.2022 - 45000, y = 0.0000015, 
-           label = paste("Available Contract Budget: $", prettyNum(BUDGET.2022, big.mark = ","), sep = ""), 
+           label = paste("Available contract budget: $", prettyNum(BUDGET.2022, big.mark = ","), sep = ""), 
            col = "black", angle = 90) +
   annotate("text", x = days_paid_sum.2022$Total.Dollars - 45000, y = 0.0000015, 
-           label = paste("Actual Contract Cost: $", prettyNum(days_paid_sum.2022$Total.Dollars, big.mark = ","), sep = ""), 
+           label = paste("Actual contract cost: $", prettyNum(days_paid_sum.2022$Total.Dollars, big.mark = ","), sep = ""), 
            col = "darkgreen", angle = 90) +
   theme_bw() +
   theme(text = element_text(size = 14),
@@ -349,10 +349,10 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   geom_vline(xintercept = BUDGET.2023, lty = 2, col = "black") +
   geom_vline(xintercept = days_paid_sum.2023$Total.Dollars, lty = 1, col = "darkgreen") +
   annotate("text", x = BUDGET.2023 - 45000, y = 0.00000125, 
-           label = paste("Available Contract Budget: $", prettyNum(BUDGET.2023, big.mark = ","), sep = ""), 
+           label = paste("Available contract budget: $", prettyNum(BUDGET.2023, big.mark = ","), sep = ""), 
            col = "black", angle = 90) +
   annotate("text", x = days_paid_sum.2023$Total.Dollars - 45000, y = 0.00000125, 
-           label = paste("Actual Contract Cost: $", prettyNum(days_paid_sum.2023$Total.Dollars, big.mark = ","), sep = ""), 
+           label = paste("Actual contract cost: $", prettyNum(days_paid_sum.2023$Total.Dollars, big.mark = ","), sep = ""), 
            col = "darkgreen", angle = 90) +
   theme_bw() +
   theme(text = element_text(size = 14),
@@ -682,7 +682,7 @@ logged <- odds.ts.cp %>%
   mutate(
     Total.final.selected = Random.selected + Inherit.selected - Waived,
     Pct.selected.from.inherit = round(Inherit.selected / Total.final.selected * 100, 1),  # Realized inherits, BEFORE waivers
-    Pct.allselected.from.waiver = round(Waived / Total.final.selected * 100, 1))  
+    Pct.allselected.from.waiver = round(Waived / (Total.final.selected + Waived) * 100, 1))  
 
 
 # Table 3-3 (2019, inherits and release rates AFTER random selection and cancellation)---- 
