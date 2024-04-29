@@ -711,9 +711,9 @@ logged.table <- bind_rows(
          "Random number selection (*r*)" = Random.selected, 
          "Inherited selection** (*i*)" = Inherit.selected,
          "Waived (*w*)" = Waived, 
-         "Total final selected (*T*=*r*+*i*-*w*-*n*)" = Total.final.selected,
+         "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
          "% Selected from inherits ((*i*/*T*) × 100)" = Pct.selected.from.inherit, 
-         "% Reduction of selected trips due to waivers (*w*+*n*/(*T*+*w*+*n*) × 100)" = Pct.allselected.from.waiver) %>% 
+         "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) × 100)" = Pct.allselected.from.waiver) %>% 
   arrange(Year, match(Strata, c("OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT",  "Total")))
 ```
 
@@ -2316,12 +2316,12 @@ flextable(logged.table.2022) %>%
          value = as_paragraph("Waived (", as_i("w"), ")")) %>%
   mk_par(j = 6, part = "header",
          value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", 
-                              as_i("i"), " - ", as_i("w"), " - ", as_i("n"), ")")) %>%
+                              as_i("i"), " - ", as_i("w"), ")")) %>%
   mk_par(j = 7, part = "header",
          value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
   mk_par(j = 8, part = "header",
-         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), " + ", 
-                              as_i("n"), "/(", as_i("T"), " + ", as_i("w"), " + ", as_i("n"), ") \U00D7 100)")) %>%
+         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), 
+                              "/(", as_i("T"), " + ", as_i("w"), ") \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
   italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
@@ -2362,12 +2362,12 @@ flextable(logged.table.2023) %>%
          value = as_paragraph("Waived (", as_i("w"), ")")) %>%
   mk_par(j = 6, part = "header",
          value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", 
-                              as_i("i"), " - ", as_i("w"), " - ", as_i("n"), ")")) %>%
+                              as_i("i"), " - ", as_i("w"), ")")) %>%
   mk_par(j = 7, part = "header",
          value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
   mk_par(j = 8, part = "header",
-         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), " + ", 
-                              as_i("n"), "/(", as_i("T"), " + ", as_i("w"), " + ", as_i("n"), ") \U00D7 100)")) %>%
+         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", 
+                              as_i("T"), " + ", as_i("w"), ") \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
   italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
