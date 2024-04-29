@@ -515,7 +515,7 @@ odds.dat <- odds.dat %>%
 # Trip status codes: 
 #   CS = Cancel by System 
 #   PD = Pending
-#   CN = Cancelled 
+#   CN = Canceled 
 #   CP = Completed 
 #   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
 #   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
@@ -570,9 +570,9 @@ disposition <- odds.dat %>%
   select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, released, TRIP_PLAN_NUMBER) %>%
   group_by(YEAR, STRATA, random.assign) %>%
   summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
-            Trips.cancelled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
-            Trips.remaining = Trips.logged.ODDS - Trips.cancelled.bysystem,
-            Trips.cancelled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
+            Trips.canceled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
+            Trips.remaining = Trips.logged.ODDS - Trips.canceled.bysystem,
+            Trips.canceled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
             Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
 
@@ -584,7 +584,7 @@ disposition <- merge(
     summarise(STRATA = "Total", across(where(is.integer), sum)) %>%
     data.frame(),
   all = TRUE) %>%
-    mutate(Cancellation.Pct = format(round((Trips.cancelled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
+    mutate(Cancellation.Pct = format(round((Trips.canceled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
            Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) 
 
 # Don't include Not Selected trips (random.assign == 0) in cancellation summaries since its not required by user.
@@ -607,9 +607,9 @@ disposition.table <-
          "Year" = YEAR,
          "Random number outcomes" = random.assign,
          "Logged (*a*)" = Trips.logged.ODDS,
-         "Cancelled by system (*b*)" = Trips.cancelled.bysystem,
+         "Canceled by system (*b*)" = Trips.canceled.bysystem,
          "Trips remaining (*c* = *a*-*b*)" = Trips.remaining,
-         "Cancelled by user (*d*)" = Trips.cancelled.byusers,
+         "Canceled by user (*d*)" = Trips.canceled.byusers,
          "Waived" = Trips.waived,
          "Paper" = Paper.tickets,
          "% User cancellation (*d*/*c* × 100)" = Cancellation.Pct,
@@ -649,7 +649,7 @@ odds.ts.cp <- odds.dat %>%
   arrange(Date) %>% 
   ungroup()
 
-#' Get the dates that inherited trips were created (cancelled randomly-selected trips where coverage was not waived) and
+#' Get the dates that inherited trips were created (canceled randomly-selected trips where coverage was not waived) and
 #' realized
 odds.ts.ni.create <- odds.dat %>% 
   filter(!ODDS_SELECTION_PCT %in% c(0, 100) & !(TRIP_STATUS_CODE %in% c("CP", "PD"))) %>%
@@ -687,7 +687,7 @@ logged <- odds.ts.cp %>%
 
 # Table 3-3 (2019, inherits and release rates AFTER random selection and cancellation)---- 
 #' *Not including in the AR since 2019, kept for posterity*, but they tells us with more granularity how many selected 
-#' trips were cancelled or waived. 
+#' trips were canceled or waived. 
 
 # Disposition of trips - showing only valid trips and categories are exclusive
 logged.table <- bind_rows(
@@ -935,38 +935,38 @@ odds.by.date.plot <-
 ```{r odds_paragraph, warning=FALSE, include=FALSE}
 # Objects that help increase readability of in-text calculations in the following paragraphs
 
-# Total cancelled trips (both by ODDS or by users)
+# Total canceled trips (both by ODDS or by users)
 totl.canc.2022 <- disposition %>% 
                   filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>%
-                  summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
+                  summarize(totl.canc = sum(as.numeric(Trips.canceled.bysystem)) + sum(as.numeric(Trips.canceled.byusers))) %>% 
                   as.numeric()
 
 totl.canc.2023 <- disposition %>% 
                   filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>%
-                  summarize(totl.canc = sum(as.numeric(Trips.cancelled.bysystem)) + sum(as.numeric(Trips.cancelled.byusers))) %>% 
+                  summarize(totl.canc = sum(as.numeric(Trips.canceled.bysystem)) + sum(as.numeric(Trips.canceled.byusers))) %>% 
                   as.numeric()
 
-# Percent of total trips cancelled by the ODDS system
+# Percent of total trips canceled by the ODDS system
 perc.syst.canc.2022 <- disposition %>% 
                        filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
-                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
+                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.canceled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
                        as.numeric()
 
 perc.syst.canc.2023 <- disposition %>% 
                        filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
-                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.cancelled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
+                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.canceled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
                        as.numeric()
 
-#Percent of total trips cancelled by users
+#Percent of total trips canceled by users
 perc.user.canc.2022 <- disposition %>% 
                        filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
-                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
+                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
                                                          digits = 1, nsmall = 1)) %>% 
                        as.character()
 
 perc.user.canc.2023 <- disposition %>% 
                        filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
-                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
+                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
                                                          digits = 1, nsmall = 1)) %>% 
                        as.character()
 
@@ -974,21 +974,21 @@ perc.user.canc.2023 <- disposition %>%
 sel.min.canc <- disposition %>% 
                 filter(STRATA != "Total" & random.assign == "Selected") %>%
                 group_by(YEAR, STRATA) %>% 
-                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>%
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>%
                 slice_min(as.numeric(Cancellation.Pct)) %>% 
                 mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 
 sel.max.canc <- disposition %>% 
                 filter(STRATA != "Total" & random.assign == "Selected") %>%
                 group_by(YEAR, STRATA) %>% 
-                summarize(Cancellation.Pct = (sum(as.numeric(Trips.cancelled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>%
+                summarize(Cancellation.Pct = (sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.remaining))) * 100) %>%
                 slice_max(as.numeric(Cancellation.Pct)) %>% 
                 mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 ```
 
- Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or cancelled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically cancelled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP. Trips that were selected to be monitored by ODDS and are subsequently cancelled trigger the next logged trip to automatically inherit the selected status. These trips are termed inherited trips.  
+ Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or canceled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically canceled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP. Trips that were selected to be monitored by ODDS and are subsequently canceled trigger the next logged trip to automatically inherit the selected status. These trips are termed inherited trips.  
 
- The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('Selection.table.2023', display = "cite")`. Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$YEAR == 2023]), format = "d", big.mark = ",")` total trips logged, `r formatC(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d")` were selected, and `r formatC(totl.canc.2023, format = "d", big.mark = ",")` were cancelled: `r formatC(disposition$Trips.cancelled.bysystem[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d", big.mark = ",")` by ODDS (`r perc.syst.canc.2023`%) and `r formatC(disposition$Trips.cancelled.byuser[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d", big.mark = ",")` by users (`r perc.user.canc.2023`%). The user cancellation rate for selected trips ranged from `r sel.min.canc$Cancellation.Pct[sel.min.canc$YEAR == 2023]`% for *`r sel.min.canc$STRATA[sel.min.canc$YEAR == 2023]`* to `r sel.max.canc$Cancellation.Pct[sel.max.canc$YEAR == 2023]`% for *`r sel.max.canc$STRATA[sel.max.canc$YEAR == 2023]`* in `r year`.          
+ The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('Selection.table.2023', display = "cite")`. Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$YEAR == 2023]), format = "d", big.mark = ",")` total trips logged, `r formatC(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d")` were selected, and `r formatC(totl.canc.2023, format = "d", big.mark = ",")` were canceled: `r formatC(disposition$Trips.canceled.bysystem[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d", big.mark = ",")` by ODDS (`r perc.syst.canc.2023`%) and `r formatC(disposition$Trips.canceled.byuser[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d", big.mark = ",")` by users (`r perc.user.canc.2023`%). The user cancellation rate for selected trips ranged from `r sel.min.canc$Cancellation.Pct[sel.min.canc$YEAR == 2023]`% for *`r sel.min.canc$STRATA[sel.min.canc$YEAR == 2023]`* to `r sel.max.canc$Cancellation.Pct[sel.max.canc$YEAR == 2023]`% for *`r sel.max.canc$STRATA[sel.max.canc$YEAR == 2023]`* in `r year`.          
 
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
@@ -1060,7 +1060,7 @@ final_pvals <- merge(p.table
 
  The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from (1) random selection of all logged trips (initial random selection) and (2) random selection of remaining trips after cancellations, waivers, and inherited trips. In any case, the proportion of trips selected to be observed should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated *p*-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exception --- the initial selection rate was 26.50% (*p*-value = 0.012) for the *OB TRW* stratum (`r tbl_nums('Selection.table.2023', display = "cite")`). This means that the *OB TRW* stratum was being over-selected in ODDS, and that we should interpret high final coverage rates in this stratum with caution.  
 
- The final selection rate after trips were closed, cancelled, or waived were within expected bounds with the exception of the *OB HAL* stratum 21.38% (*p*-value = 0.002) and the *OB TRW* stratum 29.26% (*p*-value < 0.001; `r tbl_nums('Selection.table.2023', display = "cite")`). Given the high initial selection rate, we can safely disregard the final selection rate of *OB TRW*, but not the *OB HAL* stratum.    
+ The final selection rate after trips were closed, canceled, or waived were within expected bounds with the exception of the *OB HAL* stratum 21.38% (*p*-value = 0.002) and the *OB TRW* stratum 29.26% (*p*-value < 0.001; `r tbl_nums('Selection.table.2023', display = "cite")`). Given the high initial selection rate, we can safely disregard the final selection rate of *OB TRW*, but not the *OB HAL* stratum.    
 
  In addition to the inherit process, the lack of linkage between the ODDS and eLandings contributes to the differences between programmed selection rates in ODDS and trips that are ultimately observed. Currently, ODDS provides users with a list of Report IDs from eLandings from which to close their logged trips. However, these data are not validated, or error checked, making them unreliable in their current state. This linkage between the logged (ODDS) trip (with its selection probability) and its associated landing information is necessary to evaluate potential improvements in deployment efficiency within the partial coverage fleet.            
 
@@ -2200,7 +2200,7 @@ flextable(trip.budget.table.2023) %>%
 
 #####
 
-####`r tbl_nums('disposition.table.2022' , caption = paste0('Trip cancellation rates in the ODDS for ', year - 1, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+####`r tbl_nums('disposition.table.2022' , caption = paste0('Trip cancellation rates in the ODDS for ', year - 1, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
 ```{r disposition.table.2022, echo=FALSE, tab.cap=""}
 # Table 2 from 2019 Annual Report
@@ -2222,11 +2222,11 @@ flextable(disposition.table.2022) %>%
   mk_par(j = 3, part = "header",
          value = as_paragraph("Logged (", as_i("a"), ")")) %>%
   mk_par(j = 4, part = "header",
-         value = as_paragraph("Cancelled by system (", as_i("b"), ")")) %>%
+         value = as_paragraph("Canceled by system (", as_i("b"), ")")) %>%
   mk_par(j = 5, part = "header",
          value = as_paragraph("Trips remaining (", as_i("c"), " = ", as_i("a"), " - ", as_i("b"), ")")) %>%
   mk_par(j = 6, part = "header",
-         value = as_paragraph("Cancelled by user (", as_i("d"), ")")) %>%
+         value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
   mk_par(j = 9, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
@@ -2248,7 +2248,7 @@ flextable(disposition.table.2022) %>%
 
 #####
 
-####`r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is cancelled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+####`r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
 ```{r disposition.table.2023, echo=FALSE, tab.cap=""}
 # Table 2 from 2019 Annual Report
@@ -2264,11 +2264,11 @@ flextable(disposition.table.2023) %>%
   mk_par(j = 3, part = "header",
          value = as_paragraph("Logged (", as_i("a"), ")")) %>%
   mk_par(j = 4, part = "header",
-         value = as_paragraph("Cancelled by system (", as_i("b"), ")")) %>%
+         value = as_paragraph("Canceled by system (", as_i("b"), ")")) %>%
   mk_par(j = 5, part = "header",
          value = as_paragraph("Trips remaining (", as_i("c"), " = ", as_i("a"), " - ", as_i("b"), ")")) %>%
   mk_par(j = 6, part = "header",
-         value = as_paragraph("Cancelled by user (", as_i("d"), ")")) %>%
+         value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
   mk_par(j = 9, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
   align(part = "all", align = "center") %>%
@@ -2728,7 +2728,7 @@ suppressWarnings(print(odds.by.date.plot))
  
 ```
 
-####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-cancelled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or cancelled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being cancelled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
+####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or canceled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being canceled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
 
 #####
 
