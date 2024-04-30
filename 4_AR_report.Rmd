@@ -886,16 +886,46 @@ odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 
 # Custom y axes for each row of the figure
 odds.scales <- list(
-  scale_y_continuous(limits = c(0, 70)),
+  scale_y_continuous(limits = c(0, 45), breaks = c(0, 20, 40)),
   scale_y_continuous(limits = c(0, 45), breaks = c(0, 20, 40)),
   scale_y_continuous(limits = c(0, 70)),
-  scale_y_continuous(limits = c(0, 70)),
-  scale_y_continuous(limits = c(0, 70))
+  scale_y_continuous(limits = c(0, 65)),
+  scale_y_continuous(limits = c(0, 65))
 )
 
 # ODDS by date plot (Cumulative coverage percent by strata over the year)
+#odds.by.date.plot <- 
+ # ggplot(odds.ts.daily.cuml, aes(x = Date, col = fct_rev(TYPE))) +
+  # Add lines for selection rates  
+  #geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
+  #geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
+  #geom_line(aes(y = running.pct), linewidth = 1.5) +
+  #scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
+  #ylab("Cumulative coverage percent\n") +
+  #coord_cartesian(ylim = c(0, 70)) +
+  #xlab("\nDate") +
+  #geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray50") + 
+  #geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0), sides = "t") + 
+  #' *==================For multi-year plotting==================================*
+  #facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free") +
+  #geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
+  #          hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
+  #geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
+  #          hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
+  #geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
+  #          hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
+  #' *===================++++++++++++++++++++++++================================*
+  #fig.theme + 
+  #theme_bw() +
+  #theme(axis.text.x = element_text(angle = 90),
+  #      strip.text.x = element_text(size = 10),
+  #      legend.position = "none") +
+  #ggh4x::facetted_pos_scales(y = odds.scales)
+
+
+
 odds.by.date.plot <- 
-  ggplot(odds.ts.daily.cuml, aes(x = Date, col = fct_rev(TYPE))) +
+  ggplot(filter(odds.ts.daily.cuml, YEAR == year), aes(x = Date, col = fct_rev(TYPE))) +
   # Add lines for selection rates  
   geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
   geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
@@ -904,24 +934,16 @@ odds.by.date.plot <-
   ylab("Cumulative coverage percent\n") +
   #coord_cartesian(ylim = c(0, 70)) +
   xlab("\nDate") +
-  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray50") + 
-  geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0), sides = "t") + 
-  #' *==================For multi-year plotting==================================*
-  facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free") +
+  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0 & YEAR == year), sides = "b", color = "gray50") + 
+  geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0 & YEAR == year), sides = "t") + 
+  #' *==================For single-year plotting==================================*
+  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free") +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
             hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
             hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
             hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
-  #' *===================For single year plotting================================*
-  # facet_grid(STRATA ~ ., scales = "free_x") +
-  #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = ""), y = 60, 
-  #              label = paste("Programmed (%) = ", label.programmed, sep = "")), size = 3, color = "black") + 
-  #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 54, 
-  #               label = paste("Original (%) = ", label.original, sep = "")), size = 3, color = "gray70") + 
-  #geom_text(aes(x = as.Date(paste(year, "-8-01", sep = "")), y = 48, 
-  #               label = paste("Final (%) = ", label.adjusted, sep = "")), size = 3, color = "black") + 
   #' *===========================================================================*
   fig.theme + 
   theme_bw() +
@@ -929,6 +951,7 @@ odds.by.date.plot <-
         strip.text.x = element_text(size = 10),
         legend.position = "none") +
   ggh4x::facetted_pos_scales(y = odds.scales)
+
 
 ```
 
