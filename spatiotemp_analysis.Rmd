@@ -1,0 +1,131 @@
+---
+title: "Spatiotemp Analysis"
+author: "Geoff_Mayhew"
+always_allow_html: true
+output:
+  word_document:
+    reference_docx: docs/word-styles-reference-01.docx
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(data.table)
+library(ggplot2)
+```
+
+```{r load_data}
+load("spatiotemp_analysis.rdata")
+```
+
+```{r proximity_prep}
+#' [2023]
+
+# OB_TRW
+ob_trw.2023.prog.perc <- formatC(100 * percentile.stratum[ADP == 2023 & STRATA == "OB_TRW", `PERC PROG`], format = "f", digits = 2)
+ob_trw.2023.prog.perc_goa <- formatC(100* percentile.stratum_fmp[ADP == 2023 & STRATA == "OB_TRW" & `BSAI GOA` == "GOA", `PERC PROG`], digits = 2) 
+
+# EM
+em_fg.2023.prog.perc <- formatC(100 * max(percentile.stratum[ADP == 2023 & STRATA %in% c("EM_HAL", "EM_POT"), `PERC PROG`]), format = "f", digits = 2)
+em_hal.2023.prog.perc <- formatC(100 * percentile.stratum[ADP == 2023 & STRATA == "EM_HAL", `PERC REAL`], format = "f", digits = 2)
+
+#' [2022]
+
+# OB HAL
+ob_hal.2022.prog.perc <- formatC(100 * percentile.stratum[ADP == 2022 & STRATA == "OB_HAL", `PERC PROG`], format = "f", digits = 2)
+ob_hal.2022.prog.perc_bsai <- formatC(100 * percentile.stratum_fmp[ADP == 2022 & STRATA == "OB_HAL" & `BSAI GOA` == "BSAI", `PERC PROG`], format = "f", digits = 2)
+
+# OB TRW
+ob_trw.2022.prog.perc <- formatC(100 * percentile.stratum[ADP == 2022 & STRATA == "OB_TRW", `PERC PROG`], format = "f", digits = 2)
+ob_trw.2022.real.perc <- formatC(100 * percentile.stratum[ADP == 2022 & STRATA == "OB_TRW", `PERC REAL`], format = "f", digits = 2)
+
+```
+
+# Spatiotemporal Distribution of Monitoring Coverage ###
+
+Under a random selection of trips/offloads the spatiotemporal distribution of monitoring in a stratum should reflect the spatiotemporal distribution of all trips/offloads in the stratum. The evaluation methods here are adapted from the *proximity index* described in the 2024 Draft Annual Deployment Plan, where the proximity index is defined as the proportion of sample units in stratum that are either monitored or nearby a monitored sample unit in either space or time. Sample units that were neither monitored nor neighboring a monitored trip are considered gaps in monitoring. The proximity index is therefore used here as a way to quantify the spatiotemporal extent of monitoring *coverage*. By comparing the proximity indices actually obtained by each stratum to those obtained by simulations of random sampling, we can determine whether the proportion of sample units that were covered or gaps met expectations and how likely the actual outcome was under different assumptions. By simulating random sampling using the *programmed* selection rates, we can assess whether the actual proximity values met the expectations defined by the ADP. In addition, by simulating random sampling using the *realized* monitoring rates, we can assess whether the achieved coverage was distributed evenly in space and time.
+
+To calculate the proximity index, sample units were categorized in both space and time into spatiotemporal *boxes* defined by 200-km hexagonal spatial cells and 1-week temporal blocks. Sample units that spanned multiple spatiotemporal boxes were weighted such that they were split evenly among each box. Sample units were identified as monitored or unmonitored using actual or simulated outcomes, and then unsampled trips/offloads were identified as either neighboring monitored units or not (i.e., in an adjacent spatial cell or week). Lastly, the proximity index is calculated as the sum of the weight of monitored or neighboring sample units divided by the total number of sample units in the stratum. Simulations of random sampling were repeated 10k times each using the programmed selection rates and realized monitoring rates. The proportion of sampling iterations that were more extreme than the actual value was calculated to indicate the likelihood of the achieved outcome. 
+
+Proximity indices were calculated for each stratum to evaluate whether coverage met expectations overall (**Figure X**), but they were also calculated for the BSAI and GOA separately (**Figure X**). Beginning in 2024, strata were defined in part by FMP, so the FMP-specific summaries here provide the ability to compare with future annual reports and also provide more spatial resolution with which to interpret the analyses. Moreover, the FMP-specific monitoring rates achieved by each stratum are provided in **Table X**.
+
+The spatiotemporal distributions of monitoring coverage in the observer strata were generally even and within the expected ranges. The actual proximity values in the *OB HAL* and *OB POT* strata were in the expected ranges at both the stratum and FMP-levels. The proximity value of the *OB TRW* stratum was greater than expected given the programmed selection rates as it was in the `r ob_trw.2023.prog.perc`th percentile among simulations. That is, even accounting for the higher-than-expected realized monitoring rates, there were fewer gaps in monitoring coverage than expected, specifically in the GOA where the proximity index was in the `r ob_trw.2023.prog.perc_goa`th percentile. 
+
+In the EM strata, both actual proximity indices of the *EM HAL* and *EM POT* were well below the expectation generated from the programmed selection rates (`r em_fg.2023.prog.perc`th percentile). Although the spatiotemporal distribution of monitoring in *OB POT* was in the expected range, it was only in the `r em_hal.2023.prog.perc`th percentile in *EM HAL*. These results are due to the delay in the review of footage from monitored trips but it indicates that at the time of this report, that the coverage of these strata is lower than expected and not represented evenly throughout time. Further exploration confirmed that most of the gaps in coverage occurred in the latter half of the year. Note that the expected proximity values in the BSAI have a very wide range due to the low number of trips and small sample sizes provided by the selection rates. The proximity indices in the *EM TRW EFP* stratum were as expected from both the programmed selection rates and realized monitoring rates. 
+
+\newpage
+
+# Spatial Patterns in Monitoring ###
+
+Under a random selection of trips/offloads the spatial distribution of monitored trips should reflect the spatial distribution of all trips/offloads. To evaluate whether the actual spatial distribution of monitoring matched what would be expected from random selection or exhibited unlikely spatial patterns, the sample units of each stratum were first divided into 200 km wide hexagonal spatial cells. The total count of trips actually monitored in each spatial cell was compared to results of simulations of random selection using the actual monitored rate. The difference in the count of actually monitored trips versus the median count was calculated. Instances where the count of actually monitored trips in a spatial cell were more extreme than 95% of simulated outcomes were identified to represent unlikely outcomes under the assumption of random sampling. By graphically viewing where the spatial distribution of actual monitoring deviated from the distribution provided by the simulations, regional patterns in the over- or under-representation by monitoring can be identified. Maps summarizing these patterns are provided in **Fig X**. Note that for the EM HAL and EM POT strata, monitored trips were defined as those with reviewed data received at the time of the analyses.
+
+In the *OB HAL* stratum, there was an unlikely high number of monitored trips in the central GOA and fewer monitored trips in the western and eastern GOA. In the *OB POT* stratum, there was an unlikely high number of monitored in the western GOA. In the *OB TRW* stratum, monitoring was evenly distributed with no spatial cells with an unlikely number of monitored trips. The spatial distribution of monitoring was as expected in the *EM HAL*, *EM POT*, and *EM TRW EFP* strata, with no spatial cells with an unlikely number of monitored trips/offloads.
+
+\newpage
+
+```{r interspersion.2023, fig.height = 7, fig.width = 6.5, dpi = 600}
+print(plt.iterspersion.stratum.2023)
+```
+
+**Figure X.** Stratum-level proximity indices in partial coverage in 2023. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
+
+\newpage
+
+```{r interspersion_fmp.2023, fig.height = 7, fig.width = 6.5, dpi = 600}
+print(plt.iterspersion.stratum_fmp.2023)
+```
+
+**Figure X.** Stratum and FMP-level proximity indices in partial coverage in 2023. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
+
+\newpage
+
+```{r spatial.2023, fig.height = 6, fig.width = 6.5, dpi = 600}
+print(plt.spatial.2023)
+```
+
+**Figure X.** Spatial patterns of the distribution of monitoring in partial coverage in 2023. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips/offloads actually monitored relative to the median of 10K simulations of random sampling using the stratum's realized monitoring rate. Cells without a number had the same number of monitored trips/offloads as the median of the simulations (difference of zero). Cells where the actual number of monitored trips/offloads was more extreme than 80% of simulated outcomes are colored pink (fewer trips/offloads than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes have bold text and are outlined in blue.
+
+
+
+
+
+\newpage
+# 2022 ####
+\newpage
+
+# Spatiotemporal Distribution of Monitoring Coverage ###
+
+The coverage in the *OB HAL* stratum was evenly distributed at the stratum and FMP-levels, but the coverage was lower than expected from the programmed selection rates, with a proximity index in the `r ob_hal.2022.prog.perc`th percentile stratum-wide and `r ob_hal.2022.prog.perc_bsai`th percentile in the BSAI. Coverage in the *OB POT* stratum met expectations at both the stratum and FMP-level. The *OB TRW* stratum did not achieve the expected coverage from either the programmed selection rates (`r ob_trw.2022.prog.perc`th percentile) or realized monitoring rates (`r ob_trw.2022.real.perc`th percentile), indicating that monitoring was not evenly distributed in time and/or space. The achieved proximity indices at the FMP-levels were also low but not as unlikely. Further exploration indicated the low interspersion values were due to having no monitored trips during the middle of the year and no monitored trips in the western-most extent of the stratum.
+
+Due to the delay in video review for the *EM HAL* and *EM POT* strata and the resulting realized rates that were lower than programmed, actual proximity indices were lower than expected and generally outside the simulated distributions. Therefore, the coverage achieved at the time of the 2022 Annual Report was not distributed evenly, largely due to a lack of data from trips in the latter half of the year, especially in the GOA. The actual proximity index of the *EM TRW EFP* stratum was well within the expected ranges.
+
+\newpage
+
+# Spatial Patterns in Monitoring ###
+
+In the *OB HAL* stratum, there was an unlikely few number of monitored trips in the northern Bering Sea, but more trips than expected were monitored in the western GOA. In the *OB POT* stratum, an unlikely high number of trips were monitored in the BSAI but fewer trips in the western and central GOA were monitored. In the *OB TRW* stratum, there was an unlikely high number of monitored trips in a small region of the western GOA. The spatial distribution of monitoring was generally as expected in the *EM HAL*, *EM POT*, and *EM TRW EFP* strata. Some spatial cells had an unlikely high number of monitored trips but were adjacent to cells with on the low end of the expected number of trips monitored.
+
+
+```{r interspersion.2022, fig.height = 7, fig.width = 6.5, dpi = 600}
+print(plt.iterspersion.stratum.2022)
+```
+
+**Figure X.** Stratum-level proximity indices in partial coverage in 2022. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
+
+\newpage
+
+```{r interspersion_fmp.20223, fig.height = 7, fig.width = 6.5, dpi = 600}
+print(plt.iterspersion.stratum_fmp.2022)
+```
+
+**Figure X.** Stratum and FMP-level proximity indices in partial coverage in 2022. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
+
+\newpage
+
+```{r spatial.2022, fig.height = 6, fig.width = 6.5, dpi = 600}
+print(plt.spatial.2022)
+```
+
+**Figure X.** Spatial patterns of the distribution of monitoring in partial coverage in 2022. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips/offloads actually monitored relative to the median of 10K simulations of random sampling using the stratum's realized monitoring rate. Cells without a number had the same number of monitored trips/offloads as the median of the simulations (difference of zero). Cells where the actual number of monitored trips/offloads was more extreme than 80% of simulated outcomes are colored pink (fewer trips/offloads than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes have bold text and are outlined in blue.
