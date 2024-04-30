@@ -1116,6 +1116,94 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
   
 }
 
+plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_levels){
+  # box_def <- copy(box_def.stratum); sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum);
+  
+  year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
+  
+  hex_geom <- unique(select(box_def$geom_sf, HEX_ID) )
+  hex_geom.bbox <- st_bbox(hex_geom)
+  trips_dt <- unique(subset(box_def$og_data, select = c(year_strata, "HEX_ID", "TRIP_ID")))
+  sim_iter <- length(attr(sim.realized.stratum, "mon_lst"))
+  
+  # Summarize count of trips in each HEX_ID for each stratum
+  hex_trips_N <- trips_dt[, .(N = uniqueN(TRIP_ID)), keyby = c(year_strata, "HEX_ID")]
+  
+  # Count number of trips actually monitored in each HEX_ID
+  hex_trips_n <- trips_dt[realized_mon[, .(TRIP_ID)], on = .(TRIP_ID)][, .(n = .N), keyby = c(year_strata, "HEX_ID")]
+  hex_trips_n <- hex_trips_n[hex_trips_N, on = c(year_strata, "HEX_ID")]
+  hex_trips_n[is.na(n), n := 0]
+  
+  # Using the selection simulations assuming the realized rate, count the number of times each HEX_ID was sampled in each iteration
+  hex_trips_n.sim <- rbindlist(lapply(attr(sim.realized.stratum, "mon_lst"), function(x){
+    # x <- test[[1]]
+    trips_dt[data.table(TRIP_ID = x), on = .(TRIP_ID)]
+  }), idcol = "ITER")
+  # Count trips per HEX_ID for each iteration
+  hex_trips_n.sim <- hex_trips_n.sim[, .(n_sim = .N), keyby = c("ITER", year_strata, "HEX_ID")]
+  # Combine actual with simulations
+  hex_trips_n_sim <- hex_trips_n.sim[hex_trips_n, on = c(year_strata, "HEX_ID")]
+  
+  # Calculate median trips monitored in simulations
+  hex_trips_n_sim[
+  ][, sim_MED := median(n_sim), by = c(year_strata, "HEX_ID")
+  ][, DIR := sign(n - sim_MED)]
+  # Calculate proportion of iterations where the actual value was more extreme
+  hex_trips_n_sim.smry <- hex_trips_n_sim[, .(MORE_EXTREME = fcase(
+    DIR == 0, 0L,
+    DIR == 1, sum(n > n_sim),
+    DIR == -1, sum(n < n_sim)
+  )), by = c(year_strata, "HEX_ID", "N", "n", "sim_MED" ,"DIR")]
+  # Flag instances where the actual value was on the 5% tail
+  hex_trips_n_sim.smry[, TAIL := MORE_EXTREME >= (0.95 * sim_iter)]
+  # Drop strata levels not in strata_levels
+  hex_trips_n_sim.smry <- hex_trips_n_sim.smry[(STRATA %in% strata_levels)]
+  # Set stratum levels
+  hex_trips_n_sim.smry[, STRATA := factor(STRATA, levels = strata_levels)]
+  # Create a facet category that combines year and stratum
+  setorderv(hex_trips_n_sim.smry, year_strata)
+  hex_trips_n_sim.smry[, FACET := paste(ADP, " : ", gsub("_", " ", STRATA))]
+  hex_trips_n_sim.smry[, FACET := factor(FACET, levels = unique(FACET))]
+  
+  # Create label
+  hex_trips_n_sim.smry[, label := ifelse(n - sim_MED != 0, (n - sim_MED), NA)] 
+  
+  # Set the range of the fill scale
+  fill_range <- hex_trips_n_sim.smry[, range(n - sim_MED)]
+  fill_range <- sign(fill_range) * (5 * ceiling(abs((fill_range ) / 5)))
+  
+  # Merge the geometry in
+  hex_trips_n_sim.smry <- merge(hex_geom, hex_trips_n_sim.smry, on = "HEX_ID")
+  
+  # Split data by year
+  map_years <- unique(trips_dt$ADP)
+  map_years.list <- vector(mode = "list", length = length(map_years))
+  
+  for(i in seq_along(map_years)) {
+    
+    dat_sub <- hex_trips_n_sim.smry %>% filter(ADP == map_years[i]) 
+    
+    map_years.list[[i]] <- ggplot() + 
+      facet_wrap(~ FACET, dir = "v", ncol = 2) + 
+      geom_sf(data = ak_low_res, fill = "gray80") + 
+      geom_sf(data = fmp_low_res, fill  = NA, linetype = 2) + 
+      geom_sf(data = dat_sub %>% filter(TAIL == F), aes(fill = DIR * (MORE_EXTREME / sim_iter))) + 
+      geom_sf_text(data = dat_sub %>% filter(TAIL == F), aes(label = label), size = 3, na.rm = T) + 
+      # Outline trips with unusual outcomes
+      geom_sf(data = dat_sub %>% filter(TAIL == T), aes(fill = DIR * (MORE_EXTREME / sim_iter)), linewidth = 1, color = "dodgerblue") + 
+      geom_sf_text(data = dat_sub %>% filter(TAIL == T), aes(label = label), size = 3, fontface = "bold") + 
+      scale_fill_gradientn(colors = c("violet", "plum", "white", "white", "white", "palegreen", "green"), values = c(0, 0.1, 0.2, 0.5, 0.8, 0.9, 1), limits = c(-1, 1)) +
+      theme(
+        legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
+        axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank() ) + 
+      coord_sf(xlim = hex_geom.bbox[c(1,3)], ylim = hex_geom.bbox[c(2,4)]) + 
+      labs(fill = "Proportion of simulated outcomes\nwhere actual value was more extreme") 
+  }
+  names(map_years.list) <- paste0("plt.spatial.", map_years)
+  
+  map_years.list
+  
+}
 
 # For spatial analyses, summarize the coverage achieved in each HEX_ID
 plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, strata_levels){
@@ -1180,35 +1268,35 @@ plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, str
   # 2022
   spatial.2022 <- ggplot(sim.real.perc %>% filter(ADP == 2022)) + 
     facet_nested_wrap(. ~ STRATA, nrow = 3, dir = "v", labeller = labeller(STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x)))) + 
-    geom_sf(data = ak_low_res) + 
-    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
+    geom_sf(data = ak_low_res, fill = "gray80") + 
     geom_sf(data = fmp_low_res, fill = NA, linetype = 2) + 
+    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
     stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == 2022 & TAIL == T), shape = 21) + 
     scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
     coord_sf(xlim = hex_bbox[c(1,3)], ylim = hex_bbox[c(2,4)]) +
     theme(
-      legend.position = "bottom", legend.key.width = unit(0.5, "in"),
+      legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
       axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 
     labs(fill = "Difference in coverage\nrelative to expectation")
   
   # 2023
   spatial.2023 <- ggplot(sim.real.perc %>% filter(ADP == 2023)) + 
     facet_nested_wrap(. ~ STRATA, nrow = 3, dir = "v", labeller = labeller(STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x)))) + 
-    geom_sf(data = ak_low_res) + 
-    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
+    geom_sf(data = ak_low_res, fill = "gray80") + 
     geom_sf(data = fmp_low_res, fill = NA, linetype = 2) + 
+    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
     stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == 2023 & TAIL == T), shape = 21) + 
     scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
     coord_sf(xlim = hex_bbox[c(1,3)], ylim = hex_bbox[c(2,4)]) +
     theme(
-      legend.position = "bottom", legend.key.width = unit(0.5, "in"),
+      legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
       axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 
     labs(fill = "Difference in coverage\nrelative to expectation")
   
   
   list(
-    st_2022 = spatial.2022,
-    st_2023 = spatial.2023
+    coverage_2022 = spatial.2022,
+    coverage_2023 = spatial.2023
   )
 }
 

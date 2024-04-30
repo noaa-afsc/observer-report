@@ -116,12 +116,11 @@ real_interspersion.stratum <- calculate_realized_interspersion(box_def.stratum, 
 ### Simulate trip selection to create distributions of interspersion ----
 
 #' [Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = T`]
-#' TODO FOR THE FINAL RUN USE [iter = 1e4]
 
 # Programmed rates
-sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 1e3, seed = 12345, hex_smry = T)
+sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 1e4, seed = 12345, hex_smry = T)
 # Realized rates
-sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 1e3, seed = 12345, hex_smry = T)
+sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 1e4, seed = 12345, hex_smry = T)
 
 #' `Quickload`
 # save(sim.programmed.stratum, sim.realized.stratum, file = "output_data/spatiotemp_stratum_insp_i1e4.rdata")
@@ -155,10 +154,10 @@ if(F){
   ggsave(plot = plot.interspersion.stratum, filename = "output_data/interspersion.stratum.png", width = 8, height = 4)
   
   
-  plot_interspersion_density(density.stratum[ADP == 2022], real_interspersion.stratum[ADP == 2022], dmn_N.stratum[ADP == 2022], strata_levels) + 
+  plt.iterspersion.stratum.2022 <- plot_interspersion_density(density.stratum[ADP == 2022], real_interspersion.stratum[ADP == 2022], dmn_N.stratum[ADP == 2022], strata_levels) + 
     facet_nested_wrap(STRATA ~ ., dir = "v", nrow = 3, scales = "free", labeller = labeller(STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x) )))
   
-  plot_interspersion_density(density.stratum[ADP == 2023], real_interspersion.stratum[ADP == 2023], dmn_N.stratum[ADP == 2023], strata_levels) + 
+  plt.iterspersion.stratum.2023 <- plot_interspersion_density(density.stratum[ADP == 2023], real_interspersion.stratum[ADP == 2023], dmn_N.stratum[ADP == 2023], strata_levels) + 
     facet_nested_wrap(STRATA ~ ., dir = "v", nrow = 3, scales = "free", labeller = labeller(STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x) )))
   }
 programmed_rates[STRATA == "OB_TRW"]    # programmed 0.2965
@@ -244,14 +243,14 @@ if(F){
   # Split by Year
   strata_levels2 <- c("OB_HAL", "EM_HAL", "OB_POT", "EM_POT", "OB_TRW", "EM_TRW_EFP")
   
-  plot_interspersion_density(density.stratum_fmp[ADP == 2022], real_interspersion.stratum_fmp[ADP == 2022], dmn_N.stratum_fmp[ADP == 2022], strata_levels2) + 
+  plt.iterspersion.stratum_fmp.2022 <- plot_interspersion_density(density.stratum_fmp[ADP == 2022], real_interspersion.stratum_fmp[ADP == 2022], dmn_N.stratum_fmp[ADP == 2022], strata_levels2) + 
     facet_nested_wrap(~ STRATA + BSAI_GOA, dir = "h", drop = F, ncol = 4, scales = "free", labeller = labeller(
       STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x)),
       BSAI_GOA = function(x) paste0("FMP : ", x)))
   
-  plot_interspersion_density(density.stratum_fmp[ADP == 2023], real_interspersion.stratum_fmp[ADP == 2023], dmn_N.stratum_fmp[ADP == 2023], strata_levels2) + 
+  plt.iterspersion.stratum_fmp.2023 <- plot_interspersion_density(density.stratum_fmp[ADP == 2023], real_interspersion.stratum_fmp[ADP == 2023], dmn_N.stratum_fmp[ADP == 2023], strata_levels2) + 
     facet_nested_wrap(~ STRATA + BSAI_GOA, dir = "h", drop = F, ncol = 4, scales = "free", labeller = labeller(
-      STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x)),
+      STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x)),
       BSAI_GOA = function(x) paste0("FMP : ", x)))
 }
 
@@ -397,6 +396,7 @@ interspersion_maps[["2022.OB_HAL"]]$HEX_ID.realized  #' Can see the Pribilof Isl
 interspersion_maps[["2022.EM_HAL"]]$BOX
 interspersion_maps[["2022.EM_HAL"]]$HEX_ID.realized
 
+interspersion_maps[["2022.EM_POT"]]$BOX
 interspersion_maps[["2022.EM_POT"]]$HEX_ID.realized
 
 
@@ -440,24 +440,96 @@ if(F){
 }
 
 
+#' *====================================================================================================================*
+# Spatial Analyses ####
+#' *====================================================================================================================*
+
+## Spatial Arrangement of Monitored Trips ----
+
+#' Determine whether the spatial arrangement of monitoring was distributed evenly (as expected by random sampling). 
+#' Counts the number of monitored trips in each HEX_ID and compares to the simulation outcomes, highlighting any 
+#' actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more 
+#' extreme than 80% of outcomes.
+
+spatial_plots <- plot_monitoring_spatial(box_def.stratum, realized_mon, sim.realied.stratum, strata_levels)
+
+plt.spatial.2022 <- spatial_plots$plt.spatial.2022
+plt.spatial.2023 <- spatial_plots$plt.spatial.2023
+
+
+## Spatial Coverage ----
+
+#' For each stratum, visually inspect whether the achieved monitoring coverage was distributed evenly through space. 
+#' The fill color of each spatial cell (hexagon) corresponds to areas where the level of coverage of more (green) or 
+#' less (purple) than expected (i.e., median outcome of simulations), and cells containing a circle indicate outcomes
+#' that were more extreme than 95% of simulation outcomes
+
+#' Look for clusters of spatial cells with circles, indicating a pattern of departures from expected coverage.
+
+#' This is not counting # of trips in each cell and comparing with how many were monitored! It's calculating the 
+#' proportion of trips in the spatial cell that were covered (monitored or proximal to monitoring) and comparing that to what
+#' was achieved in simulations of random sampling. More trips monitored in a cell does not necessarily translate to 
+#' higher coverage if the monitoring is clumped in time and not distributed evenly with fishing effort! This is very 
+#' apparent in the fixed-gear EM strata where 
+
+#' White (value of ~0) means the achieved monitoring coverage matched the expectation.
+#' Green (value of +1) means no coverage was expected but was fully covered.
+#' Purple (value of -1) means all fishing effort was expected to be covered but none was realized.
+#' When more cells are purple than green, it means that sampling was more clumped up temporally than expected, i.e, the
+#' fishing effort within the spatial cell was not well-represented temporally by neighboring trips.
+
+spatial_plots_cov <- plot_spatial_coverage(box_def.stratum, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels)
 
 
 
-#' TODO : If I get the results of each BOX then I should technically be able to see where I fell out of the expected DISTRIBTUION, 
-#' not just relative to the mean!
+# 2022 
 
-# Interspersion maps by percentile ####
+plt.spatial_cov.2022  <- spatial_plots_cov$coverage_2022
+
+plt.spatial.2022 
+#' [OB_HAL] : Higher than expected monitoring in WGOA, less in the BS (Pribs)
+#' [OB_POT] : Higher than expected monitoring in the AI, lower in the CGOA. The higher monitoring in the AI did not 
+#' prevent gaps, presumably because the monitoring was clustered in time.
+#' [OB_TRW] : spatial bias in WGOA/CGOA 
+#' [EM_HAL] : No apparent spatial patterns
+#' [EM_POT] : Slight spatial bias in EGOA
+#' [EM_TWR_EFP] : Slight spatial biases in CGOA
+
+plt.spatial_cov.2022
+#' [OB_HAL] : The GOA generally had coverage evenly distributed, but the BSAI had more coverage than expected in the 
+#' western AI and less monitoring than expected in the northern BS. *But why do I have -1 cells without circles?*
+#' [OB_POT] : Slightly lower than expected coverage in the WGOA *But why is BSAI above median in ST plots?*
+#' [OB_TRW] : No spatial biases in coverage, but generally slightly lower than expected coverage.
+#' [EM_HAL] and [EM_POT] : Coverage was generally lower than expected in the GOA but met expectations in the BSAI, albeit on
+#' the low side.
+#' [EM_TRW_EFP] : Monitoring was generally evenly distributed 
+#' [NOTE] that monitoring in the EM_TRW_EFP was simulated using simple random selection, NOT systematically by port.
+
+## 2023
+
+plt.spatial_cov.2023 <- spatial_plots_cov$coverage_2023
+
+# Differences between the spatial plots has to do with temporal patterns.
+# Fewer monitored trips in a hex_cell may not necessarily lead to lower coverage, and vice versa. Coverage depends on
+# spatial and temporal distribution of monitoring.
+
+plt.spatial.2023 
 
 
-spatial_plots <- plot_spatial_coverage(box_def.stratum, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels)
-plot.spatial.2022 <- spatial_plots$st_2022
-plot.spatial.2023 <- spatial_plots$st_2023
+plt.spatial_cov.2023
+#' [OB_HAL] : Lower than expected coverage in the WGOA and BS (Pribs). 
+#' [OB_POT] : Lower than expected coverage in the WGOA and BS
+#' [OB_TRW] : No spatial biases in coverage
+#' [EM_HAL] : Lower than expected coverage in the CGOA
+#' [EM_POT] : Lower than expected coverage in the EGOA and WGOA
+#' [EM_TRW] : No spatial biases in coverage
+#' 
 
-
+#' *====================================================================================================================*
 
 
 #' *====================================================================================================================*
-#' Realized vs Expected Domain Interspersion of OB with EM and ZERO ----------------------------------------------------
+# Realized vs Expected Domain Interspersion of OB with EM and ZERO -----------------------------------------------------
 #' *====================================================================================================================*
 
 #' TODO These summaries can omit the OB_TRW and EM_TRW_EFP strata. I do this later, but should be able to do this easier
@@ -487,14 +559,6 @@ expected_dmn_interspersion.summary <- expected_ob_em_ze_interspersion$POOLED[
 # TODO Get the distribution of the expectation given perfectly random sampling (using the prior simulation)
 
 # Programmed Rates Simulation
-
-# TODO Make this function use the acceptor_donor_lst too?
-
-box_def.stratum_gear_fmp$dmn$og_data
-
-# Use this object as the subset of TRIP_IDs that were sampled
-realized_mon
-
 
 
 realized_dmn_interspersion <- calculate_realized_dmn_interspersion(box_def.stratum_gear_fmp, realized_mon, ob_em_ze_adl)
@@ -636,7 +700,6 @@ percentile.dmn
 library(flextable)
 set_flextable_defaults(font.family = "Calibri")
 
-stratum_levels <- c("OB_HAL", "OB_POT", "OB_TRW", "EM_HAL", "EM_POT", "EM_TRW_EFP", "ZERO")
 
 programmed_rates
 # Realized rates by FMP (defined by the FMP with the majority of catch)
@@ -651,7 +714,7 @@ realized_rates.val.fmp <- dcast(
 realized_rates.val.fmp[, PROG := 100 * programmed_rates[realized_rates.val.fmp, SAMPLE_RATE, on = .(ADP, STRATA)]]
 setcolorder(realized_rates.val.fmp, c("ADP", "STRATA", "PROG", "N_BSAI", "n_BSAI", "REALIZED_BSAI", "N_GOA", "n_GOA", "REALIZED_GOA"))
 realized_rates.val.fmp[, STRATA := gsub("_", " ", STRATA)]
-realized_rates.val.fmp[, STRATA := factor(STRATA, levels = gsub("_", " ", stratum_levels))]
+realized_rates.val.fmp[, STRATA := factor(STRATA, levels = gsub("_", " ", strata_levels))]
 
 Tbl.Realized_Rates.FMP <- realized_rates.val.fmp %>% 
   flextable() %>%
@@ -700,3 +763,36 @@ dcast(
 #'*--------------------------------------------------------------------------------------------------------------------*
 # Save objects for Rmarkdown ####
 #'*--------------------------------------------------------------------------------------------------------------------*
+
+save(
+  
+  # TODO RENAME TO PROXIMITY
+  # TODO OMIT EM_TRW_EFP from the FMP-specific proximity plots
+  
+  # Interspersion distributions
+  plt.iterspersion.stratum.2022,
+  plt.iterspersion.stratum.2023,
+  
+  plt.iterspersion.stratum_fmp.2022,
+  plt.iterspersion.stratum_fmp.2023,
+  
+  interspersion_maps,
+  percentile.stratum,
+  percentile.stratum_fmp,
+  tbl.percentile.stratum,
+  tbl.percentile.stratum_fmp,
+  
+  # Spatiotemporal coverage map
+  plt.spatial_cov.2022,
+  plt.spatial_cov.2023,
+  
+  # Spatial plots
+  plt.spatial.2022,
+  plt.spatial.2023,
+  
+  # Rate
+  realized_rates.val,
+  realized_rates.val.fmp,
+  Tbl.Realized_Rates.FMP,
+  file = "spatiotemp_analysis.rdata"
+)
