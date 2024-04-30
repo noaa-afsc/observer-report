@@ -922,9 +922,35 @@ odds.scales <- list(
   #      legend.position = "none") +
   #ggh4x::facetted_pos_scales(y = odds.scales)
 
+odds.by.date.plot.2022 <- 
+  ggplot(filter(odds.ts.daily.cuml, YEAR == year - 1), aes(x = Date, col = fct_rev(TYPE))) +
+  # Add lines for selection rates  
+  geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
+  geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
+  geom_line(aes(y = running.pct), linewidth = 1.5) +
+  scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
+  ylab("Cumulative coverage percent\n") +
+  #coord_cartesian(ylim = c(0, 70)) +
+  xlab("\nDate") +
+  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0 & YEAR == year - 1), sides = "b", color = "gray50") + 
+  geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0 & YEAR == year - 1), sides = "t") + 
+  #' *==================For single-year plotting==================================*
+  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free") +
+  geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
+            hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
+  geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
+            hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
+  geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
+            hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
+  #' *===========================================================================*
+  fig.theme + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90),
+        strip.text.x = element_text(size = 10),
+        legend.position = "none") +
+  ggh4x::facetted_pos_scales(y = odds.scales)
 
-
-odds.by.date.plot <- 
+odds.by.date.plot.2023 <- 
   ggplot(filter(odds.ts.daily.cuml, YEAR == year), aes(x = Date, col = fct_rev(TYPE))) +
   # Add lines for selection rates  
   geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
@@ -951,7 +977,6 @@ odds.by.date.plot <-
         strip.text.x = element_text(size = 10),
         legend.position = "none") +
   ggh4x::facetted_pos_scales(y = odds.scales)
-
 
 ```
 
@@ -1559,26 +1584,58 @@ For.ts.temporal.plot <- For.ts.temporal.plot %>%
 Temporal.plot.x_range <- data.frame(YEAR = rep(year + -1:0, each = 2)) %>%
   mutate(Date = as.Date(paste0(YEAR, c("-01-01", "-12-31"))))
 
-# Plot
-Temporal.plot <- 
-  ggplot(For.ts.temporal.plot, aes(x = Date)) +
+# Multi-Year Plot
+#Temporal.plot <- 
+ # ggplot(For.ts.temporal.plot, aes(x = Date)) +
+  # Add lines for coverage rates
+  #geom_line(aes(y = n.cuml), col = "black", linewidth = 2) +
+  #geom_line(aes(y = n.expected), col = "gray") +
+  #geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
+  #geom_rug(aes(x = Date.outside), sides = "b") +
+  #facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free", space = "free_x") +
+    # Annotate p-values
+  #geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
+  #          hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
+  # Plot invisible points to ensure x-facets span the entire year
+  #geom_point(data = Temporal.plot.x_range, y = 0, alpha = 0) +
+  #theme_bw() +
+  #theme(axis.text.x = element_text(angle = 90)) +
+  #ylab("Cumulative trips in trip-selection strata\n") +
+  #xlab("\nDate")
+
+# Single-Year Plot
+Temporal.plot.2022 <- 
+  ggplot(filter(For.ts.temporal.plot, YEAR == year - 1), aes(x = Date)) +
   # Add lines for coverage rates
   geom_line(aes(y = n.cuml), col = "black", linewidth = 2) +
   geom_line(aes(y = n.expected), col = "gray") +
   geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
   geom_rug(aes(x = Date.outside), sides = "b") +
-  facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free", space = "free_x") +
+  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free", space = "free_x") +
     # Annotate p-values
   geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
             hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
-  # Plot invisbile points to ensure x-facets span the entire year
-  geom_point(data = Temporal.plot.x_range, y = 0, alpha = 0) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ylab("Cumulative trips in trip-selection strata\n") +
+  xlab("\nDate") +
+  scale_x_date(limits = as.Date(c("2022-01-01", "2023-01-01")))
+
+Temporal.plot.2023 <- 
+  ggplot(filter(For.ts.temporal.plot, YEAR == year), aes(x = Date)) +
+  # Add lines for coverage rates
+  geom_line(aes(y = n.cuml), col = "black", linewidth = 2) +
+  geom_line(aes(y = n.expected), col = "gray") +
+  geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
+  geom_rug(aes(x = Date.outside), sides = "b") +
+  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free", space = "free_x") +
+    # Annotate p-values
+  geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
+            hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90)) +
   ylab("Cumulative trips in trip-selection strata\n") +
   xlab("\nDate")
-
-Temporal.plot
 
 ```
 
@@ -2752,14 +2809,25 @@ arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
 
 #####
 
-```{r odds.by.date.plot, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
-suppressWarnings(print(odds.by.date.plot))   
+```{r odds.by.date.plot.2022, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+suppressWarnings(print(odds.by.date.plot.2022))   
 
 # Figure 2 in 2019 Annual Report
  
 ```
 
-####`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS organized by original date entered for all trips (grey line and grey text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Grey shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or canceled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being canceled that was selected for observer coverage (grey on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
+####`r fig_nums('odds.by.date.plot.2022', caption = paste0('Rate of selected trips logged into ODDS during ', year - 1, ' organized by original date entered for all trips (gray line and gray text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Gray shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or canceled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being canceled that was selected for observer coverage (gray on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
+
+#####
+
+```{r odds.by.date.plot.2023, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+suppressWarnings(print(odds.by.date.plot.2023))   
+
+# Figure 2 in 2019 Annual Report
+ 
+```
+
+####`r fig_nums('odds.by.date.plot.2023', caption = paste0('Rate of selected trips logged into ODDS during ', year, ' organized by original date entered for all trips (gray line and gray text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Gray shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. The final coverage rates were higher than if trip dates had not been altered and/or canceled. Vertical tick marks on the horizontal axis depict dates when an ODDS trip was selected due to a prior trip being canceled that was selected for observer coverage (gray on the bottom for originally logged trips, and black on the top for trips after user manipulation).'))` 
 
 #####
 
@@ -2771,11 +2839,19 @@ suppressMessages(print(em.times.figure))
 
 #####
 
-```{r Temporal.plot, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
-print(Temporal.plot)
+```{r Temporal.plot.2022, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+print(Temporal.plot.2022)
 ```
 
-####`r fig_nums('Temporal.plot', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as *p*-values. Dashed verical lines and shaded rectangles denote the period when waivers were being issued for observer coverage due to COVID-19. During the waiver period, there was no expected number of observed trips. The EM strata were not affected by the waiver period, and so the expected numbers of monitored trips in those strata are uninterrupted.'))`  
+####`r fig_nums('Temporal.plot.2022', caption = paste0('Cumulative number of trips monitored during ', year - 1, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as *p*-values.'))`  
+
+#####
+
+```{r Temporal.plot.2023, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+print(Temporal.plot.2023)
+```
+
+####`r fig_nums('Temporal.plot.2023', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the horizontal x-axis. The results of tests that the observed rate derived from a binomial distribution sampled at the selection rate are denoted as *p*-values.'))`  
 
 #####
 
