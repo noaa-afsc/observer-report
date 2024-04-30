@@ -1242,6 +1242,14 @@ Coverage.Table$Strata = factor(Coverage.Table$Strata, levels = c(levels(Coverage
 Coverage.Table <- replace(Coverage.Table, is.na(Coverage.Table), " ")
 
 rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Coverage.Table.TOTALS, Coverage.Table.zero)
+
+# Check full coverage to see why < 100%
+full.cover.no.obs <- work.data %>%
+  filter(COVERAGE_TYPE == "FULL" & OBSERVED_FLAG == "N") %>%
+  select(ADP, TRIP_ID, VESSEL_ID, PERMIT, AGENCY_GEAR_CODE, FMP, MANAGEMENT_PROGRAM_CODE, 
+         PROCESSING_SECTOR, TRIP_TARGET_CODE, LENGTH_OVERALL) %>%
+  distinct()
+
 ```
 
 ```{r coverage_paragraph, message=FALSE, warning=FALSE, include=FALSE}
