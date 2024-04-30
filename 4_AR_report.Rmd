@@ -2696,9 +2696,9 @@ kable(em.summary.table)
 
 #####
 
-####`r tbl_nums('Pollock.observed.table', caption = "The number of pollock deliveries made by vessels in the *TRW* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
+####`r tbl_nums('Pollock.observed.table.2022', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year - 1, ', separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
-```{r Pollock.observed.table, echo=FALSE, tab.cap=""}
+```{r Pollock.observed.table.2022, echo=FALSE, tab.cap=""}
 
 Pollock.observed.table <- 
   Pollock.observed.table %>%
@@ -2706,31 +2706,77 @@ Pollock.observed.table <-
          `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`)) 
 
-flextable(Pollock.observed.table) %>%
-  mk_par(j = 5, part = "header",
+#flextable(Pollock.observed.table) %>%
+  #mk_par(j = 5, part = "header",
+  #       value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
+  #mk_par(j = 6, part = "header",
+  #       value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
+  #align(part = "all", align = "center") %>%
+  #bold(bold = TRUE, part = "header") %>%
+  #merge_v(j = c("Year", "FMP", "Coverage category")) %>%
+  #hline(i = c(4, 12)) %>%
+  #hline(i = c(8, nrow(Pollock.observed.table)), border = officer::fp_border(width = 2)) %>%
+  #surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  #fix_border_issues() %>%
+  #width(j = 1, 0.5, unit = "in") %>%
+  #width(j = 2, 0.84, unit = "in") %>%
+  #width(j = c(3, 5:6), 0.81, unit = "in") %>%
+  #width(j = 4, 1, unit = "in") %>%
+  #width(j = 7, 0.75, unit = "in")
+
+Pollock.observed.table.2022 <- Pollock.observed.table %>% filter(Year == year - 1) %>% select(-Year)
+
+flextable(Pollock.observed.table.2022) %>%
+  mk_par(j = 4, part = "header",
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
-  mk_par(j = 6, part = "header",
+  mk_par(j = 5, part = "header",
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
   align(part = "all", align = "center") %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = c("Year", "FMP", "Coverage category")) %>%
-  hline(i = c(4, 12)) %>%
-  hline(i = c(8, nrow(Pollock.observed.table)), border = officer::fp_border(width = 2)) %>%
+  merge_v(j = c("FMP", "Coverage category")) %>%
+  hline(i = c(4, 8)) %>%
+  hline(i = nrow(Pollock.observed.table.2022), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.5, unit = "in") %>%
-  width(j = 2, 0.84, unit = "in") %>%
-  width(j = c(3, 5:6), 0.81, unit = "in") %>%
-  width(j = 4, 1, unit = "in") %>%
-  width(j = 7, 0.75, unit = "in")
-  
+  width(j = 1, 0.84, unit = "in") %>%
+  width(j = c(2, 4:5), 0.81, unit = "in") %>%
+  width(j = 3, 1, unit = "in") %>%
+  width(j = 6, 0.75, unit = "in")
+ 
 ```
 
 #####
 
-####`r tbl_nums('Pollock.efp.table', caption = "The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum, separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.")`  
+####`r tbl_nums('Pollock.observed.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year, ', separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
-```{r Pollock.efp.table, echo=FALSE, tab.cap=""}
+```{r Pollock.observed.table.2023, echo=FALSE, tab.cap=""}
+
+Pollock.observed.table.2023 <- Pollock.observed.table %>% filter(Year == year) %>% select(-Year)
+
+flextable(Pollock.observed.table.2023) %>%
+  mk_par(j = 4, part = "header",
+         value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
+  align(part = "all", align = "center") %>%
+  bold(bold = TRUE, part = "header") %>%
+  merge_v(j = c("FMP", "Coverage category")) %>%
+  hline(i = c(4, 9)) %>%
+  hline(i = nrow(Pollock.observed.table.2023), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues() %>%
+  width(j = 1, 0.84, unit = "in") %>%
+  width(j = c(2, 4:5), 0.81, unit = "in") %>%
+  width(j = 3, 1, unit = "in") %>%
+  width(j = 6, 0.75, unit = "in")
+ 
+```
+
+#####
+
+####`r tbl_nums('Pollock.efp.table.2022', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year - 1, ', separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+
+```{r Pollock.efp.table.2022, echo=FALSE, tab.cap=""}
 
 Pollock.efp.table <-
   Pollock.efp.table %>%
@@ -2738,23 +2784,70 @@ Pollock.efp.table <-
          `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
 
-flextable(Pollock.efp.table) %>%
-  mk_par(j = 5, part = "header",
+#flextable(Pollock.efp.table) %>%
+ # mk_par(j = 5, part = "header",
+  #       value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
+  #mk_par(j = 6, part = "header",
+  #       value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
+  #align(part = "all", align = "center") %>%
+  #bold(bold = TRUE, part = "header") %>%
+  #merge_v(j = c("Year", "FMP", "Coverage category")) %>%
+  #hline(i = c(5, 14)) %>%
+  #hline(i = c(10, nrow(Pollock.efp.table)), border = officer::fp_border(width = 2)) %>%
+  #surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  #fix_border_issues() %>%
+  #width(j = 1, 0.5, unit = "in") %>%
+  #width(j = 2, 0.84, unit = "in") %>%
+  #width(j = c(3, 5:6), 0.82, unit = "in") %>%
+  #width(j = 4, 1.78, unit = "in") %>%
+  #width(j = 7, 0.75, unit = "in")
+
+
+Pollock.efp.table.2022 <- Pollock.efp.table %>% filter(Year == year - 1) %>% select(-Year)
+
+flextable(Pollock.efp.table.2022) %>%
+  mk_par(j = 4, part = "header",
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
-  mk_par(j = 6, part = "header",
+  mk_par(j = 5, part = "header",
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
   align(part = "all", align = "center") %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = c("Year", "FMP", "Coverage category")) %>%
-  hline(i = c(5, 14)) %>%
-  hline(i = c(10, nrow(Pollock.efp.table)), border = officer::fp_border(width = 2)) %>%
+  merge_v(j = c("FMP", "Coverage category")) %>%
+  hline(i = c(5, 10)) %>%
+  hline(i = nrow(Pollock.efp.table.2022), border = officer::fp_border(width = 2)) %>%
   surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.5, unit = "in") %>%
-  width(j = 2, 0.84, unit = "in") %>%
-  width(j = c(3, 5:6), 0.82, unit = "in") %>%
-  width(j = 4, 1.78, unit = "in") %>%
-  width(j = 7, 0.75, unit = "in")
+  width(j = 1, 0.84, unit = "in") %>%
+  width(j = c(2, 4:5), 0.82, unit = "in") %>%
+  width(j = 3, 1.78, unit = "in") %>%
+  width(j = 6, 0.75, unit = "in")
+
+```
+
+#####
+
+####`r tbl_nums('Pollock.efp.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that delivered to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+
+```{r Pollock.efp.table.2023, echo=FALSE, tab.cap=""}
+
+Pollock.efp.table.2023 <- Pollock.efp.table %>% filter(Year == year) %>% select(-Year)
+
+flextable(Pollock.efp.table.2023) %>%
+  mk_par(j = 4, part = "header",
+         value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
+  mk_par(j = 5, part = "header",
+         value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
+  align(part = "all", align = "center") %>%
+  bold(bold = TRUE, part = "header") %>%
+  merge_v(j = c("FMP", "Coverage category")) %>%
+  hline(i = c(4, 9)) %>%
+  hline(i = nrow(Pollock.efp.table.2023), border = officer::fp_border(width = 2)) %>%
+  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  fix_border_issues() %>%
+  width(j = 1, 0.84, unit = "in") %>%
+  width(j = c(2, 4:5), 0.82, unit = "in") %>%
+  width(j = 3, 1.78, unit = "in") %>%
+  width(j = 6, 0.75, unit = "in")
 
 ```
 
