@@ -24,6 +24,8 @@ if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr,
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
 if(!require("FMAtools")) devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
+if(!require("flextable")) install.packages("flextable") #markdown tables
+if(!require("officer"))  install.packages("officer") #expanded formatting functions for flextable
 
 # II. Functions ----
 
