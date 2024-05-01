@@ -17,7 +17,13 @@ library(ggplot2)
 ```
 
 ```{r load_data}
-load("spatiotemp_analysis.rdata")
+# Download and load the outputs of spatiotemp_analysis.R
+if(F){
+  project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
+  gdrive_download("2023_AR_spatiotemp_analysis.rdata", project_folder)
+}
+
+load("2023_AR_spatiotemp_analysis.rdata")
 ```
 
 ```{r proximity_prep}
@@ -88,16 +94,14 @@ print(plt.spatial.2023)
 **Figure X.** Spatial patterns of the distribution of monitoring in partial coverage in 2023. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips/offloads actually monitored relative to the median of 10K simulations of random sampling using the stratum's realized monitoring rate. Cells without a number had the same number of monitored trips/offloads as the median of the simulations (difference of zero). Cells where the actual number of monitored trips/offloads was more extreme than 80% of simulated outcomes are colored pink (fewer trips/offloads than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes have bold text and are outlined in blue.
 
 
-
-
-
 \newpage
 # 2022 ####
 \newpage
 
+
 # Spatiotemporal Distribution of Monitoring Coverage ###
 
-The coverage in the *OB HAL* stratum was evenly distributed at the stratum and FMP-levels, but the coverage was lower than expected from the programmed selection rates, with a proximity index in the `r ob_hal.2022.prog.perc`th percentile stratum-wide and `r ob_hal.2022.prog.perc_bsai`th percentile in the BSAI. Coverage in the *OB POT* stratum met expectations at both the stratum and FMP-level. The *OB TRW* stratum did not achieve the expected coverage from either the programmed selection rates (`r ob_trw.2022.prog.perc`th percentile) or realized monitoring rates (`r ob_trw.2022.real.perc`th percentile), indicating that monitoring was not evenly distributed in time and/or space. The achieved proximity indices at the FMP-levels were also low but not as unlikely. Further exploration indicated the low interspersion values were due to having no monitored trips during the middle of the year and no monitored trips in the western-most extent of the stratum.
+The coverage in the *OB HAL* stratum was evenly distributed at the stratum and FMP-levels, but the coverage was lower than expected from the programmed selection rates, with a proximity index in the `r ob_hal.2022.prog.perc`th percentile stratum-wide and `r ob_hal.2022.prog.perc_bsai`th percentile in the BSAI. Further investigation indicated a spatial lack of coverage in the Bering Sea near St. Matthew Island. Coverage in the *OB POT* stratum met expectations at both the stratum and FMP-level. The *OB TRW* stratum did not achieve the expected coverage from either the programmed selection rates (`r ob_trw.2022.prog.perc`th percentile) or realized monitoring rates (`r ob_trw.2022.real.perc`th percentile), indicating that monitoring was not evenly distributed in time and/or space. The achieved proximity indices at the FMP-levels were also low but not as unlikely. Further exploration indicated the low proximity values were due to having no monitored trips during the middle of the year and no monitored trips in the western-most extent of the stratum.
 
 Due to the delay in video review for the *EM HAL* and *EM POT* strata and the resulting realized rates that were lower than programmed, actual proximity indices were lower than expected and generally outside the simulated distributions. Therefore, the coverage achieved at the time of the 2022 Annual Report was not distributed evenly, largely due to a lack of data from trips in the latter half of the year, especially in the GOA. The actual proximity index of the *EM TRW EFP* stratum was well within the expected ranges.
 
