@@ -104,7 +104,7 @@ box_def.stratum_gear_fmp <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
   year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
 
-## Split by Stratum Only -----------------------------------------------------------------------------------------------
+## Stratum-Specific Proximity ------------------------------------------------------------------------------------------
 
 # Expected interspersion given the programmed and realized rates
 exp_interspersion.programmed.stratum <- calculate_expected_interspersion(box_def.stratum, programmed_rates)
@@ -140,10 +140,6 @@ dmn_N.stratum[, X := pmin(X, INSP)]
 dmn_N.stratum[, STRATA_DMN_N := formatC(round(STRATA_DMN_N), width = max(nchar(round(STRATA_DMN_N))))]
 #' TODO If the realized distribution is > programmed, the label won't be consistently placed using X. Use the density.X
 #' object to grab the minimum X value of each year x strata.
-
-
-#' TODO *Subset data for separate years*
-#' TODO *Annotate the programmed and realized rates next to trip counts?*
 
 #' Plot distributions vs actually realized
 plot.interspersion.stratum <- plot_interspersion_density(density.stratum, real_interspersion.stratum, dmn_N.stratum, strata_levels) + 
@@ -195,7 +191,7 @@ save_as_docx(tbl.percentile.stratum, path = "output_data/spatiotemp_percentile_s
 
 
 
-## Split by Stratum and FMP (BSAI and GOA) -----------------------------------------------------------------------------
+## Proximity with Stratum and FMP (BSAI and GOA) -----------------------------------------------------------------------
 
 # Expected interspersion given the programmed and realized rates
 exp_interspersion.programmed.stratum_fmp <- calculate_expected_interspersion(box_def.stratum_fmp, programmed_rates)
@@ -204,7 +200,7 @@ exp_interspersion.realized.stratum_fmp <- calculate_expected_interspersion(box_d
 # Actually realized interspersion
 real_interspersion.stratum_fmp <- calculate_realized_interspersion(box_def.stratum_fmp, realized_mon)
 
-### Simulate trip selection to create distributions of interspersion ----
+### Simulate trip selection to create distributions of proximity ----
 
 # Programmed rates
 sim.programmed.stratum_fmp <- simulate_interspersion(box_def.stratum_fmp, programmed_rates, iter = 1e4, seed = 12345)
@@ -766,8 +762,8 @@ dcast(
 
 save(
   
-  # TODO RENAME TO PROXIMITY
   # TODO OMIT EM_TRW_EFP from the FMP-specific proximity plots
+  # TODO split FMP-specific rates table, or don't include it?
   
   # Interspersion distributions
   plt.iterspersion.stratum.2022,
@@ -776,7 +772,7 @@ save(
   plt.iterspersion.stratum_fmp.2022,
   plt.iterspersion.stratum_fmp.2023,
   
-  interspersion_maps,
+  interspersion_maps,  # This object is particularly large but provides the most granularity on proximity.
   percentile.stratum,
   percentile.stratum_fmp,
   tbl.percentile.stratum,
@@ -794,5 +790,8 @@ save(
   realized_rates.val,
   realized_rates.val.fmp,
   Tbl.Realized_Rates.FMP,
-  file = "spatiotemp_analysis.rdata"
+  file = "2023_AR_spatiotemp_analysis.rdata"
 )
+
+# Upload to Shared Gdrive. 
+gdrive_upload("2023_AR_spatiotemp_analysis.rdata", project_folder)
