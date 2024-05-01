@@ -966,7 +966,7 @@ plot_interspersion_density <- function(den, real_interspersion, dmn_N, strata_le
       axis.text.y = element_blank(), axis.ticks.y = element_blank(),
       panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank() ) + 
     ylim(c(-1, 1)) + 
-    labs(x = "Interspersion", y = "Density") +  
+    labs(x = "Proximity Index", y = "Density") +  
     scale_fill_identity(
       name = "Monitoring Rate", guide = "legend",
       breaks = fill_breaks, labels = c('Realized', "Programmed")) +
@@ -1051,8 +1051,8 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     # Plot by HEX_ID (across WEEK)
     stratum_map_lst[["HEX_ID.realized"]] <- ggplot(stratum_hex) + 
       facet_grid(ADP ~ STRATA, labeller = labeller(STRATA = function(x) gsub("_", " ", x))) +
-      geom_sf(data = shp_land, fill = "gray80") +
-      geom_sf(data = shp_fmp, color = "black", fill = NA) +
+      geom_sf(data = ak_low_res, fill = "gray80") +
+      geom_sf(data = fmp_low_res, color = "black", fill = NA) +
       geom_sf(aes(fill = DIFF), alpha = 0.8) + 
       scale_fill_gradient2() + 
       coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) +
@@ -1089,8 +1089,8 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
       facet_grid(ADP ~ STRATA, labeller = labeller(
         STRATA = function(x) paste0("Stratum : ", gsub("_", " ", x)),
         ADP = function(x) paste0("Year : ", x))) + 
-      geom_sf(data = shp_land, fill = "gray80") +
-      geom_sf(data = shp_fmp, color = "black", fill = NA) +
+      geom_sf(data = ak_low_res, fill = "gray80") +
+      geom_sf(data = fmp_low_res, color = "black", fill = NA) +
       geom_sf(aes(fill = DIFF), alpha = 0.8) + 
       scale_fill_gradient2() + 
       coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) +
