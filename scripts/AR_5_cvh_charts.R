@@ -264,6 +264,7 @@ river2_theme <- function(labels, axis1_text_size = 12, axis1_min_text_size = 10,
 # Correct spelling -------------------------------------------------------------
 statements_combined$STATEMENT_TYPE[which(statements_combined$STATEMENT_TYPE == 'Inadequate Accomodations')] <- 'Inadequate Accommodations'
 statements_combined$STATEMENT_TYPE[which(statements_combined$STATEMENT_TYPE == 'Catcher Processer Longline')] <- 'Catcher Processor Longline'
+statements_combined$OLD_OLE_CATEGORY[which(statements_combined$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')] <- 'OLE PRIORITY: INTERPERSONAL'
 
 # Create labels for OLD_OLE_CATEGORY -------------------------------------------
 # break up strings of old ole categories to fit in boxes better
@@ -282,8 +283,8 @@ statements_combined$OLD_OLE_CATEGORY_LABEL[
 ] <- 'LIMITED ACCESS\nPROGRAMS'
 
 statements_combined$OLD_OLE_CATEGORY_LABEL[
-  which(statements_combined$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL')
-] <- 'OLE PRIORITY:\nINTER-PERSONAL'
+  which(statements_combined$OLD_OLE_CATEGORY == 'OLE PRIORITY: INTERPERSONAL')
+] <- 'OLE PRIORITY:\nINTERPERSONAL'
 
 statements_combined$OLD_OLE_CATEGORY_LABEL[
   which(statements_combined$OLD_OLE_CATEGORY == 'OLE PRIORITY: SAFETY AND DUTIES')
@@ -297,7 +298,7 @@ statements_combined$OLD_OLE_CATEGORY_LABEL[
 # create ordered factors for OLD OLE CATEGORY
 statements_combined$OLD_OLE_CATEGORY_LABEL <- 
   factor(statements_combined$OLD_OLE_CATEGORY_LABEL, 
-         levels = c('OLE PRIORITY:\nINTER-PERSONAL',
+         levels = c('OLE PRIORITY:\nINTERPERSONAL',
                     'OLE PRIORITY:\nSAFETY AND DUTIES',
                     'COAST GUARD',
                     'LIMITED ACCESS\nPROGRAMS',
@@ -724,7 +725,7 @@ colors <- nmfs_palette('regional')(6)
 OLEPIP_number_rainplot <- {
   
   ggplot(data = statements_combined %>%
-           filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTER-PERSONAL'),
+           filter(OLD_OLE_CATEGORY == 'OLE PRIORITY: INTERPERSONAL'),
          aes(x = factor(FIRST_VIOL_YEAR,
                         levels = c(2022, 2023)),
              y = NUMBER_VIOLATIONS,
@@ -732,7 +733,7 @@ OLEPIP_number_rainplot <- {
              color = interaction(FIRST_VIOL_YEAR, OLE_SYSTEM))) +
     labs(x = 'Year',
          y = 'Occurrences per Statement',
-         title = 'OLE Priority: Inter-Personal') +
+         title = 'OLE Priority: Interpersonal') +
     facet_grid(. ~ factor(OLE_SYSTEM,
                           levels = c('OLD', 'NEW')), 
                scales = 'free',) +
