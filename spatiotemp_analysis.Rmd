@@ -14,6 +14,7 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
 library(ggplot2)
+library(flextable)
 ```
 
 ```{r load_data}
@@ -72,7 +73,7 @@ In the *OB HAL* stratum, there was an unlikely high number of monitored trips in
 \newpage
 
 ```{r interspersion.2023, fig.height = 7, fig.width = 6.5, dpi = 600}
-print(plt.iterspersion.stratum.2023)
+print(plt.proximity.stratum.2023)
 ```
 
 **Figure X.** Stratum-level proximity indices in partial coverage in 2023. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
@@ -80,7 +81,7 @@ print(plt.iterspersion.stratum.2023)
 \newpage
 
 ```{r interspersion_fmp.2023, fig.height = 7, fig.width = 6.5, dpi = 600}
-print(plt.iterspersion.stratum_fmp.2023)
+print(plt.proximity.stratum_fmp.2023)
 ```
 
 **Figure X.** Stratum and FMP-level proximity indices in partial coverage in 2023. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
@@ -113,7 +114,7 @@ In the *OB HAL* stratum, there was an unlikely few number of monitored trips in 
 
 
 ```{r interspersion.2022, fig.height = 7, fig.width = 6.5, dpi = 600}
-print(plt.iterspersion.stratum.2022)
+print(plt.proximity.stratum.2022)
 ```
 
 **Figure X.** Stratum-level proximity indices in partial coverage in 2022. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
@@ -121,7 +122,7 @@ print(plt.iterspersion.stratum.2022)
 \newpage
 
 ```{r interspersion_fmp.20223, fig.height = 7, fig.width = 6.5, dpi = 600}
-print(plt.iterspersion.stratum_fmp.2022)
+print(plt.proximity.stratum_fmp.2022)
 ```
 
 **Figure X.** Stratum and FMP-level proximity indices in partial coverage in 2022. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10K simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
@@ -133,3 +134,9 @@ print(plt.spatial.2022)
 ```
 
 **Figure X.** Spatial patterns of the distribution of monitoring in partial coverage in 2022. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips/offloads actually monitored relative to the median of 10K simulations of random sampling using the stratum's realized monitoring rate. Cells without a number had the same number of monitored trips/offloads as the median of the simulations (difference of zero). Cells where the actual number of monitored trips/offloads was more extreme than 80% of simulated outcomes are colored pink (fewer trips/offloads than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes have bold text and are outlined in blue.
+
+\newpage
+
+```{r rates_by_fmp}
+Tbl.Realized_Rates.FMP
+```
