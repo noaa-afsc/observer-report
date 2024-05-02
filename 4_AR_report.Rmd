@@ -261,8 +261,10 @@ outcomes.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_D)) +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(2000, 3500, 500)) +
-  labs(y = paste("Density of simulated outcomes (", year - 1, "ADP)\n", sep = ""),
-       x = paste("\nTotal days used in ", year - 1, sep = ""))
+  #labs(y = paste("Density of simulated outcomes (", year - 1, "ADP)\n", sep = ""),
+   #    x = paste("\nTotal days used in ", year - 1, sep = ""))
+  labs(y = paste("Density of simulated outcomes"),
+       x = paste("\nTotal days used"))
 
 #' `------------2023--------------`
 
@@ -284,8 +286,10 @@ outcomes.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_D)) +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
   scale_x_continuous(limits = c(2450, 3750), breaks = seq(2000, 3500, 500)) +
-  labs(y = paste("Density of simulated outcomes (", year, "ADP)\n", sep = ""),
-       x = paste("\nTotal days used in ", year, sep = ""))
+  #labs(y = paste("Density of simulated outcomes (", year, "ADP)\n", sep = ""),
+   #    x = paste("\nTotal days used in ", year, sep = ""))
+  labs(y = paste("Density of simulated outcomes"),
+       x = paste("\nTotal days used"))
 ```
 
 ```{r costs.plot, include=FALSE}
@@ -325,8 +329,10 @@ costs.plot.2022 <- ggplot(bud_tbl.2022, aes(x = ADP_C)) +
         panel.grid.minor = element_blank()) +
   scale_x_continuous(breaks = seq(3750000, 4750000, 500000),
                      labels = dollar) +
-  labs(y = paste("Density of simulated outcomes (", year - 1, " ADP", ")\n", sep = ""),
-       x = paste("\nTotal contract costs in ", year - 1, sep = ""))
+  #labs(y = paste("Density of simulated outcomes (", year - 1, " ADP", ")\n", sep = ""),
+   #    x = paste("\nTotal contract costs in ", year - 1, sep = ""))
+  labs(y = paste("Density of simulated outcomes"),
+       x = paste("\nTotal contract costs"))
 
 #' `------------2023--------------`
 
@@ -364,8 +370,10 @@ costs.plot.2023 <- ggplot(bud_tbl.2023, aes(x = ADP_C)) +
   scale_x_continuous(breaks = seq(4000000, 6000000, 500000),
                      labels = dollar) +
   scale_y_continuous(breaks = seq(0, 0.0000025, 0.000001)) +
-  labs(y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
-       x = paste("\nTotal contract costs in ", year, sep = ""))
+  #labs(y = paste("Density of simulated outcomes (", year, " ADP", ")\n", sep = ""),
+   #    x = paste("\nTotal contract costs in ", year, sep = ""))
+  labs(y = paste("Density of simulated outcomes"),
+       x = paste("\nTotal contract costs"))
 
 ```
 
