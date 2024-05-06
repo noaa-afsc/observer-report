@@ -24,6 +24,8 @@ if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr,
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
 if(!require("FMAtools")) devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
+if(!require("flextable")) install.packages("flextable") #markdown tables
+if(!require("officer"))  install.packages("officer") #expanded formatting functions for flextable
 
 # II. Functions ----
 
@@ -33,14 +35,14 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   suppressMessages(require(lazyeval))
   
   #Relabel the permute field as YN
-  data.in <- rename_(data.in, .dots = setNames(YN_var, 'YN'))
+  data.in <- rename(data.in, 'YN' = YN_var)
   
   #Assign the grouping variables to data:
   #Groups will always implicitly include TRIP_ID,
   #Identify the fields to group by
   gp_vec <- c(gp_vec, "TRIP_ID", "YN") 
   
-  data.in <- group_by_(data.in, .dots = gp_vec)
+  data.in <- group_by_at(data.in, gp_vec)
   
   metrics.fxn <- 
     function(data){
@@ -119,7 +121,7 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   
   #*FLAG* New version of dplyr retains underlying grouping structure and messes up Ntable object below.
   actuals.out <-
-    group_by_(data.melt, .dots = annot_gp_vec) %>%
+    group_by_at(data.melt, annot_gp_vec) %>%
     summarize(Ytrips = length(unique(TRIP_ID[YN == 'Y'])),
               Ntrips = length(unique(TRIP_ID[YN == 'N'])),              
               obs.diff = mean(value[YN == "Y"], na.rm = TRUE) - mean(value[YN == "N"], na.rm = TRUE),
@@ -175,7 +177,7 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   
   summary <- 
     data.frame(
-      group_by_(permutation.out, .dots = annot_gp_vec) %>%
+      group_by_at(permutation.out, annot_gp_vec) %>%
         summarize(obs.diff = round(unique(obs.diff), 3),
                   mean.perm.diff = round(mean(na.omit(perm_result)), 3),
                   obs.diff.pct = round(unique(obs.diff_pct), 3),

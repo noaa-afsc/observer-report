@@ -82,7 +82,7 @@ predicted <- Nnd_tbl[
 ][, lapply(.SD, mean), keyby = .(YEAR, POOL, STRATA), .SDcols = c("Nh", "nh", "dh")] %>%
   # Remove zero stratum
   filter(POOL != "ZE") %>% 
-  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP",
+  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP", #' *2023 EM TRW EFP number off from ADP report value for some reason*
                             STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
                             STRATA == "POT" & POOL == "OB" ~ "OB POT",
                             STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
@@ -90,14 +90,12 @@ predicted <- Nnd_tbl[
                             STRATA == "EM_HAL" ~ "EM HAL",
                             TRUE ~ STRATA)) %>%
   rename(pred_days = dh) %>%
-  select(!c(POOL, Nh, nh)) 
+  select(!c(POOL, Nh, nh))
 
 # * Valhalla ----
 
-#' Initial upload of [2022] Valhalla to the Shared Gdrive. Originally obtained from the 2024 ADP data folder, keeping 
-#' 2022 only (run date of 2023-04-10 15:15:15 PDT)
-#' [https://drive.google.com/drive/folders/1em6NDOvfPIkgT7FlZkdUYh1S-_z7v2PE]. 
-#' *NOTE* Downloaded version 6 (instead of the current version, which returns an error during loading!). Renamed to
+#' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.
+#' (run date of 2023-04-10 15:15:15 PDT)
 if(FALSE){
   valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
   valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
@@ -177,13 +175,16 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
 mod_dat_copy[
-][STRATA == "EM_TRW_EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM_HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM_POT" | STRATA == "POT", STRATA := "OB POT"
+][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
+][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
+][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
 ][STRATA == "ZERO", STRATA := "OB HAL"]
+mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
 obs_act_days <- mod_dat_copy[, .(act_days = sum(DAYS)), keyby = .(ADP, STRATA)]
+obs_act_days <- mutate(obs_act_days, ADP = as.numeric(as.character(ADP)))
+if(!any(obs_act_days$STRATA %like% "OB ")) stop("You still have non-observer strata in 'obs_act_days'")
 
 rm(td_mod0, mod_dat, mod_dat_copy, model_trip_duration)
 
@@ -202,16 +203,16 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year, "' AND '31-DEC-", year, "'
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year - 1, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
-#The following query returns all landing ID's for offloads monitored for salmon all sectors.
+# The following query returns all landing ID's for offloads monitored for salmon all sectors.
 salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 
 # Data checks and clean up
 
-#Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
-salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n=n())
+# Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
+salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 
 # * ODDS ----
 
@@ -315,7 +316,7 @@ partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
-                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.data <- dbGetQuery(channel_afsc, script)
 
@@ -333,7 +334,7 @@ script <- paste0("SELECT DISTINCT et.vessel_id as EM_VESSEL_ID,
 
 transform.EM.data.vessel <- dbGetQuery(channel_afsc, script)
 
-#Fix EM.data VESSEL_ID
+# Fix EM.data VESSEL_ID
 EM.data <- rename(EM.data, PS_VESSEL_ID = VESSEL_ID)
 
 EM.data <- merge(EM.data, transform.EM.data.vessel, 
@@ -344,11 +345,11 @@ rm(transform.EM.data.vessel)
 
 # Get gear type for EM data
 script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
-                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
+                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
-#Select data for this report year and recode gear type to those used by CAS
+# Select data for this report year and recode gear type to those used by CAS
 EM.gear <- 
   select(EM.gear, TRIP_NUMBER, GEAR_TYPE_ID) %>% 
   distinct() %>% 
@@ -370,6 +371,7 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
 #' *2023: one vessel has trawl gear declared, but no trawl codes in EM.gear - this trip seems to be coming from EM.data*
+#' *2023: one vessel has a trip marked as NON_FISHING_TRIP = Y*
 single_gear_nas <- 
   filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
@@ -399,16 +401,20 @@ filter(EM.data, VESSEL_ID %in% multiple_gear_nas$VESSEL_ID) %>%
   distinct(TRIP_NUMBER, VESSEL_ID, TRIP_START_DATE_TIME, AGENCY_GEAR_CODE) %>% 
   arrange(VESSEL_ID, TRIP_START_DATE_TIME)
 
-# Fix NAs in AGENCY_GEAR_CODE for EM.data
+#' *Fix NAs in AGENCY_GEAR_CODE for EM.data*
+#' *TODO We should make the query more robust, filter out non-fishing trips and when gear is NA but ODDS has it as trawl.*
 EM.data <- 
   EM.data %>% 
   # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
   # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
+  mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER == "22_SUMNERSTRAIT01.01", "POT", AGENCY_GEAR_CODE)) %>%
   # NAs for vessels that (based on ODDS and PSMFC EM.data) did not actually fish in the EM strata 
-  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear
-  filter(VESSEL_ID  != "422")
+  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear 
+  filter(VESSEL_ID  != "422") %>%
+  #' *2023 AR* Another that had it's trip marked as non-fishing
+  filter(TRIP_NUMBER != "22_BLACKPEARL07.01")
 
 # The following query will provide a list of EM selected trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
@@ -540,7 +546,7 @@ if(F){
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
-                                              and adp =", year))
+                                              and adp IN(", paste(year + -1:0, collapse = ","), ")" ))
 
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
@@ -548,7 +554,7 @@ work.data <- work.data %>%
 
 # * Shapefiles ----
 # Initial upload to Shared Gdrive
-if(F) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 ## Load land and NMFS stat area shapefiles 
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
