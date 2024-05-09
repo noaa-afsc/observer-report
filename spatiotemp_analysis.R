@@ -312,7 +312,7 @@ plt.spatial_cov.2023 <- spatial_plots_cov$coverage_2023
 #' actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more 
 #' extreme than 80% of outcomes.
 
-spatial_plots <- plot_monitoring_spatial(box_def.stratum, realized_mon, sim.realied.stratum, strata_levels)
+spatial_plots <- plot_monitoring_spatial(box_def.stratum, realized_mon, sim.realized.stratum, strata_levels)
 plt.spatial.2022 <- spatial_plots$plt.spatial.2022
 plt.spatial.2023 <- spatial_plots$plt.spatial.2023
 
