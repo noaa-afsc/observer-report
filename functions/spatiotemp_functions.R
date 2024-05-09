@@ -1020,7 +1020,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
       facet_wrap(~TIME) + 
       geom_sf(data = stratum_sub.gaps, color = "red", alpha = 0, linewidth = 1) + 
       scale_fill_viridis_c(trans = "log") + 
-      coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) + 
+      coord_sf(xlim = stratum_sub.bbox[c(1, 3)], ylim = stratum_sub.bbox[c(2, 4)]) + 
       theme(legend.position = "bottom")
     # TODO Knowing which boxes were sampled vs which were neighboring might be informative too! 
     
@@ -1055,7 +1055,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
       geom_sf(data = fmp_low_res, color = "black", fill = NA) +
       geom_sf(aes(fill = DIFF), alpha = 0.8) + 
       scale_fill_gradient2() + 
-      coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) +
+      coord_sf(xlim = stratum_sub.bbox[c(1, 3)], ylim = stratum_sub.bbox[c(2, 4)]) +
       theme(legend.position = "bottom") + 
       labs(
         fill = "Difference (realized - expected) in number of\ntrips monitored or neighboring a monitored trip",
@@ -1093,7 +1093,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
       geom_sf(data = fmp_low_res, color = "black", fill = NA) +
       geom_sf(aes(fill = DIFF), alpha = 0.8) + 
       scale_fill_gradient2() + 
-      coord_sf(xlim = stratum_sub.bbox[c(1,3)], ylim = stratum_sub.bbox[c(2,4)]) +
+      coord_sf(xlim = stratum_sub.bbox[c(1, 3)], ylim = stratum_sub.bbox[c(2, 4)]) +
       theme(legend.position = "bottom") + 
       labs(
         fill = "Difference (realized - expected) in number of\ntrips monitored or neighboring a monitored trip",
@@ -1196,7 +1196,7 @@ plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_leve
       theme(
         legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
         axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank() ) + 
-      coord_sf(xlim = hex_geom.bbox[c(1,3)], ylim = hex_geom.bbox[c(2,4)]) + 
+      coord_sf(xlim = hex_geom.bbox[c(1, 3)], ylim = hex_geom.bbox[c(2, 4)]) + 
       labs(fill = "Proportion of simulated outcomes\nwhere actual value was more extreme") 
   }
   names(map_years.list) <- paste0("plt.spatial.", map_years)
@@ -1273,7 +1273,7 @@ plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, str
     geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
     stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == 2022 & TAIL == T), shape = 21) + 
     scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
-    coord_sf(xlim = hex_bbox[c(1,3)], ylim = hex_bbox[c(2,4)]) +
+    coord_sf(xlim = hex_bbox[c(1, 3)], ylim = hex_bbox[c(2, 4)]) +
     theme(
       legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
       axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 
@@ -1287,7 +1287,7 @@ plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, str
     geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
     stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == 2023 & TAIL == T), shape = 21) + 
     scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
-    coord_sf(xlim = hex_bbox[c(1,3)], ylim = hex_bbox[c(2,4)]) +
+    coord_sf(xlim = hex_bbox[c(1, 3)], ylim = hex_bbox[c(2, 4)]) +
     theme(
       legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
       axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 

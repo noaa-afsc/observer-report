@@ -39,7 +39,7 @@ source("functions/spatiotemp_functions.R")
 
 #' Load the ADFG statistical area shapefile.
 stat_area_sf <- st_read(
-  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = T) %>%
+  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = TRUE) %>%
   select(STAT_AREA) %>%
   st_transform(crs = 3467)
 
@@ -69,12 +69,12 @@ programmed_rates[, STRATA_N := realized_rates.val[programmed_rates, STRATA_N, on
 setcolorder(programmed_rates, c("ADP", "STRATA", "STRATA_N", "SAMPLE_RATE"))
 
 #' Check to make sure all year/strata names match between rates objects
-if( !fsetequal(unique(realized_rates.val[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
+if(!fsetequal(unique(realized_rates.val[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
   stop("STRATA and ADP in `realized_rates.val` does not match those in `programmed_rates!`")
 }
 
 #' Check to make sure all year/strata names match between pc_effort_st and rates objects!
-if( !fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
+if(!fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
   stop("STRATA and ADP in `pc_effort_dt` does not match those in `programmed_rates!`")
 }
 
@@ -87,17 +87,17 @@ strata_levels <- c("OB_HAL", "OB_POT", "OB_TRW", "EM_HAL", "EM_POT", "EM_TRW_EFP
 # Define boxes, post-stratifying by FMP only
 box_def.stratum <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = NULL, st = NULL))
+  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = NULL))
 
 # Define boxes, post-stratifying by FMP only
 box_def.stratum_fmp <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
+  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
 
 # Define boxes, post-stratifying by FMP and Gear type (for OB to EM and ZE interspersion)
 box_def.stratum_gear_fmp <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = T, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
+  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
 
 ## Stratum-Specific Proximity ------------------------------------------------------------------------------------------
 
@@ -110,11 +110,12 @@ real_interspersion.stratum <- calculate_realized_interspersion(box_def.stratum, 
 
 ### Simulate trip selection to create distributions of interspersion ----
 
-#' [Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = T`]
+
+#' [Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = TRUE`]
 # Programmed rates
-sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 1e4, seed = 12345, hex_smry = T)
+sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 1e4, seed = 12345, hex_smry = TRUE)
 # Realized rates
-sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 1e4, seed = 12345, hex_smry = T)
+sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 1e4, seed = 12345, hex_smry = TRUE)
 
 #' `Quickload`
 # save(sim.programmed.stratum, sim.realized.stratum, file = "output_data/spatiotemp_stratum_insp_i1e4.rdata")
@@ -192,7 +193,7 @@ density.realized.stratum_fmp <- calculate_density(sim.realized.stratum_fmp, "gre
 # Combine distributions
 density.stratum_fmp <- combine_distributions(density.realized.stratum_fmp, density.programmed.stratum_fmp)
 # Make labels for domain trip counts
-dist_x <- density.stratum_fmp[, .SD[1,], keyby = c(attr(density.stratum_fmp, "year_strata_domains")) ]
+dist_x <- density.stratum_fmp[, .SD[1, ], keyby = c(attr(density.stratum_fmp, "year_strata_domains")) ]
 dmn_N.stratum_fmp <- real_interspersion.stratum_fmp[dist_x, on = attr(density.stratum_fmp, "year_strata_domains")]
 dmn_N.stratum_fmp[, X := pmin(X, INSP)]
 dmn_N.stratum_fmp[, STRATA_DMN_N := formatC(round(STRATA_DMN_N), width = max(nchar(round(STRATA_DMN_N))))]
@@ -206,7 +207,7 @@ strata_levels2 <- c("OB_HAL", "EM_HAL", "OB_POT", "EM_POT", "OB_TRW", "EM_TRW_EF
 plt.proximity.stratum_fmp.2022 <- plot_interspersion_density(
   density.stratum_fmp[ADP == 2022], real_interspersion.stratum_fmp[ADP == 2022], dmn_N.stratum_fmp[ADP == 2022], strata_levels2) + 
   facet_nested_wrap(
-    ~ STRATA + BSAI_GOA, dir = "h", drop = F, ncol = 4, scales = "free", 
+    ~ STRATA + BSAI_GOA, dir = "h", drop = FALSE, ncol = 4, scales = "free", 
     labeller = labeller(
       STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x)),
       BSAI_GOA = function(x) paste0("FMP : ", x)))
@@ -214,7 +215,7 @@ plt.proximity.stratum_fmp.2022 <- plot_interspersion_density(
 plt.proximity.stratum_fmp.2023 <- plot_interspersion_density(
   density.stratum_fmp[ADP == 2023], real_interspersion.stratum_fmp[ADP == 2023], dmn_N.stratum_fmp[ADP == 2023], strata_levels2) + 
   facet_nested_wrap(
-    ~ STRATA + BSAI_GOA, dir = "h", drop = F, ncol = 4, scales = "free", 
+    ~ STRATA + BSAI_GOA, dir = "h", drop = FALSE, ncol = 4, scales = "free", 
     labeller = labeller(
       STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x)),
       BSAI_GOA = function(x) paste0("FMP : ", x)))
@@ -340,7 +341,7 @@ expected_ob_em_ze_interspersion <- calculate_dmn_interspersion(box_def.stratum_g
 #' Calculate the expected interspersion for each domain
 expected_dmn_interspersion.summary <- expected_ob_em_ze_interspersion$POOLED[
 ][GEAR != "TRW"  
-][, .(EXP_INSP = sum(BOX_DONOR_SAMPLE_PROB * BOX_DMN_w, na.rm = T) / sum(BOX_DMN_w)), keyby = .(ADP, POOL, BSAI_GOA, GEAR)]
+][, .(EXP_INSP = sum(BOX_DONOR_SAMPLE_PROB * BOX_DMN_w, na.rm = TRUE) / sum(BOX_DMN_w)), keyby = .(ADP, POOL, BSAI_GOA, GEAR)]
 
 # Programmed Rates Simulation
 realized_dmn_interspersion <- calculate_realized_dmn_interspersion(box_def.stratum_gear_fmp, realized_mon, ob_em_ze_adl)
@@ -443,7 +444,7 @@ realized_rates.val.fmp <- dcast(
   pc_effort_st[STRATA != "ZERO", .(
     N = uniqueN(TRIP_ID), 
     n = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]),
-    REALIZED = 100 *uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]) / uniqueN(TRIP_ID)), 
+    REALIZED = 100 * uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]) / uniqueN(TRIP_ID)), 
     keyby = .(ADP, STRATA, BSAI_GOA)],
   ADP + STRATA ~ BSAI_GOA, value.var = c("N", "n", "REALIZED"))
 # Merge in the programmed rates (AK-wide)
@@ -460,7 +461,7 @@ Tbl.Realized_Rates.FMP <- realized_rates.val.fmp %>%
     N_BSAI = "N", n_BSAI = "n", REALIZED_BSAI = "%",
     N_GOA  = "N", n_GOA  = "n", REALIZED_GOA  = "%") %>%
   colformat_int(j = 1, big.mark = "") %>%
-  colformat_double(j = c(3, 6,9), digits = 2) %>%
+  colformat_double(j = c(3, 6, 9), digits = 2) %>%
   add_header_row(values = c("Year", "Strata", "Selection\nrate", "BSAI", "GOA"), colwidths = c(1, 1, 1, 3, 3)) %>%
   italic(i = 2, j = c(4:5, 7:8), part = "header") %>%
   align(i = 1, j = c(4, 7), part = "header", align = "center") %>%
