@@ -186,7 +186,7 @@ times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
                 geom_histogram(bins = 20, fill="gray70") +
                 geom_vline(data = filter(times_smry, COVERAGE_TYPE != "FULL"), aes(xintercept = mean_data_timeliness), color = "red", lty = 2) +
                 geom_text(data = filter(times_smry, COVERAGE_TYPE != "FULL"), aes(x = mean_data_timeliness, y = Inf, label = label), angle = 90, hjust = 1.2, vjust = -.25) +
-                labs(x="Data timeliness (days)", y="Count") +
+                labs(x = "Data timeliness (days)", y = "Count") +
                 theme_bw()
 
 times_figure
