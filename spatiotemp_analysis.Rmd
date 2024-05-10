@@ -32,7 +32,7 @@ load("2023_AR_spatiotemp_analysis.rdata")
 
 # OB_TRW
 ob_trw.2023.prog.perc <- formatC(100 * percentile.stratum[ADP == 2023 & STRATA == "OB_TRW", `PERC PROG`], format = "f", digits = 2)
-ob_trw.2023.prog.perc_goa <- formatC(100* percentile.stratum_fmp[ADP == 2023 & STRATA == "OB_TRW" & `BSAI GOA` == "GOA", `PERC PROG`], digits = 2) 
+ob_trw.2023.prog.perc_goa <- formatC(100 * percentile.stratum_fmp[ADP == 2023 & STRATA == "OB_TRW" & `BSAI GOA` == "GOA", `PERC PROG`], digits = 2) 
 
 # EM
 em_fg.2023.prog.perc <- formatC(100 * max(percentile.stratum[ADP == 2023 & STRATA %in% c("EM_HAL", "EM_POT"), `PERC PROG`]), format = "f", digits = 2)
