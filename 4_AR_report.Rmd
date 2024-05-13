@@ -1,6 +1,5 @@
 ---
 title: "Deployment Performance Review of the 2023 North Pacific Observer Program"
-author: "Fishery Monitoring Science Committee"
 always_allow_html: true
 output:
   word_document:
@@ -125,22 +124,22 @@ In 2023, NMFS implemented an observer deployment allocation strategy of an adjus
 
 The deployment strata for 2023 (with abbreviation and coverage rate rounded to whole number) were defined as:
 
-●	Hook-and-line vessels greater than or equal to 40 ft length overall (LOA) monitored with observers (OB HAL - 18%).
-●	Pot vessels greater than or equal to 40 ft LOA monitored with observers (OB POT - 17%).
-●	Trawl vessels making a trip not covered by another stratum (OB TRW - 23%).
-●	Fixed-gear EM vessels (evaluated separately as EM HAL and EM POT - 30%). Initiated by the Council in 2018, trips in this stratum are randomly selected for monitoring through ODDS. Species identifications and counts derive from human review of location and video information captured from EM equipment. Weights for catch estimation are supplied from other sources.
-●	Vessels when fishing under the Trawl EM Exempted Fishing Permit (EFP). An Exempted Fishing Permit was applied for in 2019 and awarded starting in 2020. In June 2021 the Council took action to implement this as a non-EFP program. This EFP applies to trawl vessels fishing with pelagic gear targeting walleye pollock (Gadus chalcogrammus, hereafter referred to as “pollock”) in the BSAI and GOA. Vessels participating in the EFP do not log trips into ODDS. The EFP aims to gain monitoring efficiency by removing at-sea observers and transferring the responsibilities associated with the at-sea collection of PSC data and biological samples to observers stationed at the shoreside plant. Cameras and location EM systems installed on the vessel monitor for compliance with EFP rules. Participating vessels must retain all catch while fishing under the EFP except for: marine mammals, jellyfish, small amounts of discard that occur while cleaning the deck, large individual marine organisms, including large individual rays or skates, sharks except for Pacific spiny dogfish (Squalus suckleyi) and discard of catch resulting from an unforeseen and reasonably unforeseeable event that is beyond the control of the vessel operator or crew . Shore-based observers monitor for halibut, salmon and to collect biological tissues to generate estimates of stock of origin. The 2023 ADP had a dockside selection rate for monitoring in the GOA set at 30%. However, since there was no pre-generated selection frame to identify random samples from ODDS, the FMA directed observers to sample one in three deliveries for logistical efficiency. Therefore, this stratum has a 33% monitoring expectancy for dockside in the GOA (EM TRW EFP - 100% dockside observation BSAI, 33% dockside observation GOA).
+●	Hook-and-line vessels greater than or equal to 40 ft length overall (LOA) monitored with observers (OB HAL - 18%).\
+●	Pot vessels greater than or equal to 40 ft LOA monitored with observers (OB POT - 17%).\
+●	Trawl vessels making a trip not covered by another stratum (OB TRW - 23%).\
+●	Fixed-gear EM vessels (evaluated separately as EM HAL and EM POT - 30%). Initiated by the Council in 2018, trips in this stratum are randomly selected for monitoring through ODDS. Species identifications and counts derive from human review of location and video information captured from EM equipment. Weights for catch estimation are supplied from other sources.\
+●	Vessels when fishing under the Trawl EM Exempted Fishing Permit (EFP). An Exempted Fishing Permit was applied for in 2019 and awarded starting in 2020. In June 2021 the Council took action to implement this as a non-EFP program. This EFP applies to trawl vessels fishing with pelagic gear targeting walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”) in the BSAI and GOA. Vessels participating in the EFP do not log trips into ODDS. The EFP aims to gain monitoring efficiency by removing at-sea observers and transferring the responsibilities associated with the at-sea collection of PSC data and biological samples to observers stationed at the shoreside plant. Cameras and location EM systems installed on the vessel monitor for compliance with EFP rules. Participating vessels must retain all catch while fishing under the EFP except for: marine mammals, jellyfish, small amounts of discard that occur while cleaning the deck, large individual marine organisms, including large individual rays or skates, sharks except for Pacific spiny dogfish (*Squalus suckleyi*) and discard of catch resulting from an unforeseen and reasonably unforeseeable event that is beyond the control of the vessel operator or crew . Shore-based observers monitor for halibut, salmon and to collect biological tissues to generate estimates of stock of origin. The 2023 ADP had a dockside selection rate for monitoring in the GOA set at 30%. However, since there was no pre-generated selection frame to identify random samples from ODDS, the FMA directed observers to sample one in three deliveries for logistical efficiency. Therefore, this stratum has a 33% monitoring expectancy for dockside in the GOA (EM TRW EFP - 100% dockside observation BSAI, 33% dockside observation GOA).\
 ●	Fixed-gear vessels less than 40 ft LOA and vessels fishing with handline, jig, troll and dinglebar troll gear (Zero coverage - 0%).
 
 More information on the sampling design used by observers and the relationship between the sample design and catch estimation can be found in Cahalan and Faunce (2020) and the 2023 Observer Sampling Manual (AFSC 2022). Bycatch estimates of Chinook salmon in the GOA are estimated using methods described in Cahalan et al. (2014). In the event that a delivery cannot be monitored (e.g., the case in a tendered delivery or non-pollock delivery), then estimation of bycatch comes by applying salmon bycatch rates to landed catch. Estimates of stock of origin from salmon bycatch are produced by the AFSC’s Auke Bay Laboratory. 
 Although this chapter is focused on the partial coverage component of the fleet, the majority of the catch taken from the Federal waters off Alaska are completely monitored at the level of the trip (Full coverage - 100%). Vessels and processors in the full observer coverage category must comply with observer coverage requirements at all times when fish are harvested or processed. Specific requirements are defined in regulation at 50 CFR § 679.51(a) (2). The full coverage category includes the following:
 
-●	Catcher / processors (with limited exceptions).
-●	Motherships.
-●	Catcher vessels participating in programs that have transferable PSC allocations as part of a catch share program.
-●	Catcher vessels using trawl gear that have requested placement in the full coverage category for all fishing activity in the BSAI for one year.
-●	Inshore processors receiving or processing Bering Sea pollock.
-●	Catch share programs with transferable PSC allocations include Bering Sea pollock (both American Fisheries Act [AFA] and Community Development Quota [CDQ] programs), the groundfish CDQ fisheries (CDQ fisheries other than Pacific halibut and fixed-gear sablefish [Anoplopoma fimbria]; only vessels greater than 46 ft LOA) and the Central GOA Rockfish Program.
+●	Catcher / processors (with limited exceptions).\
+●	Motherships.\
+●	Catcher vessels participating in programs that have transferable PSC allocations as part of a catch share program.\
+●	Catcher vessels using trawl gear that have requested placement in the full coverage category for all fishing activity in the BSAI for one year.\
+●	Inshore processors receiving or processing Bering Sea pollock.\
+●	Catch share programs with transferable PSC allocations include Bering Sea pollock (both American Fisheries Act [AFA] and Community Development Quota [CDQ] programs), the groundfish CDQ fisheries (CDQ fisheries other than Pacific halibut and fixed-gear sablefish [*Anoplopoma fimbria*]; only vessels greater than 46 ft LOA) and the Central GOA Rockfish Program.
 
 ## Performance Review Objectives  
 `r if(tech.memo){'The following sections contain the FMSC review of the deployment of observers in'}` `r if(tech.memo){year}` `r if(tech.memo){'relative to the intended sampling plan and goals of the'}` `r if(tech.memo){year}` `r if(tech.memo){'ADP (NMFS'}` `r if(tech.memo){year-1}` `r if(tech.memo){'). This report identifies where potential mechanisms for biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the'}` `r if(tech.memo){year + 2}` `r if(tech.memo){'ADP.'}`  
@@ -2240,7 +2239,7 @@ NMFS. 2013. 2014 Annual Deployment Plan for Observers in the Groundfish and Hali
 
 `r if(tech.memo){'# Tables'}`
 
-####`r tbl_nums('trip.budget.tbl.2023', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
+`r tbl_nums('trip.budget.tbl.2023', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
 ```{r trip.budget.tbl.2023, echo=FALSE, tab.cap=""}
 
@@ -2271,7 +2270,7 @@ flextable(trip.budget.table.2023) %>%
 
 #####
 
-####`r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+`r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
 ```{r disposition.table.2023, echo=FALSE, tab.cap=""}
 # Table 2 from 2019 Annual Report
@@ -2317,7 +2316,7 @@ flextable(disposition.table.2023) %>%
 
 #####
 
-####`r tbl_nums('logged.table.2023', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator ("Random number selection") and those that remained after user manipulation ("Total final selected") in ', year, '. The relative impact of waivers in trip-selection is also shown ("% reduction of selected trips due to waivers). **Selections not from random numbers.'))` 
+`r tbl_nums('logged.table.2023', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator ("Random number selection") and those that remained after user manipulation ("Total final selected") in ', year, '. The relative impact of waivers in trip-selection is also shown ("% reduction of selected trips due to waivers). **Selections not from random numbers.'))` 
 
 ```{r logged.table.2023, echo=FALSE, tab.cap=""}
 # Table 3 from 2019 Annual Report
@@ -2368,7 +2367,7 @@ flextable(logged.table.2023) %>%
 
 #####
 
-####`r tbl_nums('Selection.table.2023', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
+`r tbl_nums('Selection.table.2023', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
 
 ```{r Selection.table.2023, echo=FALSE, tab.cap=""}
 
@@ -2417,7 +2416,7 @@ flextable(Selection.table.2023) %>%
 
 #####
 
-####`r tbl_nums('Coverage.Table.2023', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*) and sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
+`r tbl_nums('Coverage.Table.2023', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*) and sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
 ```{r Coverage.Table.2023, echo=FALSE, tab.cap=""}
 
@@ -2470,7 +2469,7 @@ as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
 
 #####
 
-####`r tbl_nums('Pollock.observed.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+`r tbl_nums('Pollock.observed.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
 ```{r Pollock.observed.table.2023, echo=FALSE, tab.cap=""}
 
@@ -2503,7 +2502,7 @@ flextable(Pollock.observed.table.2023) %>%
 
 #####
 
-####`r tbl_nums('Pollock.efp.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+`r tbl_nums('Pollock.efp.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
 ```{r Pollock.efp.table.2023, echo=FALSE, tab.cap=""}
 
@@ -2536,13 +2535,11 @@ flextable(Pollock.efp.table.2023) %>%
 
 #####
 
-####`r tbl_nums('em.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
+`r tbl_nums('em.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
 
 ```{r em.summary.table, echo=FALSE, tab.cap="", eval=F, include=F, eval=FALSE}
-# Table 6 from 2019 Annual Report
-####`r tbl_nums('em.summary.table', caption = "The number of EM hard drives received and reviewed by gear type and month.")`    
-# FIXME - disabled this chunk since some months are missing 
-#' TODO *2023 AR - exclude? No longer reporting EM hard drive review by month?*'
+# FIXME - disabled this chunk since 
+#' TODO *2023 AR - THIS IS OLD CODE - PHIL UPDATED IN SEPARATE SCRIPT*
 for.em.summary.table <- EM.review %>% 
                         filter(TRIP_STATUS == "COMPLETED" & 
                                (year(ACTUAL_EM_TRIP_START_DATE_TIME) != 2020 | #Excluding 2019 data trips
@@ -2574,20 +2571,6 @@ kable(em.summary.table)
 
 #####
 
-<!--####`r tbl_nums('OBSERVED_FLAG.results', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). A Bonferroni adjustment has been applied to *p*-values.'))` --> 
-
-```{r OBSERVED_FLAG.results, echo=FALSE, tab.cap="", eval=FALSE}
-
-# Italicize strata
-OBSERVED_FLAG.results$Strata <- cell_spec(OBSERVED_FLAG.results$Strata, italic = TRUE)
-
-kbl(OBSERVED_FLAG.results, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r", times = 6)))  %>% 
-  kable_paper() %>%
-  collapse_rows(columns = 1:3, valign = "top")
-```
-
-#####
-
 `r if(tech.memo){'# Figures'}`
 
 ```{r outcomes.plot.2023, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
@@ -2609,7 +2592,7 @@ arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
 
 ```
 
-####`r fig_nums('outcomes.plot.2023', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
+`r fig_nums('outcomes.plot.2023', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
 
 #####
 
@@ -2617,7 +2600,7 @@ arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
 suppressMessages(print(em.times.figure))
 ```
 
-####`r fig_nums('em.times.figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Dashed red lines and annotations show mean data timeliness.")`  
+`r fig_nums('em.times.figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Dashed red lines and annotations show mean data timeliness.")`  
 
 #####
 
@@ -2627,7 +2610,7 @@ suppressWarnings(print(odds.by.date.plot.2023))
  
 ```
 
-####`r fig_nums('odds.by.date.plot.2023', caption = paste0('Rate of selected trips logged into ODDS during ', year, ' organized by original date entered for all trips (gray line and gray text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Gray shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. Vertical tick marks on the x-axis depict dates when selected trips were canceled (gray, on the bottom) and when inherited trips were monitored (black, on the top).'))` 
+`r fig_nums('odds.by.date.plot.2023', caption = paste0('Rate of selected trips logged into ODDS during ', year, ' organized by original date entered for all trips (gray line and gray text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Gray shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. Vertical tick marks on the x-axis depict dates when selected trips were canceled (gray, on the bottom) and when inherited trips were monitored (black, on the top).'))` 
 
 #####
 
@@ -2635,71 +2618,15 @@ suppressWarnings(print(odds.by.date.plot.2023))
 print(Temporal.plot.2023)
 ```
 
-####`r fig_nums('Temporal.plot.2023', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the x-axis. Test results (using a binomial distribution) determining if the observed rate was sampled at the selection rate are denoted as *p*-values.'))`  
+`r fig_nums('Temporal.plot.2023', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the x-axis. Test results (using a binomial distribution) determining if the observed rate was sampled at the selection rate are denoted as *p*-values.'))`  
 
 #####
-
-```{r effort_monitored_obze_HAL, echo=FALSE, message=FALSE, warning=FALSE, dpi=600, eval=FALSE}
-```
-<!--![](figures/ts_obze_HAL.png)-->
-
-####`r fig_nums('effort_monitored_obze_HAL', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *HAL* stratum (blue) and *Zero Coverage* stratum trips that used hook-and-line gear (goldenrod). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
-  
-#####
-
-```{r effort_monitored_obze_POT, echo=FALSE, message=FALSE, warning=FALSE}
-```
-<!--![](figures/ts_obze_POT.png)-->
-
-####`r fig_nums('effort_monitored_obze_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *POT* stratum (blue) and *Zero Coverage* stratum trips that used pot gear (goldenrod). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
-
-#####
-
-```{r effort_monitored_obze_TRW, echo=FALSE, message=FALSE, warning=FALSE}
-```
-<!--![](figures/ts_obze_TRW.png)-->
-
-####`r fig_nums('effort_monitored_obze_TRW', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the observer *TRW* stratum. Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
-
-#####
-
-```{r effort_monitored_emob_HAL, echo=FALSE, message=FALSE, warning=FALSE}
-```
-<!--![](figures/ts_emob_HAL.png)-->
-
-####`r fig_nums('effort_monitored_emob_HAL', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM HAL* stratum (green) and observer *HAL* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
-
-#####
-
-```{r effort_monitored_emob_POT, echo=FALSE, message=FALSE, warning=FALSE}
-```
-<!--![](figures/ts_emob_POT.png)-->
-
-####`r fig_nums('effort_monitored_emob_POT', caption = paste0('Relative concentrations of fishing effort and monitoring coverage for the *EM POT* stratum (green) and observer *POT* stratum (blue). Areas with fewer than 3 distinct fishing vessels were obscured and replaced with proportions of trips that were monitored.'))`
-  
-####
 
 ```{r Obs.perm.plot, echo=FALSE, fig.height=11, fig.width=8, message=FALSE, warning=FALSE, dpi=600, eval=FALSE}
 suppressMessages(print(Obs.perm.plot))
 ```
 
-####`r fig_nums('Obs.perm.plot', caption = paste0('Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The *p*-value for each test is denoted in the upper left corner. Low *p*-values (shaded pink) are reason to reject the null hypothesis and conclude that there is an observer effect.'))`  
-
-#####
-
-```{r freq_geartender_plot, echo=FALSE, fig.height=6, fig.width=6, message=FALSE, warning=FALSE, dpi=600, eval=FALSE}
-suppressMessages(print(freq_geartender))
-```
-
-####`r fig_nums('freq_geartender', caption = paste0('Distribution of trip durations for vessels in the partial coverage category by gear and observation status. Observed trips are depicted as transparent white bars overtop of solid black bars for unobserved trips. Trip durations where both observed and unobserved status exist are depicted in gray (This is not the same as a stacked bar chart, in which the height of the bar would reflect observed and unobserved on top of one another- this plot has each observation status in front of the other).'))`
-
-#####
-
-```{r prob.bynumber, echo=FALSE, warning=FALSE, fig.width=6, fig.height=6, dpi=600, eval=FALSE}
-suppressMessages(print(prob.bynumber.plot))
-```
-
-####`r fig_nums('prob.bynumber.plot', caption = paste0('The number of NMFS Areas within each stratum that have a given probability of having no monitored trips.'))`    
+`r fig_nums('Obs.perm.plot', caption = paste0('Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The *p*-value for each test is denoted in the upper left corner. Low *p*-values (shaded pink) are reason to reject the null hypothesis and conclude that there is an observer effect.'))`  
 
 #####
 
