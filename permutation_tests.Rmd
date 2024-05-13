@@ -147,7 +147,7 @@ Obs.perm.plot.2022 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct
   fig.theme +
   xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
   ylab("Density of Outcomes\n") + 
-  theme(strip.text.x = element_text(size = 8, margin=margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
+  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
 
 Obs.perm.plot.2022
 

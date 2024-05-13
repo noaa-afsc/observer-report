@@ -31,6 +31,9 @@ gdrive_download("source_data/2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnR
 #' Load data and set parameters
 load("source_data/2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
+# Avoid showing code
+knitr::opts_chunk$set(echo = FALSE)
+
 # Avoid scientific notation
 options(scipen = 10000)
 
@@ -54,7 +57,7 @@ if(annual.report){
 }
 ```
 
-```{r set-options, echo=FALSE, message=FALSE, warning=FALSE}
+```{r set-options, message=FALSE, warning=FALSE}
 #Total deployment strata:
 # 2 full coverage (FULL, EM TRW EFP[BSAI])
 # 3 partial coverage observed (OB HAL, OB POT, OB TRW)
@@ -634,7 +637,7 @@ disposition.table <-
          "Waiver (%)" = Waiver.Pct)
 ```
 
-```{r odds.time_series, warning = FALSE, include=FALSE}
+```{r odds.time_series, warning=FALSE, include=FALSE}
 
 #' Create a time series of trips in ODDS by stratum where the counts of randomly-selected, inherited, and waived trips
 #' are totaled for each day. These time series will be totaled for `odds.logged.tbl` and converted to cumulative totals
@@ -1639,11 +1642,125 @@ This section analyzes whether monitored trips are similar to unmonitored trips u
 Six trip metrics were examined in the permutation test. These metrics were as follows: the number of NMFS Areas visited in a trip, trip duration (days), the weight of the landed catch (t), the vessel length (ft), the number of species in the landed catch and the proportion (0 to 1) of the total catch that is made up of the most predominant species (pMax). The metric ‘vessel length’ is used to help interpret the results from ‘weight of landed catch’ since fishing power is positively correlated to vessel length. Specifically, differences in weight and length are interpreted as a failure to achieve a random sample of vessels of different sizes, whereas differences in weight only lend more evidence that there was a monitoring effect. The number of species within the landed portion of the catch is a measure of species richness. Our pMax metric follows the concepts behind Hill’s diversity number *N*~1~ that depicts the number of abundant species (Hill 1973) and is a measure of how “pure” catch is since a value of one would indicate that only the predominant (and presumed desirable) species was landed.  
 
 ### Were monitored trips similar to unmonitored trips?  
-```{r}
+```{r perm_results_2022, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
 
+#' `======2022======`
+
+# Filter the data you want
+dat <- 
+  work.data %>% 
+  filter(ADP == 2022 & STRATA %in% partial$STRATA)
+
+# Identify the field to permute by
+YN_var = "OBSERVED_FLAG"
+
+# Identify the fields to group by (don't include TRIP_ID or the YN_var)
+gp_vec = c("STRATA")
+
+# Detatch the mosaic package
+detach(package:mosaic)
+
+# Run permutation tests
+perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
+
+# Decompose the output
+assign(paste(YN_var, "YN_perm.2022", sep = "."), data.frame(perm[1]))
+assign(paste(YN_var, "summary.2022", sep = "."), data.frame(perm[3]))
+assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FALSE))
+assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
+
+names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary.2022, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), variable)
+perm_sum <- filter(OBSERVED_FLAG.summary.2022, STRATA != "EM TRW EFP")
+
+# See helper.r documentation on interpret_trip_metrics() 
+perm_sum <- interpret_trip_metrics(dat = perm_sum)
+
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% mutate(Metric = replace(Metric, Metric == "Observed difference", "OD"))  # Shorten metric
+OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>% 
+  merge(OBSERVED_FLAG.results, by = "Strata") %>%           # Merge in trip counts of observed/unobserved
+  mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
+         Unobserved = formatC(Unobserved, big.mark = ","))
+
+# REFORMAT RESULTS TABLE:
+OBSERVED_FLAG.results <- rbind(
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("OD", "OD (%)")) %>% 
+    mutate(across(unique(OBSERVED_FLAG.YN_perm.2022$variable), ~ format(.x, nsmall = 3, digits = 3)))
+  ,
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("p-value")) %>% 
+    # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
+    mutate(across(unique(OBSERVED_FLAG.YN_perm.2022$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm.2022$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
+                                                                   format(.x, nsmall = 3, digits = 3))))
+) %>% arrange(match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), Metric)
+
+# Replace "0" p-values; extra space in character is an artifact of the previous format()
+
+OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000*"] <- "< 0.001*"
+OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
+OBSERVED_FLAG.results_2022 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
 ```
 
-The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
+```{r perm_results_2023, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
+
+#' `======2023======`
+
+dat <- 
+  work.data %>% 
+  filter(ADP == 2023 & STRATA %in% partial$STRATA)
+
+# Identify the field to permute by
+YN_var = "OBSERVED_FLAG"
+
+# Identify the fields to group by (don't include TRIP_ID or the YN_var)
+gp_vec = c("STRATA")
+
+# Run permutation tests
+perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
+
+# Decompose the output
+assign(paste(YN_var, "YN_perm", sep = "."), data.frame(perm[1]))
+assign(paste(YN_var, "summary", sep = "."), data.frame(perm[3]))
+assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FALSE))
+assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
+
+names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), variable)
+perm_sum <- filter(OBSERVED_FLAG.summary, STRATA != "EM TRW EFP")
+
+# See helper.r documentation on interpret_trip_metrics() 
+perm_sum <- interpret_trip_metrics(dat = perm_sum)
+
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% mutate(Metric = replace(Metric, Metric == "Observed difference", "OD"))  # Shorten metric
+OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>% 
+  merge(OBSERVED_FLAG.results, by = "Strata") %>%           # Merge in trip counts of observed/unobserved
+  mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
+         Unobserved = formatC(Unobserved, big.mark = ","))
+
+#REFORMAT RESULTS TABLE:
+OBSERVED_FLAG.results <- rbind(
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("OD", "OD (%)")) %>% 
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ format(.x, nsmall = 3, digits = 3)))
+  ,
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("p-value")) %>% 
+    # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
+                                                                   format(.x, nsmall = 3, digits = 3))))
+) %>% arrange(match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), Metric)
+
+# Replace "0" p-values; extra space in character is an artifact of the previous format()
+
+OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
+OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
+OBSERVED_FLAG.results_2023 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
+```
+
+The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table.2023', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
 
 # RESPONSE TO COUNCIL AND SSC COMMENTS
 The Council reviewed the `r year` ADP as part of their 11 June 2022 meeting and made the following recommendation:
@@ -1708,7 +1825,7 @@ NMFS. 2013. 2014 Annual Deployment Plan for Observers in the Groundfish and Hali
 
 `r tbl_nums('trip.budget.tbl.2023', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
-```{r trip.budget.tbl.2023, echo=FALSE, tab.cap=""}
+```{r trip.budget.tbl.2023, tab.cap=""}
 
 trip.budget.table.2023 <- trip.budget.table.2023 %>%
   mutate(pred_days = as.numeric(pred_days),
@@ -1739,7 +1856,7 @@ flextable(trip.budget.table.2023) %>%
 
 `r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
-```{r disposition.table.2023, echo=FALSE, tab.cap=""}
+```{r disposition.table.2023, tab.cap=""}
 # Table 2 from 2019 Annual Report
 
 disposition.table <- disposition.table %>%
@@ -1785,7 +1902,7 @@ flextable(disposition.table.2023) %>%
 
 `r tbl_nums('logged.table.2023', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator ("Random number selection") and those that remained after user manipulation ("Total final selected") in ', year, '. The relative impact of waivers in trip-selection is also shown ("% reduction of selected trips due to waivers). **Selections not from random numbers.'))` 
 
-```{r logged.table.2023, echo=FALSE, tab.cap=""}
+```{r logged.table.2023, tab.cap=""}
 # Table 3 from 2019 Annual Report
 
 logged.table <- logged.table %>%
@@ -1836,7 +1953,7 @@ flextable(logged.table.2023) %>%
 
 `r tbl_nums('Selection.table.2023', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
 
-```{r Selection.table.2023, echo=FALSE, tab.cap=""}
+```{r Selection.table.2023, tab.cap=""}
 
 Selection.table <- Selection.table %>%
   mutate(Year = as.factor(Year)) %>%
@@ -1885,7 +2002,7 @@ flextable(Selection.table.2023) %>%
 
 `r tbl_nums('Coverage.Table.2023', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*) and sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
-```{r Coverage.Table.2023, echo=FALSE, tab.cap=""}
+```{r Coverage.Table.2023, tab.cap=""}
 
 Coverage.Table <- Coverage.Table %>% 
   mutate(Strata = as.character(Strata),
@@ -1938,7 +2055,7 @@ as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
 
 `r tbl_nums('Pollock.observed.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
-```{r Pollock.observed.table.2023, echo=FALSE, tab.cap=""}
+```{r Pollock.observed.table.2023, tab.cap=""}
 
 Pollock.observed.table <- 
   Pollock.observed.table %>%
@@ -1971,7 +2088,7 @@ flextable(Pollock.observed.table.2023) %>%
 
 `r tbl_nums('Pollock.efp.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
-```{r Pollock.efp.table.2023, echo=FALSE, tab.cap=""}
+```{r Pollock.efp.table.2023, tab.cap=""}
 
 Pollock.efp.table <-
   Pollock.efp.table %>%
@@ -2002,17 +2119,17 @@ flextable(Pollock.efp.table.2023) %>%
 
 \newpage
 
-`r tbl_nums('perm.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
+`r tbl_nums('perm.summary.table.2023', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
 
-```{r perm.summary.table, echo=FALSE, tab.cap="", eval=F, include=F, eval=FALSE}
-
+```{r perm.summary.table.2023, tab.cap=""}
+flextable(OBSERVED_FLAG.results_2023)
 ```
 
 \newpage
 
 `r if(tech.memo){'# Figures'}`
 
-```{r outcomes.plot.2023, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
+```{r outcomes.plot.2023, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
 
 # Make a list of grobs of your figures, set the widths as the maximum among the figures.
 arrange.plot.fxn <- function(plotA, plotB){
@@ -2035,7 +2152,7 @@ arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
 
 \newpage
 
-```{r odds.by.date.plot.2023, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+```{r odds.by.date.plot.2023, fig.width=7.5, fig.height=8, dpi=600}
 suppressWarnings(print(odds.by.date.plot.2023))
 ```
 
@@ -2043,7 +2160,7 @@ suppressWarnings(print(odds.by.date.plot.2023))
 
 \newpage
 
-```{r em.times.figure, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 6, dpi = 600, eval=FALSE}
+```{r em.times.figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
 suppressMessages(print(em.times.figure))
 ```
 
@@ -2051,7 +2168,7 @@ suppressMessages(print(em.times.figure))
 
 \newpage
 
-```{r Temporal.plot.2023, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+```{r Temporal.plot.2023, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
 print(Temporal.plot.2023)
 ```
 
@@ -2071,8 +2188,38 @@ print(Temporal.plot.2023)
 
 \newpage
 
-```{r Obs.perm.plot, echo=FALSE, fig.height=11, fig.width=8, message=FALSE, warning=FALSE, dpi=600, eval=FALSE}
-suppressMessages(print(Obs.perm.plot))
+```{r Obs.perm.plot, fig.height=11, fig.width=8, message=FALSE, warning=FALSE, dpi=600}
+# Plot results
+OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA = as.character(STRATA)) 
+OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA = as.character(STRATA)) %>% 
+  # Apply Bonferroni adjustment to alpha value and format significant p-values  
+  mutate(p = ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0(formatC(p,digits = 3, format = "f"), "*"), formatC(p, digits = 3, format = "f"))) %>%
+  mutate(p = ifelse(p == "0.000*", 
+                    paste0("italic(p) < '0.001*'"), 
+                    ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0("italic(p) == '", p, "*'"), paste0("italic(p) == '", p, "'"))))
+
+# Filter out EM TRW EFP stratum
+OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
+OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
+
+#Generate permutation plot 
+Obs.perm.plot.2023 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
+  geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
+  geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
+  geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
+  geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
+  facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
+             #Make number of cols in facet_wrap = to number of strata
+             ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
+  geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
+             x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
+  scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
+  fig.theme +
+  xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
+  ylab("Density of Outcomes\n") + 
+  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
+
+Obs.perm.plot.2023
 ```
 
 `r fig_nums('Obs.perm.plot', caption = paste0('Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The *p*-value for each test is denoted in the upper left corner. Low *p*-values (shaded pink) are reason to reject the null hypothesis and conclude that there is an observer effect.'))`  
@@ -2088,7 +2235,7 @@ This appendix presents tables and figures from analyses performed in Chapter 3 u
 
 Table A-1. -- Comparison between predicted and actual trip days for partial coverage strata in `r year - 1`. Predicted values come from the `r year - 1` Annual Deployment Plan (ADP). 
 
-```{r trip.budget.tbl.2022, echo=FALSE, tab.cap=""}
+```{r trip.budget.tbl.2022, tab.cap=""}
 
 trip.budget.table.2022 <- trip.budget.table.2022 %>%
   mutate(pred_days = as.numeric(pred_days),
@@ -2120,7 +2267,7 @@ flextable(trip.budget.table.2022) %>%
 
 Table A-2. -- Trip cancellation rates in the ODDS for `r year - 1`. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available. 
   
-```{r disposition.table.2022, echo=FALSE, tab.cap=""}
+```{r disposition.table.2022, tab.cap=""}
 # Table 2 from 2019 Annual Report
 
 # 2022
@@ -2161,7 +2308,7 @@ flextable(disposition.table.2022) %>%
 
 Table A-3. -- Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator ("Random number selection") and those that remained after user manipulation ("Total final selected") in `r year - 1`. The relative impact of waivers in trip-selection is also shown ("% reduction of selected trips due to waivers"). **Selections not from random numbers. 
 
-```{r logged.table.2022, echo=FALSE, tab.cap=""}
+```{r logged.table.2022, tab.cap=""}
 # Table 3 from 2019 Annual Report
 
 # 2022
@@ -2206,7 +2353,7 @@ flextable(logged.table.2022) %>%
 
 Table A-4. -- Number of logged trips in each partial coverage stratum in `r year - 1` that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").
 
-```{r Selection.table.2022, echo=FALSE, tab.cap="", tab.width=11}
+```{r Selection.table.2022, tab.cap="", tab.width=11}
 
 # 2022
 
@@ -2251,7 +2398,7 @@ flextable(Selection.table.2022) %>%
 
 Table A-5. -- Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*) and sampled trips (*n*) for each stratum in `r year - 1`. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum. Reproduced from the `r year - 1` Annual Report (in review).
 
-```{r Coverage.Table.2022, echo=FALSE, tab.cap=""}
+```{r Coverage.Table.2022, tab.cap=""}
 
 # 2022
 Coverage.Table.2022 <- Coverage.Table %>%
@@ -2289,7 +2436,7 @@ as_grouped_data(Coverage.Table.2022, groups = "Coverage") %>%
 
 Table A-6. -- The number of pollock deliveries made by vessels in the *OB TRW* stratum during `r year - 1`, separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.
 
-```{r Pollock.observed.table.2022, echo=FALSE, tab.cap=""}
+```{r Pollock.observed.table.2022, tab.cap=""}
 
 Pollock.observed.table.2022 <- Pollock.observed.table %>% filter(Year == year - 1) %>% select(-Year)
 
@@ -2316,7 +2463,7 @@ flextable(Pollock.observed.table.2022) %>%
 
 Table A-6. -- The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during `r year - 1`, separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.
 
-```{r Pollock.efp.table.2022, echo=FALSE, tab.cap=""}
+```{r Pollock.efp.table.2022, tab.cap=""}
 
 Pollock.efp.table.2022 <- Pollock.efp.table %>% filter(Year == year - 1) %>% select(-Year)
 
@@ -2343,19 +2490,21 @@ flextable(Pollock.efp.table.2022) %>%
 
 Table A-8. -- Results of permutation tests between monitored and unmonitored trips in the `r year -1` trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.
 
+```{r perm.summary.table.2022, tab.cap=""}
+flextable(OBSERVED_FLAG.results_2022)
+```
+
 \newpage
 
-```{r outcomes.plot.2022, echo=FALSE, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
-
+```{r outcomes.plot.2022, warning=FALSE, fig.width=7.5, fig.height=9, dpi=600}
 arrange.plot.fxn(outcomes.plot.2022, costs.plot.2022)
-
 ```
 
 Figure A-1. -- Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the `r year - 1` Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in `r year - 1`.  
 
 \newpage
 
-```{r odds.by.date.plot.2022, echo=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+```{r odds.by.date.plot.2022, fig.width=7.5, fig.height=8, dpi=600}
 suppressWarnings(print(odds.by.date.plot.2022))
 ```
 
@@ -2367,7 +2516,7 @@ Figure A-3. -- Distributions of data timeliness (the time between a trip or deli
 
 \newpage
 
-```{r Temporal.plot.2022, echo=FALSE, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+```{r Temporal.plot.2022, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
 print(Temporal.plot.2022)
 ```
 
@@ -2386,6 +2535,40 @@ Figure A-6. -- Stratum-level proximity indices in partial coverage in `r year - 
 Figure A-7. -- Stratum and FMP-level proximity indices in partial coverage in `r year -1`. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.
 
 \newpage
+
+```{r perm_plot_2022, fig.height=11, fig.width=8, message=FALSE, warning=FALSE}
+# Plot results
+OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm.2022) %>% mutate(STRATA = as.character(STRATA)) 
+OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary.2022) %>% mutate(STRATA = as.character(STRATA)) %>% 
+  # Apply Bonferroni adjustment to alpha value and format significant p-values  
+  mutate(p = ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0(formatC(p,digits = 3, format = "f"), "*"), formatC(p, digits = 3, format = "f"))) %>%
+  mutate(p = ifelse(p == "0.000*", 
+                    paste0("italic(p) < '0.001*'"), 
+                    ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0("italic(p) == '", p, "*'"), paste0("italic(p) == '", p, "'"))))
+
+# Filter out EM TRW EFP stratum
+OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
+OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
+
+# Generate permutation plot 
+Obs.perm.plot.2022 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
+  geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
+  geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
+  geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
+  geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
+  facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
+             # Make number of cols in facet_wrap = to number of strata
+             ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
+  geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
+             x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
+  scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
+  fig.theme +
+  xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
+  ylab("Density of Outcomes\n") + 
+  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
+
+Obs.perm.plot.2022
+```
 
 Figure A-8. -- Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The p-value for each test is denoted in the upper left corner. Low p-values (shaded pink) are reason to reject the null hypothesis and conclude that there is a monitoring effect.
 
