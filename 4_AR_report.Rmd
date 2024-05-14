@@ -4,6 +4,8 @@ always_allow_html: true
 output:
   word_document:
     reference_docx: docs/word-styles-reference-01.docx
+    pandoc_args:
+      '--lua-filter=pagebreaks.lua'
   pdf_document: default
 editor_options: 
   chunk_output_type: console
@@ -1821,7 +1823,7 @@ flextable(trip.budget.table.2023) %>%
   width(j = 2, 0.8, unit = "in")
 ```
 
-\newpage
+\endLandscape
 
 `r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
@@ -1860,12 +1862,14 @@ flextable(disposition.table.2023) %>%
   hline(i = c(6, 10, nrow(disposition.table.2023)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.7, unit = "in") %>%
-  width(j = c(2, 9), 0.94, unit = "in") %>%
-  width(j = c(3, 10), 0.63, unit = "in") %>%
-  width(j = 4:6, 0.81, unit = "in") %>%
+  width(j = 1, 0.76, unit = "in") %>%
+  width(j = 2, 1.38, unit = "in") %>%
+  width(j = 3, 0.88, unit = "in") %>%
+  width(j = 4, 1, unit = "in") %>%
+  width(j = c(5:6, 9), 0.94, unit = "in") %>%
   width(j = 7, 0.69, unit = "in") %>%
-  width(j = 8, 0.56, unit = "in")
+  width(j = 8, 0.56, unit = "in") %>%
+  width(j = 10, 0.63, unit = "in")
 ```
 
 \newpage
@@ -1910,13 +1914,11 @@ flextable(logged.table.2023) %>%
   hline(i = c(3, 5, nrow(logged.table.2023)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.69, unit = "in") %>%
-  width(j = 2, 0.5, unit = "in") %>%
-  width(j = 3:4, 0.75, unit = "in") %>%
-  width(j = 5, 0.66, unit = "in") %>%
-  width(j = 6, 1.25, unit = "in") %>%
-  width(j = 7, 0.94, unit = "in") %>%
-  width(j = 8, 1.81, unit = "in")
+  width(j = 1, 0.71, unit = "in") %>%
+  width(j = c(2, 5), 0.94, unit = "in") %>%
+  width(j = 3, 1.31, unit = "in") %>%
+  width(j = c(4, 6:7), 1.06, unit = "in") %>%
+  width(j = 8, 1.69, unit = "in")
 ```
 
 \newpage
@@ -1962,10 +1964,12 @@ flextable(Selection.table.2023) %>%
   hline(i = c(12, nrow(Selection.table.2023)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = c(1, 3), 0.69, unit = "in") %>%
-  width(j = 2, 2.21, unit = "in") %>%
-  width(j = c(4, 5, 7), 0.63, unit = "in") %>%
-  width(j = 6, 1.06, unit = "in")
+  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 2, 2.06, unit = "in") %>%
+  width(j = 3, 1.06, unit = "in") %>%
+  width(j = 4:5, 0.88, unit = "in") %>%
+  width(j = 6, 1.31, unit = "in") %>%
+  width(j = 7, 0.69, unit = "in")
 ```
 
 \newpage
@@ -2107,23 +2111,28 @@ flextable(OBSERVED_FLAG.results_2023) %>%
   valign(j = 1:3, part = "body", valign = "top") %>%
   valign(part = "header", valign = "bottom") %>%
   fix_border_issues() %>%
-  width(j = c(1:2, 6, 8:10), 0.69, unit = "in") %>%
-  width(j = 3, 0.88, unit = "in") %>%
-  width(j = 4, 0.63, unit = "in") %>%
-  width(j = 5, 0.5, unit = "in") %>%
-  width(j = 7, 1, unit = "in") %>%
+  width(j = 1, 0.75, unit = "in") %>%
+  width(j = 2, 0.81, unit = "in") %>%
+  width(j = c(3, 6), 0.94, unit = "in") %>%
+  width(j = 4, 0.69, unit = "in") %>%
+  width(j = 5, 1, unit = "in") %>%
+  width(j = c(7, 10), 1.25, unit = "in") %>%
+  width(j = 8, 1.13, unit = "in") %>%
+  width(j = 9, 1.03, unit = "in") %>%
   # Highlight significant factors
-  bold(j = 6, i = 1:3, bold = TRUE, part = "body") %>%
+  bold(j = c(6, 10), i = 1:3, bold = TRUE, part = "body") %>%
   bold(j = 8, i = 4:6, bold = TRUE, part = "body") %>%
   bold(j = 9, i = 13:15, bold = TRUE, part = "body") %>%
-  bold(j = 10, i = 1:3, bold = TRUE, part = "body")
+  italic(j = c(6, 10), i = 1:3, part = "body") %>%
+  italic(j = 8, i = 4:6, part = "body") %>%
+  italic(j = 9, i = 13:15, part = "body")
 ```
 
-\newpage
+\endPortrait
 
 `r if(tech.memo){'# Figures'}`
 
-```{r outcomes.plot.2023, warning=FALSE, fig.width = 7.5, fig.height = 9, dpi = 600}
+```{r outcomes.plot.2023, warning=FALSE, fig.width=7.5, fig.height=9, dpi = 600}
 
 # Make a list of grobs of your figures, set the widths as the maximum among the figures.
 arrange.plot.fxn <- function(plotA, plotB){
@@ -2255,7 +2264,7 @@ flextable(trip.budget.table.2022) %>%
   width(j = 2, 0.8, unit = "in")
 ```
 
-\newpage
+\endLandscape
 
 Table A-2. -- Trip cancellation rates in the ODDS for `r year - 1`. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available. 
   
@@ -2288,12 +2297,14 @@ flextable(disposition.table.2022) %>%
   hline(i = c(6, 10, nrow(disposition.table.2023)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.7, unit = "in") %>%
-  width(j = c(2, 9), 0.94, unit = "in") %>%
-  width(j = c(3, 10), 0.63, unit = "in") %>%
-  width(j = 4:6, 0.81, unit = "in") %>%
+  width(j = 1, 0.76, unit = "in") %>%
+  width(j = 2, 1.38, unit = "in") %>%
+  width(j = 3, 0.88, unit = "in") %>%
+  width(j = 4, 1, unit = "in") %>%
+  width(j = c(5:6, 9), 0.94, unit = "in") %>%
   width(j = 7, 0.69, unit = "in") %>%
-  width(j = 8, 0.56, unit = "in")
+  width(j = 8, 0.56, unit = "in") %>%
+  width(j = 10, 0.63, unit = "in")
 ```
 
 \newpage
@@ -2332,13 +2343,11 @@ flextable(logged.table.2022) %>%
   hline(i = c(3, 5, nrow(logged.table.2023)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.69, unit = "in") %>%
-  width(j = 2, 0.5, unit = "in") %>%
-  width(j = 3:4, 0.75, unit = "in") %>%
-  width(j = 5, 0.66, unit = "in") %>%
-  width(j = 6, 1.25, unit = "in") %>%
-  width(j = 7, 0.94, unit = "in") %>%
-  width(j = 8, 1.81, unit = "in")
+  width(j = 1, 0.71, unit = "in") %>%
+  width(j = c(2, 5), 0.94, unit = "in") %>%
+  width(j = 3, 1.31, unit = "in") %>%
+  width(j = c(4, 6:7), 1.06, unit = "in") %>%
+  width(j = 8, 1.69, unit = "in")
 ```
 
 \newpage
@@ -2380,10 +2389,12 @@ flextable(Selection.table.2022) %>%
   hline(i = c(12, nrow(Selection.table.2023)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = c(1, 3), 0.69, unit = "in") %>%
-  width(j = 2, 2.21, unit = "in") %>%
-  width(j = c(4, 5, 7), 0.63, unit = "in") %>%
-  width(j = 6, 1.06, unit = "in")
+  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 2, 2.06, unit = "in") %>%
+  width(j = 3, 1.06, unit = "in") %>%
+  width(j = 4:5, 0.88, unit = "in") %>%
+  width(j = 6, 1.31, unit = "in") %>%
+  width(j = 7, 0.69, unit = "in")
 ```
 
 \newpage
@@ -2475,7 +2486,7 @@ flextable(Pollock.efp.table.2022) %>%
   fix_border_issues() %>%
   width(j = 1, 0.81, unit = "in") %>%
   width(j = 2, 1.39, unit = "in") %>%
-  width(j = 3, 1, unit = "in") %>%
+  width(j = 3, 1.75, unit = "in") %>%
   width(j = 4, 1.44, unit = "in") %>%
   width(j = 5, 1.69, unit = "in") %>%
   width(j = 6, 0.94, unit = "in")
@@ -2498,18 +2509,24 @@ flextable(OBSERVED_FLAG.results_2022) %>%
   valign(j = 1:3, part = "body", valign = "top") %>%
   valign(part = "header", valign = "bottom") %>%
   fix_border_issues() %>%
-  width(j = c(1:2, 6, 8:10), 0.69, unit = "in") %>%
-  width(j = 3, 0.88, unit = "in") %>%
-  width(j = 4, 0.63, unit = "in") %>%
-  width(j = 5, 0.5, unit = "in") %>%
-  width(j = 7, 1, unit = "in") %>%
+  width(j = 1, 0.75, unit = "in") %>%
+  width(j = 2, 0.81, unit = "in") %>%
+  width(j = c(3, 6), 0.94, unit = "in") %>%
+  width(j = 4, 0.69, unit = "in") %>%
+  width(j = 5, 1, unit = "in") %>%
+  width(j = c(7, 10), 1.25, unit = "in") %>%
+  width(j = 8, 1.13, unit = "in") %>%
+  width(j = 9, 1.03, unit = "in") %>%
   # Highlight significant factors
   bold(j = 6, i = c(1:3, 7:9), bold = TRUE, part = "body") %>%
   bold(j = 8, i = 4:6, bold = TRUE, part = "body") %>%
-  bold(j = 10, i = c(1:3, 10:12), bold = TRUE, part = "body")
+  bold(j = 10, i = c(1:3, 10:12), bold = TRUE, part = "body") %>%
+  italic(j = 6, i = c(1:3, 7:9), part = "body") %>%
+  italic(j = 8, i = 4:6, part = "body") %>%
+  italic(j = 10, i = c(1:3, 10:12), part = "body")
 ```
 
-\newpage
+\endPortrait
 
 ```{r outcomes.plot.2022, warning=FALSE, fig.width=7.5, fig.height=9, dpi=600}
 arrange.plot.fxn(outcomes.plot.2022, costs.plot.2022)
@@ -2585,7 +2602,7 @@ Obs.perm.plot.2022 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct
 Obs.perm.plot.2022
 ```
 
-Figure A-8. -- Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The p-value for each test is denoted in the upper left corner. Low p-values (shaded pink) are reason to reject the null hypothesis and conclude that there is a monitoring effect.
+Figure A-8. -- Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The *p*-value for each test is denoted in the upper left corner. Low *p*-values (shaded pink) are reason to reject the null hypothesis and conclude that there is a monitoring effect.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 save.image(file = "4_AR_report.Rdata")
