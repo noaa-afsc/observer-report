@@ -75,7 +75,7 @@ OBSERVED_FLAG.results <- rbind(
 
 # Replace "0" p-values; extra space in character is an artifact of the previous format()
 
-OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000*"] <- "< 0.001*"
+OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
 OBSERVED_FLAG.results_2022 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
 ```
@@ -145,8 +145,8 @@ Obs.perm.plot.2022 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct
              x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
   scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
   fig.theme +
-  xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
-  ylab("Density of Outcomes\n") + 
+  xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
+  ylab("Density of outcomes\n") + 
   theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
 
 Obs.perm.plot.2022
@@ -189,7 +189,7 @@ OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>%
   mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
          Unobserved = formatC(Unobserved, big.mark = ","))
 
-#REFORMAT RESULTS TABLE:
+# REFORMAT RESULTS TABLE:
 OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("OD", "OD (%)")) %>% 
@@ -224,7 +224,7 @@ kbl(OBSERVED_FLAG.results_2023, escape = FALSE, align = c('l', 'r', 'r', 'l', re
 
 # Get rid of rows with NAs
 perm_sum <- na.omit(perm_sum)
-out_2023 <- NULL #create empty object
+out_2023 <- NULL # create empty object
 
 for (i in as.character(unique(perm_sum$STRATA))) {
   # Extract 'significant' metrics *with* Bonferroni adjustment
@@ -261,21 +261,21 @@ OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA =
 OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
 OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
 
-#Generate permutation plot 
+# Generate permutation plot 
 Obs.perm.plot.2023 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
   geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
   geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
   geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
   geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
   facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
-             #Make number of cols in facet_wrap = to number of strata
+             # Make number of cols in facet_wrap = to number of strata
              ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
   geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels=c(TRUE, FALSE))), 
              x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
   scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
   fig.theme +
-  xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
-  ylab("Density of Outcomes\n") + 
+  xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
+  ylab("Density of outcomes\n") + 
   theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
 
 Obs.perm.plot.2023

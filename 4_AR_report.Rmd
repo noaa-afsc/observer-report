@@ -498,7 +498,7 @@ Each year, the NMFS sets an annual budget for the deployment of partial coverage
 
 In `r year`, the FMA paid for `r formatC(round(ActualYR.2023), format = "d", big.mark = ",")` observer days, which was `r ifelse(eval.2023$pct.budget.remain != 0, abs(eval.2023$pct.budget.remain), " ")` `r ifelse(eval.2023$pct.budget.remain != 0, "%", "")` `r eval.2023$more.or.less` predicted by the average simulation and within the range of possibilities predicted in the `r year` ADP (`r fig_nums('outcomes.plot.2023', display = "cite")`, top panel). Although there was 16.6% less effort in *OB POT* than predicted, *OB HAL* and *OB TRW* both had higher than predicted effort (`r tbl_nums('trip.budget.tbl.2023', display = "cite")`). Despite observing the number of days predicted, expenditures for partial observer coverage were under budget (`r fig_nums('outcomes.plot.2023', display = "cite")`, bottom panel). Cost savings resulted because the cost of a partial coverage observer day in `r year` was less than the expected cost that was estimated in the `r year` ADP.     
 
-# Performance of the Observer Declare and Deploy System in Trip-Selection  
+## Performance of the Observer Declare and Deploy System in Trip-Selection  
 The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW EFP* stratum.
 
 ```{r odds.performance, warning=FALSE, include=FALSE}
@@ -913,35 +913,6 @@ odds.scales <- list(
   scale_y_continuous(limits = c(0, 65)),
   scale_y_continuous(limits = c(0, 65))
 )
-
-# ODDS by date plot (Cumulative coverage percent by strata over the year)
-#odds.by.date.plot <- 
- # ggplot(odds.ts.daily.cuml, aes(x = Date, col = fct_rev(TYPE))) +
-  # Add lines for selection rates  
-  #geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
-  #geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
-  #geom_line(aes(y = running.pct), linewidth = 1.5) +
-  #scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
-  #ylab("Cumulative coverage percent\n") +
-  #coord_cartesian(ylim = c(0, 70)) +
-  #xlab("\nDate") +
-  #geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0), sides = "b", color = "gray50") + 
-  #geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0), sides = "t") + 
-  #' *==================For multi-year plotting==================================*
-  #facet_grid(factor(STRATA, levels = strata.order) ~ YEAR, scales = "free") +
-  #geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
-  #          hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
-  #geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
-  #          hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
-  #geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
-  #          hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
-  #' *===================++++++++++++++++++++++++================================*
-  #fig.theme + 
-  #theme_bw() +
-  #theme(axis.text.x = element_text(angle = 90),
-  #      strip.text.x = element_text(size = 10),
-  #      legend.position = "none") +
-  #ggh4x::facetted_pos_scales(y = odds.scales)
 
 odds.by.date.plot.2022 <- 
   ggplot(filter(odds.ts.daily.cuml, YEAR == year - 1), aes(x = Date, col = fct_rev(TYPE))) +
@@ -1401,8 +1372,6 @@ Pollock.landing.data <- work.data %>%
                                 `Inshore floating processor` = "IFP"),
          COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), `Full` = "FULL", `Partial` = "PARTIAL")) 
 
-# table(Pollock.landing.data$COVERAGE_TYPE, Pollock.landing.data$Observed.type, Pollock.landing.data$TENDER, Pollock.landing.data$ADP)
-
 # Summarise landings by FMP, coverage type, port, and observed status
 Pollock.monitored <- rbind(
   Pollock.landing.data %>%
@@ -1522,7 +1491,7 @@ For.ts.temporal.plot <-
   group_by(YEAR) %>%
   mutate(n.expected = round((N.cuml * Rate), 0),
          Low95 = qbinom(0.025, N.cuml, Rate),
-         High95 = qbinom(0.975,N.cuml, Rate),
+         High95 = qbinom(0.975, N.cuml, Rate),
          Outside.bounds = ifelse(n.cuml > High95 | n.cuml < Low95, 1, 0),
          Observed.days = ifelse(n > 0, 1, NA)) %>% 
   data.frame()
@@ -1612,7 +1581,7 @@ Temporal.plot.2023 <-
 
 ```
 
-The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in three of the six partial coverage strata: *OB TRW* (expected rate = 22.7%, realized rate = 32.3%, *p*-value < 0.001), *EM HAL* (expected rate: 30.0%, realized rate: 22.5%, *p*-value < 0.001), and *EM POT* (expected rate = 30.0%, realized rate = 18.7%, *p*-value < 0.001; `r tbl_nums('Coverage.Table.2023', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). The *OB HAL* stratum was outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *OB POT* stratum (expected rate = 17.1%, realized rate = 17.8%, *p*-value = 0.543).
+The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in three of the six partial coverage strata: *OB TRW* (expected rate = 22.7%, realized rate = 32.3%, *p*-value < 0.001), *EM HAL* (expected rate: 30.0%, realized rate: 22.5%, *p*-value < 0.001), and *EM POT* (expected rate = 30.0%, realized rate = 18.7%, *p*-value < 0.001; `r tbl_nums('Coverage.Table.2023', display = "cite")` and `r fig_nums('Temporal.plot.2023', display = "cite")`). The *OB HAL* stratum was outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *OB POT* stratum (expected rate = 17.1%, realized rate = 17.8%, *p*-value = 0.543).
 
 ## Spatial Patterns in Trip-Selection  
 ```{r spatial_bias_analysis, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
@@ -1698,7 +1667,7 @@ OBSERVED_FLAG.results <- rbind(
 
 # Replace "0" p-values; extra space in character is an artifact of the previous format()
 
-OBSERVED_FLAG.results[OBSERVED_FLAG.results=="0.000*"] <- "< 0.001*"
+OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
 OBSERVED_FLAG.results_2022 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
 ```
@@ -1740,7 +1709,7 @@ OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>%
   mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
          Unobserved = formatC(Unobserved, big.mark = ","))
 
-#REFORMAT RESULTS TABLE:
+# REFORMAT RESULTS TABLE:
 OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("OD", "OD (%)")) %>% 
@@ -1792,7 +1761,7 @@ The Fisheries Monitoring Science Committee (formerly the Observer Science Commit
 **The NMFS should work with the EM review agency PSMFC to find a selection rate that provides timely data that achieves the goals of the monitoring program in a cost-effective manner.** The FMA needs all data reviewed by April of the following year for annual reports (a three month delay maximum) while stock assessors need data from the prior year by September (a eight month delay maximum).\
 The FMSC recognizes that EM review times are not fast enough for the purposes of in-season management and suggests that **the NMFS perform an analysis of impacts of missing EM data and risks to management and the stocks of not having these data available (e.g., risk of exceeding Total Allowable Catch and PSC, risk of premature or late fishery closures, etc.)**
 
-#####
+\newpage
 
 # Citations
 AFSC (Alaska Fisheries Science Center) and AKRO (Alaska Regional Office). 2023. North Pacific Observer Program 2022 Annual Report. Alaska Fish. Sci. Cent., NOAA, Natl. Mar. Fish. Serv., 7600 Sand Point Way N.E., Seattle, Washington 98115. Available online at: https://meetings.npfmc.org/CommentReview/DownloadFile?p=fc3716c4-6d4a-486e-9de1-e9f224d905da.pdf&fileName=North%20Pacific%20Observer%20Program%202022%20Annual%20Report.pdf
@@ -1835,21 +1804,21 @@ trip.budget.table.2023 <- trip.budget.table.2023 %>%
 # 2023
 
 flextable(trip.budget.table.2023) %>%
-  set_header_labels(values = list(
+  italic(j = 1, i = 1:6) %>%
+  bold(bold = TRUE, part = "header") %>%
+  hline(i = c(3, 6, nrow(trip.budget.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
+  align(j = 2:5, part = "all", align = "right") %>%
+  align(i = 1, part = "header", align = "center") %>%
+  width(j = 1, 1.125, unit = "in") %>%
+    set_header_labels(values = list(
     STRATA = "Strata",
     pred_days = "Predicted",
     act_days = "Actual",
     diff = "Actual",
     perc = "Percent")) %>%
-  align(part = "all", align = "center") %>%
-  italic(j = 1, i = 1:6) %>%
-  bold(bold = TRUE, part = "header") %>%
-  hline(i = c(3, 6, nrow(trip.budget.table.2023)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
-  width(j = 1, 1.125, unit = "in") %>%
   width(j = 2, 0.8, unit = "in")
-
 ```
 
 \newpage
@@ -1882,13 +1851,14 @@ flextable(disposition.table.2023) %>%
          value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
   mk_par(j = 9, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
-  align(part = "all", align = "center") %>%
   italic(j = 1, i = 1:10) %>%
+  align(j = 3:10, part = "all", align = "right") %>%
+  valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
   hline(i = seq(2, nrow(disposition.table.2023), 2)) %>%
-  hline(i = c(6, 10, nrow(disposition.table.2023)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = c(6, 10, nrow(disposition.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.7, unit = "in") %>%
   width(j = c(2, 9), 0.94, unit = "in") %>%
@@ -1932,12 +1902,13 @@ flextable(logged.table.2023) %>%
   mk_par(j = 8, part = "header",
          value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", 
                               as_i("T"), " + ", as_i("w"), ") \U00D7 100)")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 2:8, part = "all", align = "right") %>%
+  valign(part = "header", valign = "bottom") %>%
   italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = c(3, 5, nrow(logged.table.2023)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = c(3, 5, nrow(logged.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.69, unit = "in") %>%
   width(j = 2, 0.5, unit = "in") %>%
@@ -1946,7 +1917,6 @@ flextable(logged.table.2023) %>%
   width(j = 6, 1.25, unit = "in") %>%
   width(j = 7, 0.94, unit = "in") %>%
   width(j = 8, 1.81, unit = "in")
-
 ```
 
 \newpage
@@ -1982,20 +1952,20 @@ flextable(Selection.table.2023) %>%
   mk_par(j = 2, i = seq(4, nrow(Selection.table.2023), 4), part = "body",
          value = as_paragraph("After waivers, ", as_i("d"), " (", as_i("a"), " - ", as_i("b"), " + ", 
                               as_i("c"), " - ", as_i("d"), ")")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 3:7, part = "all", align = "right") %>%
+  valign(part = "header", valign = "bottom") %>%
   align(j = 2, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   italic(j = 1) %>%
   merge_v(j = 1) %>%
   hline(i = seq(4, nrow(Selection.table.2023), 4)) %>%
-  hline(i = c(12, nrow(Selection.table.2023)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = c(12, nrow(Selection.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = c(1, 3), 0.69, unit = "in") %>%
   width(j = 2, 2.21, unit = "in") %>%
   width(j = c(4, 5, 7), 0.63, unit = "in") %>%
   width(j = 6, 1.06, unit = "in")
-
 ```
 
 \newpage
@@ -2026,18 +1996,15 @@ Coverage.Table.2023 <- Coverage.Table %>%
 
 as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
-  align(part = "all", align = "center") %>%
-  align(i = ~ !is.na(Coverage), align = "left") %>%
-  align(j = 10, align = "left") %>%
-  align(j = 1, i = 15, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
   bold(j = 1, i =15) %>%
   italic(j = 1, i = c(2:4, 6:12, 14)) %>%
   italic(j = 2:5, part = "header") %>%
   hline(i = c(3, 8, 11)) %>%
-  hline(i = 14, border = officer::fp_border(width = 2)) %>%
-  surround(i = ~ !is.na(Coverage), border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = c(14, 15), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1)) %>%
+  surround(i = ~ !is.na(Coverage), border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
   width(j = 1, 1.5, unit = "in") %>%
   width(j = 2:3, 0.38, unit = "in") %>%
@@ -2045,10 +2012,12 @@ as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
   width(j = 6:7, 0.75, unit = "in") %>%
   width(j = 8:9, 0.58, unit = "in") %>%
   width(j = 10, 1.77, unit = "in") %>%
+  align(j = 2:10, part = "all", align = "right") %>%
+  align(j = 7, i = 15, align = "left") %>%
+  align(i = 1, part = "header", align = "center") %>%
+  valign(part = "header", valign = "bottom") %>%
   merge_at(j = 7:10, i = 15) %>%
-  align(j = 7, i = 15, align = "left") %>% 
-  padding(j = 7, i = 15, part = "body", padding.left = 20)
-
+  padding(j = 7, i = 15, part = "body", padding.left = 35)
 ```
 
 \newpage
@@ -2070,18 +2039,21 @@ flextable(Pollock.observed.table.2023) %>%
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
   mk_par(j = 5, part = "header",
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 4:6, part = "all", align = "right") %>%
+  align(j = 1:3, part = "all", align = "left") %>%
+  valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
   hline(i = c(4, 9)) %>%
-  hline(i = nrow(Pollock.observed.table.2023), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = nrow(Pollock.observed.table.2023), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.84, unit = "in") %>%
-  width(j = c(2, 4:5), 0.81, unit = "in") %>%
+  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 2, 1.39, unit = "in") %>%
   width(j = 3, 1, unit = "in") %>%
-  width(j = 6, 0.75, unit = "in")
- 
+  width(j = 4, 1.44, unit = "in") %>%
+  width(j = 5, 1.69, unit = "in") %>%
+  width(j = 6, 0.94, unit = "in")
 ```
 
 \newpage
@@ -2103,18 +2075,19 @@ flextable(Pollock.efp.table.2023) %>%
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
   mk_par(j = 5, part = "header",
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
   hline(i = c(4, 9)) %>%
-  hline(i = nrow(Pollock.efp.table.2023), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = nrow(Pollock.efp.table.2023), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.84, unit = "in") %>%
-  width(j = c(2, 4:5), 0.82, unit = "in") %>%
-  width(j = 3, 1.78, unit = "in") %>%
-  width(j = 6, 0.75, unit = "in")
-
+  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 2, 1.39, unit = "in") %>%
+  width(j = 3, 1, unit = "in") %>%
+  width(j = 4, 1.44, unit = "in") %>%
+  width(j = 5, 1.69, unit = "in") %>%
+  width(j = 6, 0.94, unit = "in")
 ```
 
 \newpage
@@ -2122,7 +2095,28 @@ flextable(Pollock.efp.table.2023) %>%
 `r tbl_nums('perm.summary.table.2023', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
 
 ```{r perm.summary.table.2023, tab.cap=""}
-flextable(OBSERVED_FLAG.results_2023)
+flextable(OBSERVED_FLAG.results_2023) %>%
+  bold(bold = TRUE, part = "header") %>%
+  italic(j = 1, part = "body") %>%
+  hline(i = seq(3, nrow(OBSERVED_FLAG.results_2023), 3)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+   mk_par(j = 4, i = seq(3, nrow(OBSERVED_FLAG.results_2023), 3), part = "body",
+         value = as_paragraph(as_i("p"), "-value")) %>%
+  merge_v(j = c("Strata", "Observed", "Unobserved")) %>%
+  align(j = 2:10, part = "all", align = "right") %>%
+  valign(j = 1:3, part = "body", valign = "top") %>%
+  valign(part = "header", valign = "bottom") %>%
+  fix_border_issues() %>%
+  width(j = c(1:2, 6, 8:10), 0.69, unit = "in") %>%
+  width(j = 3, 0.88, unit = "in") %>%
+  width(j = 4, 0.63, unit = "in") %>%
+  width(j = 5, 0.5, unit = "in") %>%
+  width(j = 7, 1, unit = "in") %>%
+  # Highlight significant factors
+  bold(j = 6, i = 1:3, bold = TRUE, part = "body") %>%
+  bold(j = 8, i = 4:6, bold = TRUE, part = "body") %>%
+  bold(j = 9, i = 13:15, bold = TRUE, part = "body") %>%
+  bold(j = 10, i = 1:3, bold = TRUE, part = "body")
 ```
 
 \newpage
@@ -2145,7 +2139,6 @@ arrange.plot.fxn <- function(plotA, plotB){
 }
 
 arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
-
 ```
 
 `r fig_nums('outcomes.plot.2023', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
@@ -2202,21 +2195,21 @@ OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA =
 OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
 OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
 
-#Generate permutation plot 
+# Generate permutation plot 
 Obs.perm.plot.2023 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
   geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
   geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
   geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
   geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
   facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
-             #Make number of cols in facet_wrap = to number of strata
+             # Make number of cols in facet_wrap = to number of strata
              ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
   geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
              x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
   scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
   fig.theme +
-  xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
-  ylab("Density of Outcomes\n") + 
+  xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
+  ylab("Density of outcomes\n") + 
   theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
 
 Obs.perm.plot.2023
@@ -2245,22 +2238,21 @@ trip.budget.table.2022 <- trip.budget.table.2022 %>%
 # 2022
 
 flextable(trip.budget.table.2022) %>%
-  set_header_labels(values = list(
+  italic(j = 1, i = 1:6) %>%
+  bold(bold = TRUE, part = "header") %>%
+  hline(i = c(3, 6, nrow(trip.budget.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
+  align(j = 2:5, part = "all", align = "right") %>%
+  align(i = 1, part = "header", align = "center") %>%
+  width(j = 1, 1.125, unit = "in") %>%
+    set_header_labels(values = list(
     STRATA = "Strata",
     pred_days = "Predicted",
     act_days = "Actual",
     diff = "Actual",
     perc = "Percent")) %>%
-  align(part = "all", align = "center") %>%
-  italic(j = 1, i = 1:6) %>%
-  bold(bold = TRUE, part = "header") %>%
-  hline(i = c(3, 6, nrow(trip.budget.table.2022)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
-  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
-  colformat_num(j = 3, i = c(2, 4:7), digits = 0) %>% # This year has half day realized increments for actual trip days
-  width(j = 1, 1.125, unit = "in") %>%
   width(j = 2, 0.8, unit = "in")
-
 ```
 
 \newpage
@@ -2287,13 +2279,14 @@ flextable(disposition.table.2022) %>%
          value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
   mk_par(j = 9, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
-  align(part = "all", align = "center") %>%
   italic(j = 1, i = 1:10) %>%
+  align(j = 3:10, part = "all", align = "right") %>%
+  valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = seq(2, nrow(disposition.table.2022), 2)) %>%
-  hline(i = c(6, 10, nrow(disposition.table.2022)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = seq(2, nrow(disposition.table.2023), 2)) %>%
+  hline(i = c(6, 10, nrow(disposition.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.7, unit = "in") %>%
   width(j = c(2, 9), 0.94, unit = "in") %>%
@@ -2301,7 +2294,6 @@ flextable(disposition.table.2022) %>%
   width(j = 4:6, 0.81, unit = "in") %>%
   width(j = 7, 0.69, unit = "in") %>%
   width(j = 8, 0.56, unit = "in")
-
 ```
 
 \newpage
@@ -2330,14 +2322,15 @@ flextable(logged.table.2022) %>%
   mk_par(j = 7, part = "header",
          value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
   mk_par(j = 8, part = "header",
-         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), 
-                              "/(", as_i("T"), " + ", as_i("w"), ") \U00D7 100)")) %>%
-  align(part = "all", align = "center") %>%
+         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", 
+                              as_i("T"), " + ", as_i("w"), ") \U00D7 100)")) %>%
+  align(j = 2:8, part = "all", align = "right") %>%
+  valign(part = "header", valign = "bottom") %>%
   italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = c(3, 5, nrow(logged.table.2022)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = c(3, 5, nrow(logged.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.69, unit = "in") %>%
   width(j = 2, 0.5, unit = "in") %>%
@@ -2346,7 +2339,6 @@ flextable(logged.table.2022) %>%
   width(j = 6, 1.25, unit = "in") %>%
   width(j = 7, 0.94, unit = "in") %>%
   width(j = 8, 1.81, unit = "in")
-
 ```
 
 \newpage
@@ -2369,29 +2361,29 @@ flextable(Selection.table.2022) %>%
     Prog = "Programmed (%)")) %>%
   mk_par(j = 7, part = "header",
          value = as_paragraph(as_i("p"), "-value")) %>%
-  mk_par(j = 2, i = seq(1, nrow(Selection.table.2022), 4), part = "body",
+  mk_par(j = 2, i = seq(1, nrow(Selection.table.2023), 4), part = "body",
          value = as_paragraph("Initial random selection, ", as_i("a"))) %>%
-  mk_par(j = 2, i = seq(2, nrow(Selection.table.2022), 4), part = "body",
+  mk_par(j = 2, i = seq(2, nrow(Selection.table.2023), 4), part = "body",
          value = as_paragraph("After cancellations, ", as_i("b"), " (", as_i("a"), " - ", as_i("b"), ")")) %>%
-  mk_par(j = 2, i = seq(3, nrow(Selection.table.2022), 4), part = "body",
+  mk_par(j = 2, i = seq(3, nrow(Selection.table.2023), 4), part = "body",
          value = as_paragraph("With inherits, ", as_i("c"), " (", as_i("a"), " - ", as_i("b"), " + ", as_i("c"), ")")) %>%
-  mk_par(j = 2, i = seq(4, nrow(Selection.table.2022), 4), part = "body",
+  mk_par(j = 2, i = seq(4, nrow(Selection.table.2023), 4), part = "body",
          value = as_paragraph("After waivers, ", as_i("d"), " (", as_i("a"), " - ", as_i("b"), " + ", 
                               as_i("c"), " - ", as_i("d"), ")")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 3:7, part = "all", align = "right") %>%
+  valign(part = "header", valign = "bottom") %>%
   align(j = 2, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   italic(j = 1) %>%
   merge_v(j = 1) %>%
-  hline(i = seq(4, nrow(Selection.table.2022), 4)) %>%
-  hline(i = c(12, nrow(Selection.table.2022)), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = seq(4, nrow(Selection.table.2023), 4)) %>%
+  hline(i = c(12, nrow(Selection.table.2023)), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = c(1, 3), 0.69, unit = "in") %>%
   width(j = 2, 2.21, unit = "in") %>%
   width(j = c(4, 5, 7), 0.63, unit = "in") %>%
   width(j = 6, 1.06, unit = "in")
-
 ```
 
 \newpage
@@ -2407,18 +2399,15 @@ Coverage.Table.2022 <- Coverage.Table %>%
 
 as_grouped_data(Coverage.Table.2022, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
-  align(part = "all", align = "center") %>%
-  align(i = ~ !is.na(Coverage), align = "left") %>%
-  align(j = 10, align = "left") %>%
-  align(j = 1, i = 15, align = "left") %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
-  bold(j = 1, i = 15) %>%
+  bold(j = 1, i =15) %>%
   italic(j = 1, i = c(2:4, 6:12, 14)) %>%
   italic(j = 2:5, part = "header") %>%
   hline(i = c(3, 8, 11)) %>%
-  hline(i = 14, border = officer::fp_border(width = 2)) %>%
-  surround(i = ~ !is.na(Coverage), border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = c(14, 15), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1)) %>%
+  surround(i = ~ !is.na(Coverage), border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
   width(j = 1, 1.5, unit = "in") %>%
   width(j = 2:3, 0.38, unit = "in") %>%
@@ -2426,10 +2415,12 @@ as_grouped_data(Coverage.Table.2022, groups = "Coverage") %>%
   width(j = 6:7, 0.75, unit = "in") %>%
   width(j = 8:9, 0.58, unit = "in") %>%
   width(j = 10, 1.77, unit = "in") %>%
+  align(j = 2:10, part = "all", align = "right") %>%
+  align(j = 7, i = 15, align = "left") %>%
+  align(i = 1, part = "header", align = "center") %>%
+  valign(part = "header", valign = "bottom") %>%
   merge_at(j = 7:10, i = 15) %>%
-  align(j = 7, i = 15, align = "left") %>% 
-  padding(j = 7, i = 15, part = "body", padding.left = 20)
-
+  padding(j = 7, i = 15, part = "body", padding.left = 35)
 ```
 
 \newpage
@@ -2445,18 +2436,21 @@ flextable(Pollock.observed.table.2022) %>%
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
   mk_par(j = 5, part = "header",
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 4:6, part = "all", align = "right") %>%
+  align(j = 1:3, part = "all", align = "left") %>%
+  valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
   hline(i = c(4, 8)) %>%
-  hline(i = nrow(Pollock.observed.table.2022), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = nrow(Pollock.observed.table.2022), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.84, unit = "in") %>%
-  width(j = c(2, 4:5), 0.81, unit = "in") %>%
+  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 2, 1.39, unit = "in") %>%
   width(j = 3, 1, unit = "in") %>%
-  width(j = 6, 0.75, unit = "in")
- 
+  width(j = 4, 1.44, unit = "in") %>%
+  width(j = 5, 1.69, unit = "in") %>%
+  width(j = 6, 0.94, unit = "in")
 ```
 
 \newpage
@@ -2472,18 +2466,19 @@ flextable(Pollock.efp.table.2022) %>%
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
   mk_par(j = 5, part = "header",
          value = as_paragraph("Observed deliveries (", as_i("n"), ")")) %>%
-  align(part = "all", align = "center") %>%
+  align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
   hline(i = c(5, 10)) %>%
-  hline(i = nrow(Pollock.efp.table.2022), border = officer::fp_border(width = 2)) %>%
-  surround(part = "header", border.top = officer::fp_border(width = 2), border.bottom = officer::fp_border(width = 2)) %>%
+  hline(i = nrow(Pollock.efp.table.2022), border = fp_border(width = 1)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.84, unit = "in") %>%
-  width(j = c(2, 4:5), 0.82, unit = "in") %>%
-  width(j = 3, 1.78, unit = "in") %>%
-  width(j = 6, 0.75, unit = "in")
-
+  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 2, 1.39, unit = "in") %>%
+  width(j = 3, 1, unit = "in") %>%
+  width(j = 4, 1.44, unit = "in") %>%
+  width(j = 5, 1.69, unit = "in") %>%
+  width(j = 6, 0.94, unit = "in")
 ```
 
 \newpage
@@ -2491,7 +2486,27 @@ flextable(Pollock.efp.table.2022) %>%
 Table A-8. -- Results of permutation tests between monitored and unmonitored trips in the `r year -1` trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.
 
 ```{r perm.summary.table.2022, tab.cap=""}
-flextable(OBSERVED_FLAG.results_2022)
+flextable(OBSERVED_FLAG.results_2022) %>%
+  bold(bold = TRUE, part = "header") %>%
+  italic(j = 1, part = "body") %>%
+  hline(i = seq(3, nrow(OBSERVED_FLAG.results_2022), 3)) %>%
+  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+   mk_par(j = 4, i = seq(3, nrow(OBSERVED_FLAG.results_2022), 3), part = "body",
+         value = as_paragraph(as_i("p"), "-value")) %>%
+  merge_v(j = c("Strata", "Observed", "Unobserved")) %>%
+  align(j = 2:10, part = "all", align = "right") %>%
+  valign(j = 1:3, part = "body", valign = "top") %>%
+  valign(part = "header", valign = "bottom") %>%
+  fix_border_issues() %>%
+  width(j = c(1:2, 6, 8:10), 0.69, unit = "in") %>%
+  width(j = 3, 0.88, unit = "in") %>%
+  width(j = 4, 0.63, unit = "in") %>%
+  width(j = 5, 0.5, unit = "in") %>%
+  width(j = 7, 1, unit = "in") %>%
+  # Highlight significant factors
+  bold(j = 6, i = c(1:3, 7:9), bold = TRUE, part = "body") %>%
+  bold(j = 8, i = 4:6, bold = TRUE, part = "body") %>%
+  bold(j = 10, i = c(1:3, 10:12), bold = TRUE, part = "body")
 ```
 
 \newpage
@@ -2563,8 +2578,8 @@ Obs.perm.plot.2022 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct
              x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
   scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
   fig.theme +
-  xlab("\nDifference (%) of Observed minus Unobserved Trips Relative to the Mean") +
-  ylab("Density of Outcomes\n") + 
+  xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
+  ylab("Density of outcomes\n") + 
   theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
 
 Obs.perm.plot.2022
