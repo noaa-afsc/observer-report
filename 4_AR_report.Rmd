@@ -21,7 +21,6 @@ editor_options:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load packages and functions 
 source("3_helper.R")
-
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -662,8 +661,8 @@ odds.ts.cp <- odds.dat %>%
   transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
   group_by(YEAR, STRATA, Date) %>%
   summarize(
-    n = sum(random.assign[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),                        # 
-    ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),                     # 
+    n = sum(random.assign[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
+    ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
     nr = sum(released, na.rm = TRUE),
     N = length(unique(TRIP_PLAN_LOG_SEQ)),
     TYPE = "Adjusted date: Valid trips only") %>% 
@@ -1026,18 +1025,6 @@ sel.max.canc <- disposition %>%
                 mutate(Cancellation.Pct = round(Cancellation.Pct, 1))
 ```
 
-The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW EFP* stratum.\
-\
-Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or canceled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically canceled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP. Trips that were selected to be monitored by ODDS and are subsequently canceled trigger the next newly-logged trip (for at-sea observers) or next logged trip (for fixed-gear EM) to automatically inherit the selected status. These trips are termed inherited trips.\
-\
-The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('disposition.table.2023', display = "cite")`. Of the 4,482 total trips logged, 987 were selected, and 155 were canceled: five by ODDS (0.5%) and 150 by users (15.2%). The user cancellation rate for selected trips among strata ranged from 6.9% for *EM POT* to 21.2% for *OB HAL* in `r year`. These two strata also had the least and greatest cancellation rates in `r year - 1` (2.6% and 41.7% respectively, (Appendix A, Table A-2).\
-\
-The number of completed trips that were randomly selected for monitoring or from inherited monitoring as well as the number of trips that were waived are summarized in `r tbl_nums('logged.table.2023', display = "cite")`. It is notable that 29% of monitoried trips in the *OB HAL* stratum and 22.2% of monitored trips in the *OB POT* stratum were inherited. This was a continuation of what was seen in 2022 in which 35.9% of *OB HAL*, 28.2% of *OB POT* and 17.8% of *OB TRW* trips were monitored via the inherit system (Appendix A, Table A-3). This is in contrast to the fixed-gear EM strata where fewer than 10% of monitored trips were inherited in either year.
-
-# OLD BELOW (FOR CODE)
-
-Of the `r formatC(sum(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$YEAR == 2023]), format = "d", big.mark = ",")` total trips logged, `r formatC(disposition$Trips.logged.ODDS[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d")` were selected, and `r formatC(totl.canc.2023, format = "d", big.mark = ",")` were canceled: `r formatC(disposition$Trips.canceled.bysystem[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d", big.mark = ",")` by ODDS (`r perc.syst.canc.2023`%) and `r formatC(disposition$Trips.canceled.byuser[disposition$STRATA == "Total" & disposition$random.assign == "Selected" & disposition$YEAR == "2023"], format = "d", big.mark = ",")` by users (`r perc.user.canc.2023`%). The user cancellation rate for selected trips ranged from `r sel.min.canc$Cancellation.Pct[sel.min.canc$YEAR == 2023]`% for *`r sel.min.canc$STRATA[sel.min.canc$YEAR == 2023]`* to `r sel.max.canc$Cancellation.Pct[sel.max.canc$YEAR == 2023]`% for *`r sel.max.canc$STRATA[sel.max.canc$YEAR == 2023]`* in `r year`.
-
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
 #' *2023 AR only: separate by year*
@@ -1106,6 +1093,14 @@ final_pvals <- merge(p.table
                select(YEAR, p, formatted_strat)
 ```
 
+The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW EFP* stratum.\
+\
+Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or canceled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically canceled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP. Trips that were selected to be monitored by ODDS and are subsequently canceled trigger the next newly-logged trip (for at-sea observers) or next logged trip (for fixed-gear EM) to automatically inherit the selected status. These trips are termed inherited trips.\
+\
+The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('disposition.table.2023', display = "cite")`. Of the 4,482 total trips logged, 987 were selected, and 155 were canceled: five by ODDS (0.5%) and 150 by users (15.2%). The user cancellation rate for selected trips among strata ranged from 6.9% for *EM POT* to 21.2% for *OB HAL* in `r year`. These two strata also had the least and greatest cancellation rates in `r year - 1` (2.6% and 41.7% respectively, (Appendix A, Table A-2).\
+\
+The number of completed trips that were randomly selected for monitoring or from inherited monitoring as well as the number of trips that were waived are summarized in `r tbl_nums('logged.table.2023', display = "cite")`. It is notable that 29% of monitoried trips in the *OB HAL* stratum and 22.2% of monitored trips in the *OB POT* stratum were inherited. This was a continuation of what was seen in 2022 in which 35.9% of *OB HAL*, 28.2% of *OB POT* and 17.8% of *OB TRW* trips were monitored via the inherit system (Appendix A, Table A-3). This is in contrast to the fixed-gear EM strata where fewer than 10% of monitored trips were inherited in either year.\
+\
 The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from (1) random selection of all logged trips (initial random selection) and (2) random selection of remaining trips after cancellations, inherits and waivers. In any case, the proportion of trips selected to be monitored should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated *p*-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exception --- the initial selection rate was 26.50% (*p*-value = 0.012) for the *OB TRW* stratum (`r tbl_nums('Selection.table.2023', display = "cite")`). This means that the *OB TRW* stratum was being over-selected in ODDS. A time series of ODDS initial selection rates and final realized rates is presented in `r fig_nums('odds.by.date.plot.2023', display = "cite")`.\
 \
 The final selection rate after trips were closed, canceled or waived were within expected bounds with the exception of the *OB HAL* and *OB TRW* strata (`r tbl_nums('Selection.table.2023', display = "cite")`). The *OB HAL* stratum had a programmed rate of 17.87% but through the result of cancellations, inherits and waivers ended up being selected at 21.38% (*p*-value = 0.002). The *OB TRW* stratum had an original selection rate of 22.68% but was selected at 26.5%, and through the process of cancellations, inherits and waivers was selected at 29.26% (*p*-value < 0.001; `r tbl_nums('Selection.table.2023', display = "cite")`). While both strata exhibited an increase in monitoring because of inherits, the impact that inherits had to elevate monitoring rates was greater for *OB HAL* than it was for *OB TRW*. The impact of waivers was small, averaging a 1.4% reduction in monitoring rate among strata with the most waived trips within the *OB POT* stratum (`r tbl_nums('logged.table.2023', display = "cite")`).
@@ -1128,10 +1123,9 @@ Coverage.Table.full <- bind_rows(
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 1,
-           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%#,
+           meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%
     select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, meets.expected) #%>% 
-    #arrange(ADP, desc(STRATA))
+           V, v, N, n, Pct.obs, Rate, meets.expected)
     ,
     # Totals for vessels in the full coverage category
     work.data %>%
@@ -1180,8 +1174,7 @@ Coverage.Table.partial <- bind_rows(
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
     select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, 
-           min.expected, max.expected, meets.expected) #%>% 
-    #arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW")))
+           min.expected, max.expected, meets.expected)
   ,
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
@@ -1212,7 +1205,7 @@ Coverage.Table.zero <-
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection",
            Rate = 0,
-           meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%#,
+           meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%
     select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>%
   ungroup()
@@ -1237,7 +1230,7 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                             Coverage.Table.partial,
                             Coverage.Table.zero,
                             ) %>%
-  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>% #'
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
   bind_rows(Coverage.Table.TOTALS) %>%
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
@@ -1271,7 +1264,6 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
          `Coverage` = COVERAGE_TYPE, 
          Strata = STRATA,
          V, v, N, n,
-        # `*V*` = V, `*v*` = v, `*N*` = N, `*n*` = n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
          `Lower limit`= min.expected,
@@ -1337,7 +1329,7 @@ perc_vessels_obs.2023 <- Coverage.Table %>%
 
 This section compares the coverage rate achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS; managed by the AKRO), the Observer Program database (NORPAC; managed by the AFSC) and eLandings (under joint management by the Alaska Department of Fish and Game, the IPHC and the NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.\
 \
-In combination across all strata, coverage levels and fishery monitoring tools, 3,780 trips (43.7%) and 463 vessels (50.2%) were successfully monitored among all fishing in the Federal fisheries of Alaska in 2023 (`r tbl_nums('Coverage.Table.2023', display = "cite")`). This compares to a total of 3,534 trips (39.7%) and 441 vessels (45.3%) monitored in 2022 (AFSC and AKRO 2023).\
+In combination across all strata, coverage levels and fishery monitoring tools, 3,780 trips (43.7%) and 463 vessels (50.2%) were successfully monitored among all fishing in the Federal fisheries of Alaska in `r year` (`r tbl_nums('Coverage.Table.2023', display = "cite")`). This compares to a total of 3,534 trips (39.7%) and 441 vessels (45.3%) monitored in 2022 (AFSC and AKRO 2023).\
 \
 The `r year` Observer Program had `r total.strat` different deployment strata to be evaluated (`r tbl_nums('Coverage.Table.2023', display = "cite")`). There were two *Full coverage* strata; vessels that were required to have full coverage (e.g., AFA vessels) and BSAI trawl catcher vessels that opted into full coverage (i.e., *EM TRW EFP* under regulations *50 CFR 679.51(a)(4)*). There were six partial coverage strata: three observed strata and three EM strata, defined by gear designation. There was also one *Zero coverage* stratum that included jig vessels and vessels under 40 ft LOA that are not monitored.\
 \
@@ -2606,4 +2598,14 @@ Figure A-8. -- Results from permutation tests depicting percent differences betw
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=FALSE}
 save.image(file = "4_AR_report.Rdata")
+```
+
+
+```{r, compliance check, eval=FALSE}
+# Check of full coverage vessels that failed to take an observer to provide to OLE
+
+not_observed <- work.data %>%
+  filter(STRATA == "FULL" & ADP == 2023 & OBSERVED_FLAG == "N") %>%
+  select(TRIP_ID, VESSEL_ID, PERMIT, LANDING_DATE) %>%
+  unique()
 ```
