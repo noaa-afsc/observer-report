@@ -2602,7 +2602,8 @@ save.image(file = "4_AR_report.Rdata")
 
 
 ```{r, compliance check, eval=FALSE}
-# Check of full coverage vessels that failed to take an observer to provide to OLE
+#' Check of full coverage vessels that failed to take an observer to provide to OLE 
+#' Alex Perry - Compliance Analyst - Anchorage [Alex.Perry@noaa.gov]
 
 not_observed <- work.data %>%
   filter(STRATA == "FULL" & ADP == 2023 & OBSERVED_FLAG == "N") %>%
