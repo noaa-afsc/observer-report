@@ -9,8 +9,8 @@ The purpose of this chapter is to inform the public through the Council process 
 This repository is organized into two folders that are pretty self-explanatory
 
 -   scripts
-
--   charts_and_tables
+-   charts
+-   tables
 
 ## Scripts
 
