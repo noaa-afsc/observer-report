@@ -709,6 +709,8 @@ ggsave(filename = 'Plots/OPS_number_rainplot.png',
        height = 8)
 
 # Save the plot to Google Drive
+  # The plot is uploaded to google drive to allow non-FMA collaborators to view
+    # plots otherwise restricted to the private repository
   # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
   media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/OPS_number_rainplot.png',
