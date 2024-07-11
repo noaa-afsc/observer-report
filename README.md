@@ -28,4 +28,6 @@ Five main scripts are used
 
 ## Important Notes
 
+Releases correspond to the code used for the product.  Reverting to a version will place the code at the point of the start of that project.
+For this reason releases should be made when the Team has finished the product and code is considered finalized.
 Outputs currently exclude confidential reporting where less than three observers are present in any given summary output.
