@@ -22,12 +22,7 @@ if(!require("googledrive")) install.packages("googledrive", repos='http://cran.u
 rm(list = ls())
 
 
-
-# Set year
-# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
-# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own G-drive directory and Rdata files.
-adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
-
+# Set the .Rdata file we will load
 file_1_name  <- "AR_1_Statements_data.Rdata"
 
 # Pull Rdata file from google drive.

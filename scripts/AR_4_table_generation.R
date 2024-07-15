@@ -19,12 +19,8 @@ library(devtools)
 # load the data files. --------------------------------------------------------
 rm(list = ls())
 
-# Set some preliminary parameters. --------------------------------------------
 
-# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
-# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
-adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
-
+# Set the .Rdata file we will load
 file_3_name <- "AR_3_rate_output.Rdata"
 
 
