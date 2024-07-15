@@ -25,12 +25,10 @@ rm(list = ls())
 
 # Set year
 # adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
-# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
+# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own G-drive directory and Rdata files.
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
 
-# Set the filepath, change to your own local as needed
-# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
-Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
+file_1_name  <- "AR_1_Statements_data.Rdata"
 
 # Pull Rdata file from google drive.
 # NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
@@ -48,16 +46,16 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 ## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 ################
 
-# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# project_dribble <- drive_get(as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
 # 
 # data_dribble <- 
 #   drive_ls(project_dribble) %>%
-#     filter(name == "AR_1_Statements_data.Rdata")
+#     filter(name == file_1_name)
 # 
-# # Download the file from g-drive into local
+# Download the file from g-drive into local
 # drive_download(
 #   data_dribble,
-#   path = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"),
+#   path = file_1_name,
 #   overwrite = T
 #               )
 
@@ -69,7 +67,7 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 
 
 # load it from local into R
-load(file = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"))
+load(file = file_1_name)
 
 
 
@@ -699,18 +697,18 @@ rm(dt_em_offloads_m, dt_em_offloads_nr, dt_em_offloads, dt_hauls, dt_hauls_g, dt
 
 
 ##################
-# Save Output -------------------------------------------------------------
+# Save Output and upload to G-drive -------------------------------------------------------------
 
-# (NOTE: this script is applicable to both OLD STATEMENT DATA,
-# as well as NEW STATEMENT DATA, so no need to call it OLD_DATA in the filename.)
-save(list = ls(),
-     file = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"))
+file_2_name  <- "AR_2_rolling_join_output.Rdata"
+
+save(list = ls()[!(ls() == 'channel')],
+     file = file_2_name)
 
 
 # upload the .Rdata file to g-drive
 googledrive::drive_upload(
-  media     = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
-  name      = "AR_2_rolling_join_output.Rdata",
+  media     = file_2_name,
+  name      = file_2_name,
   path      = project_dribble,
   overwrite = T
 ) 
