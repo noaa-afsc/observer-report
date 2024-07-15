@@ -436,16 +436,12 @@ df_em_efp_offloads <-
 
 
 # Save Output -------------------------------------------------------------
-# MUST SAVE OUTSIDE wd, because we cannot have "data" on the GitHub site.
-# UPdate to your local filepath as needed.
 
-Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
+# Commenting out drive_auth(), UNCOMMENT if needed.
+#  Authorizes the googledrive package to access your NOAA Gdrive. Authenticating via this browser should be a one-time
+# thing. Future calls to googledrive functions will prompt you to simply select your NOAA google account as the one 
+# you want to re-authorize
 
-#' Authorize the googledrive package to access your NOAA Gdrive. Authenticating via this browser should be a one-time
-#' thing. Future calls to googledrive functions will prompt you to simply select your NOAA google account as the one 
-#' you want to re-authorize
-#' 
-#' Commenting out, UNCOMMENT if needed.
 # googledrive::drive_auth()
 
 # Assign google drive location
@@ -458,24 +454,19 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 
 project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
 
+file_1_name  <- "AR_1_Statements_data.Rdata"
 
-save(list = c("statements_raw_old", "statements_raw_new", 
-              "manual_year_cruises", "assignments_dates_cr_perm", 
-              "hauls",               "df_fishery_dates",
-              "df_em_efp_offloads",  "df_offloads",
-              "first_cruise",        "first_date",
-              "last_date",           "adp_yr", 
-              "Rdata_files_path",    "project_dribble"), 
-     file = paste0(Rdata_files_path, 
-                   "AR_1_Statements_data.Rdata"))
+# save the file to the wd (but don't save the "channel object, no point as it will expire anyway)
+save(list = ls()[!(ls() == 'channel')], 
+     file = file_1_name)
 
 
 
 # upload the .Rdata file to g-drive
 googledrive::drive_upload(
-  media     = paste0(Rdata_files_path, "AR_1_Statements_data.Rdata"),     #' *The local filepath to the file you want to upload*
-  path      = project_dribble,                        #' *The dribble object of the Gdrive folder you want to upload to*
-  name      = "AR_1_Statements_data.Rdata",  #' *Optional. Assignes your uploaded object with a different file name.*,
-  overwrite = T                                       #' *A control for overwriting existing Gdrive files*.
+  media     = file_1_name,       #' *The local filepath to the file you want to upload*
+  path      = project_dribble,   #' *The dribble object of the Gdrive folder you want to upload to*
+  name      = file_1_name,       #' *Optional. Assignes your uploaded object with a different file name.*,
+  overwrite = T                  #' *A control for overwriting existing Gdrive files*.
 ) 
 

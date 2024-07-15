@@ -32,20 +32,10 @@ library(tidyverse)
 library(patchwork)
 
 # Data -------------------------------------------------------------------------
-# * chng wd filepath as needed *
 rm(list = ls())
 
-# adp_yr is the year of the annual report we are doing this time 
-  # (annual_deployment_year)
-# NOTE: we need this to ensure we load the CORRECT YEAR.  
-  # Each year has it's own directory and Rdata files.
-adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
-
-# Set the filepath, change to your own local as needed AND COMMENT OUT FILE PATH
-  # OF OTHER RESEARCHERS ATTACHED TO THE PROJECT
-# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
-# Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
-Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
+# Set the .Rdata file we will load
+file_4_name <- "AR_4_summary_tables_output.Rdata"
 
 
 # Pull Rdata file from google drive.
@@ -62,26 +52,24 @@ Rdata_files_path <- "C:/Users/Cameron.VanHorn/Work/AR_2024_Chapter5/data_files/"
 # project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
 #                                                 adp_yr))
 
-
-
 ## BEGIN UNCOMMENT BELOW IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 
-# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
-# 
-# data_dribble <-
-#   drive_ls(project_dribble) %>%
-#   filter(name == "AR_3_rate_output.rdata")
-# 
-# # Download the file from g-drive into local
-# drive_download(
-#   data_dribble,
-#   path = paste0(Rdata_files_path, "AR_3_rate_output.rdata"),
-#   overwrite = T
-# )
+  # project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+  # 
+  # data_dribble <-
+  #   drive_ls(project_dribble) %>%
+  #   filter(name == file_4_name)
+  # 
+  # # Download the file from g-drive into local
+  # drive_download(
+  #   data_dribble,
+  #   path = file_4_name,
+  #   overwrite = T
+  # )
 
 ## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 
-load(file = paste0(Rdata_files_path, "AR_3_rate_output.Rdata"))
+load(file = file_4_name)
 
 
 
@@ -105,16 +93,14 @@ data_dribble <- googledrive::drive_get(googledrive::as_id(id))
 # download the file from g-drive into local
 drive_download(
   data_dribble,
-  path = paste0(Rdata_files_path, "possible_trips_not_logged_or_logged_incorrectly.xlsx"),
+  path = "possible_trips_not_logged_or_logged_incorrectly.xlsx",
   overwrite = T
 )
 
 # format the excel sheet to function within R
-  # IMPORTANT: comment out the below code and recreate the function call with
-  # YOUR SPECIFIC FILE PATH
 # the map function allows for multiple sheets to be clumped into one list
-odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
-  map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
+odds_data <- excel_sheets(path = 'possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
+  map(~read_xlsx(path = 'possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
 
 # create dataset for 2023
   # the number corresponds to the sheet # in the spreadsheet

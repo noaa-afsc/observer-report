@@ -20,16 +20,10 @@ if(!require("googledrive")) install.packages("googledrive", repos='http://cran.u
 
 
 # load the data files.----------------------------------------------------------
-# * chng wd filepath as needed *
 rm(list = ls())
 
-# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
-# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
-adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
-
-# Set the filepath, change to your own local as needed
-# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
-Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
+# Set the .Rdata file we will load
+file_2_name  <- "AR_2_rolling_join_output.Rdata"
 
 
 # Pull Rdata file from google drive.
@@ -53,12 +47,12 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 # 
 # data_dribble <- 
 #   drive_ls(project_dribble) %>%
-#   filter(name == "AR_2_rolling_join_output.Rdata")
+#   filter(name == file_2_name)
 # 
 # # Download the file from g-drive into local
 # drive_download(
 #   data_dribble,
-#   path = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"),
+#   path = file_2_name,
 #   overwrite = T
 # )
 
@@ -67,7 +61,7 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 
 
 
-load(file = paste0(Rdata_files_path, "AR_2_rolling_join_output.Rdata"))
+load(file = file_2_name)
 
 
 
@@ -522,15 +516,18 @@ occur_per_stmt <-
 
 ##################
 # Save Output -------------------------------------------------------------
+
+file_3_name <- "AR_3_rate_output.Rdata"
+
 save(list = ls(),
-     file = paste0(Rdata_files_path, "AR_3_rate_output.rdata"))
+     file = file_3_name)
 
 
 
 # upload the .Rdata file to g-drive
 googledrive::drive_upload(
-  media     = paste0(Rdata_files_path, "AR_3_rate_output.rdata"),
-  name      = "AR_3_rate_output.rdata",
+  media     = file_3_name,
+  name      = file_3_name,
   path      = project_dribble,
   overwrite = T
 ) 

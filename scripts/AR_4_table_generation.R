@@ -1,11 +1,10 @@
-####################
-# Annual Report Enforcement chapter: Table generation
+
+# Annual Report Enforcement chapter: Table generation --------------------------
 # Contact Andy Kingham
 # 206-526-4212
 
 
-############
-# load req'd packages
+# load req'd packages -----------------------------------
 
 library(plyr)
 library(reshape2)
@@ -18,22 +17,14 @@ library(devtools)
 
 
 # load the data files. --------------------------------------------------------
-# * chng wd filepath as needed *
 rm(list = ls())
 
 
-# adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
-# NOTE: we need this to ensure we load the CORRECT YEAR.  Each year has it's own directory and Rdata files.
-adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
+# Set the .Rdata file we will load
+file_3_name <- "AR_3_rate_output.Rdata"
 
 
-
-# Set the filepath for up- and down-loading Rdata files, change to your own local as needed
-# MUST BE OUTSIDE wd, because we cannot have "data" on the GitHub site.
-Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Projects/Statement_redesign/Annual_Report/RData_files/", adp_yr, "/")
-
-
-# Pull Rdata file from google drive.
+# Pull Rdata file from google drive. ------------------------------------
 # NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
 
 # Identify the g-drive file to download
@@ -47,28 +38,26 @@ Rdata_files_path <- paste0("C:/Users/andy.kingham/Work/Analytical Projects/Proje
 
 
 
-## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
-################
+# BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 
-# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
-# 
-# data_dribble <- 
-#   drive_ls(project_dribble) %>%
-#   filter(name == "AR_3_rate_output.rdata")
-# 
-# # Download the file from g-drive into local
-# drive_download(
-#   data_dribble,
-#   path = paste0(Rdata_files_path, "AR_3_rate_output.rdata"),
-#   overwrite = T
-# )
+  # project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+  # 
+  # data_dribble <- 
+  #   drive_ls(project_dribble) %>%
+  #   filter(name == file_3_name)
+  # 
+  # # Download the file from g-drive into local
+  # drive_download(
+  #   data_dribble,
+  #   path = file_3_name,
+  #   overwrite = T
+  # )
 
-###############
-## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
+# END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
 
 
 
-load(file = paste0(Rdata_files_path, "AR_3_rate_output.rdata"))
+load(file = file_3_name)
 
 
 # Write .csv of the priority rate but first remove confidentail (total_statements < 3)
@@ -535,15 +524,17 @@ x    = rate_all_groupings_new_ole_category_all %>%
 
 ##################
 # Save Output -------------------------------------------------------------
-#Requires the folder 'scripts'
+
+file_4_name <- "AR_4_summary_tables_output.Rdata"
+
 save(list = ls(),
-     file = paste0(Rdata_files_path, "AR_4_summary_tables_output.rdata"))
+     file = file_4_name)
 
 
 # upload the .Rdata file to g-drive
 googledrive::drive_upload(
-  media     = paste0(Rdata_files_path, "AR_4_summary_tables_output.rdata"),
-  name      = "AR_4_summary_tables_output.rdata",
+  media     = file_4_name,
+  name      = file_4_name,
   path      = project_dribble,
   overwrite = T
 ) 
