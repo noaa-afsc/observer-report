@@ -9,8 +9,8 @@ The purpose of this chapter is to inform the public through the Council process 
 This repository is organized into two folders that are pretty self-explanatory
 
 -   scripts
-
--   charts_and_tables
+-   charts
+-   tables
 
 ## Scripts
 
@@ -24,8 +24,10 @@ Five main scripts are used
 
 -   **AR_4_tables_generation.R** - Generates charts. It generates tables in .csv form that are stored in charts_and_tables folder. [It uses AR_3_rate_cacls.rdata as an input.]{.underline}     
 
--   **AR_5_charts_generation.R** - Generates charts. [Uses AR_rate_calcs.rdata as input.]{.underline}
+-   **AR_5_charts.R** - Generates charts. [Uses AR_rate_calcs.rdata as input.]{.underline}
 
 ## Important Notes
 
+Releases correspond to the code used for the product.  Reverting to a version will place the code at the point of the start of that project.
+For this reason releases should be made when the Team has finished the product and code is considered finalized.
 Outputs currently exclude confidential reporting where less than three observers are present in any given summary output.

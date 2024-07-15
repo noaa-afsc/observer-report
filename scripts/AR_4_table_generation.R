@@ -61,7 +61,7 @@ load(file = file_3_name)
 
 
 # Write .csv of the priority rate but first remove confidentail (total_statements < 3)
-write.csv(file =  paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
+write.csv(file =  paste0("tables/tbl_",
                          adp_yr,
                          "_rate_by_subcat_priority.csv"
                           ),
@@ -148,7 +148,7 @@ rate_all_groupings_ole_category_all <-
 #    # remove unneeded columns, if any (?)
 #    # change borders, merge cells, change column names (remove underscores, update names), other visual cleanup stuff.
 
-write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
+write.csv(file = paste0("tables/tbl_",
                         adp_yr,
                         "_rate_ole_category.csv"
 ),
@@ -377,7 +377,7 @@ x    = rate_all_groupings_ole_category_all %>%
 # #   # make column headers not caps, 
 # #   # add grid lines, etc)
 # 
-# write.csv(file =  paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
+# write.csv(file =  paste0("tables/tbl_",
 #                          adp_yr,
 #                          "_summ_incis_by_type.csv"
 #                          ),
@@ -488,7 +488,7 @@ rate_all_groupings_new_ole_category_all <-
 #    # remove unneeded columns, if any (?)
 #    # change borders, merge cells, change column names (remove underscores, update names), other visual cleanup stuff.
 
-write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_",
+write.csv(file = paste0("tables/tbl_",
                         adp_yr,
                         "_rate_new_ole_category.csv"
 ),

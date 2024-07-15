@@ -169,7 +169,7 @@ rate_all_groupings_subcat_for_plots <-
 
 # output this for OLE to examine.  It includes confidential data so not for public use.
 #UPDATE: filtering out CONFI_FLAG rows
-write.csv(file = paste0(adp_yr, "_outputs/charts_and_tables/tables/tbl_", 
+write.csv(file = paste0("tables/tbl_", 
                         adp_yr, 
                         "rate_all_groupings_subcat_for_plots"
 ),
