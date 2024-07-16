@@ -700,7 +700,7 @@ ggsave(filename = 'Plots/OPS_number_rainplot.png',
     # plots otherwise restricted to the private repository
   # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/OPS_number_rainplot.png',
+  media = 'Plots/OPS_number_rainplot.png',
   path = project_dribble,
   name = 'OPS_number_rainplot.png',
   overwrite = T
@@ -774,7 +774,7 @@ ggsave(filename = 'Plots/OLEPIP_number_rainplot.png',
 # Save the plot to Google Drive
 # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/Plots/OLEPIP_number_rainplot.png',
+  media = 'Plots/OLEPIP_number_rainplot.png',
   path = project_dribble,
   name = 'OLEPIP_number_rainplot.png',
   overwrite = T
@@ -800,7 +800,7 @@ ggsave(filename = 'Plots/OPS_category_facet.png',
 # Save the wrap to Google Drive
 # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/OPS_category_facet.png',
+  media = 'Plots/OPS_category_facet.png',
   path = project_dribble,
   name = 'OPS_category_facet.png',
   overwrite = T
@@ -1280,7 +1280,7 @@ ggsave(file = 'Plots/odds_issues_heatmap.png',
 # Save the plot to Google Drive
 # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/odds_issues_heatmap.png',
+  media = 'Plots/odds_issues_heatmap.png',
   path = project_dribble,
   name = 'odds_issues_heatmap.png',
   overwrite = T
@@ -1379,7 +1379,7 @@ ggsave(filename = 'Plots/river_oldcat_confid_removed_23.png',
 # Save the plot to Google Drive
 # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/river_oldcat_confid_removed_23.png',
+  media = 'Plots/river_oldcat_confid_removed_23.png',
   path = project_dribble,
   name = 'river_oldcat_confid_removed_23.png',
   overwrite = T
@@ -1490,7 +1490,7 @@ ggsave(filename = 'Plots/river_newcat_safety_confid_removed.png',
 # Save the plot to Google Drive
 # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/river_newcat_safety_confid_removed.png',
+  media = 'Plots/river_newcat_safety_confid_removed.png',
   path = project_dribble,
   name = 'river_newcat_safety_confid_removed.png',
   overwrite = T
@@ -1610,7 +1610,7 @@ ggsave(filename = 'Plots/river_newcat_nonsafety_confid_removed.png',
 # Save the plot to Google Drive
 # comment out (but leave in!) local filepaths for other project participants
 drive_upload(
-  media = 'C:/Users/Cameron.VanHorn/Work/GitHub/AnnRpt-FMA-OLE-Chapter/Plots/river_newcat_nonsafety_confid_removed.png',
+  media = 'Plots/river_newcat_nonsafety_confid_removed.png',
   path = project_dribble,
   name = 'river_newcat_nonsafety_confid_removed.png',
   overwrite = T
