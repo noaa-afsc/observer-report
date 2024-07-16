@@ -77,6 +77,7 @@ load(file = file_4_name)
 # the ORIGINAL spreadsheet can be found at this link:
   # https://docs.google.com/spreadsheets/d/17BsqLarIh-8gqu9W5VWiEvFTjjnzaK-R48TXweXc2ag/edit?usp=sharing
   # here we are using a COPY of this spreadsheet, made 4/17/2024
+  # UPDATE THIS COPY EACH YEAR!!
 
 # to properly load the ODDS data, we need to create the unique dribble ID
   # THIS IS UNIQUE TO EACH USER SINCE THE DATA IS NOT HOUSED IN A SHARED FOLDER
