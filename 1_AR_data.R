@@ -12,11 +12,8 @@ set.seed(052870)
 # Report year (year that fishing and observing took place)
 year <- 2024
 
-# The user's physical location when running this code (used to pull data from the closest database)
-location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
-
-# Establish database connections
-channel_afsc  <- channel.fxn(location, db = "AFSC")
+# Establish database connection
+channel_afsc  <- eval(parse(text = Sys.getenv('channel_afsc')))
 
 # Get data ----------------------------------------------------------------
 

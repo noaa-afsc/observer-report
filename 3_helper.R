@@ -6,26 +6,25 @@
 if(!require("captioner"))   install.packages("packages/captioner_2.2.3.tar.gz") #numbering, ordering, & creating captions for tables and figures. #download the tar.gz from: https://cran.r-project.org/src/contrib/Archive/captioner/  
 if(!require("data.table"))   install.packages("data.table") #caution: masks between, last in dplyr and dcast, melt in reshape2
 if(!require("devtools"))  install.packages("devtools")
+if(!require("flextable")) install.packages("flextable") #markdown tables
+if(!require("FMAtools")) devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 if(!require("getPass"))   install.packages("getPass")
 if(!require("gridExtra"))   install.packages("gridExtra") #multipanelled figures
 if(!require("kableExtra"))   install.packages("kableExtra") #markdown tables
 if(!require("knitr"))   install.packages("knitr") #markdown
 if(!require("lubridate"))  install.packages("lubridate")
-#if(!require("maptools"))   install.packages("maptools")     # No longer on CRAN, replace with sf
 if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derivedVariable(), careful it masks some stats fxns like binomial.test() 
+if(!require("odbc"))  install.packages("odbc")
+if(!require("officer"))  install.packages("officer") #expanded formatting functions for flextable
 if(!require("patchwork"))  devtools::install_github("thomasp85/patchwork")
+if(!require("ROracle"))  install.packages("ROracle")
 if(!require("reshape2"))   install.packages("reshape2") 
 if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
-# if(!require("rgeos"))   install.packages("rgeos") #deals with shapefiles      # No longer on CRAN, replace with sf
-#if(!require("rgdal"))   install.packages("rgdal")  #deals with shapefiles, requires sp, will use proj.4 if installed  # No longer on CRAN, replace with sf
 if(!require("scales"))  install.packages("scales")
 if(!require("sf"))  install.packages("sf")
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
-if(!require("FMAtools")) devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
-if(!require("flextable")) install.packages("flextable") #markdown tables
-if(!require("officer"))  install.packages("officer") #expanded formatting functions for flextable
 
 # II. Functions ----
 
@@ -432,45 +431,6 @@ numbers2words <- function(x){
   suffixes <- c("thousand", "million", "billion", "trillion")     
   if (length(x) > 1) return(trim(sapply(x, helper)))
   helper(x)
-}
-
-# h. channel_function - Function to facilitate connection to AFSC/FMA tables and views 
-#                       from within the AFSC/FMA (Seattle) and at the AKRO-SF (Juneau)
-
-channel.fxn <- function(location, db="AFSC"){
-  
-  if(!location %in% c("SEATTLE", "JUNEAU")){
-    cat('Location not recognized (did you use all caps?)')
-  }
-  
-  else{
-    
-    if(location == 'SEATTLE'){
-      if(!require("odbc"))   install.packages("odbc", repos='http://cran.us.r-project.org')
-      channel <- dbConnect(odbc::odbc(),"AFSC",
-                           UID    = rstudioapi::askForPassword("Database user"),
-                           PWD    = rstudioapi::askForPassword("Database password"))
-    }
-    
-    if(location == 'JUNEAU' & db == 'AFSC'){
-      if(!require("ROracle"))   install.packages("ROracle", repos='http://cran.us.r-project.org')
-      channel <- dbConnect(drv = dbDriver('Oracle'),
-                           username = rstudioapi::askForPassword("Database user"),
-                           password = rstudioapi::askForPassword("Database password"),
-                           dbname = "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = raja.afsc.noaa.gov)(PORT = 1521))(CONNECT_DATA =(SERVER = DEDICATED)(SID = afscp1)))")
-    }
-    
-    if(location == 'JUNEAU' & db == 'AKRO'){
-      if(!require("ROracle"))   install.packages("ROracle", repos='http://cran.us.r-project.org')
-      channel <- dbConnect(drv = dbDriver('Oracle'),
-                           username = rstudioapi::askForPassword("Database user"),
-                           password = rstudioapi::askForPassword("Database password"),
-                           dbname = "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST = akr-j50.nmfs.local)(PORT = 2040))(CONNECT_DATA =(SERVER = DEDICATED)(service_name = AKR1)))")
-    }
-    
-    cat("Use Syntax:\n<SQL QUERY OBJECT NAME> <- paste(<your sql query>) \n<YOUR OBJECT FROM QUERY> <- dbGetQuery(channel, <QUERY OBJECT NAME>)")
-    return(channel)
-  }
 }
 
 # III. Figure themes ----
