@@ -34,10 +34,7 @@ if(FALSE) {
 #' [ver1] *was used for the 2023 Annual Report*
 gdrive_download("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
 load("source_data/FMA_Days_Paid.rdata")
-
-#' *2023 AR* create separate days paid 
-days_paid.2022 <- filter(FMA_Days_Paid, Calendar == 2022)
-days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
+days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
 # * ADP outputs ----
 
