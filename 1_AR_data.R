@@ -2,6 +2,7 @@
 
 # Get packages and user-defined functions
 source("3_helper.R")
+
 # Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
 helper_objects <- ls()
 
@@ -9,7 +10,7 @@ helper_objects <- ls()
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2023
+year <- 2024
 
 # The user's physical location when running this code (used to pull data from the closest database)
 location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
