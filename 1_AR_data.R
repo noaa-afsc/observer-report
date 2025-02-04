@@ -31,7 +31,7 @@ if(FALSE) {
   save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
   gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
 }
-#' [ver1] *was used for the 2023 Annual Report*
+
 gdrive_download("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
 load("source_data/FMA_Days_Paid.rdata")
 days_paid <- filter(FMA_Days_Paid, Calendar == year)
@@ -40,76 +40,114 @@ days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
 # Assign the address of the ADP outputs in the Shared Gdrive
 ADP_Output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
+ADP_Tables_dribble <- gdrive_set_dribble("Projects/ADP/Output/2024 ADP")
 
 # Initially:
-#' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
-#' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
-#' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
-if(FALSE) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", ADP_Output_dribble)
+#' `ADP/results/final_adp_2024_results.rdata`
+#' shared Gdrive in `Projects/ADP/Output` folder as `final_adp_2024_results.rdata`
+if(FALSE) gdrive_upload("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
+if(FALSE) gdrive_upload("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
 
-#' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
-#' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
-#' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
-if(FALSE) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", ADP_Output_dribble)
+# 2024 Final ADP Outputs
+gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
+gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
+load("source_data/final_adp_2024_results.rdata")
+load("source_data/final_adp_tables_and_figures_2024.rdata")
+predicted <- table_b3_flex$body$dataset[15:29,] %>%
+  # Isolate partial coverage strata
+  filter(Pool %in% c("At-sea Observer", "Fixed-gear EM", "Trawl EM (EFP)") & Stratum != "Total") %>%
+  mutate(STRATA = case_when(Pool == "At-sea Observer" & Stratum == "Fixed-gear BSAI" ~ "OB FIXED BSAI", 
+                            Pool == "At-sea Observer" & Stratum == "Fixed-gear GOA" ~ "OB FIXED GOA",
+                            Pool == "At-sea Observer" & Stratum == "Trawl BSAI" ~ "OB TRW BSAI",
+                            Pool == "At-sea Observer" & Stratum == "Trawl GOA" ~ "OB TRW GOA",
+                            Pool == "Fixed-gear EM" & Stratum == "Fixed-gear BSAI" ~ "EM FIXED BSAI",
+                            Pool == "Fixed-gear EM" & Stratum == "Fixed-gear GOA" ~ "EM FIXED GOA",
+                            Pool == "Trawl EM (EFP)" & Stratum == "Trawl GOA" ~ "EM TRW GOA")) %>%
+  rename(pred_days = d) %>%
+  select(STRATA, pred_days)
+bud_scen_lst <- unlist(budget_lst)
+bootstrap_iter <- 1000
 
-# 2022 Final ADP Outputs
-gdrive_download("source_data/2022_Final_ADP_Output.rdata", ADP_Output_dribble)
-final_adp_vec.2022 <- (load("source_data/2022_Final_ADP_Output.rdata"))
-Nnd_tbl.2022 <- mutate(Nnd_tbl, YEAR = 2022)
-adj_tbl.2022 <- adj_tbl
-bud_scen_lst.2022 <- bud_scen_lst
-bud_tbl.2022 <- bud_tbl
-rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
+sample_N <- copy(effort_strata[ADP == 2024])[
+][, STRATA := gsub("_BSAI", "-BSAI", STRATA)
+][, STRATA := gsub("_GOA", "-GOA", STRATA)
+][, STRATA := gsub("_EFP", "", STRATA)
+][!(STRATA %like% "EM|ZERO"), STRATA := paste0("OB_", STRATA)
+][, N := round(TOTAL_TRIPS)]
+sample_N <- sample_N[, .(STRATA, N)]
 
-# 2023 Final ADP Outputs
-gdrive_download("source_data/2023_Final_ADP_Output.rdata", ADP_Output_dribble)
-final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
-Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
-adj_tbl.2023 <- adj_tbl
-bud_scen_lst.2023 <- bud_scen_lst
-bud_tbl.2023 <- bud_tbl
-rm(list = c(final_adp_vec.2023, "final_adp_vec.2023"))
+setkey(pc_effort_sub, STRATA)
+pc_effort_lst <- split(pc_effort_sub, by = "STRATA")
 
-# Format and calculate predicted days from ADP
-Nnd_tbl <- rbind(Nnd_tbl.2022, Nnd_tbl.2023)
+# Make sure names and ordering are the same
+if(!identical(names(pc_effort_lst), sample_N$STRATA)) stop("Stratum names/order are not the same!")
 
-predicted <- Nnd_tbl[
-][, lapply(.SD, mean), keyby = .(YEAR, POOL, STRATA), .SDcols = c("Nh", "nh", "dh")] %>%
-  # Remove zero stratum
-  filter(POOL != "ZE") %>% 
-  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP", #' *2023 EM TRW EFP number off from ADP report value for some reason*
-                            STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
-                            STRATA == "POT" & POOL == "OB" ~ "OB POT",
-                            STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
-                            STRATA == "EM_POT" ~ "EM POT",
-                            STRATA == "EM_HAL" ~ "EM HAL",
-                            TRUE ~ STRATA)) %>%
-  rename(pred_days = dh) %>%
-  select(!c(POOL, Nh, nh))
+day_count_lst <- vector(mode = "list", length = bootstrap_iter)
+set.seed(12345)
+for(k in seq_len(bootstrap_iter)) {
+  # k <- 1
+  cat(k, ", ")
+  
+  # Bootstrap using adp_strata_N to sample each stratum's population size size
+  swor_bootstrap.effort <- rbindlist(Map(
+    function(prior, strata_N) {
+      # prior <- pc_effort_lst[[5]]; strata_N <- sample_N$N[5]
+      
+      # Create vector of TRIP_IDs
+      trip_ids <- unique(prior$TRIP_ID)
+      # How many times does prior effort go into future effort?
+      prior_vs_future <- floor(strata_N / length(trip_ids))
+      # What number of trips should be sampled without replacement?
+      swr_n <- strata_N - (length(trip_ids) * prior_vs_future)
+      # Create dt of trip_ids
+      sampled_trip_ids <- data.table(
+        TRIP_ID = c(
+          # Repeat trip_id prior_vs_future times
+          rep(trip_ids, times = prior_vs_future), 
+          # Sample without replacement using swr_n
+          sample(trip_ids, size = swr_n, replace = F)
+        )
+      )
+      sampled_trip_ids[, I := .I]
+      # Bring in each trip's data
+      bootstrap_sample <- prior[sampled_trip_ids, on = .(TRIP_ID), allow.cartesian = T]
+    }, 
+    prior = pc_effort_lst,
+    strata_N = sample_N$N
+  ))
+  
+  # Re-assign trip_id so that we can differentiate trips sampled multiple times
+  swor_bootstrap.effort[, TRIP_ID := .GRP, keyby = .(ADP, STRATA, BSAI_GOA, TRIP_ID, I)]
+  if(uniqueN(swor_bootstrap.effort$TRIP_ID) != sum(sample_N$N)) stop("Count of TRIP_IDs doesn't match!")
+  
+  # Apply the Trawl EM EFP opt-in probability, move those that 'opt-out' into OB_TRW-GOA
+  em_trw_id <- unique(swor_bootstrap.effort[STRATA == "EM_TRW-GOA", TRIP_ID ])
+  # Randomly sample vessels as opting in (TRUE) or out (FALSE) of the EFP. We will use the 'expected' number of trips
+  # opting out rather than allowing it to be stochastic so that STRATA_N does not vary between iterations.
+  trw_em_opt_out_N <- round(sample_N[STRATA == "EM_TRW-GOA", N] * efp_prob[COVERAGE_TYPE == "PARTIAL", 1 - EFP_PROB])
+  trw_em_opt_out_id <- sample(em_trw_id, size = trw_em_opt_out_N)
+  swor_bootstrap.effort[TRIP_ID %in% trw_em_opt_out_id, ':=' (POOL = "OB", STRATA = "OB_TRW-GOA")]
+  
+  boot_smry <- unique(swor_bootstrap.effort[, .(ADP, POOL, STRATA, TRIP_ID, DAYS)])
+  
+  # Capture results of iteration
+  day_count_lst[[k]] <- boot_smry[, .(N = uniqueN(TRIP_ID), D = sum(DAYS)), keyby = .(ADP, POOL, STRATA)]
+  
+}
+day_count_dt <- rbindlist(day_count_lst, idcol = "BOOT_ITER")
+
+
+bud_tbl <- rates_adp_2024_final[day_count_dt, on = .(ADP, STRATA)
+][, d := D * SAMPLE_RATE][boot_dt[, .(BOOT_ITER, STRATA, COST = INDEX_COST)], on = .(BOOT_ITER, STRATA)
+][POOL == "OB"][, .(ADP_D = sum(d), ADP_C = mean(COST)), keyby = .(ADP, BOOT_ITER)]
 
 # * Valhalla ----
 
-#' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.
-#' (run date of 2023-04-10 15:15:15 PDT)
-if(FALSE){
-  valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
-  valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
-  valhalla.2022[, LANDING_DATE := as.Date(LANDING_DATE)]
-  save(valhalla.2022, file = "source_data/2023-04-10cas_valhalla.Rdata")
-  gdrive_upload("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-}
-gdrive_download("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-(load("source_data/2023-04-10cas_valhalla.Rdata"))
-
-#' Initial upload of [2023] Valhalla to the Shared Gdrive. Originally obtained from:
-#' [https://drive.google.com/drive/u/0/folders/1JK0EJDBByn7GyfDt2q96ZBjvjYuhezOF]
-if(FALSE) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-(load("source_data/2024-04-15cas_valhalla.Rdata"))
-
-#' Create a copy of Valhalla named 'work.data' that will be manipulated
-work.data <- rbind(valhalla, valhalla.2022)
-rm(valhalla, valhalla.2022); gc()
+# Create a copy of Valhalla named 'work.data' that will be manipulated
+gdrive_download("source_data/2025-01-14cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+load("source_data/2025-01-14cas_valhalla.Rdata")
+work.data <- valhalla
+rm(valhalla)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
@@ -131,22 +169,19 @@ if( nrow(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1]) 
   print(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1])
 
 }
-#' *2023 AR* Addressing trips that spanned years
-unique(work.data[TRIP_ID == 1593889, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
-unique(work.data[TRIP_ID == 1615161, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
-# Will assign `ADP` to 2023 for these trips
-work.data[TRIP_ID %in% c(1593889, 1615161), ADP := 2023]
 
 # Format strata names
 work.data <- work.data %>%
   mutate(STRATA = recode(
     STRATA,
-    "POT" = "OB POT",
-    "HAL" = "OB HAL",
-    "TRW" = "OB TRW",
-    "EM_POT" = "EM POT",
-    "EM_HAL" = "EM HAL",
-    "EM_TRW_EFP" = "EM TRW EFP"))
+    "EM_FIXED_BSAI" = "EM FIXED BSAI",
+    "EM_FIXED_GOA" = "EM FIXED GOA",
+    "EM_TRW_BSAI" = "EM TRW BSAI",
+    "EM_TRW_GOA" = "EM TRW GOA",
+    "OB_FIXED_BSAI" = "OB FIXED BSAI",
+    "OB_FIXED_GOA" = "OB FIXED GOA",
+    "OB_TRW_BSAI" = "OB TRW BSAI",
+    "OB_TRW_GOA" = "OB TRW GOA"))
 
 #' [NOTE] `work.data` may be modified later in the `EM` section of this script to re-assign STRATA for any EM research
 #' vessels active for this year.
