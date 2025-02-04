@@ -146,7 +146,7 @@ bud_tbl <- rates_adp_2024_final[day_count_dt, on = .(ADP, STRATA)
 # Create a copy of Valhalla named 'work.data' that will be manipulated
 gdrive_download("source_data/2025-01-14cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 load("source_data/2025-01-14cas_valhalla.Rdata")
-work.data <- valhalla
+work.data <- valhalla[, PERMIT := as.character(PERMIT)]
 rm(valhalla)
 
 #Summary of coverage by strata and processing sector
@@ -201,14 +201,10 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
 #' It appears some observers were assigned to non-observer strata
 mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
-#' *2023 AR* Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
+#' Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
-mod_dat_copy[
-][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
-][STRATA == "ZERO", STRATA := "OB HAL"]
+mod_dat_copy[STRATA == "ZERO", STRATA := "OB FIXED GOA"]
 mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
