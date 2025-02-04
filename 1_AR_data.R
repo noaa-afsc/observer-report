@@ -229,7 +229,7 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year - 1, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year, "' AND '31-DEC-", year, "'
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
 # The following query returns all landing ID's for offloads monitored for salmon all sectors.
@@ -243,59 +243,39 @@ salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 # * ODDS ----
 
 # Queries
-#' *For 2023 AR, pulling 2 prior years instead of 1 to back-fill analyses that were skipped in 2022 AR*
 script <- paste("
   SELECT 
-    -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
-    odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT,     
-
+    d.percent as ODDS_SELECTION_PCT,     
     a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
     a.original_embark_date, a.planned_embark_date, a.tender_trip_flag, a.trip_plan_number,
     b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, 
     -- inherit_trip_seq corresponds to the trip_stratas_seq that was cancelled, not trip_plan_log_seq before ODDS 3.0!
     b.inherit_trip_seq,          
     c.group_code, c.description AS STRATUM_DESCRIPTION,
-    d.release_comment,
-    e.description AS RELEASE_STATUS_DESCRIPTION,
-    f.akr_vessel_id AS VESSEL_ID,
-    g.gear_type_code
+    e.release_comment,
+    f.description AS RELEASE_STATUS_DESCRIPTION,
+    g.akr_vessel_id AS VESSEL_ID,
+    h.gear_type_code
    
   FROM odds.odds_trip_plan_log a
     LEFT JOIN odds.odds_trip_stratas b
       ON a.trip_plan_log_seq = b.trip_plan_log_seq 
     LEFT JOIN odds.odds_strata c
       ON b.strata = c.strata
-    LEFT JOIN odds.odds_strata_release d
-      ON b.trip_stratas_seq = d.trip_stratas_seq
-    LEFT JOIN odds.odds_lov_release_status e
-      ON d.release_status_seq = e.release_status_seq
-    LEFT JOIN norpac.atl_lov_vessel f
-      ON a.vessel_seq = f.vessel_seq
-    LEFT JOIN odds.odds_trip_gear g
-      ON a.trip_plan_log_seq = g.trip_plan_log_seq
-  WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -1:0, collapse = ","), ")
-    -- [2023 Annual report Only]
-    -- Exclude a 2024 trip with original embark date in 2023 that makes the ODDS_RANDOM_NUMBER package throw an error.
-    AND a.trip_plan_log_seq != 202328923             
-")
+    LEFT JOIN odds.odds_strata_rates d
+      ON b.strata = d.strata
+    LEFT JOIN odds.odds_strata_release e
+      ON b.trip_stratas_seq = e.trip_stratas_seq
+    LEFT JOIN odds.odds_lov_release_status f
+      ON e.release_status_seq = f.release_status_seq
+    LEFT JOIN norpac.atl_lov_vessel g
+      ON a.vessel_seq = g.vessel_seq
+    LEFT JOIN odds.odds_trip_gear h
+      ON a.trip_plan_log_seq = h.trip_plan_log_seq
+  WHERE EXTRACT(YEAR FROM a.original_embark_date) =", year,"
+  AND EXTRACT(YEAR FROM d.effective_date) =", year)
 
 odds.dat <- dbGetQuery(channel_afsc, script)
-
-# Data checks and clean up
-
-# Check for duplicates - should be no records (= 0)
-if(sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ))) stop("Some 'TRIP_PLAN_LOG_SEQ' are duplicated!")
-
-#'*====================================================================================================================*
-#' FIXME `ODDS 3.0 is not creating records in odds.odds_strata_release for trips auto-released by the three-in-a-row`
-#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code these 2 identified instances here`
-
-setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
-  RELEASE_COMMENT = "Three Observerd Trips Release",
-  RELEASE_STATUS_DESCRIPTION = "Three in Row Release"
-)]
-setDF(odds.dat)
-#'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
 # GROUP_CODE: 10:11 = at-sea observer, 13 = Fixed-gear EM, 14 = Trawl EM
@@ -304,7 +284,7 @@ setDF(odds.dat)
 #   PD = Pending
 #   CN = Cancelled 
 #   CP = Completed 
-#   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
+#   CC = Cancel Cascaded
 #   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
@@ -319,9 +299,14 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
   # Tag on "compliance" if the trip was a multi-area IFQ trip
   ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
   case_when(
-    GROUP_CODE %in% 10:11 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
-    GROUP_CODE == 13 ~ case_match(GEAR_TYPE_CODE, 6 ~ "EM POT", 8 ~ "EM HAL"),
-    GROUP_CODE == 14 ~ "EM TRW EFP",
+    STRATUM_DESCRIPTION == "EM EFP - Trawl No Tender" ~ "EM TRW GOA",
+    STRATUM_DESCRIPTION == "EM EFP - Trawl Tender Delivery" ~ "EM TRW GOA",
+    STRATUM_DESCRIPTION == "EM Fixed Gear - BSAI" ~ "EM FIXED BSAI",
+    STRATUM_DESCRIPTION == "EM Fixed Gear - GOA" ~ "EM FIXED GOA",
+    STRATUM_DESCRIPTION == "Fixed Gear - BSAI" ~ "OB FIXED BSAI",
+    STRATUM_DESCRIPTION == "Fixed Gear - GOA" ~ "OB FIXED GOA",
+    STRATUM_DESCRIPTION == "Trawl Gear - BSAI" ~ "OB TRW BSAI",
+    STRATUM_DESCRIPTION == "Trawl Gear - GOA" ~ "OB TRW GOA",
     .default = "Unknown"
   )
 ))
@@ -335,7 +320,7 @@ partial <- odds.dat %>%
   distinct(Rate = ODDS_SELECTION_PCT / 100 ) %>%
   ungroup() %>%
   mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
-  mutate(Rate = ifelse(STRATA == "EM TRW EFP", 0.3333, Rate)) %>%
+  mutate(Rate = ifelse(STRATA == "EM TRW GOA", 0.3333, Rate)) %>%
   distinct(YEAR, STRATA, Rate, GEAR) %>%
   mutate(formatted_strat = paste0("*", STRATA, "*"))
 partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
