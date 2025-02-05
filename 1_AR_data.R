@@ -327,7 +327,7 @@ partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
-                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
+                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
 
 EM.data <- dbGetQuery(channel_afsc, script)
 
@@ -356,7 +356,7 @@ rm(transform.EM.data.vessel)
 
 # Get gear type for EM data
 script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
-                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
+                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
@@ -381,8 +381,6 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
-#' *2023: one vessel has trawl gear declared, but no trawl codes in EM.gear - this trip seems to be coming from EM.data*
-#' *2023: one vessel has a trip marked as NON_FISHING_TRIP = Y*
 single_gear_nas <- 
   filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
@@ -418,14 +416,7 @@ EM.data <-
   EM.data %>% 
   # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
-  mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
-  # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
-  mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER == "22_SUMNERSTRAIT01.01", "POT", AGENCY_GEAR_CODE)) %>%
-  # NAs for vessels that (based on ODDS and PSMFC EM.data) did not actually fish in the EM strata 
-  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear 
-  filter(VESSEL_ID  != "422") %>%
-  #' *2023 AR* Another that had it's trip marked as non-fishing
-  filter(TRIP_NUMBER != "22_BLACKPEARL07.01")
+  mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE))
 
 # The following query will provide a list of EM selected trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
@@ -434,10 +425,6 @@ EM.data <-
 # This query will also show the actual EM trip start date and time and actual EM trip end date and time which comes from the data on the HD.
 
 # Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
-
-#'*========== Geoff and Christian get the error: [Oracle][ODBC][Ora]ORA-01031: insufficient privileges*
-#'*Skipping this section for now*
-if(F){
   
   script <- paste(
     "select all_data.*, em_rev_gear.em_gear_code, 
@@ -551,13 +538,12 @@ if(F){
   # Flip pending trips to completed if they have data reviewed
   # For clarification, see email from Glenn Campbell on 3/11/20
   EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
-}
 
 # Fixed-gear EM research
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
-                                              and adp IN(", paste(year + -1:0, collapse = ","), ")" ))
+                                              and adp =", year))
 
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
