@@ -71,7 +71,7 @@ total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 `r if(tech.memo){'#Abstract'}`  
 `r if(tech.memo){'This report contains the analyses and findings of the Alaska Fisheries Science Center’s Fisheries Monitoring and Analysis Division’s Fishery Monitoring Science Committee (FMSC) on the efficiency and effectiveness of observer deployment following the 2023 Annual Deployment Plan (ADP). Responses to comments by the North Pacific Fishery Management Council (Council) from the 2022 version of this report, and recommendations to improve data quality and guide the 2024 Annual Deployment Plan are also included. In 2023, there were 10 strata to evaluate: two full coverage strata, five (*THREE IF TENDER DROPPED*) partial coverage observer strata defined by gear and tender designation (*ARE WE COVERING TENDERS STILL?*), three partial coverage Electronic Monitoring (EM) strata defined by gear designation, one zero coverage EM research stratum, and one zero coverage stratum. Observers were deployed under trip-selection on *UPDATE:*161 full coverage vessels that fished for *UPDATE:*3,343 trips and *UPDATE:*584 unique partial coverage vessel and stratum combinations (vessels can fish in more than one stratum) that fished *UPDATE:*5,016 trips total. This was the *UPDATE:*second year in which data from the *EM HAL* stratum was used in catch accounting, and the *UPDATE:*first year in which data from the *EM POT* stratum was used in catch accounting. *UPDATE:*The *EM HAL* stratum was the third largest stratum by trip count in 2019 with 916 total trips fished. EM systems were deployed onto 21 pot vessels that fished for 165 trips. *UPDATE:*Research EM systems were deployed onto four vessels that fished for 29 trips. *UPDATE:*A total of 393 vessels fished 2,005 trips in the *Zero Coverage* stratum, accounting for 28% of all trips that occurred within the partial coverage category. Realized coverage rates met expectations in *UPDATE:*eight of ten strata in 2023. The *Full* stratum was observed at a rate of 99.9%, falling below the expected rate of 100%. *UPDATE:*The partial coverage *POT – Tender* stratum was observed at a rate of 29.5%, with a 95% confidence interval that fell above the expected coverage rate of 16.1%. *UPDATE:*However, deployment in 2019 generally proceeded as planned, with few missed expectations or signs of potential bias. The FMSC recommends that future ADPs fully integrate EM and observer deployment into one fishery monitoring program. Although EM data are now being used in catch accounting, the funding and selection of EM vessels has so far occurred separately from the processes used to optimize observer deployment in each ADP. Considering EM as a more integral part of those optimization processes will better enable analysts to avoid data gaps and take advantage of the respective abilities of each monitoring method (observers and EM). The FMSC also continues to recommend that NMFS link the ODDS and eLandings database such that fishing trips can be uniquely identified to support the analyses presented to the Council. Such a linkage will better enable analysts to discern the contributing factors behind instances in which intended deployment is inconsistent with realized deployment.'}`  
 
-# INTRODUCTION  
+# Introduction  
 `r if(tech.memo){'##Background of the North Pacific Groundfish and Halibut Observer Program'}`  
 `r if(tech.memo){'Fisheries observers and electronic monitoring (EM) systems collect independent information that is used to determine the effects of fishing on natural resources. The National Marine Fisheries Service (NMFS) uses its observer program in Alaska to enable the use of tools such as catch quotas to manage against the over- or under-harvest of fishes. Observers and EM are two verifiable methods for collecting fishery discard information used to estimate total catch. Observers (but not the EM systems currently used in the North Pacific) are able to record seabird and marine mammal interactions with fisheries as well. Observers also collect biological information such as length, sex, weight, ageing structures (e.g., otoliths, spines, scales, and vertebrae), and stomachs to support ecosystem studies and stock assessments.'}`
 
@@ -242,12 +242,12 @@ The performance metrics used in this evaluation are as follows:
 
 Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated *p*-values. 
 
-# CHANGES TO THIS REPORT FROM LAST YEAR  
+# Changes to this report from last year
 Abbreviated versions of this chapter have been produced for calendar years 2021 and 2022. This chapter represents a return to the original “full” review format. Analysts have performed the full review of `r year - 1` and `r year` data but focus here on `r year`. However, where trends were notable, results from `r year - 1` have been included in an Appendix (A).\
 \
 Changes to our analyses for spatial and spatiotemporal representativeness were adopted following the evolution of these analyses in recent years are described in later sections.
 
-# EVALUATION OF DEPLOYMENT IN `r year`  
+# Evaluation of Deployment in `r year`  
 The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
 
 ## Evaluating Effort Predictions  
@@ -1436,7 +1436,7 @@ For this analysis, pollock deliveries were defined as any delivery where the pre
 \
 Evaluations of the partial coverage category for dockside monitoring are not as straightforward as for full or zero coverage. As a matter of policy, no tender deliveries are monitored and these deliveries are not included in this chapter. While it may seem intuitive that the expected coverage rate for non-tendered deliveries within the *OB TRW* stratum should be equal to the programmed trip selection rate of 22.68%, this assumption is likely untrue because observers are not deployed specifically into the pollock fishery, but into the entire trawl fishery, and the relationship between the number of deliveries and trips is not expected to be constant, especially when measured across ports. Therefore, we present the dockside observation rates for non-tendered *OB TRW* pollock deliveries and non-tendered *EM TRW EFP* deliveries but make no comparison to the expected deployment rates (`r tbl_nums('Pollock.observed.table.2023', display = "cite")`, `r tbl_nums('Pollock.efp.table.2023', display = "cite")`).
 
-# SAMPLE QUALITY
+# Sample Quality
 ## Temporal Patterns in Trip-Selection  
 ```{r temporal_bias, message=FALSE, warning=FALSE, include=FALSE}
 # Changed significantly for 2020 to incorporate multiple time periods  
@@ -1724,7 +1724,7 @@ OBSERVED_FLAG.results_2023 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW
 
 The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table.2023', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
 
-# RESPONSE TO COUNCIL AND SSC COMMENTS
+# Response to Council and SSC Comments
 The Council reviewed the `r year` ADP as part of their 11 June 2022 meeting and made the following recommendation:\
 \
 *The Council supports maintaining the stratification and allocation strategy from the 2022 ADP in 2023. The Council also supports (1) additional fixed gear EM vessels (30% coverage) in the EM pool in 2023 (up to 200 total vessels) provided they opt-in prior to 1 November 2022, additional funding for EM equipment is secured, and they meet the criteria in the ADP and (2) continuation of the pelagic trawl EM project with 100% at-sea monitoring in addition to shoreside observer coverage.*\
@@ -1742,7 +1742,7 @@ In January 2022, the SSC reviewed a presentation made by industry and the AKRO o
 
 The data used in this and prior Annual Reports are available to answer items 2, 3, 5 and 6 should staff resources at the AKRO and FMA be allocated to this task.
 
-# FMSC RECOMMENDATIONS TO IMPROVE DATA QUALITY  
+# FMSC Recommendations to Improve Data Quality
   
 ## Recommendations from the `r year` Annual Deployment Review
 
@@ -2224,7 +2224,7 @@ This page intentionally blank
 
 \newpage
 
-# APPENDIX A: DEPLOYMENT PERFORMANCE RESULTS OF THE `r year - 1` NORTH PACIFIC OBSERVER PROGRAM
+# Appendix A: Deployment Performance Results in `r year - 1`
 This appendix presents tables and figures from analyses performed in Chapter 3 using `r year - 1` data that were not included in the `r year - 1` Annual Report.
 
 Table A-1. -- Comparison between predicted and actual trip days for partial coverage strata in `r year - 1`. Predicted values come from the `r year - 1` Annual Deployment Plan (ADP). 
