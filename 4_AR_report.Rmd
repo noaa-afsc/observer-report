@@ -25,12 +25,12 @@ source("3_helper.R")
 
 ```{r, include=FALSE, eval=FALSE}
 #' Download data. Run this line manually during development, but it won't run during knitting.
-gdrive_download("source_data/2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
+gdrive_download("source_data/2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"), ver = 4)
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #' Load data and set parameters
-load("source_data/2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
+load("source_data/2_AR_data_v004.RData") # This includes the .Random.seed set in 1_AR_data.R
 
 # Avoid showing code
 knitr::opts_chunk$set(echo = FALSE)
