@@ -17,7 +17,6 @@ if(!require("mosaic"))   install.packages("mosaic") #derivedFactor() and derived
 if(!require("odbc"))  install.packages("odbc")
 if(!require("officer"))  install.packages("officer") #expanded formatting functions for flextable
 if(!require("patchwork"))  devtools::install_github("thomasp85/patchwork")
-if(!require("ROracle"))  install.packages("ROracle")
 if(!require("reshape2"))   install.packages("reshape2") 
 if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
 if(!require("scales"))  install.packages("scales")
