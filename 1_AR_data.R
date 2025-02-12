@@ -91,7 +91,7 @@ bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_CPD
 # Create a copy of Valhalla named 'work.data' that will be manipulated
 gdrive_download("source_data/2025-01-14cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
 load("source_data/2025-01-14cas_valhalla.Rdata")
-work.data <- valhalla[, PERMIT := as.character(PERMIT)]
+work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
 rm(valhalla)
 
 #Summary of coverage by strata and processing sector
@@ -121,8 +121,8 @@ work.data <- work.data %>%
     STRATA,
     "EM_FIXED_BSAI" = "EM FIXED BSAI",
     "EM_FIXED_GOA" = "EM FIXED GOA",
-    "EM_TRW_BSAI" = "EM TRW BSAI",
-    "EM_TRW_GOA" = "EM TRW GOA",
+    "EM_TRW_BSAI" = "EM TRW BSAI (EFP)",
+    "EM_TRW_GOA" = "EM TRW GOA (EFP)",
     "OB_FIXED_BSAI" = "OB FIXED BSAI",
     "OB_FIXED_GOA" = "OB FIXED GOA",
     "OB_TRW_BSAI" = "OB TRW BSAI",
@@ -244,8 +244,8 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
   # Tag on "compliance" if the trip was a multi-area IFQ trip
   ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
   case_when(
-    STRATUM_DESCRIPTION == "EM EFP - Trawl No Tender" ~ "EM TRW GOA",
-    STRATUM_DESCRIPTION == "EM EFP - Trawl Tender Delivery" ~ "EM TRW GOA",
+    STRATUM_DESCRIPTION == "EM EFP - Trawl No Tender" ~ "EM TRW GOA (EFP)",
+    STRATUM_DESCRIPTION == "EM EFP - Trawl Tender Delivery" ~ "EM TRW GOA (EFP)",
     STRATUM_DESCRIPTION == "EM Fixed Gear - BSAI" ~ "EM FIXED BSAI",
     STRATUM_DESCRIPTION == "EM Fixed Gear - GOA" ~ "EM FIXED GOA",
     STRATUM_DESCRIPTION == "Fixed Gear - BSAI" ~ "OB FIXED BSAI",
@@ -265,7 +265,7 @@ partial <- odds.dat %>%
   distinct(Rate = ODDS_SELECTION_PCT / 100 ) %>%
   ungroup() %>%
   mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
-  mutate(Rate = ifelse(STRATA == "EM TRW GOA", 0.3333, Rate)) %>%
+  mutate(Rate = ifelse(STRATA == "EM TRW GOA (EFP)", 0.3333, Rate)) %>%
   distinct(YEAR, STRATA, Rate, GEAR) %>%
   mutate(formatted_strat = paste0("*", STRATA, "*"))
 partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
@@ -510,7 +510,7 @@ gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(helper_objects, location, channel_afsc, ADP_Output_dribble)
+rm(helper_objects, channel_afsc, ADP_Output_dribble)
 
 # Save
 save.image(file = "2_AR_data.Rdata")
