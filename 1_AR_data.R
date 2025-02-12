@@ -51,8 +51,12 @@ if(FALSE) gdrive_upload("source_data/final_adp_tables_and_figures_2024.rdata", A
 # 2024 Final ADP Outputs
 gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
 gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
+gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble)
 load("source_data/final_adp_2024_results.rdata")
-load("source_data/final_adp_tables_and_figures_2024.rdata")
+load("source_data/final_adp_tables_and_figures_2024.rdata")  # table_b3_flex contains predicted days by stratum
+load("source_data/costs_boot_lst_2024AR.rdata")              # simulated observer days and costs
+
+## Predicted monitored days by stratum
 predicted <- table_b3_flex$body$dataset[15:29,] %>%
   # Isolate partial coverage strata
   filter(Pool %in% c("At-sea Observer", "Fixed-gear EM", "Trawl EM (EFP)") & Stratum != "Total") %>%
@@ -62,84 +66,25 @@ predicted <- table_b3_flex$body$dataset[15:29,] %>%
                             Pool == "At-sea Observer" & Stratum == "Trawl GOA" ~ "OB TRW GOA",
                             Pool == "Fixed-gear EM" & Stratum == "Fixed-gear BSAI" ~ "EM FIXED BSAI",
                             Pool == "Fixed-gear EM" & Stratum == "Fixed-gear GOA" ~ "EM FIXED GOA",
-                            Pool == "Trawl EM (EFP)" & Stratum == "Trawl GOA" ~ "EM TRW GOA")) %>%
+                            Pool == "Trawl EM (EFP)" & Stratum == "Trawl GOA" ~ "EM TRW GOA (EFP)")) %>%
   rename(pred_days = d) %>%
   select(STRATA, pred_days)
+
+# Budget(s) used in the ADP
 bud_scen_lst <- unlist(budget_lst)
-bootstrap_iter <- 1000
 
-sample_N <- copy(effort_strata[ADP == 2024])[
-][, STRATA := gsub("_BSAI", "-BSAI", STRATA)
-][, STRATA := gsub("_GOA", "-GOA", STRATA)
-][, STRATA := gsub("_EFP", "", STRATA)
-][!(STRATA %like% "EM|ZERO"), STRATA := paste0("OB_", STRATA)
-][, N := round(TOTAL_TRIPS)]
-sample_N <- sample_N[, .(STRATA, N)]
+## Distribution of simulated observed days and costs (at-sea observers only)
 
-setkey(pc_effort_sub, STRATA)
-pc_effort_lst <- split(pc_effort_sub, by = "STRATA")
-
-# Make sure names and ordering are the same
-if(!identical(names(pc_effort_lst), sample_N$STRATA)) stop("Stratum names/order are not the same!")
-
-day_count_lst <- vector(mode = "list", length = bootstrap_iter)
-set.seed(12345)
-for(k in seq_len(bootstrap_iter)) {
-  # k <- 1
-  cat(k, ", ")
-  
-  # Bootstrap using adp_strata_N to sample each stratum's population size size
-  swor_bootstrap.effort <- rbindlist(Map(
-    function(prior, strata_N) {
-      # prior <- pc_effort_lst[[5]]; strata_N <- sample_N$N[5]
-      
-      # Create vector of TRIP_IDs
-      trip_ids <- unique(prior$TRIP_ID)
-      # How many times does prior effort go into future effort?
-      prior_vs_future <- floor(strata_N / length(trip_ids))
-      # What number of trips should be sampled without replacement?
-      swr_n <- strata_N - (length(trip_ids) * prior_vs_future)
-      # Create dt of trip_ids
-      sampled_trip_ids <- data.table(
-        TRIP_ID = c(
-          # Repeat trip_id prior_vs_future times
-          rep(trip_ids, times = prior_vs_future), 
-          # Sample without replacement using swr_n
-          sample(trip_ids, size = swr_n, replace = F)
-        )
-      )
-      sampled_trip_ids[, I := .I]
-      # Bring in each trip's data
-      bootstrap_sample <- prior[sampled_trip_ids, on = .(TRIP_ID), allow.cartesian = T]
-    }, 
-    prior = pc_effort_lst,
-    strata_N = sample_N$N
-  ))
-  
-  # Re-assign trip_id so that we can differentiate trips sampled multiple times
-  swor_bootstrap.effort[, TRIP_ID := .GRP, keyby = .(ADP, STRATA, BSAI_GOA, TRIP_ID, I)]
-  if(uniqueN(swor_bootstrap.effort$TRIP_ID) != sum(sample_N$N)) stop("Count of TRIP_IDs doesn't match!")
-  
-  # Apply the Trawl EM EFP opt-in probability, move those that 'opt-out' into OB_TRW-GOA
-  em_trw_id <- unique(swor_bootstrap.effort[STRATA == "EM_TRW-GOA", TRIP_ID ])
-  # Randomly sample vessels as opting in (TRUE) or out (FALSE) of the EFP. We will use the 'expected' number of trips
-  # opting out rather than allowing it to be stochastic so that STRATA_N does not vary between iterations.
-  trw_em_opt_out_N <- round(sample_N[STRATA == "EM_TRW-GOA", N] * efp_prob[COVERAGE_TYPE == "PARTIAL", 1 - EFP_PROB])
-  trw_em_opt_out_id <- sample(em_trw_id, size = trw_em_opt_out_N)
-  swor_bootstrap.effort[TRIP_ID %in% trw_em_opt_out_id, ':=' (POOL = "OB", STRATA = "OB_TRW-GOA")]
-  
-  boot_smry <- unique(swor_bootstrap.effort[, .(ADP, POOL, STRATA, TRIP_ID, DAYS)])
-  
-  # Capture results of iteration
-  day_count_lst[[k]] <- boot_smry[, .(N = uniqueN(TRIP_ID), D = sum(DAYS)), keyby = .(ADP, POOL, STRATA)]
-  
-}
-day_count_dt <- rbindlist(day_count_lst, idcol = "BOOT_ITER")
-
-
-bud_tbl <- rates_adp_2024_final[day_count_dt, on = .(ADP, STRATA)
-][, d := D * SAMPLE_RATE][boot_dt[, .(BOOT_ITER, STRATA, COST = INDEX_COST)], on = .(BOOT_ITER, STRATA)
-][POOL == "OB"][, .(ADP_D = sum(d), ADP_C = mean(COST)), keyby = .(ADP, BOOT_ITER)]
+# Convert matrices to data.tables and flatten list to a single table
+sim_costs_dt <- rbindlist(lapply(
+  lapply(costs_boot_lst, "[[", "SIM_COSTS" ), function(x) as.data.table(t(x))
+), idcol = "SIM_ITER")
+# Format columns and add identifier for ODDS iteration
+col_nms <- colnames(sim_costs_dt)
+sim_costs_dt[, (col_nms) := lapply(.SD, as.numeric), .SDcols = col_nms]
+sim_costs_dt[, ODDS_ITER := seq_len(.N), by = .(SIM_ITER)]
+# Formatted result for the AR
+bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_CPD)]
 
 # * Valhalla ----
 
