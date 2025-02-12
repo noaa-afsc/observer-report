@@ -112,7 +112,6 @@ work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LAN
 if( nrow(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1]) ){
   message("Some TRIP_IDs are repated across ADP years")
   print(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1])
-
 }
 
 # Format strata names
@@ -370,11 +369,11 @@ EM.data <-
 # This query will also show the actual EM trip start date and time and actual EM trip end date and time which comes from the data on the HD.
 
 # Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
-  if(F){ 
-    # FIXME: When performing the data timeliness evaluations for the 2024 ADP, 
-    # it was discovered that some of the columns below don't mean what they sound like. 
-    # Even if the columns are accurate, this query would need to be translated to the ODDS schema. 
-    # Consider switching to 2024 ADP data timeliness queries.
+if(F){ 
+  # FIXME: When performing the data timeliness evaluations for the 2024 ADP, 
+  # it was discovered that some of the columns below don't mean what they sound like. 
+  # Even if the columns are accurate, this query would need to be translated to the ODDS schema. 
+  # Consider switching to 2024 ADP data timeliness queries.
   script <- paste(
     "select all_data.*, em_rev_gear.em_gear_code, 
     hd_data.date_hd_received_by_psmfc,
@@ -488,7 +487,7 @@ EM.data <-
   # For clarification, see email from Glenn Campbell on 3/11/20
   EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
 
-  }
+}
 
 # Fixed-gear EM research
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
