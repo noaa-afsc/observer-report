@@ -15,3 +15,5 @@ Project notes can be found [here](https://docs.google.com/document/d/1vXnxoBBBVO
 ### Coding Practices
 
 Request review for all branch merges. Reviewer may merge if no outstanding issues.
+
+For details on how to connect to the AFSC database using the `eval(parse())` method, see [this page](https://github.com/Alaska-Fisheries-Monitoring-Analytics/AnnRpt-Deployment-Chapter/blob/master/database_connection.md).
