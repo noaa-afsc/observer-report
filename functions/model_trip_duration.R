@@ -198,7 +198,7 @@ model_trip_duration <- function(val_data, use_mod = "DAYS ~ RAW", channel) {
     test5 <- exis[tack2, roll = "nearest", nomatch = NULL]
     
     a_cols <- c("TRIP_START", "TRIP_END", "A_ODDS_START", "A_ODDS_END") 
-    test5[, ':=' (A_O = dc(.SD, "o"), A_M = dc(.SD, "m")), .SDcols = a_cols, by = rownames(test5)]
+    test5[, ':=' (A_O = dc(.SD, "o"), A_M = dc(.SD, "m")), .SDcols = a_cols, by = list(rownames(test5))]
     
     # If tacked on trips have no overlap, first check to see if the existing disembark is within a reasonable time period (2-days?)
     test5[A_O == 0, CHK := ifelse(abs(as.numeric(A_ODDS_START - ODDS_END)) <= 2, TRUE, FALSE)]

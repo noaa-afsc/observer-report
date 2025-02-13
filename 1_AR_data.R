@@ -2,6 +2,7 @@
 
 # Get packages and user-defined functions
 source("3_helper.R")
+
 # Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
 helper_objects <- ls()
 
@@ -9,13 +10,10 @@ helper_objects <- ls()
 set.seed(052870)
 
 # Report year (year that fishing and observing took place)
-year <- 2023
+year <- 2024
 
-# The user's physical location when running this code (used to pull data from the closest database)
-location <- toupper(getPass('What is your current physical location? (Juneau or Seattle)'))
-
-# Establish database connections
-channel_afsc  <- channel.fxn(location, db = "AFSC")
+# Establish database connection
+channel_afsc  <- eval(parse(text = Sys.getenv('channel_afsc')))
 
 # Get data ----------------------------------------------------------------
 
@@ -33,88 +31,68 @@ if(FALSE) {
   save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
   gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
 }
-#' [ver1] *was used for the 2023 Annual Report*
+
 gdrive_download("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
 load("source_data/FMA_Days_Paid.rdata")
-
-#' *2023 AR* create separate days paid 
-days_paid.2022 <- filter(FMA_Days_Paid, Calendar == 2022)
-days_paid.2023 <- filter(FMA_Days_Paid, Calendar == 2023)
+days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
 # * ADP outputs ----
 
 # Assign the address of the ADP outputs in the Shared Gdrive
 ADP_Output_dribble <- gdrive_set_dribble("Projects/ADP/Output")
+ADP_Tables_dribble <- gdrive_set_dribble("Projects/ADP/Output/2024 ADP")
 
 # Initially:
-#' `2022_final_adp_repository/data/2022-FINAL-ADP_2021-11-17_i1000-o1000-seed12345.RData`, originally saved at
-#' [https://drive.google.com/file/d/1nEQNXV4s0bJJb8lGha7AKsnubItdCU8H/view?usp=drive_link], renamed and uploaded to the
-#' shared Gdrive in `Projects/ADP/Output/` folder as `2022_Final_ADP_output.rdata`
-if(FALSE) gdrive_upload("source_data/2022_Final_ADP_Output.rdata", ADP_Output_dribble)
+#' `ADP/results/final_adp_2024_results.rdata`
+#' shared Gdrive in `Projects/ADP/Output` folder as `final_adp_2024_results.rdata`
+if(FALSE) gdrive_upload("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
+if(FALSE) gdrive_upload("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
 
-#' `2023_final_adp_repository/data/2023-FINAL-ADP_2022-11-17_i1000-o1000-seed12345`, originally saved at
-#' [https://drive.google.com/file/d/1Sb9gwpRnG67Azikc6BY1WMfd2cP_NNfR/view?usp=drive_link], renamed and uploaded to the 
-#' shared Gdrive in `Projects/ADP/Output` folder as `2023_Final_ADP_output.rdata`
-if(FALSE) gdrive_upload("source_data/2023_Final_ADP_Output.rdata", ADP_Output_dribble)
+# 2024 Final ADP Outputs
+gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
+gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
+gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble)
+load("source_data/final_adp_2024_results.rdata")
+load("source_data/final_adp_tables_and_figures_2024.rdata")  # table_b3_flex contains predicted days by stratum
+load("source_data/costs_boot_lst_2024AR.rdata")              # simulated observer days and costs
 
-# 2022 Final ADP Outputs
-gdrive_download("source_data/2022_Final_ADP_Output.rdata", ADP_Output_dribble)
-final_adp_vec.2022 <- (load("source_data/2022_Final_ADP_Output.rdata"))
-Nnd_tbl.2022 <- mutate(Nnd_tbl, YEAR = 2022)
-adj_tbl.2022 <- adj_tbl
-bud_scen_lst.2022 <- bud_scen_lst
-bud_tbl.2022 <- bud_tbl
-rm(list = c(final_adp_vec.2022, "final_adp_vec.2022"))
+## Predicted monitored days by stratum
+predicted <- table_b3_flex$body$dataset[15:29,] %>%
+  # Isolate partial coverage strata
+  filter(Pool %in% c("At-sea Observer", "Fixed-gear EM", "Trawl EM (EFP)") & Stratum != "Total") %>%
+  mutate(STRATA = case_when(Pool == "At-sea Observer" & Stratum == "Fixed-gear BSAI" ~ "OB FIXED BSAI", 
+                            Pool == "At-sea Observer" & Stratum == "Fixed-gear GOA" ~ "OB FIXED GOA",
+                            Pool == "At-sea Observer" & Stratum == "Trawl BSAI" ~ "OB TRW BSAI",
+                            Pool == "At-sea Observer" & Stratum == "Trawl GOA" ~ "OB TRW GOA",
+                            Pool == "Fixed-gear EM" & Stratum == "Fixed-gear BSAI" ~ "EM FIXED BSAI",
+                            Pool == "Fixed-gear EM" & Stratum == "Fixed-gear GOA" ~ "EM FIXED GOA",
+                            Pool == "Trawl EM (EFP)" & Stratum == "Trawl GOA" ~ "EM TRW GOA (EFP)")) %>%
+  rename(pred_days = d) %>%
+  select(STRATA, pred_days)
 
-# 2023 Final ADP Outputs
-gdrive_download("source_data/2023_Final_ADP_Output.rdata", ADP_Output_dribble)
-final_adp_vec.2023 <-(load("source_data/2023_Final_ADP_Output.rdata"))
-Nnd_tbl.2023 <- mutate(Nnd_tbl, YEAR = 2023)
-adj_tbl.2023 <- adj_tbl
-bud_scen_lst.2023 <- bud_scen_lst
-bud_tbl.2023 <- bud_tbl
-rm(list = c(final_adp_vec.2023, "final_adp_vec.2023"))
+# Budget(s) used in the ADP
+bud_scen_lst <- unlist(budget_lst)
 
-# Format and calculate predicted days from ADP
-Nnd_tbl <- rbind(Nnd_tbl.2022, Nnd_tbl.2023)
+## Distribution of simulated observed days and costs (at-sea observers only)
 
-predicted <- Nnd_tbl[
-][, lapply(.SD, mean), keyby = .(YEAR, POOL, STRATA), .SDcols = c("Nh", "nh", "dh")] %>%
-  # Remove zero stratum
-  filter(POOL != "ZE") %>% 
-  mutate(STRATA = case_when(STRATA == "EM_PLK" ~ "EM TRW EFP", #' *2023 EM TRW EFP number off from ADP report value for some reason*
-                            STRATA == "TRW" & POOL == "OB" ~ "OB TRW",
-                            STRATA == "POT" & POOL == "OB" ~ "OB POT",
-                            STRATA == "HAL" & POOL == "OB" ~ "OB HAL",
-                            STRATA == "EM_POT" ~ "EM POT",
-                            STRATA == "EM_HAL" ~ "EM HAL",
-                            TRUE ~ STRATA)) %>%
-  rename(pred_days = dh) %>%
-  select(!c(POOL, Nh, nh))
+# Convert matrices to data.tables and flatten list to a single table
+sim_costs_dt <- rbindlist(lapply(
+  lapply(costs_boot_lst, "[[", "SIM_COSTS" ), function(x) as.data.table(t(x))
+), idcol = "SIM_ITER")
+# Format columns and add identifier for ODDS iteration
+col_nms <- colnames(sim_costs_dt)
+sim_costs_dt[, (col_nms) := lapply(.SD, as.numeric), .SDcols = col_nms]
+sim_costs_dt[, ODDS_ITER := seq_len(.N), by = .(SIM_ITER)]
+# Formatted result for the AR
+bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_CPD)]
 
 # * Valhalla ----
 
-#' Initial upload of [2022] Valhalla to the Shared Gdrive. Querying the latest year, 2022, from `loki.valhalla`.
-#' (run date of 2023-04-10 15:15:15 PDT)
-if(FALSE){
-  valhalla.2022 <- setDT(dbGetQuery(channel_afsc, paste("SELECT * FROM loki.akr_valhalla WHERE adp = 2022")))
-  valhalla.2022[, TRIP_TARGET_DATE := as.Date(TRIP_TARGET_DATE)]
-  valhalla.2022[, LANDING_DATE := as.Date(LANDING_DATE)]
-  save(valhalla.2022, file = "source_data/2023-04-10cas_valhalla.Rdata")
-  gdrive_upload("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-}
-gdrive_download("source_data/2023-04-10cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-(load("source_data/2023-04-10cas_valhalla.Rdata"))
-
-#' Initial upload of [2023] Valhalla to the Shared Gdrive. Originally obtained from:
-#' [https://drive.google.com/drive/u/0/folders/1JK0EJDBByn7GyfDt2q96ZBjvjYuhezOF]
-if(FALSE) gdrive_upload("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-gdrive_download("source_data/2024-04-15cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-(load("source_data/2024-04-15cas_valhalla.Rdata"))
-
-#' Create a copy of Valhalla named 'work.data' that will be manipulated
-work.data <- rbind(valhalla, valhalla.2022)
-rm(valhalla, valhalla.2022); gc()
+# Create a copy of Valhalla named 'work.data' that will be manipulated
+gdrive_download("source_data/2025-01-14cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+load("source_data/2025-01-14cas_valhalla.Rdata")
+work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
+rm(valhalla)
 
 #Summary of coverage by strata and processing sector
 #This is a check to make sure no entries look wonky
@@ -134,24 +112,20 @@ work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LAN
 if( nrow(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1]) ){
   message("Some TRIP_IDs are repated across ADP years")
   print(unique(work.data[, .(TRIP_ID, ADP)])[, .N, keyby = .(TRIP_ID)][N > 1])
-
 }
-#' *2023 AR* Addressing trips that spanned years
-unique(work.data[TRIP_ID == 1593889, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
-unique(work.data[TRIP_ID == 1615161, .(ADP, TRIP_ID, TRIP_TARGET_DATE)])[order(TRIP_TARGET_DATE)]
-# Will assign `ADP` to 2023 for these trips
-work.data[TRIP_ID %in% c(1593889, 1615161), ADP := 2023]
 
 # Format strata names
 work.data <- work.data %>%
   mutate(STRATA = recode(
     STRATA,
-    "POT" = "OB POT",
-    "HAL" = "OB HAL",
-    "TRW" = "OB TRW",
-    "EM_POT" = "EM POT",
-    "EM_HAL" = "EM HAL",
-    "EM_TRW_EFP" = "EM TRW EFP"))
+    "EM_FIXED_BSAI" = "EM FIXED BSAI",
+    "EM_FIXED_GOA" = "EM FIXED GOA",
+    "EM_TRW_BSAI" = "EM TRW BSAI (EFP)",
+    "EM_TRW_GOA" = "EM TRW GOA (EFP)",
+    "OB_FIXED_BSAI" = "OB FIXED BSAI",
+    "OB_FIXED_GOA" = "OB FIXED GOA",
+    "OB_TRW_BSAI" = "OB TRW BSAI",
+    "OB_TRW_GOA" = "OB TRW GOA"))
 
 #' [NOTE] `work.data` may be modified later in the `EM` section of this script to re-assign STRATA for any EM research
 #' vessels active for this year.
@@ -171,14 +145,10 @@ mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
 #' It appears some observers were assigned to non-observer strata
 mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
-#' *2023 AR* Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
+#' Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
-mod_dat_copy[
-][STRATA == "EM TRW EFP" | STRATA == "TRW", STRATA := "OB TRW"
-][STRATA == "EM HAL" | STRATA == "HAL", STRATA := "OB HAL"
-][STRATA == "EM POT" | STRATA == "POT", STRATA := "OB POT"
-][STRATA == "ZERO", STRATA := "OB HAL"]
+mod_dat_copy[STRATA == "ZERO", STRATA := "OB FIXED GOA"]
 mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
@@ -203,7 +173,7 @@ JOIN ols_observer_cruise ocr
 ON ocr.cruise = o.cruise
 JOIN ols_observer_contract oco
 ON oco.contract_number = ocr.contract_number
-WHERE o.delivery_end_date BETWEEN '01-JAN-", year - 1, "' AND '31-DEC-", year, "' -- for 2023 AR, need mulitple years
+WHERE o.delivery_end_date BETWEEN '01-JAN-", year, "' AND '31-DEC-", year, "'
 ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
 # The following query returns all landing ID's for offloads monitored for salmon all sectors.
@@ -217,59 +187,39 @@ salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 # * ODDS ----
 
 # Queries
-#' *For 2023 AR, pulling 2 prior years instead of 1 to back-fill analyses that were skipped in 2022 AR*
 script <- paste("
   SELECT 
-    -- Retrieve a trip's selection pecentage based on the trip's original declared embark date and stratum
-    odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT,     
-
+    d.percent as ODDS_SELECTION_PCT,     
     a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
     a.original_embark_date, a.planned_embark_date, a.tender_trip_flag, a.trip_plan_number,
     b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, 
     -- inherit_trip_seq corresponds to the trip_stratas_seq that was cancelled, not trip_plan_log_seq before ODDS 3.0!
     b.inherit_trip_seq,          
     c.group_code, c.description AS STRATUM_DESCRIPTION,
-    d.release_comment,
-    e.description AS RELEASE_STATUS_DESCRIPTION,
-    f.akr_vessel_id AS VESSEL_ID,
-    g.gear_type_code
+    e.release_comment,
+    f.description AS RELEASE_STATUS_DESCRIPTION,
+    g.akr_vessel_id AS VESSEL_ID,
+    h.gear_type_code
    
   FROM odds.odds_trip_plan_log a
     LEFT JOIN odds.odds_trip_stratas b
       ON a.trip_plan_log_seq = b.trip_plan_log_seq 
     LEFT JOIN odds.odds_strata c
       ON b.strata = c.strata
-    LEFT JOIN odds.odds_strata_release d
-      ON b.trip_stratas_seq = d.trip_stratas_seq
-    LEFT JOIN odds.odds_lov_release_status e
-      ON d.release_status_seq = e.release_status_seq
-    LEFT JOIN norpac.atl_lov_vessel f
-      ON a.vessel_seq = f.vessel_seq
-    LEFT JOIN odds.odds_trip_gear g
-      ON a.trip_plan_log_seq = g.trip_plan_log_seq
-  WHERE EXTRACT(YEAR FROM a.original_embark_date) IN (", paste(year + -1:0, collapse = ","), ")
-    -- [2023 Annual report Only]
-    -- Exclude a 2024 trip with original embark date in 2023 that makes the ODDS_RANDOM_NUMBER package throw an error.
-    AND a.trip_plan_log_seq != 202328923             
-")
+    LEFT JOIN odds.odds_strata_rates d
+      ON b.strata = d.strata
+    LEFT JOIN odds.odds_strata_release e
+      ON b.trip_stratas_seq = e.trip_stratas_seq
+    LEFT JOIN odds.odds_lov_release_status f
+      ON e.release_status_seq = f.release_status_seq
+    LEFT JOIN norpac.atl_lov_vessel g
+      ON a.vessel_seq = g.vessel_seq
+    LEFT JOIN odds.odds_trip_gear h
+      ON a.trip_plan_log_seq = h.trip_plan_log_seq
+  WHERE EXTRACT(YEAR FROM a.original_embark_date) =", year,"
+  AND EXTRACT(YEAR FROM d.effective_date) =", year)
 
 odds.dat <- dbGetQuery(channel_afsc, script)
-
-# Data checks and clean up
-
-# Check for duplicates - should be no records (= 0)
-if(sum(duplicated(odds.dat$TRIP_PLAN_LOG_SEQ))) stop("Some 'TRIP_PLAN_LOG_SEQ' are duplicated!")
-
-#'*====================================================================================================================*
-#' FIXME `ODDS 3.0 is not creating records in odds.odds_strata_release for trips auto-released by the three-in-a-row`
-#' `rule. Andy Kingham has been notified to remedy this, but we will hard-code these 2 identified instances here`
-
-setDT(odds.dat)[TRIP_PLAN_LOG_SEQ %in% c(202322990, 202317623), ':=' (
-  RELEASE_COMMENT = "Three Observerd Trips Release",
-  RELEASE_STATUS_DESCRIPTION = "Three in Row Release"
-)]
-setDF(odds.dat)
-#'*====================================================================================================================*
 
 # Summary of trip dispositions and observer assignments 
 # GROUP_CODE: 10:11 = at-sea observer, 13 = Fixed-gear EM, 14 = Trawl EM
@@ -278,7 +228,7 @@ setDF(odds.dat)
 #   PD = Pending
 #   CN = Cancelled 
 #   CP = Completed 
-#   CC = Cancel Cascaded (discontinued with ODDS 3.0 in 2023)
+#   CC = Cancel Cascaded
 #   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
@@ -293,9 +243,14 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
   # Tag on "compliance" if the trip was a multi-area IFQ trip
   ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
   case_when(
-    GROUP_CODE %in% 10:11 ~ case_match(GEAR_TYPE_CODE, 3 ~ "OB TRW", 6 ~ "OB POT", 8 ~ "OB HAL"),
-    GROUP_CODE == 13 ~ case_match(GEAR_TYPE_CODE, 6 ~ "EM POT", 8 ~ "EM HAL"),
-    GROUP_CODE == 14 ~ "EM TRW EFP",
+    STRATUM_DESCRIPTION == "EM EFP - Trawl No Tender" ~ "EM TRW GOA (EFP)",
+    STRATUM_DESCRIPTION == "EM EFP - Trawl Tender Delivery" ~ "EM TRW GOA (EFP)",
+    STRATUM_DESCRIPTION == "EM Fixed Gear - BSAI" ~ "EM FIXED BSAI",
+    STRATUM_DESCRIPTION == "EM Fixed Gear - GOA" ~ "EM FIXED GOA",
+    STRATUM_DESCRIPTION == "Fixed Gear - BSAI" ~ "OB FIXED BSAI",
+    STRATUM_DESCRIPTION == "Fixed Gear - GOA" ~ "OB FIXED GOA",
+    STRATUM_DESCRIPTION == "Trawl Gear - BSAI" ~ "OB TRW BSAI",
+    STRATUM_DESCRIPTION == "Trawl Gear - GOA" ~ "OB TRW GOA",
     .default = "Unknown"
   )
 ))
@@ -309,14 +264,14 @@ partial <- odds.dat %>%
   distinct(Rate = ODDS_SELECTION_PCT / 100 ) %>%
   ungroup() %>%
   mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
-  mutate(Rate = ifelse(STRATA == "EM TRW EFP", 0.3333, Rate)) %>%
+  mutate(Rate = ifelse(STRATA == "EM TRW GOA (EFP)", 0.3333, Rate)) %>%
   distinct(YEAR, STRATA, Rate, GEAR) %>%
   mutate(formatted_strat = paste0("*", STRATA, "*"))
 partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
 script <- paste0("SELECT * from em_pac_review.EM_TRIP
-                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
+                  WHERE EXTRACT(YEAR FROM TRIP_END_DATE_TIME) = ", year)
 
 EM.data <- dbGetQuery(channel_afsc, script)
 
@@ -345,7 +300,7 @@ rm(transform.EM.data.vessel)
 
 # Get gear type for EM data
 script <- paste0("SELECT * from em_pac_review.EM_FISHING_EVENT
-                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) IN(", paste0(year + -1:0, collapse = ","), ")")
+                  WHERE EXTRACT(YEAR FROM END_DATE_TIME) = ", year)
 
 EM.gear <- dbGetQuery(channel_afsc, script)
 
@@ -370,8 +325,6 @@ gear_na_vessels <- filter(EM.data, is.na(AGENCY_GEAR_CODE)) %>% distinct(VESSEL_
 
 # Isolate VESSEL_IDs with NAs in EM.data$AGENCY_GEAR_CODE 
 # that logged trips of only one gear type in ODDS
-#' *2023: one vessel has trawl gear declared, but no trawl codes in EM.gear - this trip seems to be coming from EM.data*
-#' *2023: one vessel has a trip marked as NON_FISHING_TRIP = Y*
 single_gear_nas <- 
   filter(odds.dat, VESSEL_ID %in% gear_na_vessels) %>% 
   distinct(VESSEL_ID, GEAR_TYPE_CODE, STRATUM_DESCRIPTION) %>% 
@@ -407,14 +360,7 @@ EM.data <-
   EM.data %>% 
   # NAs for vessels that (based on ODDS) fished only one gear in the report year can be assumed to be that gear in the EM data
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
-  mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE)) %>% 
-  # NAs for vessels that (based on ODDS) fished multiple gears in the report year are recoded manually according to the comparison made immediately above
-  mutate(AGENCY_GEAR_CODE = ifelse(TRIP_NUMBER == "22_SUMNERSTRAIT01.01", "POT", AGENCY_GEAR_CODE)) %>%
-  # NAs for vessels that (based on ODDS and PSMFC EM.data) did not actually fish in the EM strata 
-  #' *2023 AR* Excluding records from a vessel that apparently fished trawl, not fixed gear 
-  filter(VESSEL_ID  != "422") %>%
-  #' *2023 AR* Another that had it's trip marked as non-fishing
-  filter(TRIP_NUMBER != "22_BLACKPEARL07.01")
+  mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE))
 
 # The following query will provide a list of EM selected trips and if they have been reviewed or not
 # Query will only include trips in completed or pending status and will not include compliance trips.
@@ -423,11 +369,11 @@ EM.data <-
 # This query will also show the actual EM trip start date and time and actual EM trip end date and time which comes from the data on the HD.
 
 # Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
-
-#'*========== Geoff and Christian get the error: [Oracle][ODBC][Ora]ORA-01031: insufficient privileges*
-#'*Skipping this section for now*
-if(F){
-  
+if(F){ 
+  # FIXME: When performing the data timeliness evaluations for the 2024 ADP, 
+  # it was discovered that some of the columns below don't mean what they sound like. 
+  # Even if the columns are accurate, this query would need to be translated to the ODDS schema. 
+  # Consider switching to 2024 ADP data timeliness queries.
   script <- paste(
     "select all_data.*, em_rev_gear.em_gear_code, 
     hd_data.date_hd_received_by_psmfc,
@@ -540,13 +486,14 @@ if(F){
   # Flip pending trips to completed if they have data reviewed
   # For clarification, see email from Glenn Campbell on 3/11/20
   EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
+
 }
 
 # Fixed-gear EM research
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
-                                              and adp IN(", paste(year + -1:0, collapse = ","), ")" ))
+                                              and adp =", year))
 
 # Identify trips by EM research vessels
 work.data <- work.data %>% 
@@ -562,7 +509,7 @@ gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(helper_objects, location, channel_afsc, ADP_Output_dribble)
+rm(helper_objects, channel_afsc, ADP_Output_dribble)
 
 # Save
 save.image(file = "2_AR_data.Rdata")
