@@ -733,9 +733,9 @@ odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 
 # Custom y axes for each row of the figure
 odds.scales <- list(
-  scale_y_continuous(limits = c(0, 60), breaks = c(0, 20, 40)),
+  scale_y_continuous(limits = c(20, 70), breaks = c(0, 20, 40)),
   scale_y_continuous(limits = c(0, 30), breaks = c(0, 20, 40)),
-  scale_y_continuous(limits = c(25, 100)),
+  scale_y_continuous(limits = c(40, 100)),
   scale_y_continuous(limits = c(0, 40)),
   scale_y_continuous(limits = c(50, 100)),
   scale_y_continuous(limits = c(0, 75))
@@ -916,19 +916,18 @@ Coverage.Table.full <- bind_rows(
            Rate = 1,
            meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%
     select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
-           V, v, N, n, Pct.obs, Rate, meets.expected)
-    ,
-    # Totals for vessels in the full coverage category
-    work.data %>%
-      filter(COVERAGE_TYPE == "FULL") %>%
-    group_by(ADP) %>%
-      summarize(V = length(unique(VESSEL_ID)),
-                v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
-                N = length(unique(TRIP_ID)),
-                n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
-      mutate(COVERAGE_TYPE = "Full coverage total",
-             Pct.obs = (n/N) * 100,
-             deployment.method = "Trip-Selection")
+           V, v, N, n, Pct.obs, Rate, meets.expected),
+  # Totals for vessels in the full coverage category
+  work.data %>%
+    filter(COVERAGE_TYPE == "FULL") %>%
+  group_by(ADP) %>%
+    summarize(V = length(unique(VESSEL_ID)),
+              v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
+              N = length(unique(TRIP_ID)),
+              n = length(unique(TRIP_ID[OBSERVED_FLAG == "Y"]))) %>%
+    mutate(COVERAGE_TYPE = "Full coverage total",
+           Pct.obs = (n/N) * 100,
+           deployment.method = "Trip-Selection")
 ) %>%
   arrange(ADP, desc(STRATA)) %>%
   ungroup()
@@ -985,7 +984,7 @@ Coverage.Table.partial <- bind_rows(
 #' *ZERO COVERAGE* 
 Coverage.Table.zero <-
   work.data %>%
-    filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #' *NO ZERO EM Research in 2023*
+    filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #'
     mutate(STRATA = as.character(STRATA)) %>% 
     mutate(STRATA = ifelse(STRATA == "ZERO", "Zero coverage", STRATA)) %>% 
     group_by(ADP, COVERAGE_TYPE, STRATA) %>%
@@ -1082,33 +1081,17 @@ full.cover.no.obs <- work.data %>%
 # Objects referenced in-text:
 
 # Coverage trip and vessel totals (including EM)
-#' `------2022------`
-totl_obs_trips.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(n) %>% as.numeric()
+totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == year) %>% select(n) %>% as.numeric()
 
-perc_trips_obs.2022 <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% 
+perc_trips_obs <- Coverage.Table %>% 
+  filter(Strata == "Total" & Coverage == "Total" & Year == year) %>% 
   transmute(percent.obs = format(as.numeric(n)/as.numeric(N) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
-totl_obs_vessels.2022 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>% select(v) %>% as.numeric()
+totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == year) %>% select(v) %>% as.numeric()
 
-perc_vessels_obs.2022 <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total" & Year == 2022) %>%
-  transmute(percent.obs = format(as.numeric(v)/as.numeric(V) * 100, digits = 1, nsmall = 1)) %>% 
-  as.numeric()
-
-#' `------2023------`
-totl_obs_trips.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(n) %>% as.numeric()
-
-perc_trips_obs.2023 <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% 
-  transmute(percent.obs = format(as.numeric(n)/as.numeric(N) * 100, digits = 1, nsmall = 1)) %>% 
-  as.numeric()
-
-totl_obs_vessels.2023 <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>% select(v) %>% as.numeric()
-
-perc_vessels_obs.2023 <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total" & Year == 2023) %>%
+perc_vessels_obs <- Coverage.Table %>% 
+  filter(Strata == "Total" & Coverage == "Total" & Year == year) %>%
   transmute(percent.obs = format(as.numeric(v)/as.numeric(V) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 ```
@@ -1178,8 +1161,8 @@ Pollock.monitored <- rbind(
 
 # Isolate observed strata
 Pollock.observed <- rbind(
-  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA != "EM TRW EFP"),
-  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA != "EM TRW EFP"))
+  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA != "EM TRW BSAI (EFP)"),
+  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA != "EM TRW GOA (EFP)"))
 
 # Rename columns and format
 Pollock.observed.table <- Pollock.observed %>% 
@@ -1201,8 +1184,8 @@ Pollock.observed.table <- Pollock.observed %>%
 
 # Isolate EFP strata
 Pollock.efp <- rbind(
-  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA == "EM TRW EFP"),
-  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA == "EM TRW EFP"))
+  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA == "EM TRW BSAI (EFP)"),
+  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA == "EM TRW GOA (EFP)"))
 
 # Rename columns and format
 Pollock.efp.table <- Pollock.efp %>% 
@@ -1233,7 +1216,7 @@ Evaluations of the partial coverage category for dockside monitoring are not as 
 # Changed significantly for 2020 to incorporate multiple time periods  
 # Some changes might be worth keeping though  
 Max.ts.date <- work.data %>% 
-  filter(STRATA %in% partial$STRATA &  STRATA != "EM TRW EFP") %>%
+  filter(STRATA %in% partial$STRATA &  STRATA != "EM TRW GOA (EFP)") %>%
   select(TRIP_ID, TRIP_TARGET_DATE, OBSERVED_FLAG, STRATA) %>%
   distinct() %>%
   group_by(TRIP_ID, OBSERVED_FLAG, STRATA) %>%
@@ -1255,7 +1238,10 @@ For.ts.temporal.plot <- For.ts.temporal.plot %>%
 
 # Fill in rates
 For.ts.temporal.plot <- left_join(For.ts.temporal.plot,
-                              select(partial, c(YEAR, STRATA, Rate)), by = c("YEAR", "STRATA"))
+                                  partial %>%
+                                    select(c(YEAR, STRATA, Rate)) %>%
+                                    distinct(),
+                                  by = c("YEAR", "STRATA"))
 
 # Count cumulative number of trips by stratum and year
 For.ts.temporal.plot <- 
@@ -1285,9 +1271,7 @@ For.ts.temporal.summary <-
   For.ts.temporal.plot %>% 
   group_by(YEAR, STRATA) %>% 
   reframe(N.outside = sum(Outside.bounds, na.rm = TRUE),
-          Days = ifelse(YEAR == 2022,
-                        sum(Date >= as.Date("2022-01-01")),
-                        sum(Date >= as.Date("2023-01-01")))) %>%
+          Days = sum() ) %>%
   distinct() %>% 
   mutate(`% Outside` = round(N.outside / Days * 100, 1))
 
@@ -1317,7 +1301,9 @@ For.ts.temporal.plot <- left_join(For.ts.temporal.plot,
 
 # Order strata for plot
 For.ts.temporal.plot <- transform(For.ts.temporal.plot,
-                                  STRATA = factor(STRATA,levels = c("EM HAL", "EM POT", "OB HAL", "OB POT", "OB TRW")))
+                                  STRATA = factor(STRATA,levels = c("EM FIXED BSAI", "EM FIXED GOA", 
+                                                                    "OB FIXED BSAI", "OB FIXED GOA",
+                                                                    "OB TRW BSAI", "OB TRW GOA")))
 
 # Add column for dates where coverage is outside expectation, and format p-values
 For.ts.temporal.plot <- For.ts.temporal.plot %>%
@@ -1330,24 +1316,8 @@ Temporal.plot.x_range <- data.frame(YEAR = rep(year + -1:0, each = 2)) %>%
   mutate(Date = as.Date(paste0(YEAR, c("-01-01", "-12-31"))))
 
 # Single-Year Plot
-Temporal.plot.2022 <- 
-  ggplot(filter(For.ts.temporal.plot, YEAR == year - 1), aes(x = Date)) +
-  # Add lines for coverage rates
-  geom_line(aes(y = n.cuml), col = "black", linewidth = 2) +
-  geom_line(aes(y = n.expected), col = "gray") +
-  geom_ribbon(aes(ymin = Low95, ymax = High95), alpha = 0.2) +
-  geom_rug(aes(x = Date.outside), sides = "b") +
-  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free", space = "free_x") +
-    # Annotate p-values
-  geom_text(aes(x = as.Date(-Inf), y = Inf, vjust = 1.25, label = p), 
-            hjust = -0.1, size = 4, parse = TRUE, check_overlap = TRUE) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90)) +
-  ylab("Cumulative trips in trip-selection strata\n") +
-  xlab("\nDate") +
-  scale_x_date(limits = as.Date(c("2022-01-01", "2023-01-01")))
 
-Temporal.plot.2023 <- 
+Temporal.plot <- 
   ggplot(filter(For.ts.temporal.plot, YEAR == year), aes(x = Date)) +
   # Add lines for coverage rates
   geom_line(aes(y = n.cuml), col = "black", linewidth = 2) +
@@ -1365,7 +1335,7 @@ Temporal.plot.2023 <-
 
 ```
 
-The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in three of the six partial coverage strata: *OB TRW* (expected rate = 22.7%, realized rate = 32.3%, *p*-value < 0.001), *EM HAL* (expected rate: 30.0%, realized rate: 22.5%, *p*-value < 0.001), and *EM POT* (expected rate = 30.0%, realized rate = 18.7%, *p*-value < 0.001; `r tbl_nums('Coverage.Table.2023', display = "cite")` and `r fig_nums('Temporal.plot.2023', display = "cite")`). The *OB HAL* stratum was outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *OB POT* stratum (expected rate = 17.1%, realized rate = 17.8%, *p*-value = 0.543).
+The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in three of the six partial coverage strata: *OB TRW* (expected rate = 22.7%, realized rate = 32.3%, *p*-value < 0.001), *EM HAL* (expected rate: 30.0%, realized rate: 22.5%, *p*-value < 0.001), and *EM POT* (expected rate = 30.0%, realized rate = 18.7%, *p*-value < 0.001; `r tbl_nums('Coverage.Table.2023', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). The *OB HAL* stratum was outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *OB POT* stratum (expected rate = 17.1%, realized rate = 17.8%, *p*-value = 0.543).
 
 ## Spatial Patterns in Trip-Selection  
 ```{r spatial_bias_analysis, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
@@ -1953,11 +1923,11 @@ suppressMessages(print(em.times.figure))
 
 \newpage
 
-```{r Temporal.plot.2023, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
-print(Temporal.plot.2023)
+```{r Temporal.plot, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+print(Temporal.plot)
 ```
 
-`r fig_nums('Temporal.plot.2023', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the x-axis. Test results (using a binomial distribution) determining if the observed rate was sampled at the selection rate are denoted as *p*-values.'))`  
+`r fig_nums('Temporal.plot', caption = paste0('Cumulative number of trips monitored during ', year, ' (black line) compared to the expected range of observed trips (shaded ribbon) given fishing effort and sampling rates. Dates where the monitored number of trips is outside of expected (less or more than the range) are depicted as tick marks on the x-axis. Test results (using a binomial distribution) determining if the observed rate was sampled at the selection rate are denoted as *p*-values.'))`  
 
 \newpage
 
