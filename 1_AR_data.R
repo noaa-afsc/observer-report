@@ -84,7 +84,7 @@ col_nms <- colnames(sim_costs_dt)
 sim_costs_dt[, (col_nms) := lapply(.SD, as.numeric), .SDcols = col_nms]
 sim_costs_dt[, ODDS_ITER := seq_len(.N), by = .(SIM_ITER)]
 # Formatted result for the AR
-bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_CPD)]
+bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOTAL)]
 
 # * Valhalla ----
 
