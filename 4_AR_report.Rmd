@@ -45,7 +45,7 @@ options(dplyr.summarise.inform = FALSE)
 set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 
 # Set order of strata
-strata.order <- c("Full", "OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT", "EM TRW EFP", "Zero coverage", "Total")
+strata.order <- c("Full", "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)", "Zero coverage", "Total")
 
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included and formatting of table/figure captions.
@@ -536,15 +536,14 @@ logged <- odds.ts.cp %>%
     Pct.allselected.from.waiver = round(Waived / (Total.final.selected + Waived) * 100, 1))  
 
 
-# Table 3-3 (2019, inherits and release rates AFTER random selection and cancellation)---- 
-#' *Not including in the AR since 2019, kept for posterity*, but this tells us with more granularity how many selected 
-#' trips were canceled or waived. 
+# Inherits and release rates AFTER random selection and cancellation) ---- 
+
+# Tells us with more granularity how many selected trips were canceled or waived. 
 
 # Disposition of trips - showing only valid trips and categories are exclusive
 logged.table <- bind_rows(
   logged, 
   logged %>% 
-    #' *2023 AR ONLY: Added YEAR*
     group_by(YEAR) %>%          
     summarise(STRATA = "Total",
               Total.trips = sum(Total.trips),
@@ -594,9 +593,11 @@ for.p.wide <- merge(
 
 # Merge in the selection rates of each stratum for calculating p-values later
 for.p.wide <- for.p.wide %>%
-  left_join(partial, by = c("STRATA", "YEAR")) %>%
+  left_join(
+    partial %>% select(!GEAR) %>% distinct(), 
+    by = c("STRATA", "YEAR")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
-  select(., !c(GEAR, formatted_strat, Rate))
+  select(., !c(formatted_strat, Rate))
 
 # Put into long format
 p.table <- for.p.wide %>%
@@ -604,6 +605,8 @@ p.table <- for.p.wide %>%
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
+p.table$p <- NA_real_
+p.table$pct <- NA_real_
 
 # Run the binomial test for each  row to see if realized rates met expectation
 for(i in 1:nrow(p.table)){
@@ -670,18 +673,17 @@ odds.ts.daily.cuml <- bind_rows(
   arrange(STRATA, TYPE, Date) %>%
   right_join(
     partial %>%
-      filter(STRATA != "EM TRW EFP") %>%
-      #' *2023 AR only: separate by year*
+      filter(STRATA != "EM TRW GOA (EFP)") %>%
       distinct(YEAR, STRATA, ODDS_SELECTION_PCT = Rate * 100),
-    #' *2023 AR only: separate by year*
     by = c("STRATA", "YEAR")) %>%
   ungroup()
 
 # reorder strata for plot
 odds.ts.daily.cuml <- transform(odds.ts.daily.cuml,
-                                STRATA = factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")),
-                                #' *2023 AR only: separate by year*
-                                YEAR = factor(YEAR, levels = c("2022", "2023")))
+                                STRATA = factor(STRATA, levels = c(
+                                  "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", 
+                                  "EM FIXED BSAI", "EM FIXED GOA")),
+                                YEAR = as.character(year))
 
 # Generate data for ribbon plots for the random data only.
 odds.ts.daily.cuml$L95 <- ifelse(
@@ -713,86 +715,50 @@ rm(i)
 
 for.plot.text <- left_join(
   odds.ts.daily.cuml %>% 
-    #' *2023 AR only: separate by year*
     group_by(YEAR, STRATA, TYPE) %>%
     filter(Date == max(Date)) %>%
-    #' *2023 AR only: separate by year*
     group_by(YEAR, STRATA) %>%
     mutate(label.original = format(running.pct[TYPE == "Original date: All logged trips"], digits = 4, nsmall = 2),
           label.adjusted = format(running.pct[TYPE == "Adjusted date: Valid trips only"], digits = 4, nsmall = 2)) %>% 
-    #' *2023 AR only: separate by year*
     distinct(YEAR, STRATA, label.original, label.adjusted),
   partial %>% 
     filter(STRATA != "EM TRW EFP") %>%
-    #' *2023 AR only: separate by year*
     select(YEAR, STRATA, label.programmed = Rate) %>%
-    #' *2023 AR only: separate by year*
     mutate(STRATA = as.character(STRATA), 
           YEAR = as.factor(YEAR),
-          label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2))
-  #' *2023 AR only: separate by year*
-  , by = c("STRATA", "YEAR"))
+          label.programmed = format(label.programmed * 100, digits = 4, nsmall = 2)), 
+  by = c("STRATA", "YEAR"))
 
 odds.ts.daily.cuml <- merge(odds.ts.daily.cuml, for.plot.text)
 
 # Custom y axes for each row of the figure
 odds.scales <- list(
-  scale_y_continuous(limits = c(0, 45), breaks = c(0, 20, 40)),
-  scale_y_continuous(limits = c(0, 45), breaks = c(0, 20, 40)),
-  scale_y_continuous(limits = c(0, 70)),
-  scale_y_continuous(limits = c(0, 65)),
-  scale_y_continuous(limits = c(0, 65))
+  scale_y_continuous(limits = c(0, 60), breaks = c(0, 20, 40)),
+  scale_y_continuous(limits = c(0, 30), breaks = c(0, 20, 40)),
+  scale_y_continuous(limits = c(25, 100)),
+  scale_y_continuous(limits = c(0, 40)),
+  scale_y_continuous(limits = c(50, 100)),
+  scale_y_continuous(limits = c(0, 75))
 )
 
-odds.by.date.plot.2022 <- 
-  ggplot(filter(odds.ts.daily.cuml, YEAR == year - 1), aes(x = Date, col = fct_rev(TYPE))) +
-  # Add lines for selection rates  
-  geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
-  geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
-  geom_line(aes(y = running.pct), linewidth = 1.5) +
-  scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
-  ylab("Cumulative coverage percent\n") +
-  #coord_cartesian(ylim = c(0, 70)) +
-  xlab("\nDate") +
-  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0 & YEAR == year - 1), sides = "b", color = "gray50") + 
-  geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0 & YEAR == year - 1), sides = "t") + 
-  #' *==================For single-year plotting==================================*
-  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free") +
-  geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
-            hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
-  geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
-            hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
-  geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
-            hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
-  #' *===========================================================================*
-  fig.theme + 
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90),
-        strip.text.x = element_text(size = 10),
-        legend.position = "none") +
-  ggh4x::facetted_pos_scales(y = odds.scales)
-
-odds.by.date.plot.2023 <- 
+odds.by.date.plot <- 
   ggplot(filter(odds.ts.daily.cuml, YEAR == year), aes(x = Date, col = fct_rev(TYPE))) +
+  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free") +
   # Add lines for selection rates  
   geom_hline(aes(yintercept = ODDS_SELECTION_PCT), lty = 3, linewidth = 1) +
   geom_ribbon(aes(ymin = L95 * 100, ymax = H95 * 100), alpha = 0.1) +
   geom_line(aes(y = running.pct), linewidth = 1.5) +
   scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
   ylab("Cumulative coverage percent\n") +
-  #coord_cartesian(ylim = c(0, 70)) +
   xlab("\nDate") +
   geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0 & YEAR == year), sides = "b", color = "gray50") + 
   geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0 & YEAR == year), sides = "t") + 
-  #' *==================For single-year plotting==================================*
-  facet_grid(factor(STRATA, levels = strata.order) ~., scales = "free") +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
             hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
             hjust = 1.02, vjust = 3.2, size = 3, color = "gray50", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Final (%) = ", label.adjusted, sep = "")), 
             hjust = 1.02, vjust = 4.4, size = 3, color = "black", check_overlap = TRUE) +
-  #' *===========================================================================*
   fig.theme + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90),
@@ -803,42 +769,31 @@ odds.by.date.plot.2023 <-
 ```
 
 ```{r odds_paragraph, warning=FALSE, include=FALSE}
+
+#' \TODO Not currently used but could/should be?
+
 # Objects that help increase readability of in-text calculations in the following paragraphs
 
 # Total canceled trips (both by ODDS or by users)
-totl.canc.2022 <- disposition %>% 
-                  filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>%
-                  summarize(totl.canc = sum(as.numeric(Trips.canceled.bysystem)) + sum(as.numeric(Trips.canceled.byusers))) %>% 
-                  as.numeric()
-
-totl.canc.2023 <- disposition %>% 
-                  filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>%
-                  summarize(totl.canc = sum(as.numeric(Trips.canceled.bysystem)) + sum(as.numeric(Trips.canceled.byusers))) %>% 
-                  as.numeric()
+totl.canc <- disposition %>% 
+  filter(STRATA == "Total" & random.assign == "Selected", YEAR == year) %>%
+  summarize(totl.canc = sum(as.numeric(Trips.canceled.bysystem)) + sum(as.numeric(Trips.canceled.byusers))) %>% 
+  as.numeric()
 
 # Percent of total trips canceled by the ODDS system
-perc.syst.canc.2022 <- disposition %>% 
-                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
-                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.canceled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
-                       as.numeric()
-
-perc.syst.canc.2023 <- disposition %>% 
-                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
-                       summarize(perc.syst.canc = round((sum(as.numeric(Trips.canceled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
-                       as.numeric()
+perc.syst.canc <- disposition %>% 
+   filter(STRATA == "Total" & random.assign == "Selected", YEAR == year) %>% 
+   summarize(
+     perc.syst.canc = round(
+       (sum(as.numeric(Trips.canceled.bysystem)) / sum(as.numeric(Trips.logged.ODDS))) * 100, 1)) %>% 
+   as.numeric()
 
 #Percent of total trips canceled by users
-perc.user.canc.2022 <- disposition %>% 
-                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2022") %>% 
-                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
-                                                         digits = 1, nsmall = 1)) %>% 
-                       as.character()
-
-perc.user.canc.2023 <- disposition %>% 
-                       filter(STRATA == "Total" & random.assign == "Selected", YEAR == "2023") %>% 
-                       summarize(perc.syst.canc = format((sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100,
-                                                         digits = 1, nsmall = 1)) %>% 
-                       as.character()
+perc.user.canc <- disposition %>% 
+  filter(STRATA == "Total" & random.assign == "Selected", YEAR == year) %>% 
+  summarize(perc.syst.canc = format(
+    (sum(as.numeric(Trips.canceled.byusers)) / sum(as.numeric(Trips.logged.ODDS))) * 100, digits = 1, nsmall = 1)) %>% 
+  as.character()
 
 # Lowest and highest cancellation rate/stratum for selected trips by strata
 sel.min.canc <- disposition %>% 
@@ -857,8 +812,10 @@ sel.max.canc <- disposition %>%
 ```
 
 ```{r odds_paragraph2, warning=FALSE, include=FALSE}
+
+#' \TODO Not currently used but could/should be?
+ 
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
-#' *2023 AR only: separate by year*
 inherit.min <- logged %>%
                group_by(YEAR, STRATA) %>% 
                summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
@@ -873,7 +830,6 @@ inherit.max <- logged %>%
                mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
                select(YEAR, STRATA, Pct.selected.from.inherit)
 
-#' Waiver impact *2023 AR only: separate by year*
 waiver.min <- logged %>% 
               group_by(YEAR, STRATA) %>% 
               summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
@@ -890,22 +846,25 @@ waiver.max <- logged %>%
 ```
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
+
+#' \TODO Not currently used but could/should be?
+
 # Text strings for reporting on the observer initial selection rates by strata
 pct_txt <- p.table %>% 
            filter(Source == "ODDS random number") %>% 
-           #' *2023 AR only: designate year*
            mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum in ", YEAR)) %>%
            distinct(pct_txt) 
 
 # Extract p-values associated with random selection (H0: observed = expected
 # rates). Merge to the partial look up table to ensure that things stay in order.
-random_pvals <- merge(p.table
-                      , 
-                      partial %>% 
-                      filter(STRATA != "EM TRW EFP") %>% 
-                      distinct(STRATA, formatted_strat)) %>% 
-                filter(Source == "ODDS random number") %>% 
-                select(YEAR, p, formatted_strat)
+random_pvals <- merge(
+  p.table, 
+  partial %>% 
+    filter(STRATA != "EM TRW EFP") %>% 
+    distinct(STRATA, formatted_strat)
+) %>% 
+  filter(Source == "ODDS random number") %>% 
+  select(YEAR, p, formatted_strat)
  
 # Text strings for reporting on the observer FINAL selection rates by strata
 final_pct_txt <- p.table %>% 
@@ -915,13 +874,14 @@ final_pct_txt <- p.table %>%
 
 # Extract p-values associated with FINAL selection (H0: final observed = expected
 # rates).
-final_pvals <- merge(p.table
-                      , 
-                      partial %>% 
-                      filter(STRATA != "EM TRW EFP") %>% 
-                      distinct(STRATA, formatted_strat)) %>% 
-               filter(key == "Expected") %>% 
-               select(YEAR, p, formatted_strat)
+final_pvals <- merge(
+  p.table, 
+  partial %>% 
+    filter(STRATA != "EM TRW EFP") %>% 
+    distinct(STRATA, formatted_strat)
+) %>% 
+  filter(key == "Expected") %>% 
+  select(YEAR, p, formatted_strat)
 ```
 
 The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW EFP* stratum.\
@@ -930,11 +890,11 @@ Logged trips have different dispositions. When initially logged, trips are consi
 \
 The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('disposition.table.2023', display = "cite")`. Of the 4,482 total trips logged, 987 were selected, and 155 were canceled: five by ODDS (0.5%) and 150 by users (15.2%). The user cancellation rate for selected trips among strata ranged from 6.9% for *EM POT* to 21.2% for *OB HAL* in `r year`. These two strata also had the least and greatest cancellation rates in `r year - 1` (2.6% and 41.7% respectively, (Appendix A, Table A-2).\
 \
-The number of completed trips that were randomly selected for monitoring or from inherited monitoring as well as the number of trips that were waived are summarized in `r tbl_nums('logged.table.2023', display = "cite")`. It is notable that 29% of monitoried trips in the *OB HAL* stratum and 22.2% of monitored trips in the *OB POT* stratum were inherited. This was a continuation of what was seen in 2022 in which 35.9% of *OB HAL*, 28.2% of *OB POT* and 17.8% of *OB TRW* trips were monitored via the inherit system (Appendix A, Table A-3). This is in contrast to the fixed-gear EM strata where fewer than 10% of monitored trips were inherited in either year.\
+The number of completed trips that were randomly selected for monitoring or from inherited monitoring as well as the number of trips that were waived are summarized in `r tbl_nums('logged.table', display = "cite")`. It is notable that 29% of monitoried trips in the *OB HAL* stratum and 22.2% of monitored trips in the *OB POT* stratum were inherited. This was a continuation of what was seen in 2022 in which 35.9% of *OB HAL*, 28.2% of *OB POT* and 17.8% of *OB TRW* trips were monitored via the inherit system (Appendix A, Table A-3). This is in contrast to the fixed-gear EM strata where fewer than 10% of monitored trips were inherited in either year.\
 \
 The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip observation expected from (1) random selection of all logged trips (initial random selection) and (2) random selection of remaining trips after cancellations, inherits and waivers. In any case, the proportion of trips selected to be monitored should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated *p*-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exception --- the initial selection rate was 26.50% (*p*-value = 0.012) for the *OB TRW* stratum (`r tbl_nums('Selection.table.2023', display = "cite")`). This means that the *OB TRW* stratum was being over-selected in ODDS. A time series of ODDS initial selection rates and final realized rates is presented in `r fig_nums('odds.by.date.plot.2023', display = "cite")`.\
 \
-The final selection rate after trips were closed, canceled or waived were within expected bounds with the exception of the *OB HAL* and *OB TRW* strata (`r tbl_nums('Selection.table.2023', display = "cite")`). The *OB HAL* stratum had a programmed rate of 17.87% but through the result of cancellations, inherits and waivers ended up being selected at 21.38% (*p*-value = 0.002). The *OB TRW* stratum had an original selection rate of 22.68% but was selected at 26.5%, and through the process of cancellations, inherits and waivers was selected at 29.26% (*p*-value < 0.001; `r tbl_nums('Selection.table.2023', display = "cite")`). While both strata exhibited an increase in monitoring because of inherits, the impact that inherits had to elevate monitoring rates was greater for *OB HAL* than it was for *OB TRW*. The impact of waivers was small, averaging a 1.4% reduction in monitoring rate among strata with the most waived trips within the *OB POT* stratum (`r tbl_nums('logged.table.2023', display = "cite")`).
+The final selection rate after trips were closed, canceled or waived were within expected bounds with the exception of the *OB HAL* and *OB TRW* strata (`r tbl_nums('Selection.table.2023', display = "cite")`). The *OB HAL* stratum had a programmed rate of 17.87% but through the result of cancellations, inherits and waivers ended up being selected at 21.38% (*p*-value = 0.002). The *OB TRW* stratum had an original selection rate of 22.68% but was selected at 26.5%, and through the process of cancellations, inherits and waivers was selected at 29.26% (*p*-value < 0.001; `r tbl_nums('Selection.table.2023', display = "cite")`). While both strata exhibited an increase in monitoring because of inherits, the impact that inherits had to elevate monitoring rates was greater for *OB HAL* than it was for *OB TRW*. The impact of waivers was small, averaging a 1.4% reduction in monitoring rate among strata with the most waived trips within the *OB POT* stratum (`r tbl_nums('logged.table', display = "cite")`).
 
 ## Evaluation of Coverage Rates  
 ```{r Coverage.tbl, message=FALSE, warning=FALSE, include=FALSE}
@@ -1697,9 +1657,9 @@ flextable(disposition.table.2023) %>%
 
 \newpage
 
-`r tbl_nums('logged.table.2023', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator ("Random number selection") and those that remained after user manipulation ("Total final selected") in ', year, '. The relative impact of waivers in trip-selection is also shown ("% reduction of selected trips due to waivers). **Selections not from random numbers.'))` 
+`r tbl_nums('logged.table', caption = paste0('Number of remaining trips after cancellation in each trip-selection stratum that were selected using the initial random number generator ("Random number selection") and those that remained after user manipulation ("Total final selected") in ', year, '. The relative impact of waivers in trip-selection is also shown ("% reduction of selected trips due to waivers). **Selections not from random numbers.'))` 
 
-```{r logged.table.2023, tab.cap=""}
+```{r logged.table, tab.cap=""}
 # Table 3 from 2019 Annual Report
 
 logged.table <- logged.table %>%
@@ -1710,11 +1670,11 @@ logged.table <- logged.table %>%
 
 # 2023
 
-logged.table.2023 <- logged.table %>%
+logged.table <- logged.table %>%
   filter(Year == 2023) %>%
   select(-Year)
 
-flextable(logged.table.2023) %>%
+flextable(logged.table) %>%
   mk_par(j = 3, part = "header",
          value = as_paragraph("Random number selection (", as_i("r"), ")")) %>%
   mk_par(j = 4, part = "header",
@@ -1734,7 +1694,7 @@ flextable(logged.table.2023) %>%
   italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = c(3, 5, nrow(logged.table.2023)), border = fp_border(width = 1)) %>%
+  hline(i = c(3, 5, nrow(logged.table)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.71, unit = "in") %>%
@@ -2163,7 +2123,7 @@ flextable(logged.table.2022) %>%
   italic(j = 1, i = 1:5) %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = c(3, 5, nrow(logged.table.2023)), border = fp_border(width = 1)) %>%
+  hline(i = c(3, 5, nrow(logged.table)), border = fp_border(width = 1)) %>%
   surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.71, unit = "in") %>%
