@@ -1365,74 +1365,12 @@ This section analyzes whether monitored trips are similar to unmonitored trips u
 Six trip metrics were examined in the permutation test. These metrics were as follows: the number of NMFS Areas visited in a trip, trip duration (days), the weight of the landed catch (t), the vessel length (ft), the number of species in the landed catch and the proportion (0 to 1) of the total catch that is made up of the most predominant species (pMax). The metric ‘vessel length’ is used to help interpret the results from ‘weight of landed catch’ since fishing power is positively correlated to vessel length. Specifically, differences in weight and length are interpreted as a failure to achieve a random sample of vessels of different sizes, whereas differences in weight only lend more evidence that there was a monitoring effect. The number of species within the landed portion of the catch is a measure of species richness. Our pMax metric follows the concepts behind Hill’s diversity number *N*~1~ that depicts the number of abundant species (Hill 1973) and is a measure of how “pure” catch is since a value of one would indicate that only the predominant (and presumed desirable) species was landed.  
 
 ### Were monitored trips similar to unmonitored trips?  
-```{r perm_results_2022, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
 
-#' `======2022======`
-
-# Filter the data you want
-dat <- 
-  work.data %>% 
-  filter(ADP == 2022 & STRATA %in% partial$STRATA)
-
-# Identify the field to permute by
-YN_var = "OBSERVED_FLAG"
-
-# Identify the fields to group by (don't include TRIP_ID or the YN_var)
-gp_vec = c("STRATA")
-
-# Detatch the mosaic package
-detach(package:mosaic)
-
-# Run permutation tests
-perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
-
-# Decompose the output
-assign(paste(YN_var, "YN_perm.2022", sep = "."), data.frame(perm[1]))
-assign(paste(YN_var, "summary.2022", sep = "."), data.frame(perm[3]))
-assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FALSE))
-assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
-
-names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
-OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")))
-OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary.2022, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), variable)
-perm_sum <- filter(OBSERVED_FLAG.summary.2022, STRATA != "EM TRW EFP")
-
-# See helper.r documentation on interpret_trip_metrics() 
-perm_sum <- interpret_trip_metrics(dat = perm_sum)
-
-OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% mutate(Metric = replace(Metric, Metric == "Observed difference", "OD"))  # Shorten metric
-OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>% 
-  merge(OBSERVED_FLAG.results, by = "Strata") %>%           # Merge in trip counts of observed/unobserved
-  mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
-         Unobserved = formatC(Unobserved, big.mark = ","))
-
-# REFORMAT RESULTS TABLE:
-OBSERVED_FLAG.results <- rbind(
-  OBSERVED_FLAG.results %>% 
-    filter(Metric %in% c("OD", "OD (%)")) %>% 
-    mutate(across(unique(OBSERVED_FLAG.YN_perm.2022$variable), ~ format(.x, nsmall = 3, digits = 3)))
-  ,
-  OBSERVED_FLAG.results %>% 
-    filter(Metric %in% c("p-value")) %>% 
-    # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
-    mutate(across(unique(OBSERVED_FLAG.YN_perm.2022$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm.2022$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
-                                                                   format(.x, nsmall = 3, digits = 3))))
-) %>% arrange(match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), Metric)
-
-# Replace "0" p-values; extra space in character is an artifact of the previous format()
-
-OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
-OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
-OBSERVED_FLAG.results_2022 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
-```
-
-```{r perm_results_2023, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
-
-#' `======2023======`
+```{r perm_results, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
 
 dat <- 
   work.data %>% 
-  filter(ADP == 2023 & STRATA %in% partial$STRATA)
+  filter(ADP == year & STRATA %in% partial$STRATA)
 
 # Identify the field to permute by
 YN_var = "OBSERVED_FLAG"
@@ -1450,8 +1388,10 @@ assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FA
 assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
 
 names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
-OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")))
-OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), variable)
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA",
+                                                                      "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", 
+                                                                        "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")), variable)
 perm_sum <- filter(OBSERVED_FLAG.summary, STRATA != "EM TRW EFP")
 
 # See helper.r documentation on interpret_trip_metrics() 
@@ -1467,20 +1407,19 @@ OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>%
 OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("OD", "OD (%)")) %>% 
-    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ format(.x, nsmall = 3, digits = 3)))
-  ,
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ format(.x, nsmall = 3, digits = 3))),
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("p-value")) %>% 
     # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
     mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
                                                                    format(.x, nsmall = 3, digits = 3))))
-) %>% arrange(match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), Metric)
+) %>% arrange(match(Strata, c("OB FIXED BSAI", "EM FIXED BSAI", "OB FIXED GOA", "EM FIXED GOA", "OB TRW BSAI", "OB TRW GOA", "EM TRW GOA (EFP)")), Metric)
 
 # Replace "0" p-values; extra space in character is an artifact of the previous format()
 
 OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
-OBSERVED_FLAG.results_2023 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW GOA (EFP)")
 ```
 
 The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table.2023', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
