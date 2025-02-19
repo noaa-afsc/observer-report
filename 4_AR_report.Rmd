@@ -438,11 +438,6 @@ disposition <- merge(
     mutate(Cancellation.Pct = format(round((Trips.canceled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
            Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) 
 
-# Don't include Not Selected trips (random.assign == 0) in cancellation summaries since its not required by user.
-disposition <- disposition %>% mutate(across(
-  c((starts_with("Trips.") | ends_with(".Pct")), -"Trips.logged.ODDS"), 
-  \(x) replace(x, is.na(random.assign) | random.assign == 0, "")))
-
 # Redefine values in random.assign
 disposition <- disposition %>% mutate(random.assign = case_when(
   is.na(random.assign) | random.assign == 1 ~ "Selected",
@@ -451,6 +446,7 @@ disposition <- disposition %>% mutate(random.assign = case_when(
 
 # Then rename some columns for the table
 # Table 3-2 (2019, cancellation rates AFTER random selection) ---- 
+
 disposition.table <-
   disposition %>%
   arrange(YEAR, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total"))) %>%
@@ -1486,22 +1482,20 @@ NMFS. 2013. 2014 Annual Deployment Plan for Observers in the Groundfish and Hali
 
 `r if(tech.memo){'# Tables'}`
 
-`r tbl_nums('trip.budget.tbl.2023', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
+`r tbl_nums('trip.budget.tbl', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
-```{r trip.budget.tbl.2023, tab.cap=""}
+```{r trip.budget.tbl, tab.cap=""}
 
-trip.budget.table.2023 <- trip.budget.table.2023 %>%
+trip.budget.table <- trip.budget.table %>%
   mutate(pred_days = as.numeric(pred_days),
          act_days = as.numeric(act_days)) %>%
   arrange(factor(STRATA, levels = strata.order))
 
-# 2023
-
-flextable(trip.budget.table.2023) %>%
+flextable(trip.budget.table) %>%
   italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
-  hline(i = c(3, 6, nrow(trip.budget.table.2023)), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  hline(i = c(4, 6, 7, nrow(trip.budget.table)), border = fp_border(width = 1)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
   align(j = 2:5, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
@@ -1517,9 +1511,9 @@ flextable(trip.budget.table.2023) %>%
 
 \endLandscape
 
-`r tbl_nums('disposition.table.2023' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
-```{r disposition.table.2023, tab.cap=""}
+```{r disposition.table, tab.cap=""}
 # Table 2 from 2019 Annual Report
 
 disposition.table <- disposition.table %>%
@@ -1528,13 +1522,11 @@ disposition.table <- disposition.table %>%
          `Trips remaining (*c* = *a*-*b*)` = as.numeric(`Trips remaining (*c* = *a*-*b*)`)) %>%
   arrange(factor(Strata, levels = strata.order))
 
-# 2023
-
-disposition.table.2023 <- disposition.table %>%
-  filter(Year == 2023) %>%
+disposition.table <- disposition.table %>%
+  filter(Year == year) %>%
   select(-Year)
 
-flextable(disposition.table.2023) %>%
+flextable(disposition.table) %>%
   mk_par(j = 3, part = "header",
          value = as_paragraph("Logged (", as_i("a"), ")")) %>%
   mk_par(j = 4, part = "header",
@@ -1550,9 +1542,9 @@ flextable(disposition.table.2023) %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = seq(2, nrow(disposition.table.2023), 2)) %>%
-  hline(i = c(6, 10, nrow(disposition.table.2023)), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  hline(i = seq(2, nrow(disposition.table), 2)) %>%
+  hline(i = c(6, 10, nrow(disposition.table)), border = fp_border(width = 1)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.76, unit = "in") %>%
   width(j = 2, 1.38, unit = "in") %>%
