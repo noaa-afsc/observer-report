@@ -1500,7 +1500,7 @@ trip.budget.table <- trip.budget.table %>%
 flextable(trip.budget.table) %>%
   italic(j = 1, i = 1:(nrow(trip.budget.table) - 1)) %>%
   bold(bold = TRUE, part = "header") %>%
-  hline(i = which(diff(as.numeric(as.factor(substr(trip.budget.table$STRATA, 1, 2)))) != 0)) %>%
+  hline(i = v_diff(trip.budget.table$STRATA, 1, 2)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
   align(j = 2:5, part = "all", align = "right") %>%
@@ -1597,7 +1597,7 @@ flextable(logged.table) %>%
   valign(part = "header", valign = "bottom") %>%
   italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
-  hline(i = which(diff(as.numeric(as.factor(substr(logged.table$Strata, 1, 2)))) != 0))
+  hline(i = v_diff(logged.table$Strata, 1, 2)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 1.23, unit = "in") %>%
@@ -1684,13 +1684,13 @@ as_grouped_data(Coverage.Table, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
-  bold(j = 1, i =15) %>%
-  italic(j = 1, i = c(2:4, 6:12, 14)) %>%
-  italic(j = 2:5, part = "header") %>%
-  hline(i = c(3, 9, 11, 12)) %>%
-  hline(i = c(14, 15), border = fp_border(width = 1)) %>%
-  flextable::surround(part = "header", border.top = fp_border(width = 1)) %>%
-  flextable::surround(i = ~ !is.na(Coverage), border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  bold(j = 1, i = ~ Strata == "Total") %>%
+  italic(j = 1, i = ~ !is.na(Strata) & !(Strata %like% "total")) %>%
+  italic(j = c("V", "v", "N", "n"), part = "header") %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  flextable::surround(i = ~ !is.na(Coverage) | Strata == "Total",
+                      border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  flextable::surround(i = ~ Strata %like% "total", border.top = fp_border(width = 1, style = "dashed")) %>%
   add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
   width(j = 1, 1.5, unit = "in") %>%
   width(j = 2:3, 0.38, unit = "in") %>%
@@ -1730,9 +1730,7 @@ flextable(Pollock.observed.table) %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  hline(i = which(Pollock.observed.table$FMP %like% "total")) %>%
-  hline(i = which(Pollock.observed.table$FMP %like% "total") - 1, border = fp_border(style = "dashed")) %>%
-  hline(i = nrow(Pollock.observed.table), border = fp_border(width = 1)) %>%
+  flextable::surround(i = ~FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.81, unit = "in") %>%
@@ -1765,9 +1763,7 @@ flextable(Pollock.efp.table) %>%
   align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  hline(i = which(Pollock.efp.table$FMP %like% "total")) %>%
-  hline(i = which(Pollock.efp.table$FMP %like% "total") - 1, border = fp_border(style = "dashed")) %>%
-  hline(i = nrow(Pollock.efp.table), border = fp_border(width = 1)) %>%
+  flextable::surround(i = ~FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.81, unit = "in") %>%
@@ -1818,7 +1814,7 @@ flextable(OBSERVED_FLAG.results) %>%
 
 `r if(tech.memo){'# Figures'}`
 
-```{r outcomes.plot.2023, warning=FALSE, fig.width=7.5, fig.height=9, dpi = 600}
+```{r outcomes.plot, warning=FALSE, fig.width=7.5, fig.height=9, dpi = 600}
 
 # Make a list of grobs of your figures, set the widths as the maximum among the figures.
 arrange.plot.fxn <- function(plotA, plotB){
@@ -1833,18 +1829,18 @@ arrange.plot.fxn <- function(plotA, plotB){
   grid.arrange(plot_grobs[[1]], plot_grobs[[2]], nrow = 2)
 }
 
-arrange.plot.fxn(outcomes.plot.2023, costs.plot.2023)
+arrange.plot.fxn(outcomes.plot, costs.plot)
 ```
 
-`r fig_nums('outcomes.plot.2023', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
+`r fig_nums('outcomes.plot', caption = paste0('Total number of observer sea days purchased (top panel) and total cost of observing those sea days (bottom panel). Vertical bars signify the range of potential outcomes predicted by the ', year, ' Annual Deployment Plan. Dashed lines signify expected outcomes. Solid lines signify what actually occurred in ', year, '.'))`  
 
 \newpage
 
-```{r odds.by.date.plot.2023, fig.width=7.5, fig.height=8, dpi=600}
-suppressWarnings(print(odds.by.date.plot.2023))
+```{r odds.by.date.plot, fig.width=7.5, fig.height=8, dpi=600}
+suppressWarnings(print(odds.by.date.plot))
 ```
 
-`r fig_nums('odds.by.date.plot.2023', caption = paste0('Rate of selected trips logged into ODDS during ', year, ' organized by original date entered for all trips (gray line and gray text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Gray shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. Vertical tick marks on the x-axis depict dates when selected trips were canceled (gray, on the bottom) and when inherited trips were monitored (black, on the top).'))` 
+`r fig_nums('odds.by.date.plot', caption = paste0('Rate of selected trips logged into ODDS during ', year, ' organized by original date entered for all trips (gray line and gray text), and final date considering only non-canceled trips (black line and black text). The programmed selection rate is depicted as the dotted line. Gray shaded areas denote the range of coverage rate corresponding to the 95% confidence intervals expected from the binomial distribution. Vertical tick marks on the x-axis depict dates when selected trips were canceled (gray, on the bottom) and when inherited trips were monitored (black, on the top).'))` 
 
 \newpage
 
@@ -1864,15 +1860,15 @@ print(Temporal.plot)
 
 \newpage
 
-`r fig_nums('spatial.2023', caption = paste0('Spatial patterns of the distribution of monitoring in partial coverage in ', year, '. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips / deliveries actually monitored relative to the median of 10,000 simulations of random sampling using the stratum’s realized monitoring rate. Cells without a number had the same number of monitored trips / deliveries as the median of the simulations (difference of zero). Cells where the actual number of monitored trips / deliveries was more extreme than 80% of simulated outcomes are colored pink (fewer trips / deliveries than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes are outlined in blue with bold text.'))`
+`r fig_nums('spatial', caption = paste0('Spatial patterns of the distribution of monitoring in partial coverage in ', year, '. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips / deliveries actually monitored relative to the median of 10,000 simulations of random sampling using the stratum’s realized monitoring rate. Cells without a number had the same number of monitored trips / deliveries as the median of the simulations (difference of zero). Cells where the actual number of monitored trips / deliveries was more extreme than 80% of simulated outcomes are colored pink (fewer trips / deliveries than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes are outlined in blue with bold text.'))`
 
 \newpage
 
-`r fig_nums('interspersion.2023', caption = paste0('Stratum-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
+`r fig_nums('interspersion', caption = paste0('Stratum-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
 
 \newpage
 
-`r fig_nums('interspersion_fmp.2023', caption = paste0('Stratum and FMP-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
+`r fig_nums('interspersion_fmp', caption = paste0('Stratum and FMP-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
 
 \newpage
 
@@ -1891,12 +1887,13 @@ OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "E
 OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
 
 # Generate permutation plot 
-Obs.perm.plot.2023 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
+Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
   geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
   geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
   geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
   geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
-  facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
+  facet_wrap(factor(STRATA, levels = c("OB FIXED BSAI", "OB FIXED GOA", 
+  "OB TRW BSAI", "OB TRW GOA", "EM FIXED BSAI", "EM FIXED GOA")) ~ variable, scales = "free", 
              # Make number of cols in facet_wrap = to number of strata
              ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
   geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
@@ -1907,7 +1904,7 @@ Obs.perm.plot.2023 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct
   ylab("Density of outcomes\n") + 
   theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
 
-Obs.perm.plot.2023
+Obs.perm.plot
 ```
 
 `r fig_nums('Obs.perm.plot', caption = paste0('Results from permutation tests depicting percent differences between monitored and unmonitored trips by strata in the partial coverage category. Gray bars depict the distribution of differences between monitored and unmonitored trips when the assignment of monitoring status has been randomized (this represents the sampling distribution under the null hypothesis that monitored and unmonitored trips are the same). The vertical red solid line denotes the actual difference between monitored and unmonitored trips. Values on the x-axis have been scaled to reflect the relative (%) differences in each metric. The *p*-value for each test is denoted in the upper left corner. Low *p*-values (shaded pink) are reason to reject the null hypothesis and conclude that there is an observer effect.'))`  
