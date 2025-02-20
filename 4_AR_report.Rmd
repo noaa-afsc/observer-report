@@ -1,5 +1,5 @@
 ---
-title: "DEPLOYMENT PERFORMANCE REVIEW OF THE 2023 NORTH PACIFIC OBSERVER PROGRAM"
+title: "DEPLOYMENT PERFORMANCE REVIEW OF THE 2024 NORTH PACIFIC OBSERVER PROGRAM"
 always_allow_html: true
 output:
   word_document:
@@ -25,12 +25,12 @@ source("3_helper.R")
 
 ```{r, include=FALSE, eval=FALSE}
 #' Download data. Run this line manually during development, but it won't run during knitting.
-gdrive_download("source_data/2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"), ver = 4)
+gdrive_download("source_data/2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #' Load data and set parameters
-load("source_data/2_AR_data_v004.RData") # This includes the .Random.seed set in 1_AR_data.R
+load("source_data/2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
 
 # Avoid showing code
 knitr::opts_chunk$set(echo = FALSE)
@@ -1322,9 +1322,20 @@ perc_vessels_obs.2023 <- Coverage.Table %>%
   as.numeric()
 ```
 
-```{r em_times, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
-# EM review time (aka data timeliness) now performed in "data_timeliness.Rmd" created by Phil Ganz (NOTE: Requires ROracle and
-# access to CAS)
+```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
+times_smry <- data_timeliness %>%
+              group_by(YEAR, COVERAGE_TYPE, STRATA) %>%
+              summarise(mean_data_timeliness = round(mean(data_timeliness), 2), .groups = "drop") %>% 
+              mutate(label = paste(format(mean_data_timeliness, nsmall = 2)))
+
+times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
+                facet_wrap(STRATA ~ ., scales="free_y", ncol = 2) +
+                geom_histogram(bins = 20, fill="gray70") +
+                geom_vline(data = times_smry, aes(xintercept = mean_data_timeliness), color = "red", lty = 2) +
+                geom_text(data = times_smry, aes(x = mean_data_timeliness, y = Inf, label = label), angle = 90, hjust = 1.2, vjust = -.25) +
+                labs(x = "Data timeliness (days)", y = "Count") +
+                theme_bw()
+
 ```
 
 This section compares the coverage rate achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS; managed by the AKRO), the Observer Program database (NORPAC; managed by the AFSC) and eLandings (under joint management by the Alaska Department of Fish and Game, the IPHC and the NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.\
@@ -1337,7 +1348,7 @@ Evaluations for the full coverage category and zero-selection pool are straightf
 \
 Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for monitored trips) will contain the actual deployment rate 95% percent of the time. If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal.\
 \
-Coverage rates were consistent with expected values in only half of the six partial coverage strata. Coverage rates were higher than expected for the *EM HAL* and *EM POT* strata (`r tbl_nums('Coverage.Table.2023', display = "cite")`). The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('em.times.figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
+Coverage rates were consistent with expected values in only half of the six partial coverage strata. Coverage rates were higher than expected for the *EM HAL* and *EM POT* strata (`r tbl_nums('Coverage.Table.2023', display = "cite")`). The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('times_figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
 \
 Note that there are several reasons why the total number of trips and the final monitoring rates presented in this section differ with what was presented earlier within the ODDS. The *OB HAL* stratum had a higher than expected monitoring rate in ODDS (`r tbl_nums('Selection.table.2023', display = "cite")`), but was within the expected range (although elevated) according to the dataset using eLandings and CAS (`r tbl_nums('Coverage.Table.2023', display = "cite")`). There is no robust link between the ODDS database and eLandings, and therefore, trips in ODDS cannot be linked directly to realized landings in eLandings, which inform the trip identification numbers created by CAS. The FMSC has recommended in past reports that this linkage be established. Moreover, ODDS trips are sometimes not logged as required (see Chapter 5, section 1.5.2, Figure 5.5) and records are not created in ODDS after-the-fact.   
 
@@ -2154,11 +2165,11 @@ suppressWarnings(print(odds.by.date.plot.2023))
 
 \newpage
 
-```{r em.times.figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
-suppressMessages(print(em.times.figure))
+```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
+suppressMessages(print(times_figure))
 ```
 
-`r fig_nums('em.times.figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Dashed red lines and annotations show mean data timeliness.")`  
+`r fig_nums('times_figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Dashed red lines and annotations show mean data timeliness.")`  
 
 \newpage
 
