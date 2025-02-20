@@ -1169,6 +1169,8 @@ Pollock.observed.table <- Pollock.observed %>%
                          FMP == "Gulf of Alaska" ~ "GOA",
                          COVERAGE_TYPE == "Partial" ~ "GOA total",
                          TRUE ~ FMP)) %>% 
+  mutate(COVERAGE_TYPE = case_when(FMP %like% "total" ~ "", TRUE ~ COVERAGE_TYPE) ) %>%
+  #mutate(COVERAGE_TYPE = case_when(FMP == "Total" ~ "", TRUE ~ FMP))
   select(`Year` = ADP,
          `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
@@ -1192,6 +1194,7 @@ Pollock.efp.table <- Pollock.efp %>%
                          FMP == "Gulf of Alaska" ~ "GOA",
                          COVERAGE_TYPE == "Partial" ~ "GOA total",
                          TRUE ~ FMP)) %>% 
+  mutate(COVERAGE_TYPE = case_when(FMP %like% "total" ~ "", TRUE ~ COVERAGE_TYPE) ) %>%
   select(`Year` = ADP,
          `FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
@@ -1407,9 +1410,11 @@ OBSERVED_FLAG.results <- rbind(
   OBSERVED_FLAG.results %>% 
     filter(Metric %in% c("p-value")) %>% 
     # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
-    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
-                                                                   format(.x, nsmall = 3, digits = 3))))
-) %>% arrange(match(Strata, c("OB FIXED BSAI", "EM FIXED BSAI", "OB FIXED GOA", "EM FIXED GOA", "OB TRW BSAI", "OB TRW GOA", "EM TRW GOA (EFP)")), Metric)
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)),
+                                                                   paste0(format(.x, nsmall = 3, digits = 3), "*"), 
+                                                                   format(.x, nsmall = 3, digits = 3))))) %>% 
+  arrange(match(Strata, c("OB FIXED BSAI", "OB FIXED GOA",  "OB TRW BSAI", "OB TRW GOA", 
+                          "EM FIXED BSAI", "EM FIXED GOA","EM TRW GOA (EFP)")), Metric)
 
 # Replace "0" p-values; extra space in character is an artifact of the previous format()
 
@@ -1421,6 +1426,7 @@ OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW GOA 
 The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table.2023', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
 
 # Response to Council and SSC Comments
+
 The Council reviewed the `r year` ADP as part of their 11 June 2022 meeting and made the following recommendation:\
 \
 *The Council supports maintaining the stratification and allocation strategy from the 2022 ADP in 2023. The Council also supports (1) additional fixed gear EM vessels (30% coverage) in the EM pool in 2023 (up to 200 total vessels) provided they opt-in prior to 1 November 2022, additional funding for EM equipment is secured, and they meet the criteria in the ADP and (2) continuation of the pelagic trawl EM project with 100% at-sea monitoring in addition to shoreside observer coverage.*\
@@ -1492,15 +1498,15 @@ trip.budget.table <- trip.budget.table %>%
   arrange(factor(STRATA, levels = strata.order))
 
 flextable(trip.budget.table) %>%
-  italic(j = 1, i = 1:6) %>%
+  italic(j = 1, i = 1:(nrow(trip.budget.table) - 1)) %>%
   bold(bold = TRUE, part = "header") %>%
-  hline(i = c(4, 6, 7, nrow(trip.budget.table)), border = fp_border(width = 1)) %>%
+  hline(i = which(diff(as.numeric(as.factor(substr(trip.budget.table$STRATA, 1, 2)))) != 0)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
   align(j = 2:5, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
-  width(j = 1, 1.125, unit = "in") %>%
-    set_header_labels(values = list(
+  width(j = 1, 1.5, unit = "in") %>%
+  set_header_labels(values = list(
     STRATA = "Strata",
     pred_days = "Predicted",
     act_days = "Actual",
@@ -1543,10 +1549,9 @@ flextable(disposition.table) %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
   hline(i = seq(2, nrow(disposition.table), 2)) %>%
-  hline(i = c(6, 10, nrow(disposition.table)), border = fp_border(width = 1)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.76, unit = "in") %>%
+  width(j = 1, 1.23, unit = "in") %>%
   width(j = 2, 1.38, unit = "in") %>%
   width(j = 3, 0.88, unit = "in") %>%
   width(j = 4, 1, unit = "in") %>%
@@ -1569,36 +1574,33 @@ logged.table <- logged.table %>%
   arrange(factor(Strata, levels = strata.order)) %>%
   ungroup() #' *SHOULD PROBABLY DEAL WITH THIS GROUPING EARLIER*
 
-# 2023
-
 logged.table <- logged.table %>%
-  filter(Year == 2023) %>%
+  filter(Year == year) %>%
   select(-Year)
 
 flextable(logged.table) %>%
-  mk_par(j = 3, part = "header",
+  mk_par(j = 3, part = "header", 
          value = as_paragraph("Random number selection (", as_i("r"), ")")) %>%
-  mk_par(j = 4, part = "header",
+  mk_par(j = 4, part = "header", 
          value = as_paragraph("Inherited selection **(", as_i("i"), ")")) %>%
-  mk_par(j = 5, part = "header",
+  mk_par(j = 5, part = "header", 
          value = as_paragraph("Waived (", as_i("w"), ")")) %>%
-  mk_par(j = 6, part = "header",
-         value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", 
-                              as_i("i"), " - ", as_i("w"), ")")) %>%
-  mk_par(j = 7, part = "header",
+  mk_par(j = 6, part = "header", 
+         value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", as_i("i"), " - ",
+                              as_i("w"), ")")) %>%
+  mk_par(j = 7, part = "header", 
          value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
   mk_par(j = 8, part = "header",
-         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", 
-                              as_i("T"), " + ", as_i("w"), ") \U00D7 100)")) %>%
-  align(j = 2:8, part = "all", align = "right") %>%
+         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", as_i("T"), " + ",
+                              as_i("w"), ") \U00D7 100)")) %>%
+  align(j = ~ . - Strata, part = "all", align = "right") %>%
   valign(part = "header", valign = "bottom") %>%
-  italic(j = 1, i = 1:5) %>%
+  italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
-  merge_v(j = 1) %>%
-  hline(i = c(3, 5, nrow(logged.table)), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  hline(i = which(diff(as.numeric(as.factor(substr(logged.table$Strata, 1, 2)))) != 0))
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.71, unit = "in") %>%
+  width(j = 1, 1.23, unit = "in") %>%
   width(j = c(2, 5), 0.94, unit = "in") %>%
   width(j = 3, 1.31, unit = "in") %>%
   width(j = c(4, 6:7), 1.06, unit = "in") %>%
@@ -1607,21 +1609,19 @@ flextable(logged.table) %>%
 
 \newpage
 
-`r tbl_nums('Selection.table.2023', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
+`r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
 
-```{r Selection.table.2023, tab.cap=""}
+```{r Selection.table, tab.cap=""}
 
 Selection.table <- Selection.table %>%
   mutate(Year = as.factor(Year)) %>%
   arrange(factor(Strata, levels = strata.order))
 
-# 2023
-
-Selection.table.2023 <- Selection.table %>%
-  filter(Year == 2023) %>%
+Selection.table <- Selection.table %>%
+  filter(Year == year) %>%
   select(-Year)
 
-flextable(Selection.table.2023) %>%
+flextable(Selection.table) %>%
   set_header_labels(values = list(
     n = "Selected trips",
     N = "Total trips",
@@ -1629,13 +1629,13 @@ flextable(Selection.table.2023) %>%
     Prog = "Programmed (%)")) %>%
   mk_par(j = 7, part = "header",
          value = as_paragraph(as_i("p"), "-value")) %>%
-  mk_par(j = 2, i = seq(1, nrow(Selection.table.2023), 4), part = "body",
+  mk_par(j = 2, i = seq(1, nrow(Selection.table), 4), part = "body",
          value = as_paragraph("Initial random selection, ", as_i("a"))) %>%
-  mk_par(j = 2, i = seq(2, nrow(Selection.table.2023), 4), part = "body",
+  mk_par(j = 2, i = seq(2, nrow(Selection.table), 4), part = "body",
          value = as_paragraph("After cancellations, ", as_i("b"), " (", as_i("a"), " - ", as_i("b"), ")")) %>%
-  mk_par(j = 2, i = seq(3, nrow(Selection.table.2023), 4), part = "body",
+  mk_par(j = 2, i = seq(3, nrow(Selection.table), 4), part = "body",
          value = as_paragraph("With inherits, ", as_i("c"), " (", as_i("a"), " - ", as_i("b"), " + ", as_i("c"), ")")) %>%
-  mk_par(j = 2, i = seq(4, nrow(Selection.table.2023), 4), part = "body",
+  mk_par(j = 2, i = seq(4, nrow(Selection.table), 4), part = "body",
          value = as_paragraph("After waivers, ", as_i("d"), " (", as_i("a"), " - ", as_i("b"), " + ", 
                               as_i("c"), " - ", as_i("d"), ")")) %>%
   align(j = 3:7, part = "all", align = "right") %>%
@@ -1644,11 +1644,10 @@ flextable(Selection.table.2023) %>%
   bold(bold = TRUE, part = "header") %>%
   italic(j = 1) %>%
   merge_v(j = 1) %>%
-  hline(i = seq(4, nrow(Selection.table.2023), 4)) %>%
-  hline(i = c(12, nrow(Selection.table.2023)), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  hline(i = seq(4, nrow(Selection.table), 4)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 1, 1.23, unit = "in") %>%
   width(j = 2, 2.06, unit = "in") %>%
   width(j = 3, 1.06, unit = "in") %>%
   width(j = 4:5, 0.88, unit = "in") %>%
@@ -1658,9 +1657,9 @@ flextable(Selection.table.2023) %>%
 
 \newpage
 
-`r tbl_nums('Coverage.Table.2023', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*) and sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
+`r tbl_nums('Coverage.Table', caption = paste0('Number of total vessels (*V*), sampled vessels (*v*), total trips (*N*) and sampled trips (*n*) for each stratum in ', year, '. The coverage and 95% confidence interval columns are expressed as percentages of the total number of trips taken within each stratum.'))`  
 
-```{r Coverage.Table.2023, tab.cap=""}
+```{r Coverage.Table, tab.cap=""}
 
 Coverage.Table <- Coverage.Table %>% 
   mutate(Strata = as.character(Strata),
@@ -1677,22 +1676,21 @@ Coverage.Table <- Coverage.Table %>%
   arrange(factor(Strata, levels = strata.order)) %>%
   arrange(factor(Coverage, levels = c("Full coverage", "Partial coverage", "Zero coverage")))
  
-# 2023
-Coverage.Table.2023 <- Coverage.Table %>%
-  filter(Year == 2023) %>%
+Coverage.Table <- Coverage.Table %>%
+  filter(Year == year) %>%
   select(-Year)
 
-as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
+as_grouped_data(Coverage.Table, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
   bold(j = 1, i =15) %>%
   italic(j = 1, i = c(2:4, 6:12, 14)) %>%
   italic(j = 2:5, part = "header") %>%
-  hline(i = c(3, 8, 11)) %>%
+  hline(i = c(3, 9, 11, 12)) %>%
   hline(i = c(14, 15), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1)) %>%
-  surround(i = ~ !is.na(Coverage), border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1)) %>%
+  flextable::surround(i = ~ !is.na(Coverage), border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
   width(j = 1, 1.5, unit = "in") %>%
   width(j = 2:3, 0.38, unit = "in") %>%
@@ -1712,7 +1710,7 @@ as_grouped_data(Coverage.Table.2023, groups = "Coverage") %>%
 
 `r tbl_nums('Pollock.observed.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
-```{r Pollock.observed.table.2023, tab.cap=""}
+```{r Pollock.observed.table, tab.cap=""}
 
 Pollock.observed.table <- 
   Pollock.observed.table %>%
@@ -1720,9 +1718,9 @@ Pollock.observed.table <-
          `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
 
-Pollock.observed.table.2023 <- Pollock.observed.table %>% filter(Year == year) %>% select(-Year)
+Pollock.observed.table <- Pollock.observed.table %>% filter(Year == year) %>% select(-Year)
 
-flextable(Pollock.observed.table.2023) %>%
+flextable(Pollock.observed.table) %>%
   mk_par(j = 4, part = "header",
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
   mk_par(j = 5, part = "header",
@@ -1732,9 +1730,10 @@ flextable(Pollock.observed.table.2023) %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  hline(i = c(4, 9)) %>%
-  hline(i = nrow(Pollock.observed.table.2023), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  hline(i = which(Pollock.observed.table$FMP %like% "total")) %>%
+  hline(i = which(Pollock.observed.table$FMP %like% "total") - 1, border = fp_border(style = "dashed")) %>%
+  hline(i = nrow(Pollock.observed.table), border = fp_border(width = 1)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.81, unit = "in") %>%
   width(j = 2, 1.39, unit = "in") %>%
@@ -1748,7 +1747,7 @@ flextable(Pollock.observed.table.2023) %>%
 
 `r tbl_nums('Pollock.efp.table.2023', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
-```{r Pollock.efp.table.2023, tab.cap=""}
+```{r Pollock.efp.table, tab.cap=""}
 
 Pollock.efp.table <-
   Pollock.efp.table %>%
@@ -1756,9 +1755,9 @@ Pollock.efp.table <-
          `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
 
-Pollock.efp.table.2023 <- Pollock.efp.table %>% filter(Year == year) %>% select(-Year)
+Pollock.efp.table <- Pollock.efp.table %>% filter(Year == year) %>% select(-Year)
 
-flextable(Pollock.efp.table.2023) %>%
+flextable(Pollock.efp.table) %>%
   mk_par(j = 4, part = "header",
          value = as_paragraph("Total deliveries (", as_i("N"), ")")) %>%
   mk_par(j = 5, part = "header",
@@ -1766,9 +1765,10 @@ flextable(Pollock.efp.table.2023) %>%
   align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  hline(i = c(4, 9)) %>%
-  hline(i = nrow(Pollock.efp.table.2023), border = fp_border(width = 1)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  hline(i = which(Pollock.efp.table$FMP %like% "total")) %>%
+  hline(i = which(Pollock.efp.table$FMP %like% "total") - 1, border = fp_border(style = "dashed")) %>%
+  hline(i = nrow(Pollock.efp.table), border = fp_border(width = 1)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 0.81, unit = "in") %>%
   width(j = 2, 1.39, unit = "in") %>%
@@ -1780,22 +1780,25 @@ flextable(Pollock.efp.table.2023) %>%
 
 \newpage
 
-`r tbl_nums('perm.summary.table.2023', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
+`r tbl_nums('perm.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
 
-```{r perm.summary.table.2023, tab.cap=""}
-flextable(OBSERVED_FLAG.results_2023) %>%
+```{r perm.summary.table, tab.cap=""}
+
+OBSERVED_FLAG.results.sig <- lapply(OBSERVED_FLAG.results, function(x) grepl("[*]", x))
+
+flextable(OBSERVED_FLAG.results) %>%
   bold(bold = TRUE, part = "header") %>%
   italic(j = 1, part = "body") %>%
-  hline(i = seq(3, nrow(OBSERVED_FLAG.results_2023), 3)) %>%
-  surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
-   mk_par(j = 4, i = seq(3, nrow(OBSERVED_FLAG.results_2023), 3), part = "body",
+  hline(i = seq(3, nrow(OBSERVED_FLAG.results), 3)) %>%
+  flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+   mk_par(j = 4, i = seq(3, nrow(OBSERVED_FLAG.results), 3), part = "body",
          value = as_paragraph(as_i("p"), "-value")) %>%
   merge_v(j = c("Strata", "Observed", "Unobserved")) %>%
   align(j = 2:10, part = "all", align = "right") %>%
   valign(j = 1:3, part = "body", valign = "top") %>%
   valign(part = "header", valign = "bottom") %>%
   fix_border_issues() %>%
-  width(j = 1, 0.75, unit = "in") %>%
+  width(j = 1, 1.23, unit = "in") %>%
   width(j = 2, 0.81, unit = "in") %>%
   width(j = c(3, 6), 0.94, unit = "in") %>%
   width(j = 4, 0.69, unit = "in") %>%
@@ -1803,13 +1806,12 @@ flextable(OBSERVED_FLAG.results_2023) %>%
   width(j = c(7, 10), 1.25, unit = "in") %>%
   width(j = 8, 1.13, unit = "in") %>%
   width(j = 9, 1.03, unit = "in") %>%
-  # Highlight significant factors
-  bold(j = c(6, 10), i = 1:3, bold = TRUE, part = "body") %>%
-  bold(j = 8, i = 4:6, bold = TRUE, part = "body") %>%
-  bold(j = 9, i = 13:15, bold = TRUE, part = "body") %>%
-  italic(j = c(6, 10), i = 1:3, part = "body") %>%
-  italic(j = 8, i = 4:6, part = "body") %>%
-  italic(j = 9, i = 13:15, part = "body")
+  bold(j = 5, i = OBSERVED_FLAG.results.sig[[5]]) %>%
+  bold(j = 6, i = OBSERVED_FLAG.results.sig[[6]]) %>%
+  bold(j = 7, i = OBSERVED_FLAG.results.sig[[7]])%>%
+  bold(j = 8, i = OBSERVED_FLAG.results.sig[[8]])%>%
+  bold(j = 9, i = OBSERVED_FLAG.results.sig[[9]])%>%
+  bold(j = 10, i = OBSERVED_FLAG.results.sig[[10]])
 ```
 
 \endPortrait
