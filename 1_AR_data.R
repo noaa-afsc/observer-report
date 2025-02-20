@@ -179,11 +179,6 @@ ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 # The following query returns all landing ID's for offloads monitored for salmon all sectors.
 salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 
-# Data checks and clean up
-
-# Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
-salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
-
 # * ODDS ----
 
 # Queries
