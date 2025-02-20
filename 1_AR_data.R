@@ -376,11 +376,27 @@ em_data_available <- dbGetQuery(channel_akro, paste("
 select h.ODDS_TRIP_NUMBER, 
 -- sampling strata information
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
-decode(ss.sampling_strata_code,
-'EM_H', 'EM_HAL',
-'EM_P', 'EM_POT',
-'H'   , 'EM_HAL',
-'P'   , 'EM_POT') as strata,
+case
+when ss.sampling_strata_code in 'EM_H' then 'EM HAL'
+when ss.sampling_strata_code in 'EM_P' then 'EM POT'
+when ss.sampling_strata_code in 'EM_TrawlFullCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverageTen' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'F' then 'FULL'
+when ss.sampling_strata_code in 'H' then 'HAL'
+when ss.sampling_strata_code in 'N' then 'ZERO'
+when ss.sampling_strata_code in 'N/A' then 'NA'
+when ss.sampling_strata_code in 'P' then 'POT'
+when ss.sampling_strata_code in 'TR' then 'TRW'
+when ss.sampling_strata_code in 'EM_FG_BSAI' then 'EM FIXED BSAI'
+when ss.sampling_strata_code in 'EM_FG_GOA' then 'EM FIXED GOA'
+when ss.sampling_strata_code in 'EM_TR_BSAI' then 'EM TRW BSAI (EFP)'
+when ss.sampling_strata_code in 'EM_TR_GOA' then 'EM TRW GOA (EFP)'
+when ss.sampling_strata_code in 'FG_BSAI' then 'OB FIXED BSAI'
+when ss.sampling_strata_code in 'FG_GOA' then 'OB FIXED GOA'
+when ss.sampling_strata_code in 'TR_BSAI' then 'OB TRW BSAI'
+when ss.sampling_strata_code in 'TR_GOA' then 'OB TRW GOA'
+else ss.sampling_strata_code end as strata,
 trunc(min(r.EFFECTIVE_DATE)) data_available
 from AKFISH_REPORT.CATCH_REPORT_SOURCE r
 join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
@@ -392,11 +408,27 @@ and r.CATCH_REPORT_TYPE_CODE = 'EM'
 and ss.sampling_strata_code != 'N/A'
 group by h.ODDS_TRIP_NUMBER,
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end,
-decode(ss.sampling_strata_code,
-'EM_H', 'EM_HAL',
-'EM_P', 'EM_POT',
-'H'   , 'EM_HAL',
-'P'   , 'EM_POT')
+case
+when ss.sampling_strata_code in 'EM_H' then 'EM HAL'
+when ss.sampling_strata_code in 'EM_P' then 'EM POT'
+when ss.sampling_strata_code in 'EM_TrawlFullCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverageTen' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'F' then 'FULL'
+when ss.sampling_strata_code in 'H' then 'HAL'
+when ss.sampling_strata_code in 'N' then 'ZERO'
+when ss.sampling_strata_code in 'N/A' then 'NA'
+when ss.sampling_strata_code in 'P' then 'POT'
+when ss.sampling_strata_code in 'TR' then 'TRW'
+when ss.sampling_strata_code in 'EM_FG_BSAI' then 'EM FIXED BSAI'
+when ss.sampling_strata_code in 'EM_FG_GOA' then 'EM FIXED GOA'
+when ss.sampling_strata_code in 'EM_TR_BSAI' then 'EM TRW BSAI (EFP)'
+when ss.sampling_strata_code in 'EM_TR_GOA' then 'EM TRW GOA (EFP)'
+when ss.sampling_strata_code in 'FG_BSAI' then 'OB FIXED BSAI'
+when ss.sampling_strata_code in 'FG_GOA' then 'OB FIXED GOA'
+when ss.sampling_strata_code in 'TR_BSAI' then 'OB TRW BSAI'
+when ss.sampling_strata_code in 'TR_GOA' then 'OB TRW GOA'
+else ss.sampling_strata_code end
 order by h.ODDS_TRIP_NUMBER"))
 
 ob_trips <- dbGetQuery(channel_afsc, paste("
@@ -411,17 +443,27 @@ ob_hauls <- dbGetQuery(channel_akro, paste("
 select h.cruise, to_char(v.vessel_id) as permit, h.trip_seq,
 -- sampling strata information
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
-decode(ss.sampling_strata_code,
-'EM_H', 'EM_HAL',
-'EM_P', 'EM_POT',
-'EM_TrawlFullCoverage', 'EM_TRW_EFP',
-'EM_TrawlPartialCoverage', 'EM_TRW_EFP',
-'EM_TrawlPartialCoverageTen', 'EM_TRW_EFP',
-'F', 'FULL',
-'H', 'HAL',
-'N', 'ZERO',
-'P', 'POT',
-'TR', 'TRW') as strata,
+case
+when ss.sampling_strata_code in 'EM_H' then 'EM HAL'
+when ss.sampling_strata_code in 'EM_P' then 'EM POT'
+when ss.sampling_strata_code in 'EM_TrawlFullCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverageTen' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'F' then 'FULL'
+when ss.sampling_strata_code in 'H' then 'HAL'
+when ss.sampling_strata_code in 'N' then 'ZERO'
+when ss.sampling_strata_code in 'N/A' then 'NA'
+when ss.sampling_strata_code in 'P' then 'POT'
+when ss.sampling_strata_code in 'TR' then 'TRW'
+when ss.sampling_strata_code in 'EM_FG_BSAI' then 'EM FIXED BSAI'
+when ss.sampling_strata_code in 'EM_FG_GOA' then 'EM FIXED GOA'
+when ss.sampling_strata_code in 'EM_TR_BSAI' then 'EM TRW BSAI (EFP)'
+when ss.sampling_strata_code in 'EM_TR_GOA' then 'EM TRW GOA (EFP)'
+when ss.sampling_strata_code in 'FG_BSAI' then 'OB FIXED BSAI'
+when ss.sampling_strata_code in 'FG_GOA' then 'OB FIXED GOA'
+when ss.sampling_strata_code in 'TR_BSAI' then 'OB TRW BSAI'
+when ss.sampling_strata_code in 'TR_GOA' then 'OB TRW GOA'
+else ss.sampling_strata_code end as strata,
 trunc(min(r.EFFECTIVE_DATE)) data_available
 from AKFISH_REPORT.CATCH_REPORT_SOURCE r
 join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
@@ -434,17 +476,27 @@ and r.CATCH_REPORT_TYPE_CODE = 'OBS'
 and ss.sampling_strata_code != 'N/A'
 group by h.cruise, v.vessel_id, h.trip_seq,
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end,
-decode(ss.sampling_strata_code,
-'EM_H', 'EM_HAL',
-'EM_P', 'EM_POT',
-'EM_TrawlFullCoverage', 'EM_TRW_EFP',
-'EM_TrawlPartialCoverage', 'EM_TRW_EFP',
-'EM_TrawlPartialCoverageTen', 'EM_TRW_EFP',
-'F', 'FULL',
-'H', 'HAL',
-'N', 'ZERO',
-'P', 'POT',
-'TR', 'TRW')"))
+case
+when ss.sampling_strata_code in 'EM_H' then 'EM HAL'
+when ss.sampling_strata_code in 'EM_P' then 'EM POT'
+when ss.sampling_strata_code in 'EM_TrawlFullCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverage' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'EM_TrawlPartialCoverageTen' then 'EM TRW (EFP)'
+when ss.sampling_strata_code in 'F' then 'FULL'
+when ss.sampling_strata_code in 'H' then 'HAL'
+when ss.sampling_strata_code in 'N' then 'ZERO'
+when ss.sampling_strata_code in 'N/A' then 'NA'
+when ss.sampling_strata_code in 'P' then 'POT'
+when ss.sampling_strata_code in 'TR' then 'TRW'
+when ss.sampling_strata_code in 'EM_FG_BSAI' then 'EM FIXED BSAI'
+when ss.sampling_strata_code in 'EM_FG_GOA' then 'EM FIXED GOA'
+when ss.sampling_strata_code in 'EM_TR_BSAI' then 'EM TRW BSAI (EFP)'
+when ss.sampling_strata_code in 'EM_TR_GOA' then 'EM TRW GOA (EFP)'
+when ss.sampling_strata_code in 'FG_BSAI' then 'OB FIXED BSAI'
+when ss.sampling_strata_code in 'FG_GOA' then 'OB FIXED GOA'
+when ss.sampling_strata_code in 'TR_BSAI' then 'OB TRW BSAI'
+when ss.sampling_strata_code in 'TR_GOA' then 'OB TRW GOA'
+else ss.sampling_strata_code end"))
 
 afsc_offloads <- dbGetQuery(channel_afsc, paste("
 select distinct extract(year from delivery_end_date) as year, to_char(offload_join) offload_join, delivery_end_date, date_of_entry
@@ -463,10 +515,27 @@ with j as (
     select to_char(r.offload_join) offload_join,
     -- sampling strata information
     case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
-    decode(ss.sampling_strata_code,
-    'EM_TrawlFullCoverage', 'EM_TRW_EFP',
-    'EM_TrawlPartialCoverage', 'EM_TRW_EFP',
-    'EM_TrawlPartialCoverageTen', 'EM_TRW_EFP') as strata
+    case
+    when ss.sampling_strata_code in 'EM_H' then 'EM HAL'
+    when ss.sampling_strata_code in 'EM_P' then 'EM POT'
+    when ss.sampling_strata_code in 'EM_TrawlFullCoverage' then 'EM TRW (EFP)'
+    when ss.sampling_strata_code in 'EM_TrawlPartialCoverage' then 'EM TRW (EFP)'
+    when ss.sampling_strata_code in 'EM_TrawlPartialCoverageTen' then 'EM TRW (EFP)'
+    when ss.sampling_strata_code in 'F' then 'FULL'
+    when ss.sampling_strata_code in 'H' then 'HAL'
+    when ss.sampling_strata_code in 'N' then 'ZERO'
+    when ss.sampling_strata_code in 'N/A' then 'NA'
+    when ss.sampling_strata_code in 'P' then 'POT'
+    when ss.sampling_strata_code in 'TR' then 'TRW'
+    when ss.sampling_strata_code in 'EM_FG_BSAI' then 'EM FIXED BSAI'
+    when ss.sampling_strata_code in 'EM_FG_GOA' then 'EM FIXED GOA'
+    when ss.sampling_strata_code in 'EM_TR_BSAI' then 'EM TRW BSAI (EFP)'
+    when ss.sampling_strata_code in 'EM_TR_GOA' then 'EM TRW GOA (EFP)'
+    when ss.sampling_strata_code in 'FG_BSAI' then 'OB FIXED BSAI'
+    when ss.sampling_strata_code in 'FG_GOA' then 'OB FIXED GOA'
+    when ss.sampling_strata_code in 'TR_BSAI' then 'OB TRW BSAI'
+    when ss.sampling_strata_code in 'TR_GOA' then 'OB TRW GOA'
+    else ss.sampling_strata_code end as strata
     from akfish_report.catch_report_source r
     join akfish_report.catch_report_species_fact f on f.catch_report_source_pk = r.catch_report_source_pk
     join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
@@ -508,7 +577,7 @@ offload_data_timeliness <- afsc_offloads %>%
          data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")) + 1)
 
 data_timeliness <- rbind(em_data_timeliness, ob_data_timeliness, offload_data_timeliness) %>% 
-  filter(STRATA %in% c("EM_POT", "EM_HAL", "EM_TRW_EFP", "HAL", "TRW", "POT")) %>% 
+  filter(STRATA %in% c("EM FIXED BSAI", "EM FIXED GOA", "EM TRW BSAI (EFP)", "EM TRW GOA (EFP)", "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA")) %>% 
   mutate(data_timeliness = ifelse(data_timeliness < 0, 0, data_timeliness)) %>% 
   group_by(TRIP_NUMBER) %>% 
   filter(n_distinct(COVERAGE_TYPE) == 1 & n_distinct(STRATA) == 1) %>% 
