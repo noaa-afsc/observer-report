@@ -44,8 +44,8 @@ options(dplyr.summarise.inform = FALSE)
 # Set table output default settings
 set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 
-# Set order of strata
-strata.order <- c("Full", "OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT", "EM TRW EFP", "Zero coverage", "Total")
+#'[TODO: update strata - EFP split by FMP now, fixed gears merged] Set order of strata
+strata.order <- c("FULL", "EM TRW BSAI (EFP)", "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)", "ZERO")
 
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included and formatting of table/figure captions.
