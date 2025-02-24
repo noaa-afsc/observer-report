@@ -151,43 +151,8 @@ The following items from the `r year` ADP have been identified as objectives for
 
 ```{r actual_observerdays_paid, include=FALSE}
 
-#' `------------2022--------------`
-
 # Available budget for the year (in days)
-AvailableYR.2022 <- adj_tbl.2022 %>% 
-  group_by(SIM_ITER, STEP) %>% 
-  summarise(OB_D = sum(OB_D)) %>% 
-  ungroup() %>% 
-  summarise(OB_D = mean(OB_D)) %>% 
-  unlist() %>%
-  as.vector()
-  
-#' Predicted cost for the year (in days)
-PredictedYR.2022 <- bud_scen_lst.2022$bud_TYFCPN$BUD$AFF_D
-
-# Actual number of observer days paid for
-ActualYR.2022 <- days_paid.2022 %>% 
-  replace(is.na(.), 0) %>%
-  summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
-  unlist() %>% 
-  as.vector()
-
-# Percent of budget predicted to be spent
-eval.2022 <- data.frame(ActualYR.2022, AvailableYR.2022) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
-  mutate(
-    # Percent of the budget used
-    pct.budget.spent = round(ActualYR.2022/AvailableYR.2022, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
-    # Percent of budget remaining
-    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
-    # Was it more, less, or equal to the predicted budget?
-    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
-                          ifelse(pct.budget.remain == 0, "equal to",
-                                 " greater than ")))
-
-#' `------------2023--------------`
-
-# Available budget for the year (in days)
-AvailableYR.2023 <- adj_tbl.2023 %>% 
+AvailableYR <- adj_tbl %>% 
   group_by(SIM_ITER, STEP) %>% 
   summarise(OB_D = sum(OB_D)) %>% 
   ungroup() %>% 
@@ -196,20 +161,20 @@ AvailableYR.2023 <- adj_tbl.2023 %>%
   as.vector()
   
 # Predicted cost for the year (in days)
-PredictedYR.2023 <- bud_scen_lst.2023$bud_TYFCPN$BUD$AFF_D
+PredictedYR <- bud_scen_lst$bud_TYFCPN$BUD$AFF_D
 
 # Actual number of observer days paid for
-ActualYR.2023 <- days_paid.2023 %>% 
+ActualYR <- days_paid %>% 
   replace(is.na(.), 0) %>%
   summarise(Total.Days = sum(Base_Days + na.omit(Option_Days))) %>% 
   unlist() %>% 
   as.vector()
 
 # Percent of budget predicted to be spent
-eval.2023 <- data.frame(ActualYR.2023, AvailableYR.2023) %>%
+eval <- data.frame(ActualYR, AvailableYR) %>%
   mutate(
     # Percent of the budget used
-    pct.budget.spent = round(ActualYR.2023/AvailableYR.2023, digits = 3) * 100,
+    pct.budget.spent = round(ActualYR/AvailableYR, digits = 3) * 100,
     # Percent of budget remaining
     pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
     # Was it more, less, or equal to the predicted budget?
@@ -217,7 +182,7 @@ eval.2023 <- data.frame(ActualYR.2023, AvailableYR.2023) %>%
                           ifelse(pct.budget.remain == 0, "equal to",
                                  " greater than ")))
 
-rm(Nnd_tbl.2022, Nnd_tbl.2023)
+rm(Nnd_tbl)
 ```
 
 - **Deploy for the planned number of sea days.** This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP.\
