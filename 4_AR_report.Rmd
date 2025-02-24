@@ -61,8 +61,8 @@ if(annual.report){
 ```{r set-options, message=FALSE, warning=FALSE}
 #Total deployment strata:
 # 2 full coverage (FULL, EM TRW EFP[BSAI])
-# 3 partial coverage observed (OB HAL, OB POT, OB TRW)
-# 3 partial coverage EM (EM HAL, EM POT, EM TRW EFP[GOA]) + 
+# 4 partial coverage observed (OB FIXED BSAI, OB FIXED GOA, OB TRW BSAI, OB TRW GOA)
+# 3 partial coverage EM (EM FIXED BSAI, EM FIXED GOA, EM TRW EFP[GOA]) + 
 # 0 zero coverage EM research (Zero EM Research) +
 # 1 zero coverage (ZERO)
 total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
