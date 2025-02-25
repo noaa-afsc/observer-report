@@ -186,28 +186,33 @@ tbl.percentile.stratum <- percentile.stratum %>%
 #' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
 proximity_maps <- plot_interspersion_map(box_def.stratum_fmp, real_interspersion.stratum_fmp, exp_interspersion.realized.stratum_fmp, exp_interspersion.programmed)
 
-# In 2022 for OB_TRW, gaps in weeks 20-27 (find # of trips)
-proximity_maps[["2022.OB_TRW"]]$BOX
-proximity_maps[["2022.OB_TRW"]]$HEX_ID.realized  
-#' Overall more red than blue, meaning the monitoring was more clumped in space than expected given the realized distribution
+#' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
 
-# In 2022 for OB_HAL, many gaps in the BSAI, especially in the middle of the year
-proximity_maps[["2022.OB_HAL"]]$BOX
-proximity_maps[["2022.OB_HAL"]]$HEX_ID.realized  
-#' Can see the Pribilof Islands were below expected given the realized monitoring rate
-# Interestingly, we actually had higher than programmed rates in the BSAI, but it must have been concentrated in the AI and not the BS
+proximity_maps[[paste0(year, ".OB_FIXED_BSAI")]]$BOX
+proximity_maps[[paste0(year, ".OB_FIXED_BSAI")]]$HEX_ID.realized  
+# Range of expected differences is very tight (-1 to 1) so nothing surprising here
 
-# EM_HAL and EM_POT at the time of analysis had many fewer than expected trips in the panhandle. 
-# We see more gaps in the latter half of the year when review fell behind.
-proximity_maps[["2022.EM_HAL"]]$BOX
-proximity_maps[["2022.EM_HAL"]]$HEX_ID.realized
+proximity_maps[[paste0(year, ".OB_FIXED_GOA")]]$BOX
+proximity_maps[[paste0(year, ".OB_FIXED_GOA")]]$HEX_ID.realized  
+#' Gaps in WGOA 610 during weeks 16-27
 
-proximity_maps[["2022.EM_POT"]]$BOX
-proximity_maps[["2022.EM_POT"]]$HEX_ID.realized
+proximity_maps[[paste0(year, ".OB_TRW_BSAI")]]$BOX
+proximity_maps[[paste0(year, ".OB_TRW_BSAI")]]$HEX_ID.realized
+#' No gaps, stratum is in only two cells...
 
-#' EM_TRW_EFP. In 2022, had FEWER gaps than expected near Kodiak. In 2023, the opposite, MORE gaps near Kodiak
-proximity_maps[["2022.EM_TRW_EFP"]]$HEX_ID.realized
-proximity_maps[["2023.EM_TRW_EFP"]]$HEX_ID.realized
+proximity_maps[[paste0(year, ".OB_TRW_GOA")]]$BOX
+proximity_maps[[paste0(year, ".OB_TRW_GOA")]]$HEX_ID.realized
+#' Small gap in WGOA? Only two fewer trips?
+#' \TODO Why is there a trip in the BSAI here?
+
+proximity_maps[[paste0(year, ".EM_FIXED_BSAI")]]$BOX
+proximity_maps[[paste0(year, ".EM_FIXED_BSAI")]]$HEX_ID.realized
+#' Seem to have lower than expected monitoring for BSAI trips in EBSAI/WGOA
+
+proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$BOX
+proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$HEX_ID.realized
+#' Data needs to be fixed here, but it looks like a bunch of 640 trips were monitored? These plots use the realized 
+#' monitoring rate, not programmed, so this distribution should change as the data is fixed. Still, kind of strange.
 
 ### Proximity (coverage, but with a spatial focus) ####
 
@@ -232,8 +237,9 @@ proximity_maps[["2023.EM_TRW_EFP"]]$HEX_ID.realized
 
 # These plots use the simulation results rather than the averages
 spatial_plots_cov <- plot_spatial_coverage(box_def.stratum, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels)
-plt.spatial_cov.2022 <- spatial_plots_cov$coverage_2022
-plt.spatial_cov.2023 <- spatial_plots_cov$coverage_2023
+plt.spatial_cov <- spatial_plots_cov$coverage
+
+#' \TODO Remove blank facet
 
 #' *====================================================================================================================*
 # Spatial Analyses ####
@@ -247,8 +253,10 @@ plt.spatial_cov.2023 <- spatial_plots_cov$coverage_2023
 #' extreme than 80% of outcomes.
 
 spatial_plots <- plot_monitoring_spatial(box_def.stratum, realized_mon, sim.realized.stratum, strata_levels)
-plt.spatial.2022 <- spatial_plots$plt.spatial.2022
-plt.spatial.2023 <- spatial_plots$plt.spatial.2023
+plt.spatial <- spatial_plots$plt.spatial.2024
+
+#' \TODO Remove blank facet
+#' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias 
 
 #' *====================================================================================================================*
 # Realized vs Expected Domain Interspersion of OB with EM and ZERO -----------------------------------------------------
