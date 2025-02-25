@@ -789,7 +789,7 @@ simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry =
         }
       ), idcol = "ITER")
     }))
-    
+    cat("\n")
     setattr(sim_dt, "hex_smry", hex_smry_dt)
 
   }
