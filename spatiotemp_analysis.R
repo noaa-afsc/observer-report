@@ -7,6 +7,10 @@ library(sfheaders)   # for sf_remove_holes
 library(dplyr)       # for piping and some data munging functions
 library(flextable)   # for creating print-ready tables
 
+# Set the simulation parameters
+sim_iter <- 1e3      # 1e3 iterations is good for testing quickly, 1e4 is better for the final run
+seed <- 12345
+
 # Assign the address of Shared Gdrive operations for this project
 project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
 
@@ -80,8 +84,8 @@ if(!fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, 
   stop("STRATA and ADP in `pc_effort_dt` does not match those in `programmed_rates!`")
 }
 
-# Specify ordering of strata
-strata_levels <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "EM_TRW_GOA_(EFP)", "ZERO")
+# Specify ordering of strata. Adding a blank stratum for the sake of aligning BSAI/GOA in plots.
+strata_levels <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "", "EM_TRW_GOA_(EFP)")
 
 
 ## Define Boxes ----
@@ -112,16 +116,17 @@ real_interspersion.stratum <- calculate_realized_interspersion(box_def.stratum, 
 
 ### Simulate trip selection to create distributions of interspersion ----
 
-
+#' This will take a few minutes. 
+#' #' \TODO Consider speeding this up before adding this script to 4_AR_report.Rmd
 #' [Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = TRUE`]
 # Programmed rates
-sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = 1e4, seed = 12345, hex_smry = TRUE)
+sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = sim_iter, seed = seed, hex_smry = TRUE)
 # Realized rates
-sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = 1e4, seed = 12345, hex_smry = TRUE)
+sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = sim_iter, seed = seed, hex_smry = TRUE)
 
 #' `Quickload`
-# save(sim.programmed.stratum, sim.realized.stratum, file = "output_data/spatiotemp_stratum_insp_i1e4.rdata")
-# load("output_data/spatiotemp_stratum_insp_i1e4.rdata")
+# save(sim.programmed.stratum, sim.realized.stratum, file = paste0("output_data/spatiotemp_stratum_insp_i", sim_iter, ".rdata"))
+# load(paste0("output_data/spatiotemp_stratum_insp_i", sim_iter, ".rdata"))
 
 # Calculate density of both distributions
 density.programmed.stratum <- calculate_density(sim.programmed.stratum, "dodgerblue", adjust = 2)
@@ -137,25 +142,33 @@ dmn_N.stratum[, X := pmin(X, INSP)]
 dmn_N.stratum[, STRATA_DMN_N := formatC(round(STRATA_DMN_N), width = max(nchar(round(STRATA_DMN_N))))]
 
 #' Plot distributions vs actually realized
-#' [2022]
-plt.proximity.stratum.2022 <- plot_interspersion_density(
-  density.stratum[ADP == 2022], real_interspersion.stratum[ADP == 2022], dmn_N.stratum[ADP == 2022], strata_levels) + 
+plt.proximity.stratum <- plot_interspersion_density(
+  density.stratum[STRATA != "ZERO"], real_interspersion.stratum[STRATA != "ZERO"], dmn_N.stratum[STRATA != "ZERO"], strata_levels) + 
   facet_nested_wrap(
-    STRATA ~ ., dir = "v", nrow = 3, scales = "free", 
-    labeller = labeller(STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x) )))
-#' [2023]
-plt.proximity.stratum.2023 <- plot_interspersion_density(
-  density.stratum[ADP == 2023], real_interspersion.stratum[ADP == 2023], dmn_N.stratum[ADP == 2023], strata_levels) + 
-  facet_nested_wrap(
-    STRATA ~ ., dir = "v", nrow = 3, scales = "free", 
-    labeller = labeller(STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x) )))
+    STRATA ~ ., dir = "h", ncol = 2, scales = "free", drop = F,
+    labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x) )))
+
+#' \TODO Would look cleaner to remove the unused panel. Can do this with grid/gridExtra but it looks a little more
+#' complicated than usual when building plots with facet_nested_wrap
 
 # Calculate percentiles of the outcomes relative to both distributions
-percentile.stratum <- insp_percentile(real_interspersion.stratum, sim.programmed.stratum, sim.realized.stratum)
-percentile.stratum[, c("PROG_SIG", "REAL_SIG") := lapply(.SD, function(x) {
-  fcase(x < 0.025, "<<", x < 0.05, "<", x > 0.975, ">>", x > 0.95, ">", default = "")
-}), .SDcols = c("PERC_PROG", "PERC_REAL")]
-percentile.stratum[, STRATA := factor(STRATA, levels = strata_levels)]
+
+#' \TODO In 2024, OB_TRW_BSAI realized  complete overlap (interspersion = 1) which is always have percentile = 1, but this
+#' value could also have been totally expected. See what happens when you run a full 10K iter simulation. Check 
+#' insp_percentile(), and maybe do a check if the ecdf.fun() include 0 or 1?
+
+percentile.stratum <- insp_percentile(
+  real_interspersion.stratum[STRATA != "ZERO"], 
+  sim.programmed.stratum[STRATA != "ZERO"], 
+  sim.realized.stratum[STRATA != "ZERO"]) |>
+  _[, c("PROG_SIG", "REAL_SIG") := lapply(.SD, function(x) {
+    fcase(
+      x < 0.025, "<<", 
+      x < 0.05, "<", 
+      x > 0.975, ">>", 
+      x > 0.95, ">", default = "")
+    }), .SDcols = c("PERC_PROG", "PERC_REAL")
+  ][, STRATA := factor(STRATA, levels = strata_levels)][]
 setorder(percentile.stratum, ADP, STRATA)
 colnames(percentile.stratum) <- gsub("_", " ", colnames(percentile.stratum))
 tbl.percentile.stratum <- percentile.stratum %>%
@@ -167,87 +180,6 @@ tbl.percentile.stratum <- percentile.stratum %>%
   hline(i = which(diff(percentile.stratum$ADP) > 0)) %>%
   fix_border_issues() %>% 
   autofit()
-
-## Proximity with Stratum and FMP (BSAI and GOA) -----------------------------------------------------------------------
-
-# Expected interspersion given the programmed and realized rates
-exp_interspersion.programmed.stratum_fmp <- calculate_expected_interspersion(box_def.stratum_fmp, programmed_rates)
-exp_interspersion.realized.stratum_fmp <- calculate_expected_interspersion(box_def.stratum_fmp, realized_rates.val)
-
-# Actually realized interspersion
-real_interspersion.stratum_fmp <- calculate_realized_interspersion(box_def.stratum_fmp, realized_mon)
-
-### Simulate trip selection to create distributions of proximity ----
-
-# Programmed rates
-sim.programmed.stratum_fmp <- simulate_interspersion(box_def.stratum_fmp, programmed_rates, iter = 1e4, seed = 12345)
-# Realized rates
-sim.realized.stratum_fmp <- simulate_interspersion(box_def.stratum_fmp, realized_rates.val, iter = 1e4, seed = 12345)
-
-#' `Quickload`
-# save(sim.programmed.stratum_fmp, sim.realized.stratum_fmp, file = "output_data/spatiotemp_stratum_fmp_insp_i1e4.rdata")
-# load("output_data/spatiotemp_stratum_fmp_insp_i1e4.rdata")
-
-# Calculate density of both distributions
-density.programmed.stratum_fmp <- calculate_density(sim.programmed.stratum_fmp, "dodgerblue", adjust = 2)
-density.realized.stratum_fmp <- calculate_density(sim.realized.stratum_fmp, "green", adjust = 2)
-
-# Combine distributions
-density.stratum_fmp <- combine_distributions(density.realized.stratum_fmp, density.programmed.stratum_fmp)
-# Make labels for domain trip counts
-dist_x <- density.stratum_fmp[, .SD[1, ], keyby = c(attr(density.stratum_fmp, "year_strata_domains")) ]
-dmn_N.stratum_fmp <- real_interspersion.stratum_fmp[dist_x, on = attr(density.stratum_fmp, "year_strata_domains")]
-dmn_N.stratum_fmp[, X := pmin(X, INSP)]
-dmn_N.stratum_fmp[, STRATA_DMN_N := formatC(round(STRATA_DMN_N), width = max(nchar(round(STRATA_DMN_N))))]
-
-#' Plot distributions vs actually realized
-
-# Split by Year
-# Re-order the strata levels so we can facet_nested_wrap vertically
-strata_levels2 <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "", "EM_TRW_GOA_(EFP)")  
-
-#' \TODO *Get rid of ZERO straum in these results?
-
-plt.proximity.stratum_fmp <- plot_interspersion_density(
-  density.stratum_fmp, real_interspersion.stratum_fmp, dmn_N.stratum_fmp, strata_levels2) + 
-  facet_nested_wrap(
-    ~ STRATA, dir = "h", drop = FALSE, ncol = 2, scales = "free", 
-    labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x))))
-
-plt.proximity.stratum_fmp.2023 <- plot_interspersion_density(
-  density.stratum_fmp[ADP == 2023], real_interspersion.stratum_fmp[ADP == 2023], dmn_N.stratum_fmp[ADP == 2023], strata_levels2) + 
-  facet_nested_wrap(
-    ~ STRATA + BSAI_GOA, dir = "h", drop = FALSE, ncol = 4, scales = "free", 
-    labeller = labeller(
-      STRATA = function(x) paste0(2023, " : ", gsub("_", " ", x)),
-      BSAI_GOA = function(x) paste0("FMP : ", x)))
-
-# Calculate the percentile of realized interspersion given the programmed and realized rates
-percentile.stratum_fmp <- insp_percentile(real_interspersion.stratum_fmp, sim.programmed.stratum_fmp, sim.realized.stratum_fmp)
-percentile.stratum_fmp[, c("PROG_SIG", "REAL_SIG") := lapply(.SD, function(x) {
-  fcase(x < 0.025, "<<", x < 0.05, "<", x > 0.975, ">>", x > 0.95, ">", default = "")
-}), .SDcols = c("PERC_PROG", "PERC_REAL")]
-percentile.stratum_fmp[, STRATA := factor(STRATA, levels = strata_levels)]
-setorder(percentile.stratum_fmp, ADP, STRATA)
-colnames(percentile.stratum_fmp) <- gsub("_", " ", colnames(percentile.stratum_fmp))
-
-tbl.percentile.stratum_fmp <- percentile.stratum_fmp %>% 
-  flextable() %>%
-  colformat_int(j = 1, big.mark = "") %>%
-  colformat_double(j = 4, digits = 2) %>%
-  colformat_double(j = c(6:8), digits = 4) %>%
-  merge_v(j = 1:2) %>%
-  hline(i = which(diff(percentile.stratum_fmp$ADP) > 0)) %>%
-  fix_border_issues()
-
-# Double-checking the average of distributions closely match mathematical expectation
-sim.realized.stratum_fmp[, .(MEAN = mean(INSP)), keyby = .(ADP, STRATA, BSAI_GOA)][
-][exp_interspersion.realized.stratum_fmp[STRATA != "ZERO"], on = .(ADP, STRATA, BSAI_GOA)
-][, .(DIFF = POOL_DMN_INTERSPERSION - MEAN), by = .(ADP, STRATA, BSAI_GOA)]
-
-sim.programmed.stratum_fmp[, .(MEAN = mean(INSP)), keyby = .(ADP, STRATA, BSAI_GOA)][
-][exp_interspersion.programmed.stratum_fmp[STRATA != "ZERO"], on = .(ADP, STRATA, BSAI_GOA)
-][, .(DIFF = POOL_DMN_INTERSPERSION - MEAN), by = .(ADP, STRATA, BSAI_GOA)]
 
 ### Proximity Maps ####
 
