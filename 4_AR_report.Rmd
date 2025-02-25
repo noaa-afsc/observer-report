@@ -30,7 +30,7 @@ gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deploymen
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #' Load data and set parameters
-load("2_AR_data.RData") # This includes the .Random.seed set in 1_AR_data.R
+load("2_AR_data.RData")
 
 # Avoid showing code
 knitr::opts_chunk$set(echo = FALSE)
