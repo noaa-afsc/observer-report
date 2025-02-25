@@ -3,7 +3,7 @@ library(ggplot2)
 library(FMAtools)
 library(ggh4x)       # facet_grid2 has cleaner facet labels while allowing for independent x and/or y scales
 library(sf)          # for manipulating simpler feature objects and mapping
-library(sfheaders)   # for sf_remove_holes?  also sf_bbox() to calculate the bbox from the geometry, like st_bbox?
+library(sfheaders)   # for sf_remove_holes
 library(dplyr)       # for piping and some data munging functions
 library(flextable)   # for creating print-ready tables
 
@@ -14,7 +14,7 @@ project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
 gdrive_download("2_AR_data.Rdata", project_folder)
 (load("2_AR_data.Rdata"))
 # Remove everything except for what is needed
-rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", "shp_nmfs")))
+rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", "shp_nmfs", "year")))
 
 # Load Data and Functions ----------------------------------------------------------------------------------------------
 
@@ -58,12 +58,14 @@ realized_rates.val <- unique(pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLA
 realized_mon <- unique(pc_effort_st[OBSERVED_FLAG == "Y", .(ADP, STRATA, TRIP_ID)])
 
 # Calculate the realized rates of each STRATUM x ADP
-programmed_rates <- copy(data.table(partial))[
-][, -c("formatted_strat", "GEAR")
-][, STRATA := gsub(" ", "_", STRATA)][]
+programmed_rates <- copy(data.table(partial)) |>
+  # Remove gear type so STRATA and Rate are 1:1
+  _[, -c("formatted_strat", "GEAR")] |>
+  unique() |>
+  _[, STRATA := gsub(" ", "_", STRATA)][]
 setnames(programmed_rates, old = c("YEAR", "Rate"), new = c("ADP", "SAMPLE_RATE"))
 # Add ZERO to programmed rates
-programmed_rates <- rbind(programmed_rates, data.table(ADP = 2022:2023, STRATA = "ZERO", SAMPLE_RATE = 0))
+programmed_rates <- rbind(programmed_rates, data.table(ADP = year, STRATA = "ZERO", SAMPLE_RATE = 0))
 # Add STRATA_N to programmed_rates
 programmed_rates[, STRATA_N := realized_rates.val[programmed_rates, STRATA_N, on = .(ADP, STRATA)]]
 setcolorder(programmed_rates, c("ADP", "STRATA", "STRATA_N", "SAMPLE_RATE"))
@@ -79,7 +81,7 @@ if(!fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, 
 }
 
 # Specify ordering of strata
-strata_levels <- c("OB_HAL", "OB_POT", "OB_TRW", "EM_HAL", "EM_POT", "EM_TRW_EFP")
+strata_levels <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "EM_TRW_GOA_(EFP)", "ZERO")
 
 
 ## Define Boxes ----
@@ -201,16 +203,16 @@ dmn_N.stratum_fmp[, STRATA_DMN_N := formatC(round(STRATA_DMN_N), width = max(nch
 #' Plot distributions vs actually realized
 
 # Split by Year
-# Re-order thes strata levels so we can facet_nested_wrap vertically
-strata_levels2 <- c("OB_HAL", "EM_HAL", "OB_POT", "EM_POT", "OB_TRW", "EM_TRW_EFP")
+# Re-order the strata levels so we can facet_nested_wrap vertically
+strata_levels2 <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "", "EM_TRW_GOA_(EFP)")  
 
-plt.proximity.stratum_fmp.2022 <- plot_interspersion_density(
-  density.stratum_fmp[ADP == 2022], real_interspersion.stratum_fmp[ADP == 2022], dmn_N.stratum_fmp[ADP == 2022], strata_levels2) + 
+#' \TODO *Get rid of ZERO straum in these results?
+
+plt.proximity.stratum_fmp <- plot_interspersion_density(
+  density.stratum_fmp, real_interspersion.stratum_fmp, dmn_N.stratum_fmp, strata_levels2) + 
   facet_nested_wrap(
-    ~ STRATA + BSAI_GOA, dir = "h", drop = FALSE, ncol = 4, scales = "free", 
-    labeller = labeller(
-      STRATA = function(x) paste0(2022, " : ", gsub("_", " ", x)),
-      BSAI_GOA = function(x) paste0("FMP : ", x)))
+    ~ STRATA, dir = "h", drop = FALSE, ncol = 2, scales = "free", 
+    labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x))))
 
 plt.proximity.stratum_fmp.2023 <- plot_interspersion_density(
   density.stratum_fmp[ADP == 2023], real_interspersion.stratum_fmp[ADP == 2023], dmn_N.stratum_fmp[ADP == 2023], strata_levels2) + 
