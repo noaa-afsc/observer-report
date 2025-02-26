@@ -1325,14 +1325,17 @@ perc_vessels_obs.2023 <- Coverage.Table %>%
 ```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
 times_smry <- data_timeliness %>%
               group_by(YEAR, COVERAGE_TYPE, STRATA) %>%
-              summarise(mean_data_timeliness = round(mean(data_timeliness), 2), .groups = "drop") %>% 
-              mutate(label = paste(format(mean_data_timeliness, nsmall = 2)))
+              summarise(median = round(median(data_timeliness), 2), 
+                        mean = round(mean(data_timeliness), 2), 
+                        .groups = "drop")
 
 times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
                 facet_wrap(STRATA ~ ., scales="free_y", ncol = 2) +
                 geom_histogram(bins = 20, fill="gray70") +
-                geom_vline(data = times_smry, aes(xintercept = mean_data_timeliness), color = "red", lty = 2) +
-                geom_text(data = times_smry, aes(x = mean_data_timeliness, y = Inf, label = label), angle = 90, hjust = 1.2, vjust = -.25) +
+                geom_vline(data = times_smry, aes(xintercept = median), color = "black") +
+                geom_vline(data = times_smry, aes(xintercept = mean), color = "red", lty = 2) +
+                geom_text(data = times_smry, aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), angle = 90, hjust = 1.2, vjust = -0.3) +
+                geom_text(data = times_smry, aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))), angle = 90, hjust = 1.2, vjust = 1.1) +
                 labs(x = "Data timeliness (days)", y = "Count") +
                 theme_bw()
 
@@ -2169,7 +2172,7 @@ suppressWarnings(print(odds.by.date.plot.2023))
 suppressMessages(print(times_figure))
 ```
 
-`r fig_nums('times_figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Dashed red lines and annotations show mean data timeliness.")`  
+`r fig_nums('times_figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Solid black lines and annotations to the left show median data timeliness. Dashed red lines and annotations to the right show mean data timeliness.")`  
 
 \newpage
 
