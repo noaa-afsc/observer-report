@@ -743,7 +743,7 @@ simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry =
     #trips$SAMPLE <- unlist(sample_lst)
     
     mon_lst[[i]] <- trips[unlist(sample_lst), TRIP_ID]
-    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])
+    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])            #' \TODO Speed this function up
   } 
   
   sim_dt <- rbindlist(sim_lst, idcol = "ITER")
@@ -757,41 +757,31 @@ simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry =
   if(hex_smry) {
     # For each simulation, total monitored/neighboring monitored trips for each HEX_ID
     cat("\nCompiling summary of HEX_IDs for spatial analyses...\n")
-    
-    #' TODO THIS IS WAY TOO SLOW!!! Takes almost a long as the simulations...
-    # I should simply have lists for each stratum_year, list of HEX_ID, and vector of HEX_mon. Everything else I can do afterwards!
-    
-    #' *Faster version?*
+
     nbr_smry <- lapply(sim_lst, function(x) {
       # x <- sim_lst[[1]]
       mon_box.lst <- lapply(
         split(setkeyv(attr(x, "sampled_boxes"), year_strata), by = c(year_strata), keep.by = F), 
         unlist, use.names = F)
       # Identify neighbors of monitored trips
-      # unique runs a little faster on integers rather than numeric. Should make `nbr_lst` integer...
-      mon_nbr.lst <- lapply(mon_box.lst, function(x) unique(as.integer(unlist(box_def$nbr_lst[x]))))
+      lapply(mon_box.lst, function(x) unique(as.integer(unlist(box_def$nbr_lst[x]))))
     })
-    
-    # Compile results for each year_strata across iterations
-    hex_smry_dt <- rbindlist(lapply(names(nbr_smry[[1]]), function(x) {
-      # x <- year_strata.vec[[1]]
-      cat(paste0(x, ", "))
-      
-      focus_stratum <- setnames(data.table(t(unlist(strsplit(x, split = "[.]")))), year_strata)
-      focus_stratum[, ADP := as.integer(ADP)]
-      focus_stratum_dt <- box_def$dt_out[focus_stratum, on = year_strata]
-      
-      # The
-      rbindlist(lapply(
-        lapply(nbr_smry, "[[", x),
-        function(y) {
-          focus_stratum_dt[, .(HEX_w = sum(BOX_w[BOX_ID %in% y])), keyby = c(year_strata, "HEX_ID")]
-        }
-      ), idcol = "ITER")
-    }))
-    cat("\n")
-    setattr(sim_dt, "hex_smry", hex_smry_dt)
 
+    # Compile results for each year_strata across iterations
+    hex_smry_dt <-  rbindlist(
+      lapply(nbr_smry, function(x) {
+        # x <- nbr_smry[[1]]
+        rbindlist(lapply(x, function(y) data.table(BOX_ID = y)), idcol = "YEAR_STRATA")
+      }), idcol = "ITER") |>
+      _[, (year_strata) := tstrsplit(YEAR_STRATA, split = "[.]")
+      ][, YEAR_STRATA := NULL
+      ][, ADP := as.integer(ADP)
+        # Merge with the box definition to get box weights
+      ][box_def$dt_out, on = c(year_strata, "BOX_ID"), allow.cartesian = T
+        # By iteration and stratum, total the weight of boxes of HEX_IDs in sampled neighborhoods
+      ][, .(HEX_w = sum(BOX_w)), keyby = c("ITER", year_strata, "HEX_ID")]
+    # Attach the summary to the outputs as an attribute
+    setattr(sim_dt, "hex_smry", hex_smry_dt)
   }
   
   # Return the results
