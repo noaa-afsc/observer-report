@@ -501,7 +501,7 @@ if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
 
-# EM Trawl Offloads ----
+# * EM trawl offloads ----
 em_trw_offload <- work.data %>%
   filter(STRATA %in% c("EM TRW BSAI (EFP)", "EM TRW GOA (EFP)")) %>%
   select(TRIP_ID, REPORT_ID, VESSEL_ID, STRATA, MANAGEMENT_PROGRAM_CODE, AGENCY_GEAR_CODE, COVERAGE_TYPE,
@@ -632,6 +632,7 @@ rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, ob
    eland.offload)
 
 # Evaluate differences between what VALHALLA says is observed compared to what observer records say
+#'* Remove when finalizing code *
 work.obs.cv <- filter(work.link, is.na(T_REPORT_ID))
 nrow(filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
               (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
@@ -650,6 +651,8 @@ work.dups.cv <- filter(work.link, REPORT_ID %in% cv.dups$REPORT_ID)
 work.dups.tender <- filter(work.link, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
 
 work.dups <- rbind(work.dups.cv, work.dups.tender)
+
+vessel.issues <- filter(work.link, CV_ID %in% work.dups$CV_ID)
 
 # Save --------------------------------------------------------------------
 
