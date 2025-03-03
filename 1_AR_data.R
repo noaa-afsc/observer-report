@@ -501,6 +501,156 @@ if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
 (load(("source_data/ak_shp.rdata")))
 
+# EM Trawl Offloads ----
+em_trw_offload <- work.data %>%
+  filter(STRATA %in% c("EM TRW BSAI (EFP)", "EM TRW GOA (EFP)")) %>%
+  select(TRIP_ID, REPORT_ID, VESSEL_ID, STRATA, MANAGEMENT_PROGRAM_CODE, AGENCY_GEAR_CODE, COVERAGE_TYPE,
+         LANDING_DATE, OBSERVED_FLAG, PORT_CODE, FMP, TENDER, TENDER_VESSEL_ADFG_NUMBER) %>%
+  distinct() %>%
+  mutate(TENDER_VESSEL_ADFG_NUMBER = as.integer(TENDER_VESSEL_ADFG_NUMBER))
+
+# Double check no duplicate report_ids
+nrow(em_trw_offload %>% select(REPORT_ID) %>% distinct()) - nrow(em_trw_offload)
+
+# Check for BSAI tendering
+nrow(filter(em_trw_offload, STRATA == "EM TRW BSAI (EFP)" & TENDER == "Y"))
+
+# Check gear type and IFP deliveries
+nrow(filter(em_trw_offload, AGENCY_GEAR_CODE == "NPT" | PORT_CODE == "IFP"))
+
+# Get eLandings data for these fish tickets to add TENDER_OFFLOAD_DATE which is needed to match
+#  observer data so we can determine which landings observers marked as monitored
+script <- paste(
+  "SELECT report_id, vessel_id, tender_vessel_adfg_number, tender_offload_date, processor_name
+   FROM norpac_views.atl_landing_id
+   WHERE year = ", year
+)
+
+vessels <- dbGetQuery(channel_afsc, paste(
+  "SELECT adfg_number, permit, name
+   FROM norpac.atl_lov_vessel"
+  )) %>%
+  mutate(PERMIT = as.integer(PERMIT), ADFG_NUMBER = as.integer(ADFG_NUMBER))
+
+eland.offload <- dbGetQuery(channel_afsc, script) %>%
+  filter(REPORT_ID %in% em_trw_offload$REPORT_ID) %>%
+  mutate(TENDER_OFFLOAD_DATE = as.Date(TENDER_OFFLOAD_DATE),
+         TENDER_VESSEL_ADFG_NUMBER = as.integer(TENDER_VESSEL_ADFG_NUMBER)) %>%
+  left_join(vessels, by = join_by(VESSEL_ID == PERMIT)) %>%
+  rename(CV_NAME = NAME, CV_ID = VESSEL_ID) %>%
+  select(-ADFG_NUMBER) %>%
+  left_join(vessels, by = join_by(TENDER_VESSEL_ADFG_NUMBER == ADFG_NUMBER)) %>%
+  rename(TENDER_NAME = NAME, TENDER_ID = PERMIT) %>%
+  relocate(REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME) %>%
+  mutate(T_REPORT_ID = case_when(!is.na(TENDER_OFFLOAD_DATE) ~ paste0(TENDER_VESSEL_ADFG_NUMBER, TENDER_OFFLOAD_DATE)))
+
+# Make sure we have the same number of records
+nrow(eland.offload) - nrow(em_trw_offload)
+
+# and the same REPORT_IDs
+nrow(anti_join(eland.offload, em_trw_offload, by = join_by(REPORT_ID)))
+
+# Combine VALHALLA with eLandings
+work.eland <- em_trw_offload %>%
+  left_join(eland.offload, by = join_by(REPORT_ID, VESSEL_ID == CV_ID, TENDER_VESSEL_ADFG_NUMBER)) %>%
+  rename(CV_ID = VESSEL_ID) %>%
+  relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME)
+
+# Look at missing offloads from one data source to the other
+#  How many offloads were marked as tendered in VALHALLA that do not have an assigned tender vessel or
+#  TENDER_OFFLOAD_DATE from eLandings
+nrow(work.eland %>% filter(TENDER == "Y" & is.na(T_REPORT_ID)))
+
+# Compare observer monitoring records to VALHALLA monitoring records
+script <- paste(
+  "SELECT o.landing_report_id AS report_id, o.cruise, o.permit AS processor_permit_id, p.name AS plant_name,
+      v.permit, v.name, o.delivery_end_date, o.offload_number, v.adfg_number,
+      o.delivered_weight, o.lb_kg, o.offload_to_tender_flag,
+      CASE WHEN EXISTS (SELECT 1 FROM norpac.atl_salmon WHERE cruise = o.cruise AND permit = o.permit AND offload_seq = o.offload_seq)
+      THEN 'Y' ELSE 'N' END as obs_salmon_cnt_flag --Identifies where salmon counts were done
+      FROM norpac.atl_offload o
+  LEFT JOIN norpac.atl_lov_vessel v
+      ON o.delivery_vessel_adfg = v.adfg_number
+  LEFT JOIN norpac.atl_lov_plant p
+      ON o.permit = p.permit"
+)
+
+obs.offload <- dbGetQuery(channel_afsc, script) %>%
+  mutate(ADFG_NUMBER = as.integer(ADFG_NUMBER),
+         PERMIT = as.integer(PERMIT),
+         T_REPORT_ID = NA,
+         YEAR = year(DELIVERY_END_DATE),
+         DELIVERY_END_DATE = as.Date(DELIVERY_END_DATE)) %>%
+  filter(YEAR == 2024) %>%
+  select(-YEAR)
+
+# Observer tender offloads
+obs.tender <- obs.offload %>%
+  filter(ADFG_NUMBER %in% work.eland$TENDER_VESSEL_ADFG_NUMBER & !is.na(ADFG_NUMBER)) %>%
+  filter(is.na(REPORT_ID)) %>%
+  select(-OFFLOAD_NUMBER, -REPORT_ID) %>% # Looks like cruise 26929 has a duplicate haul for tender 5178/59109
+  mutate(T_REPORT_ID = paste0(ADFG_NUMBER, DELIVERY_END_DATE)) %>%
+  rename(TENDER_ID = PERMIT,
+         TENDER_NAME = NAME,
+         TENDER_VESSEL_ADFG_NUMBER = ADFG_NUMBER,
+         TENDER_OFFLOAD_DATE = DELIVERY_END_DATE) %>%
+  distinct()
+
+val.tender <- filter(work.eland, !is.na(T_REPORT_ID))
+
+tender.link <- val.tender %>%
+  left_join(obs.tender, by = join_by(TENDER_ID, TENDER_NAME, T_REPORT_ID, TENDER_OFFLOAD_DATE,
+                                     TENDER_VESSEL_ADFG_NUMBER)) %>%
+  relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
+           LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
+           OBS_SALMON_CNT_FLAG)
+
+# Many-to-manys
+#filter(obs.tender, TENDER_VESSEL_ADFG_NUMBER == 59109 & T_REPORT_ID == "591092024-09-18") # Duplicate record?
+
+# Observed non-tender offloads
+obs.cv <- obs.offload %>%
+  filter(REPORT_ID %in% work.eland$REPORT_ID) %>%
+  filter(!is.na(REPORT_ID)) %>%
+  select(-OFFLOAD_NUMBER)
+
+val.cv <- filter(work.eland, is.na(T_REPORT_ID))
+
+cv.link <- val.cv %>%
+  left_join(obs.cv, by = join_by(REPORT_ID, T_REPORT_ID)) %>%
+  select(-PERMIT, -NAME, -ADFG_NUMBER, -DELIVERY_END_DATE) %>%
+  mutate(TENDER_OFFLOAD_DATE = as.Date(TENDER_OFFLOAD_DATE)) %>%
+  relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
+           LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
+           OBS_SALMON_CNT_FLAG)
+
+# Combine tenders and CVs
+work.link <- rbind(tender.link, cv.link)
+
+# Clean up workspace
+rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, obs.cv, obs.offload, em_trw_offload,
+   eland.offload)
+
+# Evaluate differences between what VALHALLA says is observed compared to what observer records say
+work.obs.cv <- filter(work.link, is.na(T_REPORT_ID))
+nrow(filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
+              (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
+
+cv.dups <- filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
+                    (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y"))
+
+work.obs.tender <- filter(work.link, !is.na(T_REPORT_ID))
+nrow(filter(work.obs.tender, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
+              (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
+
+tender.dups <- filter(work.obs.tender, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
+                        (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y"))
+
+work.dups.cv <- filter(work.link, REPORT_ID %in% cv.dups$REPORT_ID)
+work.dups.tender <- filter(work.link, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
+
+work.dups <- rbind(work.dups.cv, work.dups.tender)
+
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
