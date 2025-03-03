@@ -47,7 +47,6 @@ set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 # Set order of strata
 strata.order <- c("Full", "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)", "Zero coverage", "Total")
 
-
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included and formatting of table/figure captions.
 annual.report <- TRUE
