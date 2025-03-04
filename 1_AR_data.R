@@ -583,7 +583,7 @@ obs.offload <- dbGetQuery(channel_afsc, script) %>%
 obs.tender <- obs.offload %>%
   filter(ADFG_NUMBER %in% work.eland$TENDER_VESSEL_ADFG_NUMBER & !is.na(ADFG_NUMBER)) %>%
   filter(is.na(REPORT_ID)) %>%
-  select(-OFFLOAD_NUMBER, -REPORT_ID) %>% # Looks like cruise 26929 has a duplicate haul for tender 5178/59109
+  select(-OFFLOAD_NUMBER, -REPORT_ID) %>% # OFFLOAD_NUMBER is useful for finding any duplicates
   mutate(T_REPORT_ID = paste0(ADFG_NUMBER, DELIVERY_END_DATE)) %>%
   rename(TENDER_ID = PERMIT,
          TENDER_NAME = NAME,
@@ -596,9 +596,6 @@ val.tender <- filter(work.eland, !is.na(T_REPORT_ID))
 tender.link <- val.tender %>%
   left_join(obs.tender, by = join_by(TENDER_ID, TENDER_NAME, T_REPORT_ID, TENDER_OFFLOAD_DATE,
                                      TENDER_VESSEL_ADFG_NUMBER))
-
-# Many-to-manys
-#filter(obs.tender, TENDER_VESSEL_ADFG_NUMBER == 59109 & T_REPORT_ID == "591092024-09-18") # Duplicate record?
 
 # Observer non-tender offloads
 obs.cv <- obs.offload %>%
