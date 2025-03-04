@@ -567,10 +567,10 @@ script <- paste(
       o.delivered_weight, o.lb_kg, o.offload_to_tender_flag,
       CASE WHEN EXISTS (SELECT 1 FROM norpac.atl_salmon WHERE cruise = o.cruise AND permit = o.permit AND offload_seq = o.offload_seq)
       THEN 'Y' ELSE 'N' END as obs_salmon_cnt_flag --Identifies where salmon counts were done
-      FROM norpac.atl_offload o
-  LEFT JOIN norpac.atl_lov_vessel v
+   FROM norpac.atl_offload o
+   LEFT JOIN norpac.atl_lov_vessel v
       ON o.delivery_vessel_adfg = v.adfg_number
-  WHERE EXTRACT(YEAR FROM o.delivery_end_date) = ", year
+   WHERE EXTRACT(YEAR FROM o.delivery_end_date) = ", year
 )
 
 obs.offload <- dbGetQuery(channel_afsc, script) %>%
@@ -613,8 +613,8 @@ cv.link <- val.cv %>%
   select(-PERMIT, -NAME, -ADFG_NUMBER, -DELIVERY_END_DATE) %>%
   mutate(TENDER_OFFLOAD_DATE = as.Date(TENDER_OFFLOAD_DATE))
   
-# Combine tenders and CVs
-work.link <- tender.link %>%
+# Combine tenders and CVs to create final dataframe
+work.offload <- tender.link %>%
   rbind(cv.link) %>%
   relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
            LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
@@ -626,26 +626,26 @@ rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, ob
 
 # Evaluate differences between what VALHALLA says is observed compared to what observer records say
 #'* Remove when finalizing code *
-work.obs.cv <- filter(work.link, is.na(T_REPORT_ID))
+work.obs.cv <- filter(work.offload, is.na(T_REPORT_ID))
 nrow(filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
               (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
 
 cv.dups <- filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
                     (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y"))
 
-work.obs.tender <- filter(work.link, !is.na(T_REPORT_ID))
+work.obs.tender <- filter(work.offload, !is.na(T_REPORT_ID))
 nrow(filter(work.obs.tender, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
               (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
 
 tender.dups <- filter(work.obs.tender, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
                         (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y"))
 
-work.dups.cv <- filter(work.link, REPORT_ID %in% cv.dups$REPORT_ID)
+work.dups.cv <- filter(work.offload, REPORT_ID %in% cv.dups$REPORT_ID)
 work.dups.tender <- filter(work.link, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
 
 work.dups <- rbind(work.dups.cv, work.dups.tender)
 
-vessel.issues <- filter(work.link, CV_ID %in% work.dups$CV_ID)
+vessel.issues <- filter(work.offload, CV_ID %in% work.dups$CV_ID)
 
 # Save --------------------------------------------------------------------
 
