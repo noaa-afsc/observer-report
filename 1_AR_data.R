@@ -530,7 +530,8 @@ vessels <- dbGetQuery(channel_afsc, paste(
   "SELECT adfg_number, permit, name
    FROM norpac.atl_lov_vessel"
   )) %>%
-  mutate(PERMIT = as.integer(PERMIT), ADFG_NUMBER = as.integer(ADFG_NUMBER))
+  mutate(PERMIT = as.integer(PERMIT),
+         ADFG_NUMBER = as.integer(ADFG_NUMBER))
 
 eland.offload <- dbGetQuery(channel_afsc, script) %>%
   filter(REPORT_ID %in% em_trw_offload$REPORT_ID) %>%
@@ -559,7 +560,7 @@ work.eland <- em_trw_offload %>%
 #  TENDER_OFFLOAD_DATE from eLandings
 nrow(work.eland %>% filter(TENDER == "Y" & is.na(T_REPORT_ID)))
 
-# Compare observer monitoring records to VALHALLA monitoring records
+# Get observer data and combine with VALHALLA using eLandings data as the linkage
 script <- paste(
   "SELECT o.landing_report_id AS report_id, o.cruise, o.permit AS processor_permit_id,
       v.permit, v.name, o.delivery_end_date, o.offload_number, v.adfg_number,
@@ -569,8 +570,6 @@ script <- paste(
       FROM norpac.atl_offload o
   LEFT JOIN norpac.atl_lov_vessel v
       ON o.delivery_vessel_adfg = v.adfg_number
-  LEFT JOIN norpac.atl_lov_plant p
-      ON o.permit = p.permit
   WHERE EXTRACT(YEAR FROM o.delivery_end_date) = ", year
 )
 
@@ -601,7 +600,7 @@ tender.link <- val.tender %>%
 # Many-to-manys
 #filter(obs.tender, TENDER_VESSEL_ADFG_NUMBER == 59109 & T_REPORT_ID == "591092024-09-18") # Duplicate record?
 
-# Observed non-tender offloads
+# Observer non-tender offloads
 obs.cv <- obs.offload %>%
   filter(REPORT_ID %in% work.eland$REPORT_ID) %>%
   filter(!is.na(REPORT_ID)) %>%
