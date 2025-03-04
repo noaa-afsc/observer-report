@@ -561,7 +561,7 @@ nrow(work.eland %>% filter(TENDER == "Y" & is.na(T_REPORT_ID)))
 
 # Compare observer monitoring records to VALHALLA monitoring records
 script <- paste(
-  "SELECT o.landing_report_id AS report_id, o.cruise, o.permit AS processor_permit_id, p.name AS plant_name,
+  "SELECT o.landing_report_id AS report_id, o.cruise, o.permit AS processor_permit_id,
       v.permit, v.name, o.delivery_end_date, o.offload_number, v.adfg_number,
       o.delivered_weight, o.lb_kg, o.offload_to_tender_flag,
       CASE WHEN EXISTS (SELECT 1 FROM norpac.atl_salmon WHERE cruise = o.cruise AND permit = o.permit AND offload_seq = o.offload_seq)
