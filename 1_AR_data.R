@@ -572,17 +572,15 @@ script <- paste(
   LEFT JOIN norpac.atl_lov_vessel v
       ON o.delivery_vessel_adfg = v.adfg_number
   LEFT JOIN norpac.atl_lov_plant p
-      ON o.permit = p.permit"
+      ON o.permit = p.permit
+  WHERE EXTRACT(YEAR FROM o.delivery_end_date) = ", year
 )
 
 obs.offload <- dbGetQuery(channel_afsc, script) %>%
   mutate(ADFG_NUMBER = as.integer(ADFG_NUMBER),
          PERMIT = as.integer(PERMIT),
          T_REPORT_ID = NA,
-         YEAR = year(DELIVERY_END_DATE),
-         DELIVERY_END_DATE = as.Date(DELIVERY_END_DATE)) %>%
-  filter(YEAR == 2024) %>%
-  select(-YEAR)
+         DELIVERY_END_DATE = as.Date(DELIVERY_END_DATE))
 
 # Observer tender offloads
 obs.tender <- obs.offload %>%
