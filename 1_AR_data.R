@@ -541,7 +541,6 @@ eland.offload <- dbGetQuery(channel_afsc, script) %>%
   select(-ADFG_NUMBER) %>%
   left_join(vessels, by = join_by(TENDER_VESSEL_ADFG_NUMBER == ADFG_NUMBER)) %>%
   rename(TENDER_NAME = NAME, TENDER_ID = PERMIT) %>%
-  relocate(REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME) %>%
   mutate(T_REPORT_ID = case_when(!is.na(TENDER_OFFLOAD_DATE) ~ paste0(TENDER_VESSEL_ADFG_NUMBER, TENDER_OFFLOAD_DATE)))
 
 # Make sure we have the same number of records
@@ -553,8 +552,7 @@ nrow(anti_join(eland.offload, em_trw_offload, by = join_by(REPORT_ID)))
 # Combine VALHALLA with eLandings
 work.eland <- em_trw_offload %>%
   left_join(eland.offload, by = join_by(REPORT_ID, VESSEL_ID == CV_ID, TENDER_VESSEL_ADFG_NUMBER)) %>%
-  rename(CV_ID = VESSEL_ID) %>%
-  relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME)
+  rename(CV_ID = VESSEL_ID)
 
 # Look at missing offloads from one data source to the other
 #  How many offloads were marked as tendered in VALHALLA that do not have an assigned tender vessel or
@@ -598,10 +596,7 @@ val.tender <- filter(work.eland, !is.na(T_REPORT_ID))
 
 tender.link <- val.tender %>%
   left_join(obs.tender, by = join_by(TENDER_ID, TENDER_NAME, T_REPORT_ID, TENDER_OFFLOAD_DATE,
-                                     TENDER_VESSEL_ADFG_NUMBER)) %>%
-  relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
-           LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
-           OBS_SALMON_CNT_FLAG)
+                                     TENDER_VESSEL_ADFG_NUMBER))
 
 # Many-to-manys
 #filter(obs.tender, TENDER_VESSEL_ADFG_NUMBER == 59109 & T_REPORT_ID == "591092024-09-18") # Duplicate record?
@@ -617,13 +612,14 @@ val.cv <- filter(work.eland, is.na(T_REPORT_ID))
 cv.link <- val.cv %>%
   left_join(obs.cv, by = join_by(REPORT_ID, T_REPORT_ID)) %>%
   select(-PERMIT, -NAME, -ADFG_NUMBER, -DELIVERY_END_DATE) %>%
-  mutate(TENDER_OFFLOAD_DATE = as.Date(TENDER_OFFLOAD_DATE)) %>%
+  mutate(TENDER_OFFLOAD_DATE = as.Date(TENDER_OFFLOAD_DATE))
+  
+# Combine tenders and CVs
+work.link <- tender.link %>%
+  rbind(cv.link) %>%
   relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
            LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
            OBS_SALMON_CNT_FLAG)
-
-# Combine tenders and CVs
-work.link <- rbind(tender.link, cv.link)
 
 # Clean up workspace
 rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, obs.cv, obs.offload, em_trw_offload,
