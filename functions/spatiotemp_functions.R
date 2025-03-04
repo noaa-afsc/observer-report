@@ -155,6 +155,11 @@ stat_area_to_hex <- function(cell_size, stat_area_sf){
 # allows trips that are defined to be in either the BSAI or GOA to still neighbor each other according to the normal
 # neighboring rules of the box definition
 define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NULL, stata_area_sf = stat_area_sf, geom = F, ps_cols = NULL) {
+  # TODO Haven't done much testing with both ps_cols and dmn_lst defined with GEAR type. 
+  
+  # data <- copy(swor_bootstrap.effort); space <- c(2e5, 2e5); time <- c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"); year_col <- "ADP"; stratum_cols <- c("STRATA"); geom <- F; ps_cols <- c("GEAR"); dmn_lst <- NULL
+  
+  
   # data <-  copy(val_mixed); space <- c(2e5, 2e5); time <- c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"); year_col <- "ADP"; dmn_cols <- "GEAR"; stratum_cols <- c("STRATA"); geom = T; ps_cols <- "GEAR"
   
   # data <- copy(pc_dat); space <- c(2e5, 2e5); time <- c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"); year_col <- "ADP"; dmn_cols <- "BSAI_GOA"; stratum_cols <- c("STRATA");  geom = T; ps_cols <- NULL
@@ -180,7 +185,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   }
   # Prepare domain column vector
   dmn_cols <- unlist(dmn_lst, use.names = F)
-
+  
   #==================================#
   # NOTE! Remove any jig-gear trips! #
   #==================================# 
@@ -201,7 +206,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
       data <- fsetdiff(data, jig_trips)
     }
   }
-
+  
   win <- as.integer(time[2])
   
   # Make sure integer TRIP_ID, integer ADFG_STAT_AREA_CODE, and 'dmn_cols' are specified in the data
@@ -243,7 +248,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   #======================#
   
   # First, get all years and a table converting date to week
-
+  
   if(time[1] != "week") stop("So far this function only works with 'week()' function!")
   
   time_cols <- time[3:4]
@@ -252,8 +257,8 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   date_vec <- as.Date(date_range[1] : date_range[2])   # Get date class of all dates within range
   week_vec <- sapply(date_vec, get(time[[1]]))         # Identify the week of each date
   dates_mtx <- cbind(date_vec, week_vec)               # Combine date vector and week vector
-
-  dates_start <- min(dates_mtx[, 1]) - 1  # Get first date and subtract 1. T
+  
+  dates_start <- min(dates_mtx[, 1]) - 1  # Get first date and subtract 1.
   dates_mtx[, 1] <- dates_mtx[, 1] - dates_start  # This makes it so matrix can be reference by row index, much faster
   # TODO Check behavior of neighboring at ADP year thresholds
   
@@ -265,7 +270,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   # Convert to matrix and split by TRIP_ID and HEX_ID
   time_lst <- as.matrix(cbind(time_int - dates_start, data_int[, .(GRP)]))
   time_lst <- lapply(split(time_lst, time_lst[, "GRP"], drop = F), matrix, ncol = 3)
-  # For each TRIP_ID x HEX_ID, identify unique weeks
+  # For each TRIP_ID × HEX_ID, identify unique weeks
   time_lst <- lapply(time_lst, function(x) {
     dates_int <- unique(unlist(apply(x, 1, function(y) y[1] : y[2], simplify = F)))  # get unique days
     unique(dates_mtx[dates_int, 2, drop = F])                     # Identify week using dates_mtx
@@ -283,7 +288,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   #============#
   # Define Box #
   #============#
-
+  
   setkeyv(data, c(year_col, stratum_cols, "TIME", "HEX_ID"))
   setcolorder(data, unique(c(year_col, stratum_cols, ps_cols, "TIME", "HEX_ID")))
   # 'BOX_ID' is defined by HEX_ID and TIME and if specified, ps_cols, and is common to all data. This will be used to determine neighbors.
@@ -299,7 +304,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   #' TODO *NEW* Add columns for ts_dmn_cols and nonts_dmn_cols if NULL?
   
   setkey(data, BOX_ID)
-
+  
   #==================#
   # Define Neighbors #
   #==================#
@@ -331,8 +336,8 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   data_lst <- lapply(
     X = split(x = subset(data, select = c(group_cols, "BOX_ID", "TRIP_ID", "PS_ID")), by = group_cols, keep.by = F),
     FUN = as.matrix)
-
-  # Make the frequency table of each TRIP_ID (so that trips are properly split by HEX_ID, TIME, and if present, ps_cols
+  
+  # Make the frequency table of each TRIP_ID (so that trips are properly split by HEX_ID, TIME, and if present, ps_cols)
   trip_id_mat <- do.call(rbind, lapply(
     data_lst,
     function(p) {
@@ -370,7 +375,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
         x2 <- do.call(rbind, lapply(x1, function(y) {
           # y <- x1[1]   # Box 5749
           
-          trip_id_centered <- x[x[,1] == y, 2]    # Identify number of trips actually  the box
+          trip_id_centered <- x[x[,1] == y, 2]    # Identify number of trips actually in the box
           # There shouldn't ever be the same trip counted twice in the same box.
           if( length(trip_id_centered) != length(unique(trip_id_centered)) ) stop("There is a duplicate trip_id!")
           
@@ -392,7 +397,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   
   # Calculate STRATA_N and ensure the sum of weights is equivalent
   strata_N_dt <- data[, .(STRATA_N = uniqueN(TRIP_ID)), by = group_cols]
-
+  
   # Double-check that weights sum to STRATA_N
   if(!(all(
     unname(sapply(box_smry, function(x) sum(sapply(x, function(y) sum(y[, "BOX_w"]))))) == strata_N_dt$STRATA_N
@@ -432,7 +437,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   #==========================#
   
   #' TODO dmn_lst is never not null since it is now created if left null. Can remove? Always create dmn outputs?
-  if( !is.null(dmn_lst) ) {
+  if( !is.null(dmn_cols) ) {
     
     # Save the raw form of data_dmn for the output
     data_dmn_og <- copy(data_dmn)
@@ -463,7 +468,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
       st_dmn_tbl <- unique(subset(data_dmn, select = c("ST_DMN", st_dmn_vec)))
       data_dmn[, (st_dmn_vec) := NULL]
     }
-
+    
     #' Split by domain
     nst_dmn_lst <- split(data_dmn, by = "NST_DMN", keep.by = F)
     #' *For each non-spatiotemporal domain [x]*
@@ -481,27 +486,27 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
       #' *For each stratum [y]*
       rbindlist(lapply(nst_dmn_stratum_lst, function(y) {
         # y <- nst_dmn_stratum_lst[[1]]
-
+        
         nst_dmn_stratum_st_dmn_lst <- lapply(
           split(y, f = y[, "ST_DMN"]), 
           matrix, ncol = ncol(y), dimnames = list(NULL, colnames(y))
         )
-
+        
         #' *For each spatiotemporal domain*
         rbindlist(lapply(nst_dmn_stratum_st_dmn_lst, function(z) {
           # z <- nst_dmn_stratum_st_dmn_lst[[1]]
-
+          
           #' *For each BOX_ID*
           as.data.table(do.call(rbind, lapply(nst_dmn_boxes, function(z1) {
             # z1 <- nst_dmn_boxes[1]
             
-            # Identify all trips in the domain x stratum in this box
+            # Identify all trips in the domain × stratum in this box
             trip_id_centered <- unique(z[z[, "BOX_ID"] == z1, "TRIP_ID"])
             c(
               BOX_ID = z1,
               BOX_DMN_n = length(trip_id_centered),
               BOX_DMN_w = sum(1 / trip_id_dmn_vec[trip_id_centered]),
-              # count number of neighboring trips in the nst_dmn X stratum ()
+              # count number of neighboring trips in the nst_dmn × stratum ()
               BOX_DMN_nbr = length(unique(y[y[, "BOX_ID"] %in% nbr_lst[[z1]], "TRIP_ID"]))
             )
             
@@ -518,7 +523,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
     ][, (dmn_groups) := lapply(.SD, as.integer), .SDcols = dmn_groups]
     dmn_nbr_dt <- dmn_nbr_dt[nst_dmn_tbl, on = .(NST_DMN)][st_dmn_tbl, on = .(ST_DMN)]
     dmn_nbr_dt[, (dmn_groups) := NULL]
-   
+    
     #' TODO *is BOX_ID unique to ADP or can there be crossover between years? Does time start over each year, or is it independent?*
     
     # Merge details back in (ADP year, HEX_ID and TIME)
@@ -526,7 +531,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
     dmn_nbr_dt <- box_id_details[dmn_nbr_dt, on = .(BOX_ID)]
     setcolorder(dmn_nbr_dt, c(year_col, stratum_cols, dmn_cols, "BOX_ID", "BOX_DMN_n", "BOX_DMN_w", "BOX_DMN_nbr"))
     
-    # Calculate Number of trips in each STRATA x dmn_cols. Note that trips that have multiple 
+    # Calculate Number of trips in each STRATA × dmn_cols. Note that trips that have multiple 
     # 'dmn_cols' were split here!
     strata_dmn_N_dt <- dmn_nbr_dt[, .(STRATA_DMN_N = sum(BOX_DMN_w)), by = c(year_col, stratum_cols, dmn_cols)]
     
@@ -543,7 +548,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
     box_res$dmn$strata_dt <- setorderv(unique(strata_N_dt[, ..stratum_cols]), cols = stratum_cols)[, STRATUM_ID := .I][]
     
   }
-
+  
   # Create sf object with geometry if requested
   if(geom == T) {
     geom_sf <- merge(stat_area_lst$HEX_GEOMETRY, dt_out, on = .(HEX_ID))
