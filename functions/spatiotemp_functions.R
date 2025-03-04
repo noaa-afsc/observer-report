@@ -679,28 +679,61 @@ calculate_expected_interspersion <- function(box_def, sample_rates){
 }
 
 
-# TODO I think this function is doing what I've asked to do so far, but it probably isn't handling non-spatiotemporal
-# domains correctly! I have since updated define_boxes to have $dmn$og_data so that each TRIP_ID and the domains it 
-# belongs to are specified. 
+#' \TODO I think this function is doing what I've asked to do so far, but it probably isn't handling non-spatiotemporal
+#' domains correctly! I have since updated define_boxes to have $dmn$og_data so that each TRIP_ID and the domains it 
+#' belongs to are specified. 
 calculate_realized_interspersion <- function(box_def, monitored_trips) {
   # box_def <- copy(box_def.stratum); monitored_trips <- copy(realized_mon)
   # box_def <- copy(box_def.stratum_fmp); monitored_trips <- trips[unlist(sample_lst)]
+  #' \TESTING monitored_trips <- copy(trips[unlist(sample_lst)])
   
   year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
   domains <- unlist(box_def$params[c("year_col", "stratum_cols", "dmn_cols")], use.names = F)
   
-  # Identify sampled boxes and neighbors
-  box_sample <- copy(box_def$og_data)[monitored_trips, on = c(year_strata,  "TRIP_ID")]
+  # Identify which boxes were sampled This join is faster when keyed
+  setkeyv(monitored_trips, c(year_strata,  "TRIP_ID"))
+  setkeyv(box_def$og_data, c(year_strata,  "TRIP_ID"))
+  box_sample <- copy(box_def$og_data)[monitored_trips]
   box_sample <- unique(subset(box_sample, select = c(year_strata, "TIME", "HEX_ID", "BOX_ID")))
-  
+  # split by year and strata
   dmn_sample <- split(box_sample, by = year_strata)
-  nbr_sample <- lapply(dmn_sample, function(x) box_def$nbr_lst[ x[["BOX_ID"]] ])
-  nbr_sample <- lapply(nbr_sample, function(x) unique(unlist(x)))
+  # Identify boxes in sampled neighborhoods using the neighbor list
+  nbr_sample <- lapply(
+    lapply(dmn_sample, function(x) box_def$nbr_lst[ x[["BOX_ID"]] ]), 
+    function(y) unique(unlist(y)))
   
+  #' *4.7ms*
   nbr_sample_dt <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = "ADP.STRATA")[
-  ][, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]")
+  ][, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]")   # This takes 3ms
   ][, "ADP.STRATA" := NULL
   ][, ADP := as.integer(ADP)][]
+  
+  if(F) {
+    
+    a <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = "ADP.STRATA")
+    a[, ADP := gsub("\\..*$", "", ADP.STRATA)]
+    a[, STRATA := gsub("^.*\\.", "", ADP.STRATA)]
+    
+    a <- rbindlist(lapply(nbr_sample, function(x) data.table(BOX_ID = x)), idcol = "ADP.STRATA")[
+    ][, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]", type.convert = T)   # This takes 3ms
+    ][, "ADP.STRATA" := NULL][]
+    
+   
+    #'\TODO Is it possible to Just load a huge matrix across iterations of sampled boxes? and applying weights to each?
+    
+    #' This is a little faster since I'm not having to run tstrsplit on every row, and dont' need to create and delete ADP.STRATA
+    b <- do.call(rbind, Map(
+      function(x,y) {
+        cbind(setnames(as.data.table( tstrsplit(y, split = "[.]", type.convert = T)), year_strata),
+              data.table(BOX_ID = x))},
+      x = nbr_sample,
+      y = names(nbr_sample)
+    ))
+  
+    
+  }
+  
+  #' *=================*
   
   strata_domain_n <- box_def$dmn$strata_dmn_n_dt
   
@@ -743,7 +776,7 @@ simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry =
     #trips$SAMPLE <- unlist(sample_lst)
     
     mon_lst[[i]] <- trips[unlist(sample_lst), TRIP_ID]
-    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])            #' \TODO Speed this function up
+    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])            #' \TODO Speed this function up!!
   } 
   
   sim_dt <- rbindlist(sim_lst, idcol = "ITER")
