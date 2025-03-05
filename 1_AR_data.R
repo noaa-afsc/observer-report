@@ -573,6 +573,7 @@ work.eland <- em_trw_offload %>%
 #  How many offloads were marked as tendered in VALHALLA that do not have an assigned tender vessel or
 #  TENDER_OFFLOAD_DATE from eLandings
 nrow(work.eland %>% filter(TENDER == "Y" & is.na(T_REPORT_ID)))
+#' \TODO *2024 AR* Remove this check once VALHALLA trip assignment code is updated and verified to be assigning trips correctly
 
 # Get observer offload data and combine with VALHALLA using eLandings data as the linkage
 script <- paste(
