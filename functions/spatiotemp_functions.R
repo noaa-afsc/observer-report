@@ -105,7 +105,7 @@ spatiotemp_data_prep <- function(valhalla){
 # Converts ADFG Stat Area to an iso-area hexagon grid. Specify the cell size in meters as the width of each hex cell.
 # cell size. The output is a dataframe with corresponding ADFG_STAT_AREA_CODEs and HEX_IDs, as well as the
 # simple feature object (class sf) of the hex cell polygons.
-stat_area_to_hex <- function(cell_size, stat_area_sf){
+stat_area_to_hex <- function(cell_size, spatial_sf){
   
   # 'cell_size' should be specified as a distance in meters. For hex cells, this is the distance between opposite sides.
   # 'stat_area_sf' is the shapefile of the ADFG stat areas in Alaska Albers projection (3467), with each statistical 
@@ -115,7 +115,7 @@ stat_area_to_hex <- function(cell_size, stat_area_sf){
   #   st_transform(crs = 3467)
   
   # Get centroids of statistical areas
-  stat_area_centroid_sf <- suppressWarnings(st_centroid(stat_area_sf))  
+  stat_area_centroid_sf <- suppressWarnings(st_centroid(spatial_sf))  
   
   # Generate a hex cell grid using the projection and boundaries from stat_area_centroid_sf, will cell size specified by
   # 'cell_size'. Subset this using stat_area_centroid_sf so only cells overlapping with it are retained.
@@ -154,7 +154,7 @@ stat_area_to_hex <- function(cell_size, stat_area_sf){
 # that was used in the 2024 ADP, but adjusted to separate spatiotemporal domains from nonspatiotemporal domains, which
 # allows trips that are defined to be in either the BSAI or GOA to still neighbor each other according to the normal
 # neighboring rules of the box definition
-define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NULL, stata_area_sf = stat_area_sf, geom = F, ps_cols = NULL) {
+define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NULL, spatial_sf = stat_area_sf, geom = F, ps_cols = NULL) {
   # TODO Haven't done much testing with both ps_cols and dmn_lst defined with GEAR type. 
   
   # data <- copy(swor_bootstrap.effort); space <- c(2e5, 2e5); time <- c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"); year_col <- "ADP"; stratum_cols <- c("STRATA"); geom <- F; ps_cols <- c("GEAR"); dmn_lst <- NULL
@@ -227,7 +227,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
   # Convert ADFG to HEX_ID #
   #========================#
   
-  stat_area_lst <- stat_area_to_hex(space[1], stat_area_sf)
+  stat_area_lst <- stat_area_to_hex(space[1], spatial_sf)
   stat_area_dist_lst <- suppressWarnings(apply(
     X = round(st_distance(st_centroid(stat_area_lst$HEX_GEOMETRY))), 
     MARGIN = 1, 
