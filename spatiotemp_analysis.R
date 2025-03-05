@@ -90,17 +90,21 @@ strata_levels <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA",
 
 ## Define Boxes ----
 
+#' \TODO *I believe I need to use a box definition with dmn_lst = list(nst = "GEAR")*
+
 # Define boxes, post-stratifying by FMP only
 box_def.stratum <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = NULL))
+  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = NULL))
 
-# Define boxes, post-stratifying by FMP only
+# Define boxes, post-stratifying by FMP only.
+#' \TODO Do I need this? currently used by `plot_interspersion_map`
 box_def.stratum_fmp <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
   year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
 
 # Define boxes, post-stratifying by FMP and Gear type (for OB to EM and ZE interspersion)
+#' \TODO Do I need this? currently used in the `cross-strata OB EM ZE comparisons`
 box_def.stratum_gear_fmp <- define_boxes(
   data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
   year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
@@ -116,8 +120,9 @@ real_interspersion.stratum <- calculate_realized_interspersion(box_def.stratum, 
 
 ### Simulate trip selection to create distributions of interspersion ----
 
-#' This will take a few minutes. 
 #' #' \TODO Consider speeding this up before adding this script to 4_AR_report.Rmd
+#' This will take a few minutes. 
+
 #' [Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = TRUE`]
 # Programmed rates
 sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = sim_iter, seed = seed, hex_smry = TRUE)
@@ -195,6 +200,7 @@ proximity_maps[[paste0(year, ".OB_FIXED_BSAI")]]$HEX_ID.realized
 proximity_maps[[paste0(year, ".OB_FIXED_GOA")]]$BOX
 proximity_maps[[paste0(year, ".OB_FIXED_GOA")]]$HEX_ID.realized  
 #' Gaps in WGOA 610 during weeks 16-27
+#' \TODO Why is there a trip in the BSAI here?
 
 proximity_maps[[paste0(year, ".OB_TRW_BSAI")]]$BOX
 proximity_maps[[paste0(year, ".OB_TRW_BSAI")]]$HEX_ID.realized
@@ -203,7 +209,6 @@ proximity_maps[[paste0(year, ".OB_TRW_BSAI")]]$HEX_ID.realized
 proximity_maps[[paste0(year, ".OB_TRW_GOA")]]$BOX
 proximity_maps[[paste0(year, ".OB_TRW_GOA")]]$HEX_ID.realized
 #' Small gap in WGOA? Only two fewer trips?
-#' \TODO Why is there a trip in the BSAI here?
 
 proximity_maps[[paste0(year, ".EM_FIXED_BSAI")]]$BOX
 proximity_maps[[paste0(year, ".EM_FIXED_BSAI")]]$HEX_ID.realized
