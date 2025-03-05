@@ -6,13 +6,11 @@ source("3_helper.R")
 # Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
 helper_objects <- ls()
 
-# Random number seed
-set.seed(052870)
-
 # Report year (year that fishing and observing took place)
 year <- 2024
 
 # Establish database connection
+channel_akro <- eval(parse(text = Sys.getenv("channel_cas")))
 channel_afsc  <- eval(parse(text = Sys.getenv('channel_afsc')))
 
 # Get data ----------------------------------------------------------------
@@ -357,134 +355,147 @@ EM.data <-
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "HAL"] & is.na(AGENCY_GEAR_CODE), "HAL", AGENCY_GEAR_CODE)) %>% 
   mutate(AGENCY_GEAR_CODE = ifelse(VESSEL_ID %in% single_gear_nas$VESSEL_ID[AGENCY_GEAR_CODE == "POT"] & is.na(AGENCY_GEAR_CODE), "POT", AGENCY_GEAR_CODE))
 
-# The following query will provide a list of EM selected trips and if they have been reviewed or not
-# Query will only include trips in completed or pending status and will not include compliance trips.
-# This query will also show the declared gear type and if reviewed, will show the em_reviewed_gear_type_code
-# This query will also show when the HD was received by PSFMC and when the EM reviewed data was exported and sent to AFSC
-# This query will also show the actual EM trip start date and time and actual EM trip end date and time which comes from the data on the HD.
+# * Data timeliness ----
+em_trip_end <- dbGetQuery(channel_afsc, paste("
+select distinct extract(year from t.trip_start_date_time) year, t.trip_plan_log_seq odds_trip_number,
+trunc(max(t.trip_end_date_time)) as trip_end
+from em_pac_review.em_trip t
+where extract(year from t.trip_start_date_time) =", year, "
+group by extract(year from t.trip_start_date_time), t.trip_plan_log_seq
+order by t.trip_plan_log_seq"))
 
-# Important note: if an EM reviewed trip used multiple gear types on a trip (i.e.,  pot and longline) there will be 2 records in the output.
-if(F){ 
-  # FIXME: When performing the data timeliness evaluations for the 2024 ADP, 
-  # it was discovered that some of the columns below don't mean what they sound like. 
-  # Even if the columns are accurate, this query would need to be translated to the ODDS schema. 
-  # Consider switching to 2024 ADP data timeliness queries.
-  script <- paste(
-    "select all_data.*, em_rev_gear.em_gear_code, 
-    hd_data.date_hd_received_by_psmfc,
-    hd_data.date_exported_to_afsc,
-    hd_data.actual_em_trip_start_date_time,
-    hd_data.actual_em_trip_end_date_time from (
-    select 
-    
-    case
-    when em_reviewed.trip_plan_log_seq is not null
-    then 'YES'
-    else 'NO'
-    End as EM_DATA_REVIEWED,   
-    em_reviewed.trip_number as em_reviewed_trip_number, 
-    em_selected.*
-    from    
-    
-    ---- from ODDS get the list of selected EM trips that are in completed or pending status
-    ---- and are not compliance monitoring trips
-    ( select distinct
-    
-    e.odds_trip_number,
-    d.name as vessel_name,
-    d.adfg_number as vessel_adfg_number,
-    trunc(e.date_logged) as date_logged,
-    e.GEAR_TYPE as gear_type_logged,
-    trunc(e.declared_leave_date) as declared_trip_start_date,
-    e.declared_port_of_departure as declared_trip_start_port,
-    trunc(e.declared_return_date) as declared_trip_end_date,
-    e.declared_plant_offloading_to as declared_trip_end_port,
-    trip_status,
-    i.user_reqst_coverage
-    
-    from norpac.odds_provider a,                   
-    norpac.odds_em_vessel_request f,
-    norpac.odds_eligible_opt_strata g,
-    norpac.odds_vessel_sample_plan c,
-    norpac.atl_lov_vessel d,
-    norpac.odds_logged_trip_summary_v e,
-    norpac.odds_em_request_status h,
-    norpac.odds_monitor i
-    where f.eligible_opt_seq = g.eligible_opt_seq
-    and g.vessel_seq = d.vessel_seq
-    and c.vessel_seq = d.vessel_seq
-    and d.permit = e.akr_vessel_id
-    and e.odds_trip_number = i.trip_plan_log_seq
-    and e.year = h.status_year   --- need this to make sure we don't get duplicates
-    and e.observer_status_code <> 'NO'
-    and e.year = ", year,"
-    and h.status_year = ", year,"
-    and i.sample_plan_seq in (13))em_selected
-    
-    left join
-    
-    ----get the EM reviewed trip number for those em trips that have been reviwed and where AFSC has the data
-    
-    (select a.trip_plan_log_seq, a.trip_number 
-    from em_pac_review.em_trip a
-    )em_reviewed
-    
-    on em_selected.ODDS_TRIP_NUMBER = em_reviewed.trip_plan_log_seq  
-    
-    
-    AND em_selected.trip_status in ('COMPLETED', 'PENDING')  
-    
-    order by  em_selected.odds_trip_number asc)all_data
-    
-    left join 
-    
-    ---- the below query will get the em gear code from the em data
-    
-    (select em_rev_gear.* from 
-    (select em_gear_code.trip_number,
-    em_gear_code.gear_type_code as em_gear_code
-    from
-    (select a.trip_number, b.gear_type_code
-    from EM_PAC_REVIEW.EM_FISHING_EVENT a,
-    em_pac_review.em_gear_type_lov b
-    where a.gear_Type_id = b.gear_type_id
-    group by a.trip_number, b.gear_type_code)em_gear_code
-    group by em_gear_code.trip_number, em_gear_code.gear_type_code)em_rev_gear)em_rev_gear
-    
-    on em_rev_gear.trip_number = all_data.em_reviewed_trip_number
-    
-    left join 
-    
-    --- the below query will get the when the HD was received by PSMFC, when it was exported to AFSC and the em trip start date and time and trip end date and time
-    
-    (select a.trip_number, 
-    b.date_received_by_psmfc as date_hd_received_by_psmfc,
-    a.file_import_date as date_exported_to_afsc, 
-    c.trip_plan_log_seq, 
-    c.trip_start_date_time as actual_em_trip_start_date_time, 
-    c.trip_end_date_time as actual_em_trip_end_date_time,
-    d.planned_embark_date as declared_embark_date,
-    d.planned_disembark_date as declared_end_date
-    from em_pac_review.em_trip_hard_drive a,
-    em_pac_review.em_hard_drive b,
-    em_pac_review.em_trip c,
-    norpac.odds_trip_plan_log d
-    where a.HARD_DRIVE_NUMBER = b.HARD_DRIVE_NUMBER
-    and c.TRIP_PLAN_LOG_SEQ = d.TRIP_PLAN_LOG_SEQ
-    and a.trip_number = c.trip_number)hd_data
-    
-    on hd_data.trip_number = all_data.em_reviewed_trip_number"
-  )
-  
-  EM.review <- dbGetQuery(channel_afsc, script)
-  
-  # Flip pending trips to completed if they have data reviewed
-  # For clarification, see email from Glenn Campbell on 3/11/20
-  EM.review$TRIP_STATUS[EM.review$EM_DATA_REVIEWED == "YES"] <- "COMPLETED"
+em_data_available <- dbGetQuery(channel_akro, paste("
+select h.ODDS_TRIP_NUMBER, 
+-- sampling strata information
+case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
+ss.sampling_strata_code as strata,
+trunc(min(r.EFFECTIVE_DATE)) data_available
+from AKFISH_REPORT.CATCH_REPORT_SOURCE r
+join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
+join AKFISH_REPORT.EM_HAUL h on f.EM_HAUL_PK = h.EM_HAUL_PK
+join AKFISH_REPORT.CALENDAR_DATE c on f.REPORT_DATE_PK = c.CALENDAR_DATE_PK
+join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
+where r.year_pk >=", year-1, "
+and r.CATCH_REPORT_TYPE_CODE = 'EM'
+and ss.sampling_strata_code != 'N/A'
+group by h.ODDS_TRIP_NUMBER,
+case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end,
+ss.sampling_strata_code
+order by h.ODDS_TRIP_NUMBER"))
 
-}
+ob_trips <- dbGetQuery(channel_afsc, paste("
+select extract(year from t.start_date) as year, t.cruise, t.permit, t.trip_seq, t.end_date as trip_end
+from norpac.atl_fma_trip t
+join norpac.ols_observer_cruise cru on cru.cruise = t.cruise
+join norpac.ols_observer_contract con on con.contract_number = cru.contract_number
+where extract(year from t.start_date) =", year, "
+and t.did_fishing_occur_flag = 'Y'"))
 
-# Fixed-gear EM research
+ob_hauls <- dbGetQuery(channel_akro, paste("
+select h.cruise, to_char(v.vessel_id) as permit, h.trip_seq,
+-- sampling strata information
+case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
+ss.sampling_strata_code as strata,
+trunc(min(r.EFFECTIVE_DATE)) data_available
+from AKFISH_REPORT.CATCH_REPORT_SOURCE r
+join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
+join AKFISH_REPORT.OBSERVER_HAUL h on f.OBSERVER_HAUL_PK = h.OBSERVER_HAUL_PK
+join AKFISH_REPORT.CALENDAR_DATE c on f.REPORT_DATE_PK = c.CALENDAR_DATE_PK
+join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
+join akfish_report.vessel v on v.vessel_pk = f.vessel_pk
+where r.year_pk >=", year-1, "
+and r.CATCH_REPORT_TYPE_CODE = 'OBS'
+and ss.sampling_strata_code != 'N/A'
+group by h.cruise, v.vessel_id, h.trip_seq,
+case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end,
+ss.sampling_strata_code"))
+
+afsc_offloads <- dbGetQuery(channel_afsc, paste("
+select distinct extract(year from delivery_end_date) as year, to_char(offload_join) offload_join, delivery_end_date, date_of_entry
+from obsint.offload_em_trawl_received_v
+where extract(year from delivery_end_date) =", year))
+
+akro_offloads <- dbGetQuery(channel_akro, paste("
+with j as (
+    -- sub query to only include active offloads
+    select distinct offload_join
+    from akfish_report.catch_report_source
+    where expire_date is null
+    and catch_report_type_code = 'EM_OFFLOAD'
+    and year_pk =", year, "
+    ), q as (
+    select to_char(r.offload_join) offload_join,
+    -- sampling strata information
+    case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
+    ss.sampling_strata_code as strata
+    from akfish_report.catch_report_source r
+    join akfish_report.catch_report_species_fact f on f.catch_report_source_pk = r.catch_report_source_pk
+    join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
+    where r.catch_report_type_code = 'EM_OFFLOAD'
+      and r.year_pk =", year, "
+      and r.offload_join in (select * from j)
+      and ss.sampling_strata_code != 'N/A'
+) select distinct * from q"))
+
+em_data_timeliness <- em_trip_end %>% 
+  inner_join(
+    em_data_available, 
+    by = "ODDS_TRIP_NUMBER"
+  ) %>% 
+  select(YEAR, TRIP_NUMBER = ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA, TRIP_END, DATA_AVAILABLE) %>% 
+  mutate(TRIP_END = as.Date(TRIP_END),
+         DATA_AVAILABLE = as.Date(DATA_AVAILABLE),
+         data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")))
+
+ob_data_timeliness <- ob_trips %>% 
+  inner_join(
+    ob_hauls,
+    by = c("CRUISE", "PERMIT", "TRIP_SEQ")
+  ) %>% 
+  mutate(TRIP_NUMBER = paste0(CRUISE, PERMIT, TRIP_SEQ), 
+         TRIP_END = as.Date(TRIP_END),
+         DATA_AVAILABLE = as.Date(DATA_AVAILABLE)) %>% 
+  select(YEAR, TRIP_NUMBER, COVERAGE_TYPE, STRATA, TRIP_END, DATA_AVAILABLE) %>%  
+  mutate(data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")))
+
+offload_data_timeliness <- afsc_offloads %>% 
+  inner_join(
+    akro_offloads, 
+    by = "OFFLOAD_JOIN"
+  ) %>% 
+  select(YEAR, TRIP_NUMBER = OFFLOAD_JOIN, COVERAGE_TYPE, STRATA, TRIP_END = DELIVERY_END_DATE, DATA_AVAILABLE = DATE_OF_ENTRY) %>% 
+  mutate(TRIP_END = as.Date(TRIP_END),
+         DATA_AVAILABLE = as.Date(DATA_AVAILABLE),
+         data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")) + 1)
+
+data_timeliness <- rbind(em_data_timeliness, ob_data_timeliness, offload_data_timeliness) %>% 
+  mutate(STRATA = recode(STRATA, 
+                         'EM_H' = 'EM HAL',
+                         'EM_P' = 'EM POT',
+                         'EM_TrawlFullCoverage' = 'EM TRW (EFP)',
+                         'EM_TrawlPartialCoverage' = 'EM TRW (EFP)',
+                         'EM_TrawlPartialCoverageTen' = 'EM TRW (EFP)',
+                         'F' = 'FULL',
+                         'H' = 'HAL',
+                         'N' = 'ZERO',
+                         'N/A' = 'NA',
+                         'P' = 'POT',
+                         'TR' = 'TRW',
+                         'EM_FG_BSAI' = 'EM FIXED BSAI',
+                         'EM_FG_GOA' = 'EM FIXED GOA',
+                         'EM_TR_BSAI' = 'EM TRW BSAI (EFP)',
+                         'EM_TR_GOA' = 'EM TRW GOA (EFP)',
+                         'FG_BSAI' = 'OB FIXED BSAI',
+                         'FG_GOA' = 'OB FIXED GOA',
+                         'TR_BSAI' = 'OB TRW BSAI',
+                         'TR_GOA' = 'OB TRW GOA')) %>% 
+  filter(STRATA %in% c("EM FIXED BSAI", "EM FIXED GOA", "EM TRW BSAI (EFP)", "EM TRW GOA (EFP)", "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA")) %>% 
+  mutate(data_timeliness = ifelse(data_timeliness < 0, 0, data_timeliness)) %>% 
+  group_by(TRIP_NUMBER) %>% 
+  filter(n_distinct(COVERAGE_TYPE) == 1 & n_distinct(STRATA) == 1) %>% 
+  ungroup()
+
+# * EM research ----
 em_research <- dbGetQuery(channel_afsc, paste(" select distinct adp, vessel_id, vessel_name, sample_plan_seq_desc, em_request_status
                                               from loki.em_vessels_by_adp
                                               where sample_plan_seq_desc = 'Electronic Monitoring -  research not logged '
@@ -647,7 +658,8 @@ vessel.issues <- filter(work.offload, CV_ID %in% work.dups$CV_ID)
 # Save --------------------------------------------------------------------
 
 # Remove any remaining unwanted objects and save data
-rm(helper_objects, channel_afsc, ADP_Output_dribble)
+rm(helper_objects, channel_afsc, ADP_Output_dribble, em_trip_end, em_data_available, ob_trips, ob_hauls, afsc_offloads, 
+   akro_offloads, em_data_timeliness, ob_data_timeliness, offload_data_timeliness)
 
 # Save
 save.image(file = "2_AR_data.Rdata")
