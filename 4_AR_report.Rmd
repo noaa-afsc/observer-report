@@ -1106,9 +1106,23 @@ perc_vessels_obs <- Coverage.Table %>%
   as.numeric()
 ```
 
-```{r em_times, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
-# EM review time (aka data timeliness) now performed in "data_timeliness.Rmd" created by Phil Ganz (NOTE: Requires ROracle and
-# access to CAS)
+```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
+times_smry <- data_timeliness %>%
+              group_by(YEAR, COVERAGE_TYPE, STRATA) %>%
+              summarise(median = round(median(data_timeliness), 2), 
+                        mean = round(mean(data_timeliness), 2), 
+                        .groups = "drop")
+
+times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
+                facet_wrap(STRATA ~ ., scales="free_y", ncol = 2) +
+                geom_histogram(bins = 20, fill="gray70") +
+                geom_vline(data = times_smry, aes(xintercept = median), color = "black") +
+                geom_vline(data = times_smry, aes(xintercept = mean), color = "red", lty = 2) +
+                geom_text(data = times_smry, aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), angle = 90, hjust = 1.2, vjust = -0.3) +
+                geom_text(data = times_smry, aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))), angle = 90, hjust = 1.2, vjust = 1.1) +
+                labs(x = "Data timeliness (days)", y = "Count") +
+                theme_bw()
+
 ```
 
 This section compares the coverage rate achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS; managed by the AKRO), the Observer Program database (NORPAC; managed by the AFSC) and eLandings (under joint management by the Alaska Department of Fish and Game, the IPHC and the NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.\
@@ -1861,11 +1875,11 @@ suppressWarnings(print(odds.by.date.plot))
 
 \newpage
 
-```{r em.times.figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
-suppressMessages(print(em.times.figure))
+```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
+suppressMessages(print(times_figure))
 ```
 
-`r fig_nums('em.times.figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Dashed red lines and annotations show mean data timeliness.")`  
+`r fig_nums('times_figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Solid black lines and annotations to the left show median data timeliness. Dashed red lines and annotations to the right show mean data timeliness.")`  
 
 \newpage
 
