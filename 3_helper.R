@@ -432,6 +432,14 @@ numbers2words <- function(x){
   helper(x)
 }
 
+v_diff <- function(x, start, stop) {
+  if(missing(start) != missing(stop)) stop("`start` and `stop` both need to be specified or missing")
+  # If using substring, apply it
+  if(!missing(start) & !missing(stop)) x <- substr(x, start, stop)
+  # Get indinces of where the vector changes
+  which(diff(as.numeric(as.factor(x))) != 0)
+}
+
 # III. Figure themes ----
 
 # a. Publications ----

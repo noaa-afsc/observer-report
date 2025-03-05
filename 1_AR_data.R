@@ -6,9 +6,6 @@ source("3_helper.R")
 # Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
 helper_objects <- ls()
 
-# Random number seed
-set.seed(052870)
-
 # Report year (year that fishing and observing took place)
 year <- 2024
 
@@ -85,7 +82,7 @@ col_nms <- colnames(sim_costs_dt)
 sim_costs_dt[, (col_nms) := lapply(.SD, as.numeric), .SDcols = col_nms]
 sim_costs_dt[, ODDS_ITER := seq_len(.N), by = .(SIM_ITER)]
 # Formatted result for the AR
-bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_CPD)]
+bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOTAL)]
 
 # * Valhalla ----
 
@@ -179,11 +176,6 @@ ORDER BY OBS_COVERAGE_TYPE, REPORT_ID")
 
 # The following query returns all landing ID's for offloads monitored for salmon all sectors.
 salmon.landings.obs <- dbGetQuery(channel_afsc, script)
-
-# Data checks and clean up
-
-# Number of offloads monitored for salmon by Observer Coverage Type (Full vs Partial)
-salmon.landings.obs  %>%  group_by(OBS_COVERAGE_TYPE) %>% summarise(n = n())
 
 # * ODDS ----
 
