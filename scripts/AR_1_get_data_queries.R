@@ -1,22 +1,29 @@
-# Title:                      Statement Annual Report Analytics, v2022.1
+# Title:                      Statement Annual Report Analytics, v2025.1
 # Author:                     Andy Kingham
 # Contact:                    Andy.kingham@noaa.gov
 # Create date:                20210329
 ###############################################################################
 ###############################################################################
-# This is the same as V2 of the same name, except it removes OBSERVER_ROLE as a factor.
+# This is the same as V2 of the same name, except it removes OBSERVER_ROLE as a factor,
+# updates GDrive functions, changes NORPAC access to use .Renvirons,
+# removes query for old statements database call, and streamlines trawl EM offload query.
 
 ##########
 # Set up the environment
 ##########
+#'* LOAD FMAtools here to enable our GDrive functions * - also requires devtools
+#'* Could just load tidyverse after plyr to get dplyr, tidyr, and lubridate
+#'  Can remove googledrive package if we use FMAtools
 
 if(!require("odbc"))        install.packages("odbc",        repos='http://cran.us.r-project.org')
 if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
-if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
-if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
-if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
-if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
-
+if(!require("tidyverse"))   install.packages("tidyverse",   repos='http://cran.us.r-project.org')
+# if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
+# if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
+# if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
+# if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
+if(!require("devtools"))     install.packages("devtools",   repos='http://cran.us.r-project.org')
+if(!require("FMAtools"))     devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 
 ###############################################################################
 ###############################################################################
@@ -29,10 +36,13 @@ rm(list = ls())
 
 
 # Define odbc connection to NORPAC
+# channel <- dbConnect(odbc::odbc(),"AFSC",
+#                      UID    = rstudioapi::askForPassword("Enter your NORPAC Username: "),
+#                      PWD    = rstudioapi::askForPassword("Enter your NORPAC Password: "))
+channel  <- eval(parse(text = Sys.getenv('channel_afsc')))
 
-channel <- dbConnect(odbc::odbc(),"AFSC",
-                     UID    = rstudioapi::askForPassword("Enter your NORPAC Username: "),
-                     PWD    = rstudioapi::askForPassword("Enter your NORPAC Password: "))
+# Assign the address of the Annual Report Project in the Shared Gdrive
+AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 5/2024_data")
 
 # adp_yr is the year of the annual report we are doing this time (annual_deployment_year)
 adp_yr <- rstudioapi::showPrompt(title = "ADP YEAR", message = "Enter the ADP YEAR for this analysis:", default = "")
@@ -82,67 +92,67 @@ first_cruise <- manual_year_cruises$MIN_CRUISE[manual_year_cruises$MANUAL_YEAR =
 ###################
 # Statements
 # Amend as needed to get statements for the current year.
-statements_raw_old  <-
-  dbGetQuery(
-    channel,
-    paste("
-          SELECT affidavit_id
-             ,   mtt.species as mgmt_fish_code
-             ,   first_violation_date
-             ,   nvl(number_violations, 1) AS number_violations --replace nulls with 1.  If this is an issue in a given year, this produces the lowest possible estimate.  (Has not been an issue since 2019)
-             ,   aff.comments AS statement_body   
-             ,   case_number
-             ,   acs.status_value AS case_status
-             ,   asu.affidavit_subject AS statement_type   
-
-                 --stick the ole_category on there.  Categories come from the Annual Report.
-                
-             ,  CASE WHEN aff.affidavit_type IN ('XX', 'F','E','VV') 
-                         THEN 'OLE PRIORITY: INTER-PERSONAL'
-                      WHEN aff.affidavit_type IN ('DD','QQ','H','G','GG') 
-                         THEN 'OLE PRIORITY: SAFETY AND DUTIES'
-                      WHEN aff.affidavit_type IN ('SS','ZZ','WW','M','L','EE','K','I','J','BB','X','CC','P','Q','O','FF','N')
-                         THEN 'PROTECTED RESOURCE & PROHIBITED SPECIES'
-                      WHEN aff.affidavit_type IN ('W','MM','T','U','Z','KK','NN','LL') 
-                         THEN 'ALL OTHER STATEMENT TYPES'
-                      WHEN aff.affidavit_type IN ('V','HH','II','JJ')
-                         THEN 'COAST GUARD'
-                      WHEN aff.affidavit_type IN ('OO','PP','TT','RR','R','UU')
-                         THEN 'LIMITED ACCESS PROGRAMS'
-                      ELSE 'UNKNOWN'   
-                  END AS old_ole_category
-             ,  agent
-             ,  enforcement_comments
-             ,  to_number(aff.permit) AS permit
-             ,  v.name AS vessel_plant
-             ,  aff.cruise
-             ,  norpac.ole_statement_factors_pkg.getManualYearForCruise(aff.cruise) AS manual_year
-            FROM observer_affidavits aff
-            LEFT JOIN management_target_fisheries mtt  ON mtt.code = aff.mgmt_fish_code 
-            LEFT JOIN affidavit_case_status acs        ON acs.status = aff.affidavit_case_status
-            LEFT JOIN affidavit_subject asu            ON asu.affidavit_type = aff.affidavit_type
-            LEFT JOIN ols_observer_cruise ocr          ON ocr.cruise = aff.cruise
-            LEFT JOIN ols_observer_contract oco        ON oco.contract_number = ocr.contract_number
-            LEFT JOIN ols_vessel_plant vp              ON aff.vessel_plant_seq = vp.vessel_plant_seq   
-            LEFT JOIN norpac.atl_vessplant_v v         ON v.permit = vp.permit  
-            LEFT JOIN ols_debriefed_vessplant dvp      ON dvp.vessel_plant_seq = vp.vessel_plant_seq  
-           WHERE aff.first_violation_date BETWEEN 
-                   to_date('", first_date, "', 'DD-MON-RR') AND
-                   to_date('", last_date, "',  'DD-MON-RR')
-             AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
-             AND oco.hake_flag = 'N'                  --eliminate HAKE cruises 
-          ",
-          sep = '')) %>%
-  mutate(FIRST_VIOL_YEAR  = year(FIRST_VIOLATION_DATE),
-         OLE_SYSTEM       = 'OLD',
-         NEW_OLE_CATEGORY = NA,
-         WITNESS_FLAG     = NA,
-         VICTIM_NAME      = NA,
-         UNITS            = NA,
-         WAS_ASSIGNED_TO_PERMIT_FLAG = 'Y')
-
-
-
+#'* THIS CAN LIKELY GO * statements_raw_old  <-
+#   dbGetQuery(
+#     channel,
+#     paste("
+#           SELECT affidavit_id
+#              ,   mtt.species as mgmt_fish_code
+#              ,   first_violation_date
+#              ,   nvl(number_violations, 1) AS number_violations --replace nulls with 1.  If this is an issue in a given year, this produces the lowest possible estimate.  (Has not been an issue since 2019)
+#              ,   aff.comments AS statement_body   
+#              ,   case_number
+#              ,   acs.status_value AS case_status
+#              ,   asu.affidavit_subject AS statement_type   
+# 
+#                  --stick the ole_category on there.  Categories come from the Annual Report.
+#                 
+#              ,  CASE WHEN aff.affidavit_type IN ('XX', 'F','E','VV') 
+#                          THEN 'OLE PRIORITY: INTER-PERSONAL'
+#                       WHEN aff.affidavit_type IN ('DD','QQ','H','G','GG') 
+#                          THEN 'OLE PRIORITY: SAFETY AND DUTIES'
+#                       WHEN aff.affidavit_type IN ('SS','ZZ','WW','M','L','EE','K','I','J','BB','X','CC','P','Q','O','FF','N')
+#                          THEN 'PROTECTED RESOURCE & PROHIBITED SPECIES'
+#                       WHEN aff.affidavit_type IN ('W','MM','T','U','Z','KK','NN','LL') 
+#                          THEN 'ALL OTHER STATEMENT TYPES'
+#                       WHEN aff.affidavit_type IN ('V','HH','II','JJ')
+#                          THEN 'COAST GUARD'
+#                       WHEN aff.affidavit_type IN ('OO','PP','TT','RR','R','UU')
+#                          THEN 'LIMITED ACCESS PROGRAMS'
+#                       ELSE 'UNKNOWN'   
+#                   END AS old_ole_category
+#              ,  agent
+#              ,  enforcement_comments
+#              ,  to_number(aff.permit) AS permit
+#              ,  v.name AS vessel_plant
+#              ,  aff.cruise
+#              ,  norpac.ole_statement_factors_pkg.getManualYearForCruise(aff.cruise) AS manual_year
+#             FROM observer_affidavits aff
+#             LEFT JOIN management_target_fisheries mtt  ON mtt.code = aff.mgmt_fish_code 
+#             LEFT JOIN affidavit_case_status acs        ON acs.status = aff.affidavit_case_status
+#             LEFT JOIN affidavit_subject asu            ON asu.affidavit_type = aff.affidavit_type
+#             LEFT JOIN ols_observer_cruise ocr          ON ocr.cruise = aff.cruise
+#             LEFT JOIN ols_observer_contract oco        ON oco.contract_number = ocr.contract_number
+#             LEFT JOIN ols_vessel_plant vp              ON aff.vessel_plant_seq = vp.vessel_plant_seq   
+#             LEFT JOIN norpac.atl_vessplant_v v         ON v.permit = vp.permit  
+#             LEFT JOIN ols_debriefed_vessplant dvp      ON dvp.vessel_plant_seq = vp.vessel_plant_seq  
+#            WHERE aff.first_violation_date BETWEEN 
+#                    to_date('", first_date, "', 'DD-MON-RR') AND
+#                    to_date('", last_date, "',  'DD-MON-RR')
+#              AND oco.contract_status in ('C', 'E')    --only get cruises that are already debriefed.
+#              AND oco.hake_flag = 'N'                  --eliminate HAKE cruises 
+#           ",
+#           sep = '')) %>%
+#   mutate(FIRST_VIOL_YEAR  = year(FIRST_VIOLATION_DATE),
+#          OLE_SYSTEM       = 'OLD',
+#          NEW_OLE_CATEGORY = NA,
+#          WITNESS_FLAG     = NA,
+#          VICTIM_NAME      = NA,
+#          UNITS            = NA,
+#          WAS_ASSIGNED_TO_PERMIT_FLAG = 'Y')
+# 
+# 
+# 
 
 
 
@@ -319,9 +329,10 @@ assignments_dates_cr_perm <-
                WHERE vp.cruise > ", first_cruise,
            " AND ols_cruise.isFMAcruiseTF(vp.cruise) = 'T')  --eliminate HAKE cruises.
               WHERE DEPLOYED_DATE BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR') 
-         ")) %>%
-  mutate(OLE_SYSTEM = if_else(CALENDAR_YEAR == 2023 & 
-                                DEBRIEF_START_DATE >= as.POSIXct(x = '2023/07/27', format = "%Y/%m/%d"),
+          ")) %>%
+  mutate(OLE_SYSTEM = if_else(CALENDAR_YEAR == 2023 &
+                                DEBRIEF_START_DATE >= as.POSIXct(x = '2023/07/27', format = "%Y/%m/%d") |
+                                CALENDAR_YEAR == 2024,
                               'NEW',  'OLD')
   )
 
@@ -398,45 +409,45 @@ df_offloads <-
                                 ELSE extract(year  FROM landing_date) 
                             END AS fiscal_year,
                      trunc(landing_date) AS landing_date,
-                     extract(year  FROM landing_date) AS calendar_year,       
+                     extract(year FROM landing_date) AS calendar_year,       
                      vessel_id, processor_permit_id, management_program_code,
-                     decode(fmp_area_code, 'N/A', null, fmp_area_code) nmfs_region
+                     decode(fmp_area_code, 'N/A', null, fmp_area_code) nmfs_region,
+                     management_program_modifier ---Trawl EM identifier
                 FROM norpac_views.atl_landing_mgm_id
-               WHERE landing_date >= (to_date('", first_date, "', 'DD-MON-RR') -730) --get WAAAY more than I need, to ensure I have other years for the rolling join, if I need it.
+                WHERE landing_date >= (to_date('", first_date, "', 'DD-MON-RR') -730) --get WAAAY more than I need, to ensure I have other years for the rolling join, if I need it.
                ",
                sep = ''))  
 
 
-
-
-
-
-df_em_efp_offloads <-
-  dbGetQuery(channel,
-             "SELECT DISTINCT ed.*,
-                     CASE WHEN extract(month FROM ed.landing_date) IN (10,11,12) 
-                                THEN extract(year  FROM ed.landing_date) +1
-                                ELSE extract(year  FROM ed.landing_date) 
-                            END AS fiscal_year,
-                     extract(year FROM ed.landing_date) AS calendar_year,       
-                     nvl(decode(fmp_area_code, 'N/A', null, fmp_area_code),
-                         CASE WHEN GOA_POLLOCK_OFFLOAD = 'NO'
-                              THEN 'BSAI'
-                              WHEN GOA_POLLOCK_OFFLOAD = 'YES'
-                              THEN 'GOA'
-                          END) AS nmfs_region
-                FROM norpac_views.atl_landing_mgm_id o
-                JOIN norpac_views.em_efp_trawl_deliveries ed
-                  ON o.report_id = ed.report_id
-             ")  %>%
+df_em_efp_offloads <- df_offloads %>%
+  filter(MANAGEMENT_PROGRAM_MODIFIER == "TEM") %>%
   # have to change 'EXP' to 'AFA' for the 6 or so records that were recorded as such, it is messing things up.  They are AFA and that is a mistake some processors made!!
-  mutate(MANAGEMENT_PROGRAM_CODE = ifelse(MANAGEMENT_PROGRAM_CODE == 'EXP', 'AFA', MANAGEMENT_PROGRAM_CODE))    
+  mutate(MANAGEMENT_PROGRAM_CODE = ifelse(MANAGEMENT_PROGRAM_CODE == 'EXP', 'AFA', MANAGEMENT_PROGRAM_CODE))
 
-
+# df_em_efp_offloads <-
+#   dbGetQuery(channel,
+#              "SELECT DISTINCT ed.*,
+#                      CASE WHEN extract(month FROM ed.landing_date) IN (10,11,12) 
+#                                 THEN extract(year  FROM ed.landing_date) +1
+#                                 ELSE extract(year  FROM ed.landing_date) 
+#                             END AS fiscal_year,
+#                      extract(year FROM ed.landing_date) AS calendar_year,       
+#                      nvl(decode(fmp_area_code, 'N/A', null, fmp_area_code),
+#                          CASE WHEN GOA_POLLOCK_OFFLOAD = 'NO'
+#                               THEN 'BSAI'
+#                               WHEN GOA_POLLOCK_OFFLOAD = 'YES'
+#                               THEN 'GOA'
+#                           END) AS nmfs_region
+#                 FROM norpac_views.atl_landing_mgm_id o
+#                 JOIN norpac_views.em_efp_trawl_deliveries ed ---THIS IS A BAD TABLE TO USE, SHOULD USE norpac_views.atl_landing_mgm_id and sort by MANAGEMENT_PROGRAM_MODIFIER == TEM
+#                   ON o.report_id = ed.report_id
+#              ")  %>%
+#   # have to change 'EXP' to 'AFA' for the 6 or so records that were recorded as such, it is messing things up.  They are AFA and that is a mistake some processors made!!
+#   mutate(MANAGEMENT_PROGRAM_CODE = ifelse(MANAGEMENT_PROGRAM_CODE == 'EXP', 'AFA', MANAGEMENT_PROGRAM_CODE))    
 
 
 # Save Output -------------------------------------------------------------
-
+#'* UPDATE THIS TO USE NEW GDrive FUNCTIONS FROM FMAtools *
 # Commenting out drive_auth(), UNCOMMENT if needed.
 #  Authorizes the googledrive package to access your NOAA Gdrive. Authenticating via this browser should be a one-time
 # thing. Future calls to googledrive functions will prompt you to simply select your NOAA google account as the one 
@@ -452,7 +463,7 @@ df_em_efp_offloads <-
 # project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
 #                                                 adp_yr))
 
-project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
+# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
 
 file_1_name  <- "AR_1_Statements_data.Rdata"
 
@@ -460,13 +471,12 @@ file_1_name  <- "AR_1_Statements_data.Rdata"
 save(list = ls()[!(ls() == 'channel')], 
      file = file_1_name)
 
+# # upload the .Rdata file to g-drive
+# googledrive::drive_upload(
+#   media     = file_1_name,       #' *The local filepath to the file you want to upload*
+#   path      = project_dribble,   #' *The dribble object of the Gdrive folder you want to upload to*
+#   name      = file_1_name,       #' *Optional. Assignes your uploaded object with a different file name.*,
+#   overwrite = T                  #' *A control for overwriting existing Gdrive files*.
+# ) 
 
-
-# upload the .Rdata file to g-drive
-googledrive::drive_upload(
-  media     = file_1_name,       #' *The local filepath to the file you want to upload*
-  path      = project_dribble,   #' *The dribble object of the Gdrive folder you want to upload to*
-  name      = file_1_name,       #' *Optional. Assignes your uploaded object with a different file name.*,
-  overwrite = T                  #' *A control for overwriting existing Gdrive files*.
-) 
-
+gdrive_upload(file_1_name, AnnRpt_EnfChp_dribble)
