@@ -11,17 +11,10 @@
 ##########
 # Set up the environment
 ##########
-#'* LOAD FMAtools here to enable our GDrive functions * - also requires devtools
-#'* Could just load tidyverse after plyr to get dplyr, tidyr, and lubridate
-#'  Can remove googledrive package if we use FMAtools
 
 if(!require("odbc"))        install.packages("odbc",        repos='http://cran.us.r-project.org')
 if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
 if(!require("tidyverse"))   install.packages("tidyverse",   repos='http://cran.us.r-project.org')
-# if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
-# if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
-# if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
-# if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
 if(!require("devtools"))     install.packages("devtools",   repos='http://cran.us.r-project.org')
 if(!require("FMAtools"))     devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 
@@ -36,9 +29,6 @@ rm(list = ls())
 
 
 # Define odbc connection to NORPAC
-# channel <- dbConnect(odbc::odbc(),"AFSC",
-#                      UID    = rstudioapi::askForPassword("Enter your NORPAC Username: "),
-#                      PWD    = rstudioapi::askForPassword("Enter your NORPAC Password: "))
 channel  <- eval(parse(text = Sys.getenv('channel_afsc')))
 
 # Assign the address of the Annual Report Project in the Shared Gdrive
@@ -447,36 +437,11 @@ df_em_efp_offloads <- df_offloads %>%
 
 
 # Save Output -------------------------------------------------------------
-#'* UPDATE THIS TO USE NEW GDrive FUNCTIONS FROM FMAtools *
-# Commenting out drive_auth(), UNCOMMENT if needed.
-#  Authorizes the googledrive package to access your NOAA Gdrive. Authenticating via this browser should be a one-time
-# thing. Future calls to googledrive functions will prompt you to simply select your NOAA google account as the one 
-# you want to re-authorize
-
-# googledrive::drive_auth()
-
-# Assign google drive location
-# MAKE SURE IT IS CORRECT GOOGLE PATH
-# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
-# MUCH faster to use the hard-coded drive ID (see below)
-
-# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
-#                                                 adp_yr))
-
-# project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
 
 file_1_name  <- "AR_1_Statements_data.Rdata"
 
 # save the file to the wd (but don't save the "channel object, no point as it will expire anyway)
 save(list = ls()[!(ls() == 'channel')], 
      file = file_1_name)
-
-# # upload the .Rdata file to g-drive
-# googledrive::drive_upload(
-#   media     = file_1_name,       #' *The local filepath to the file you want to upload*
-#   path      = project_dribble,   #' *The dribble object of the Gdrive folder you want to upload to*
-#   name      = file_1_name,       #' *Optional. Assignes your uploaded object with a different file name.*,
-#   overwrite = T                  #' *A control for overwriting existing Gdrive files*.
-# ) 
 
 gdrive_upload(file_1_name, AnnRpt_EnfChp_dribble)
