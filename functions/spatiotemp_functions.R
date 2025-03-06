@@ -942,18 +942,19 @@ calculate_density <- function(sim_res, fill_color, adjust = NULL) {
 }
 
 
-# Combine both datasets, scaling them so that y-axis is centered
+# Combine both simulated datasets, scaling them so that y-axis is centered
 combine_distributions <- function(realized, programmed) {
   # realized <- copy(realized.density); programmed <- copy(programmed.density)
   
   year_strata_domains <- attr(realized, "year_strata_domains")
-  
-  programmed_flipped <- copy(programmed)
-  programmed_flipped[, Y := -Y]
-  dist_dat <- rbind(cbind(DIST = "REAL", realized), cbind(DIST = "PROG", programmed_flipped))
-  
-  dist_dat[, MAX_ABS := max(abs(Y)), keyby = year_strata_domains]
-  dist_dat[, Y := Y/MAX_ABS]
+  # Flip the programmed rates results below the x-axis
+  programmed_flipped <- copy(programmed)[, Y := -Y]
+  # Combine the distributions in the same dataset, calculating the maximum y-ranges and scaling them
+  dist_dat <- rbind(
+    cbind(DIST = "REAL", realized), 
+    cbind(DIST = "PROG", programmed_flipped)) |>
+    _[, MAX_ABS := max(abs(Y)), keyby = year_strata_domains
+    ][, Y := Y/MAX_ABS]
   setattr(dist_dat, "year_strata_domains", year_strata_domains)
   dist_dat
 }
@@ -1012,7 +1013,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
   year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
   year_strata_dt <- box_def$dmn$geom_dmn_df %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
   
-  realized_boxes <- attr(exp_interspersion.realized.stratum_fmp, "box_expected")$RAW[
+  realized_boxes <- attr(exp_interspersion.realized.stratum, "box_expected")$RAW[
   ][attr(real_interspersion, "sampled_boxes"), on = c(year_strata, "BOX_ID")
   ][!is.na(HEX_ID)]
   
@@ -1053,7 +1054,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     # TODO Knowing which boxes were sampled vs which were neighboring might be informative too! 
     
     # Get expected probability that each box is sampled and its weight
-    stratum_hex_exp <- attr(exp_interspersion.realized.stratum_fmp, "box_expected")$RAW[
+    stratum_hex_exp <- attr(exp_interspersion.realized, "box_expected")$RAW[
     ][year_strata_dt[i,], on = year_strata
     ][, .(HEX_EXP = sum(BOX_DMN_w * BOX_DONOR_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
     
@@ -1091,7 +1092,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     
     # Do the same but with programmed rates
     # Get expected probability that each box is sampled and its weight
-    stratum_hex_exp <- attr(exp_interspersion.programmed.stratum_fmp, "box_expected")$RAW[
+    stratum_hex_exp <- attr(exp_interspersion.programmed.stratum, "box_expected")$RAW[
     ][year_strata_dt[i,], on = year_strata
     ][, .(HEX_EXP = sum(BOX_DMN_w * BOX_DONOR_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
     
