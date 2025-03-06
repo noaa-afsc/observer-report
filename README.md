@@ -31,3 +31,5 @@ Five main scripts are used
 Releases correspond to the code used for the product.  Reverting to a version will place the code at the point of the start of that project.
 For this reason releases should be made when the Team has finished the product and code is considered finalized.
 Outputs currently exclude confidential reporting where less than three observers are present in any given summary output.
+
+For details on how to connect to the AFSC database using the `eval(parse())` method, see [this page](https://github.com/Alaska-Fisheries-Monitoring-Analytics/AnnRpt-Deployment-Chapter/blob/master/database_connection.md).
