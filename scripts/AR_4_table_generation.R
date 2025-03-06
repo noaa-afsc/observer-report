@@ -8,9 +8,7 @@
 
 library(plyr)
 library(reshape2)
-library(dplyr)
-library(tidyr)
-library(lubridate)
+library(tidyverse)
 library(data.table)
 library(sqldf)
 library(devtools)
@@ -23,39 +21,12 @@ rm(list = ls())
 # Set the .Rdata file we will load
 file_3_name <- "AR_3_rate_output.Rdata"
 
+# Assign the address of the Annual Report Project in the Shared Gdrive
+AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 5/2024_data")
 
-# Pull Rdata file from google drive. ------------------------------------
-# NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
-
-# Identify the g-drive file to download
-# MAKE SURE IT IS CORRECT GOOGLE PATH
-
-# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
-# MUCH faster to use the hard-coded drive ID (see below)
-
-# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
-#                                                 adp_yr))
-
-
-
-# BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
-
-  # project_dribble <- googledrive::drive_get(googledrive::as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
-  # 
-  # data_dribble <- 
-  #   drive_ls(project_dribble) %>%
-  #   filter(name == file_3_name)
-  # 
-  # # Download the file from g-drive into local
-  # drive_download(
-  #   data_dribble,
-  #   path = file_3_name,
-  #   overwrite = T
-  # )
-
-# END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
-
-
+# Pull Rdata file from google drive. This will update your local if the GDrive version is newer,
+# otherwise it will load your local
+gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
 
 load(file = file_3_name)
 
@@ -530,12 +501,4 @@ file_4_name <- "AR_4_summary_tables_output.Rdata"
 save(list = ls(),
      file = file_4_name)
 
-
-# upload the .Rdata file to g-drive
-googledrive::drive_upload(
-  media     = file_4_name,
-  name      = file_4_name,
-  path      = project_dribble,
-  overwrite = T
-) 
-
+gdrive_upload(file_4_name, AnnRpt_EnfChp_dribble)
