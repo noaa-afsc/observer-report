@@ -9,64 +9,27 @@
 # Load pkgs
 if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
 if(!require("reshape2"))    install.packages("reshape2",    repos='http://cran.us.r-project.org')
-if(!require("dplyr"))       install.packages("dplyr",       repos='http://cran.us.r-project.org')
-if(!require("tidyr"))       install.packages("tidyr",       repos='http://cran.us.r-project.org')
-if(!require("lubridate"))   install.packages("lubridate",   repos='http://cran.us.r-project.org')
+if(!require("tidyverse"))   install.packages("tidyverse",       repos='http://cran.us.r-project.org')
 if(!require("data.table"))  install.packages("data.table",  repos='http://cran.us.r-project.org')
 if(!require("sqldf"))       install.packages("sqldf",       repos='http://cran.us.r-project.org')
-if(!require("googledrive")) install.packages("googledrive", repos='http://cran.us.r-project.org')
-
-
+if(!require("devtools"))    install.packages("devtools",   repos='http://cran.us.r-project.org')
+if(!require("FMAtools"))    devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 
 # Clear everything first
 rm(list = ls())
 
-
 # Set the .Rdata file we will load
 file_1_name  <- "AR_1_Statements_data.Rdata"
 
-# Pull Rdata file from google drive.
-# NOTE: if the google drive file has not changed, the next 2 steps are not necessary: you can just load from your local.
+# Assign the address of the Annual Report Project in the Shared Gdrive
+AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 5/2024_data")
 
-# Identify the g-drive file to download
-# MAKE SURE IT IS CORRECT GOOGLE PATH
-
-# Folder name is below, commented out, because it is slow.as.eff. when executed this way.
-# MUCH faster to use the hard-coded drive ID (see below)
-
-# project_dribble <- googledrive::drive_get(paste0("FMA Analysis Group/FMA OLE Statements Project/FMA OLE Statements AR ch 5 Rdata files/",
-#                                                 adp_yr))
-
-
-## BEGIN UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
-################
-
-# project_dribble <- drive_get(as_id("10Qtv5PNIgS9GhmdhSPLOYNgBgn3ykwEA"))
-# 
-# data_dribble <- 
-#   drive_ls(project_dribble) %>%
-#     filter(name == file_1_name)
-# 
-# Download the file from g-drive into local
-# drive_download(
-#   data_dribble,
-#   path = file_1_name,
-#   overwrite = T
-#               )
-
-################
-## END UNCOMMENT HERE IF YOU NEED TO GO GET THE Rdata FILE FROM G-DRIVE
-
-
-
-
+# Pull Rdata file from google drive. This will update your local if the GDrive version is newer,
+# otherwise it will load your local
+gdrive_download(file_1_name, AnnRpt_EnfChp_dribble)
 
 # load it from local into R
 load(file = file_1_name)
-
-
-
-
 
 
 # Begin Data Munge Section ------------------------------------------------------
@@ -699,12 +662,4 @@ file_2_name  <- "AR_2_rolling_join_output.Rdata"
 save(list = ls()[!(ls() == 'channel')],
      file = file_2_name)
 
-
-# upload the .Rdata file to g-drive
-googledrive::drive_upload(
-  media     = file_2_name,
-  name      = file_2_name,
-  path      = project_dribble,
-  overwrite = T
-) 
-
+gdrive_upload(file_2_name, AnnRpt_EnfChp_dribble)
