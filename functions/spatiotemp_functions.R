@@ -572,6 +572,7 @@ define_boxes <- function(data, space, time, year_col, stratum_cols, dmn_lst = NU
 #======================================================================================================================#
 
 # calculate_dmn_interspersion4 from the 2024 ADP
+if(F) {
 calculate_dmn_interspersion <- function(box_def, selection_rates, acceptor_donor_lst) {
   
   # TODO Manually add the fill for the pools!
@@ -764,8 +765,80 @@ calculate_realized_interspersion <- function(box_def, monitored_trips) {
   insp_dt_sum[!is.na(INSP)]
 }
 
-#' This function should replace `calculate_expected_interspersion()`, `calculate_realized_interspersion()`, and 
-#' `simulate interspersion()`. 
+
+# A wrapper for calculate_realized_interspersion, but randomly samples to create new `monitored_trips` object
+simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry = F) {
+  # box_def <- copy(box_def.stratum); sample_rates <- copy(programmed_rates); iter <- 1; seed <- 12345
+  # box_def <- copy(box_def.stratum_fmp); sample_rates <- copy(programmed_rates); iter <- 1000; i <- 1; seed <- 12345
+  
+  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
+  domains <- box_def$params$dmn_cols
+  sim_lst <- vector(mode = "list", length = iter)
+  mon_lst <- vector(mode = "list", length = iter)  # A list of TRIP_IDs sampled
+  
+  set.seed(seed)
+  
+  # Iterate sampling of trips, then calculate the interspersion achieved from each iteration of sampling
+  for(i in seq_len(iter)){
+    
+    if(i %% round(iter/10) == 0) cat(paste0(i, ", "))
+    
+    # Sample according to sample rates, 
+    sample_lst <- apply(setorderv(sample_rates, year_strata), 1, function(x) runif(x[["STRATA_N"]]) < x[["SAMPLE_RATE"]])
+    # Make a data.table of trips
+    trips <- setorderv(unique(subset(box_def$og_data, select = c(year_strata, "TRIP_ID"))), year_strata)
+    #trips$SAMPLE <- unlist(sample_lst)
+    
+    mon_lst[[i]] <- trips[unlist(sample_lst), TRIP_ID]
+    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])            #' \TODO Speed this function up!!
+  } 
+  
+  sim_dt <- rbindlist(sim_lst, idcol = "ITER")
+  
+  # sim_dt[, .(MEAN = mean(INSP)), keyby = year_strata] 
+  # Capture the domains as an attribute
+  setattr(sim_dt, "year_strata_domains", c(year_strata, domains))
+  setattr(sim_dt, "mon_lst", mon_lst)
+  
+  # If you want a hex-level summary of each, count the number of times each BOX was sampled
+  if(hex_smry) {
+    # For each simulation, total monitored/neighboring monitored trips for each HEX_ID
+    cat("\nCompiling summary of HEX_IDs for spatial analyses...\n")
+
+    nbr_smry <- lapply(sim_lst, function(x) {
+      # x <- sim_lst[[1]]
+      mon_box.lst <- lapply(
+        split(setkeyv(attr(x, "sampled_boxes"), year_strata), by = c(year_strata), keep.by = F), 
+        unlist, use.names = F)
+      # Identify neighbors of monitored trips
+      lapply(mon_box.lst, function(x) unique(as.integer(unlist(box_def$nbr_lst[x]))))
+    })
+
+    # Compile results for each year_strata across iterations
+    hex_smry_dt <-  rbindlist(
+      lapply(nbr_smry, function(x) {
+        # x <- nbr_smry[[1]]
+        rbindlist(lapply(x, function(y) data.table(BOX_ID = y)), idcol = "YEAR_STRATA")
+      }), idcol = "ITER") |>
+      _[, (year_strata) := tstrsplit(YEAR_STRATA, split = "[.]")
+      ][, YEAR_STRATA := NULL
+      ][, ADP := as.integer(ADP)
+        # Merge with the box definition to get box weights
+      ][box_def$dt_out, on = c(year_strata, "BOX_ID"), allow.cartesian = T
+        # By iteration and stratum, total the weight of boxes of HEX_IDs in sampled neighborhoods
+      ][, .(HEX_w = sum(BOX_w)), keyby = c("ITER", year_strata, "HEX_ID")]
+    # Attach the summary to the outputs as an attribute
+    setattr(sim_dt, "hex_smry", hex_smry_dt)
+  }
+  
+  # Return the results
+  sim_dt
+}
+
+}
+
+#' This function should replace `calculate_expected_interspersion()`, `calculate_realized_interspersion()`, 
+#' `simulate interspersion()`, and the helper function `calculate_dmn_interspersion()`.
 calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon = NULL, sim_iter = NULL, seed = NULL, hex_smry = F) {
   
   mode.realized  <- !is.null(realized_mon) &  is.null(sample_rates) &  is.null(sim_iter) &  is.null(seed)
@@ -992,7 +1065,7 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
       _[box_def$dt_out, on = c(year_strata)
         # Calculate probability each box will be in a sampled neighborhood
       ][, BOX_SAMPLE_PROB :=  1 - (1 - SAMPLE_RATE)^BOX_nbr][]
-    oud.psid <- out.prob |>
+    out.psid <- out.prob |>
       # Calculate the total weight of trips, the weight of trips in sampled neighborhoods, and interspersion by PS_ID
       _[, .(
         PS_W = sum(BOX_w), 
@@ -1015,76 +1088,6 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
   }
   
 } 
-
-
-# A wrapper for calculate_realized_interspersion, but randomly samples to create new `monitored_trips` object
-simulate_interspersion <- function(box_def, sample_rates, iter, seed, hex_smry = F) {
-  # box_def <- copy(box_def.stratum); sample_rates <- copy(programmed_rates); iter <- 1; seed <- 12345
-  # box_def <- copy(box_def.stratum_fmp); sample_rates <- copy(programmed_rates); iter <- 1000; i <- 1; seed <- 12345
-  
-  year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
-  domains <- box_def$params$dmn_cols
-  sim_lst <- vector(mode = "list", length = iter)
-  mon_lst <- vector(mode = "list", length = iter)  # A list of TRIP_IDs sampled
-  
-  set.seed(seed)
-  
-  # Iterate sampling of trips, then calculate the interspersion achieved from each iteration of sampling
-  for(i in seq_len(iter)){
-    
-    if(i %% round(iter/10) == 0) cat(paste0(i, ", "))
-    
-    # Sample according to sample rates, 
-    sample_lst <- apply(setorderv(sample_rates, year_strata), 1, function(x) runif(x[["STRATA_N"]]) < x[["SAMPLE_RATE"]])
-    # Make a data.table of trips
-    trips <- setorderv(unique(subset(box_def$og_data, select = c(year_strata, "TRIP_ID"))), year_strata)
-    #trips$SAMPLE <- unlist(sample_lst)
-    
-    mon_lst[[i]] <- trips[unlist(sample_lst), TRIP_ID]
-    sim_lst[[i]] <- calculate_realized_interspersion(box_def, trips[unlist(sample_lst)])            #' \TODO Speed this function up!!
-  } 
-  
-  sim_dt <- rbindlist(sim_lst, idcol = "ITER")
-  
-  # sim_dt[, .(MEAN = mean(INSP)), keyby = year_strata] 
-  # Capture the domains as an attribute
-  setattr(sim_dt, "year_strata_domains", c(year_strata, domains))
-  setattr(sim_dt, "mon_lst", mon_lst)
-  
-  # If you want a hex-level summary of each, count the number of times each BOX was sampled
-  if(hex_smry) {
-    # For each simulation, total monitored/neighboring monitored trips for each HEX_ID
-    cat("\nCompiling summary of HEX_IDs for spatial analyses...\n")
-
-    nbr_smry <- lapply(sim_lst, function(x) {
-      # x <- sim_lst[[1]]
-      mon_box.lst <- lapply(
-        split(setkeyv(attr(x, "sampled_boxes"), year_strata), by = c(year_strata), keep.by = F), 
-        unlist, use.names = F)
-      # Identify neighbors of monitored trips
-      lapply(mon_box.lst, function(x) unique(as.integer(unlist(box_def$nbr_lst[x]))))
-    })
-
-    # Compile results for each year_strata across iterations
-    hex_smry_dt <-  rbindlist(
-      lapply(nbr_smry, function(x) {
-        # x <- nbr_smry[[1]]
-        rbindlist(lapply(x, function(y) data.table(BOX_ID = y)), idcol = "YEAR_STRATA")
-      }), idcol = "ITER") |>
-      _[, (year_strata) := tstrsplit(YEAR_STRATA, split = "[.]")
-      ][, YEAR_STRATA := NULL
-      ][, ADP := as.integer(ADP)
-        # Merge with the box definition to get box weights
-      ][box_def$dt_out, on = c(year_strata, "BOX_ID"), allow.cartesian = T
-        # By iteration and stratum, total the weight of boxes of HEX_IDs in sampled neighborhoods
-      ][, .(HEX_w = sum(BOX_w)), keyby = c("ITER", year_strata, "HEX_ID")]
-    # Attach the summary to the outputs as an attribute
-    setattr(sim_dt, "hex_smry", hex_smry_dt)
-  }
-  
-  # Return the results
-  sim_dt
-}
 
 # Function for getting percentile given distribution and realized rates
 insp_percentile <- function(realized_insp, prog_sim, real_sim){
@@ -1183,7 +1186,7 @@ calculate_density <- function(sim_res, fill_color, adjust = NULL) {
     dmn_density[, FILL := as.factor(fcase(quant %in% c(0, 2), tail_color, quant == 1, fill_color))]
     
     # Extract the cutoffs of each group
-    cutoffs <- dmn_density[, .SD[c(1, .N),], keyby = c(year_strata_domains, "quant", "FILL")]
+    cutoffs <- dmn_density[, .SD[c(1, .N),], keyby = c(year_strata, "quant", "FILL")]
     # For the lower , add the x values of the tails 0 and 3
     quant_1.min <- cutoffs[quant == 0][.N][, ':=' (FILL = fill_color, quant = 1)][]
     quant_1.max <- cutoffs[quant == 2][1][, ':=' (FILL = fill_color, quant = 1)][]
