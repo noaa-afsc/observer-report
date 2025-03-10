@@ -3,9 +3,6 @@
 # Get packages and user-defined functions
 source("3_helper.R")
 
-# Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
-helper_objects <- ls()
-
 # Report year (year that fishing and observing took place)
 year <- 2024
 
