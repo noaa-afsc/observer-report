@@ -192,7 +192,7 @@ tbl.percentile.stratum <- percentile.stratum %>%
 ### Proximity Maps ####
 
 #' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
-proximity_maps <- plot_interspersion_map(box_def, real_interspersion.stratum, exp_interspersion.realized.stratum, exp_interspersion.programmed)
+proximity_maps <- plot_interspersion_map(box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed)
 
 #' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
 
@@ -221,6 +221,10 @@ proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$BOX
 proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$HEX_ID.realized
 #' Data needs to be fixed here, but it looks like a bunch of 640 trips were monitored? These plots use the realized 
 #' monitoring rate, not programmed, so this distribution should change as the data is fixed. Still, kind of strange.
+
+#' \TODO Why don't I have EM_TRW GOA?
+proximity_maps[[paste0(year, ".EM_TRW_GOA")]]$BOX
+proximity_maps[[paste0(year, ".EM_TRW_GOA")]]$HEX_ID.realized
 
 ### Proximity (coverage, but with a spatial focus) ####
 
