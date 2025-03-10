@@ -938,6 +938,7 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
     #' `z` is the subset of trips that were sampled in each simulation 
     #' Therefore, `trip_nbr.list[y]` is a list of the the boxes in the neighborhood of each trip in my STRATA x PS_ID,
     #' and subsetting it by  gets me only the boxes in neighborhoods of sampled trips, which is simplified to a vector.
+    #' \TODO Rename this, as if the mode is realized, this isn't a simulation...
     sampled_boxes_sim.lst <- lapply(strata_psid_box.lst, function(x) {
       lapply(x, function(y) {
         apply(selection.mtx[y, , drop = F], 2, function(z) unique(unlist(trip_nbr.lst[y][z])), simplify = F)
@@ -985,6 +986,20 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
     # List of monitored trips, each element is an iteraton with a vector of selected TRIP_IDs
     mon_lst <- apply(selection.mtx, 2, function(x) trips[x, TRIP_ID])
     setattr(sim.dt, "mon_lst", mon_lst)
+    
+    # Table of boxes in monitored neighborhoods by year_strata
+    if(mode.realized) {
+    
+      sampled_boxes <- sampled_boxes_sim.lst |>
+        lapply(unlist, recursive = F) |>
+        lapply(function(x) data.table(BOX_ID = unique(unlist(x, recursive = F)))) |>
+        rbindlist(idcol = "ADP.STRATA") |>
+        _[, (year_strata) := tstrsplit(ADP.STRATA, split = "[.]", type.convert = T)] |>
+        setkeyv(year_strata) |>
+        _[, ADP.STRATA := NULL][]
+      setattr(sim.dt, "sampled_boxes", sampled_boxes)
+    }
+    
     
     # year_strata 
     year_strata <- unlist(box_def$params[c("year_col", "stratum_cols")], use.names = F)
@@ -1284,15 +1299,17 @@ plot_interspersion_density <- function(den, real_interspersion, strata_levels){
     geom_text(data = stratum.N, aes(label = STRATA_N, x = -Inf, y = Inf), hjust = -0.1, vjust = 1.1, size = 3.5)
 }
 
+#' \TODO *real_interspersion needs `sampled_boxes` attribute. what did this look like?*
 
 plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersion.realized, exp_interspersion.programmed){
   # box_def <- copy(box_def.stratum_fmp); real_interspersion <- copy(real_interspersion.stratum_fmp);  exp_interspersion.realized <- copy(exp_interspersion.realized.stratum_fmp)
-  
+  # real_interspersion <- copy(real_interspersion.stratum)
+
   # Make a dt of all year * strata
   year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
-  year_strata_dt <- box_def$dmn$geom_dmn_df %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
+  year_strata_dt <- box_def$geom_sf %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
   
-  realized_boxes <- attr(exp_interspersion.realized.stratum, "box_expected")$RAW[
+  realized_boxes <- attr(exp_interspersion.realized, "PROB")[
   ][attr(real_interspersion, "sampled_boxes"), on = c(year_strata, "BOX_ID")
   ][!is.na(HEX_ID)]
   
@@ -1305,7 +1322,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     stratum_map_lst <- list(BOX = NA, HEX_ID.realized = NA, HEX_ID.programmed = NA)
     
     # Subset stratum
-    stratum_sub <- merge(box_def$dmn$geom_dmn_df, year_strata_dt[i,], on = year_strata, all.y = T) %>% dplyr::filter(BOX_DMN_n > 0)
+    stratum_sub <- merge(box_def$geom_sf, year_strata_dt[i,], on = year_strata, all.y = T) %>% dplyr::filter(BOX_n > 0)
     # Extract the spatial extent of the fishing effort
     stratum_sub.bbox <- stratum_sub %>% st_bbox()
     # Subset boxes that were sampled (realized)
@@ -1324,7 +1341,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
       #geom_sf(data = shp_nmfs %>% sf::st_set_crs(st_crs(3467))) + 
       geom_sf(data = ak_low_res %>% sf::st_set_crs(st_crs(3467)), fill = "gray80") +
       geom_sf(data = nmfs_low_res %>% sf::st_set_crs(st_crs(3467)), fill = NA) +
-      geom_sf(aes(fill = BOX_DMN_w)) + 
+      geom_sf(aes(fill = BOX_w)) + 
       facet_wrap(~TIME) + 
       geom_sf(data = stratum_sub.gaps, color = "red", alpha = 0, linewidth = 1) + 
       scale_fill_viridis_c(trans = "log") + 
@@ -1333,9 +1350,9 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     # TODO Knowing which boxes were sampled vs which were neighboring might be informative too! 
     
     # Get expected probability that each box is sampled and its weight
-    stratum_hex_exp <- attr(exp_interspersion.realized, "box_expected")$RAW[
+    stratum_hex_exp <- attr(exp_interspersion.realized, "PROB")[
     ][year_strata_dt[i,], on = year_strata
-    ][, .(HEX_EXP = sum(BOX_DMN_w * BOX_DONOR_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
+    ][, .(HEX_EXP = sum(BOX_w * BOX_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
     
     # Merge in hex_id geometry
     stratum_hex_exp <- merge(
@@ -1350,7 +1367,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     #' we are interested in departures from random sampling. Use the *programmed rate* to see differences relative to 
     #' our goal at the start of the ear
     stratum_hex_real <- realized_boxes[year_strata_dt[i,], on = year_strata][
-    ][, .(REALIZED = sum(BOX_DMN_w)), by = c(year_strata, "HEX_ID")]
+    ][, .(REALIZED = sum(BOX_w)), by = c(year_strata, "HEX_ID")]
     stratum_hex <- merge(stratum_hex_exp, stratum_hex_real, on = c(year_strata, "HEX_ID"), all.x = T) %>%
       mutate(REALIZED = ifelse(is.na(REALIZED), 0, REALIZED)) %>%
       mutate(DIFF = REALIZED - HEX_EXP) 
@@ -1371,9 +1388,9 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     
     # Do the same but with programmed rates
     # Get expected probability that each box is sampled and its weight
-    stratum_hex_exp <- attr(exp_interspersion.programmed.stratum, "box_expected")$RAW[
+    stratum_hex_exp <- attr(exp_interspersion.programmed, "PROB")[
     ][year_strata_dt[i,], on = year_strata
-    ][, .(HEX_EXP = sum(BOX_DMN_w * BOX_DONOR_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
+    ][, .(HEX_EXP = sum(BOX_w * BOX_SAMPLE_PROB)), keyby = c(year_strata, "HEX_ID")]
     
     # Merge in hex_id geometry
     stratum_hex_exp <- merge(
@@ -1388,7 +1405,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     #' we are interested in departures from random sampling. Use the *programmed rate* to see differences relative to 
     #' our goal at the start of the ear
     stratum_hex_real <- realized_boxes[year_strata_dt[i,], on = year_strata][
-    ][, .(REALIZED = sum(BOX_DMN_w)), by = c(year_strata, "HEX_ID")]
+    ][, .(REALIZED = sum(BOX_w)), by = c(year_strata, "HEX_ID")]
     stratum_hex <- merge(stratum_hex_exp, stratum_hex_real, on = c(year_strata, "HEX_ID"), all.x = T) %>%
       mutate(REALIZED = ifelse(is.na(REALIZED), 0, REALIZED)) %>%
       mutate(DIFF = REALIZED - HEX_EXP) 
