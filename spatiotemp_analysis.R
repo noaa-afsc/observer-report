@@ -8,7 +8,7 @@ library(dplyr)       # for piping and some data munging functions
 library(flextable)   # for creating print-ready tables
 
 # Set the simulation parameters
-sim_iter <- 1e3      # 1e3 iterations is good for testing quickly, 1e4 is better for the final run
+sim_iter <- 1e4      # 1e3 iterations is good for testing quickly, 1e4 is better for the final run
 seed <- 12345
 
 # Assign the address of Shared Gdrive operations for this project
@@ -18,7 +18,7 @@ project_folder <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter/")
 gdrive_download("2_AR_data.Rdata", project_folder)
 (load("2_AR_data.Rdata"))
 # Remove everything except for what is needed
-rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", "shp_nmfs", "year")))
+rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", "shp_nmfs", "year", "sim_iter", "seed")))
 
 # Load Data and Functions ----------------------------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", 
 shp_fmp <- rbind(
   shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
     mutate(FMP = "GOA"),
-  shp_nmfs %>% filter(SubArea == "GOA")  %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
+  shp_nmfs %>% filter(SubArea == "GOA") %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
     mutate(FMP = "BSAI")
 ) %>% st_set_crs(st_crs(3467))
 #' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
@@ -90,48 +90,51 @@ strata_levels <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA",
 
 ## Define Boxes ----
 
-#' \TODO *I believe I need to use a box definition with dmn_lst = list(nst = "GEAR")*
+#' \TODO *I believe I need to use a box definition with ps_cols = "GEAR", but shouldnt need dmn_lst.*
+#' I should be able to define a separate box definition with dmn_lst = list(nst = "GEAR", st = NULL), which will allow
+#' for cross-stratum comparisons. *note* that I would be leaving st = NULL and would need to allow both OB_FIXED_GOA and
+#' OB_FIXED_BSAI to apply to the ZERO stratum, which is not stratified by FMP!
 
-# Define boxes, post-stratifying by FMP only
-box_def.stratum <- define_boxes(
-  data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = NULL))
+#' Define boxes using the 2024 stratum definitions, post-stratifying the fixed gear strata by Gear type. Exclude the 
+#' ZERO stratum as we don't need to simulate interspersion for a stratum with a 0% selection rate.
 
-# Define boxes, post-stratifying by FMP only.
-#' \TODO Do I need this? currently used by `plot_interspersion_map`
-box_def.stratum_fmp <- define_boxes(
-  data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
+box_def <- define_boxes(
+  data = pc_effort_st[STRATA != "ZERO"], space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, ps_cols = "GEAR")
 
-# Define boxes, post-stratifying by FMP and Gear type (for OB to EM and ZE interspersion)
-#' \TODO Do I need this? currently used in the `cross-strata OB EM ZE comparisons`
-box_def.stratum_gear_fmp <- define_boxes(
-  data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
+# Disable for now - these may be used for cross-strata comparisons?
+if(F) {
+  # Define boxes, post-stratifying by FMP only.
+  #' \TODO Do I need this? currently used by `plot_interspersion_map`
+  box_def.stratum_fmp <- define_boxes(
+    data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+    year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
+  
+  # Define boxes, post-stratifying by FMP and Gear type (for OB to EM and ZE interspersion)
+  #' \TODO Do I need this? currently used in the `cross-strata OB EM ZE comparisons`
+  box_def.stratum_gear_fmp <- define_boxes(
+    data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+    year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
+}
 
 ## Stratum-Specific Proximity ------------------------------------------------------------------------------------------
 
 # Expected interspersion given the programmed and realized rates
-exp_interspersion.programmed.stratum <- calculate_expected_interspersion(box_def.stratum, programmed_rates)
-exp_interspersion.realized.stratum <- calculate_expected_interspersion(box_def.stratum, realized_rates.val)
+exp_interspersion.programmed <- calculate_interspersion(box_def, sample_rates = programmed_rates)
+exp_interspersion.realized <- calculate_interspersion(box_def, sample_rates = realized_rates.val)
 
 # Actually realized interspersion
-real_interspersion.stratum <- calculate_realized_interspersion(box_def.stratum, realized_mon)
+real_interspersion.stratum <- calculate_interspersion(box_def, realized_mon = realized_mon)
 
 ### Simulate trip selection to create distributions of interspersion ----
 
-#' #' \TODO Consider speeding this up before adding this script to 4_AR_report.Rmd
-#' This will take a few minutes. 
+#' Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = TRUE`
+#' This should take ~2 minutes to run.
 
-#' [Here, we will also capture the HEX_ID-level summaries for the spatial analyses using `hex_smry = TRUE`]
 # Programmed rates
-sim.programmed.stratum <- simulate_interspersion(box_def.stratum, programmed_rates, iter = sim_iter, seed = seed, hex_smry = TRUE)
+sim.programmed.stratum <- calculate_interspersion(box_def, sample_rates = programmed_rates, sim_iter = sim_iter, seed = seed, hex_smry = TRUE)
 # Realized rates
-sim.realized.stratum <- simulate_interspersion(box_def.stratum, realized_rates.val, iter = sim_iter, seed = seed, hex_smry = TRUE)
-
-#' `Quickload`
-# save(sim.programmed.stratum, sim.realized.stratum, file = paste0("output_data/spatiotemp_stratum_insp_i", sim_iter, ".rdata"))
-# load(paste0("output_data/spatiotemp_stratum_insp_i", sim_iter, ".rdata"))
+sim.realized.stratum <- calculate_interspersion(box_def, sample_rates = realized_rates.val, sim_iter = sim_iter, seed = seed, hex_smry = TRUE)
 
 # Calculate density of both distributions
 density.programmed.stratum <- calculate_density(sim.programmed.stratum, "dodgerblue", adjust = 2)
@@ -139,16 +142,13 @@ density.realized.stratum <- calculate_density(sim.realized.stratum, "green", adj
 
 # Combine distributions
 density.stratum <- combine_distributions(density.realized.stratum, density.programmed.stratum)
-# Make labels for domain trip counts
-dmn_N.stratum <- real_interspersion.stratum[
-  density.stratum[, .SD[1,], keyby = c(attr(density.stratum, "year_strata_domains")) ], 
-  on = attr(density.stratum, "year_strata_domains")]
-dmn_N.stratum[, X := pmin(X, INSP)]
-dmn_N.stratum[, STRATA_DMN_N := formatC(round(STRATA_DMN_N), width = max(nchar(round(STRATA_DMN_N))))]
 
 #' Plot distributions vs actually realized
+#' \TODO Make better legend descriptions like density assuming realized rate, density assuming programmed rate, etc
+#' \TODO I should I make box_def make create DMN, i.e., make it the same as ADP_STRATA when it's null? Maybe when I do 
+#' the cross-stratua comparison I'll go back to this...
 plt.proximity.stratum <- plot_interspersion_density(
-  density.stratum[STRATA != "ZERO"], real_interspersion.stratum[STRATA != "ZERO"], dmn_N.stratum[STRATA != "ZERO"], strata_levels) + 
+  density.stratum, real_interspersion.stratum, strata_levels) + 
   facet_nested_wrap(
     STRATA ~ ., dir = "h", ncol = 2, scales = "free", drop = F,
     labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x) )))
@@ -158,14 +158,11 @@ plt.proximity.stratum <- plot_interspersion_density(
 
 # Calculate percentiles of the outcomes relative to both distributions
 
-#' \TODO In 2024, OB_TRW_BSAI realized  complete overlap (interspersion = 1) which is always have percentile = 1, but this
-#' value could also have been totally expected. See what happens when you run a full 10K iter simulation. Check 
-#' insp_percentile(), and maybe do a check if the ecdf.fun() include 0 or 1?
-
+#' \TODO Make the column names better, match what is in the document
 percentile.stratum <- insp_percentile(
-  real_interspersion.stratum[STRATA != "ZERO"], 
-  sim.programmed.stratum[STRATA != "ZERO"], 
-  sim.realized.stratum[STRATA != "ZERO"]) |>
+  real_interspersion.stratum[, -"ITER"], 
+  sim.programmed.stratum, 
+  sim.realized.stratum) |>
   _[, c("PROG_SIG", "REAL_SIG") := lapply(.SD, function(x) {
     fcase(
       x < 0.025, "<<", 
@@ -173,6 +170,12 @@ percentile.stratum <- insp_percentile(
       x > 0.975, ">>", 
       x > 0.95, ">", default = "")
     }), .SDcols = c("PERC_PROG", "PERC_REAL")
+  # ecdf function can't have an open right side, so check if the realized rate is outside of 95% interval
+  ][, PROG_SIG_CHECK := data.table::between(INSP, prog_0.025, prog_0.975)
+  ][PROG_SIG_CHECK == T, PROG_SIG := ""
+  ][, REAL_SIG_CHECK := data.table::between(INSP, real_0.025, real_0.975)
+  ][REAL_SIG_CHECK == T, REAL_SIG := ""
+  ][, c("prog_0.025", "prog_0.975", "real_0.025", "real_0.975", "PROG_SIG_CHECK", "REAL_SIG_CHECK") := NULL
   ][, STRATA := factor(STRATA, levels = strata_levels)][]
 setorder(percentile.stratum, ADP, STRATA)
 colnames(percentile.stratum) <- gsub("_", " ", colnames(percentile.stratum))
@@ -189,7 +192,7 @@ tbl.percentile.stratum <- percentile.stratum %>%
 ### Proximity Maps ####
 
 #' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
-proximity_maps <- plot_interspersion_map(box_def.stratum_fmp, real_interspersion.stratum_fmp, exp_interspersion.realized.stratum_fmp, exp_interspersion.programmed)
+proximity_maps <- plot_interspersion_map(box_def, real_interspersion.stratum, exp_interspersion.realized.stratum, exp_interspersion.programmed)
 
 #' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
 
@@ -241,7 +244,7 @@ proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$HEX_ID.realized
 #' fishing effort within the spatial cell was not well-represented temporally by neighboring trips.
 
 # These plots use the simulation results rather than the averages
-spatial_plots_cov <- plot_spatial_coverage(box_def.stratum, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels)
+spatial_plots_cov <- plot_spatial_coverage(box_def, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels)
 plt.spatial_cov <- spatial_plots_cov$coverage
 
 #' \TODO Remove blank facet
@@ -257,11 +260,13 @@ plt.spatial_cov <- spatial_plots_cov$coverage
 #' actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more 
 #' extreme than 80% of outcomes.
 
-spatial_plots <- plot_monitoring_spatial(box_def.stratum, realized_mon, sim.realized.stratum, strata_levels)
+spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels)
 plt.spatial <- spatial_plots$plt.spatial.2024
 
 #' \TODO Remove blank facet
-#' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias 
+#' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias. Double-check once we verify the valhalla dataset is
+#' correct, but there really shouldn't be a spatial bias with 1/3 offloads monitored, right? In any case, in the 2025
+#' ADP, we shouldn't have any bias if all offloads are monitored.
 
 #' *====================================================================================================================*
 # Realized vs Expected Domain Interspersion of OB with EM and ZERO -----------------------------------------------------
