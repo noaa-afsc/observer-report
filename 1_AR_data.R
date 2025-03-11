@@ -529,7 +529,6 @@ nrow(filter(em_trw_offload, STRATA == "EM TRW BSAI (EFP)" & TENDER == "Y"))
 
 # Check gear type and IFP deliveries
 nrow(filter(em_trw_offload, AGENCY_GEAR_CODE == "NPT" | PORT_CODE == "IFP"))
-#' \TODO *2024 AR* 3 EM TRW GOA EFP trips deployed NPT gear? Also delivered to IFP.
 
 # Get eLandings data for these fish tickets to add TENDER_OFFLOAD_DATE which is needed to match
 #  observer data so we can determine which landings observers marked as monitored
