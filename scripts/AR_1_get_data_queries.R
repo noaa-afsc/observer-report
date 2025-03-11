@@ -332,27 +332,24 @@ hauls <-
 
 
 df_offloads <- 
+  # updating to return a ROW for each day between when the fishing started, and  the landing date.
+  # This should reduce the number of ROLLING JOINS that are required!
   dbGetQuery(channel,
-             paste0(
-               "SELECT distinct report_id,
-                     CASE WHEN extract(month FROM landing_date) IN (10,11,12) 
-                                THEN extract(year  FROM landing_date) +1
-                                ELSE extract(year  FROM landing_date) 
-                            END AS fiscal_year,
-                     trunc(landing_date) AS landing_date,
-                     extract(year FROM landing_date) AS calendar_year,       
-                     vessel_id, processor_permit_id, management_program_code,
-                     decode(fmp_area_code, 'N/A', null, fmp_area_code) nmfs_region,
-                     management_program_modifier ---Trawl EM identifier
-                FROM norpac_views.atl_landing_mgm_id
-                WHERE landing_date >= (to_date('", first_date, "', 'DD-MON-RR') -730) --get WAAAY more than I need, to ensure I have other years for the rolling join, if I need it.
-               "))  
-
-
-df_em_efp_offloads <- df_offloads %>%
-  filter(MANAGEMENT_PROGRAM_MODIFIER == "TEM") %>%
-  # have to change 'EXP' to 'AFA' for the 6 or so records that were recorded as such, it is messing things up.  They are AFA and that is a mistake some processors made!!
-  mutate(MANAGEMENT_PROGRAM_CODE = ifelse(MANAGEMENT_PROGRAM_CODE == 'EXP', 'AFA', MANAGEMENT_PROGRAM_CODE))
+               "SELECT * FROM loki.deliveries_factors_last_2_yrs") %>%
+  group_by(REPORT_ID, FISCAL_YEAR, CALENDAR_YEAR, FISHING_DAYS, 
+           VESSEL_ID, PROCESSOR_PERMIT_ID, GEAR_TYPE, VESSEL_TYPE,
+           MANAGEMENT_PROGRAM_CODE, MANAGEMENT_PROGRAM_MODIFIER, NMFS_REGION) %>%
+  expand(DEPLOYED_DATE = seq(min(FISHING_START_DATE), 
+                               max(LANDING_DATE), 
+                               by = '1 day') ) %>%
+  ungroup %>%
+  inner_join(df_offloads) %>% # have to get fishing_start_date and landing_date columns back into the df (this is a hack LOL)
+  select(REPORT_ID, FISCAL_YEAR, CALENDAR_YEAR, DEPLOYED_DATE, FISHING_START_DATE, LANDING_DATE, FISHING_DAYS, VESSEL_ID, PROCESSOR_PERMIT_ID,
+         GEAR_TYPE, VESSEL_TYPE, MANAGEMENT_PROGRAM_CODE, MANAGEMENT_PROGRAM_MODIFIER, NMFS_REGION) 
+   # have to change 'EXP' to 'AFA' for the 6 or so Trawl EM records that were recorded as such, it is messing things up.  They are AFA and that is a mistake some processors made!!
+  mutate(MANAGEMENT_PROGRAM_CODE = ifelse(MANAGEMENT_PROGRAM_CODE == 'EXP' & MANAGEMENT_PROGRAM_MODIFIER == 'TEM', 
+                                          'AFA',
+                                          MANAGEMENT_PROGRAM_CODE)  )
 
 
 # Save Output -------------------------------------------------------------
