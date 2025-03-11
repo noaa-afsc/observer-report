@@ -1,4 +1,5 @@
 library(data.table)
+library(dplyr)        # For data wrangling/piping with sf package
 library(ggplot2)
 library(FMAtools)
 library(ggh4x)       # facet_grid2 has cleaner facet labels while allowing for independent x and/or y scales
@@ -6,6 +7,8 @@ library(sf)          # for manipulating simpler feature objects and mapping
 library(sfheaders)   # for sf_remove_holes
 library(dplyr)       # for piping and some data munging functions
 library(flextable)   # for creating print-ready tables
+library(gtable)       # For gtable_show_layout(), to visualize which parts of a plot to remove
+library(ggpubr)       # For as_ggplot(), to convert grobs back into ggplot objects
 
 # Set the simulation parameters
 sim_iter <- 1e4      # 1e3 iterations is good for testing quickly, 1e4 is better for the final run
@@ -55,8 +58,9 @@ stat_area_sf <- st_read(
 pc_effort_st <- spatiotemp_data_prep(work.data)
 
 #' Realized Rates *Check that these match up with the realized rates in 4_AR_report*
-realized_rates.val <- unique(pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)])[
-][, .(STRATA_N = .N, SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)]
+realized_rates.val  <- pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)] |>
+  unique() |>
+  _[, .(STRATA_N = .N, SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)]
 
 # Create a subset table of realized monitored trips
 realized_mon <- unique(pc_effort_st[OBSERVED_FLAG == "Y", .(ADP, STRATA, TRIP_ID)])
@@ -78,25 +82,23 @@ setcolorder(programmed_rates, c("ADP", "STRATA", "STRATA_N", "SAMPLE_RATE"))
 if(!fsetequal(unique(realized_rates.val[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
   stop("STRATA and ADP in `realized_rates.val` does not match those in `programmed_rates!`")
 }
-
 #' Check to make sure all year/strata names match between pc_effort_st and rates objects!
 if(!fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
   stop("STRATA and ADP in `pc_effort_dt` does not match those in `programmed_rates!`")
 }
 
 # Specify ordering of strata. Adding a blank stratum for the sake of aligning BSAI/GOA in plots.
-strata_levels <- c("OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "", "EM_TRW_GOA_(EFP)")
+strata_levels <- c(
+  "OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "", "EM_TRW_GOA_(EFP)"
+)
 
 
 ## Define Boxes ----
 
-#' \TODO *I believe I need to use a box definition with ps_cols = "GEAR", but shouldnt need dmn_lst.*
-#' I should be able to define a separate box definition with dmn_lst = list(nst = "GEAR", st = NULL), which will allow
-#' for cross-stratum comparisons. *note* that I would be leaving st = NULL and would need to allow both OB_FIXED_GOA and
-#' OB_FIXED_BSAI to apply to the ZERO stratum, which is not stratified by FMP!
-
 #' Define boxes using the 2024 stratum definitions, post-stratifying the fixed gear strata by Gear type. Exclude the 
 #' ZERO stratum as we don't need to simulate interspersion for a stratum with a 0% selection rate.
+
+#' \TODO For the `EM_TRW_EFP_(GOA)` stratum, need to redefine TRIP_ID by shoreside deliveries!
 
 box_def <- define_boxes(
   data = pc_effort_st[STRATA != "ZERO"], space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
@@ -104,15 +106,8 @@ box_def <- define_boxes(
 
 # Disable for now - these may be used for cross-strata comparisons?
 if(F) {
-  # Define boxes, post-stratifying by FMP only.
-  #' \TODO Do I need this? currently used by `plot_interspersion_map`
-  box_def.stratum_fmp <- define_boxes(
-    data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
-    year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = NULL, st = "BSAI_GOA"))
-  
-  # Define boxes, post-stratifying by FMP and Gear type (for OB to EM and ZE interspersion)
-  #' \TODO Do I need this? currently used in the `cross-strata OB EM ZE comparisons`
-  box_def.stratum_gear_fmp <- define_boxes(
+  # Define boxes, defining domains by FMP and Gear type (for OB to EM and ZE interspersion)
+  box_def.gear_fmp <- define_boxes(
     data = pc_effort_st, space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
     year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, dmn_lst = list(nst = "GEAR", st = "BSAI_GOA"))
 }
@@ -152,9 +147,9 @@ plt.proximity.stratum <- plot_interspersion_density(
   facet_nested_wrap(
     STRATA ~ ., dir = "h", ncol = 2, scales = "free", drop = F,
     labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x) )))
-
-#' \TODO Would look cleaner to remove the unused panel. Can do this with grid/gridExtra but it looks a little more
-#' complicated than usual when building plots with facet_nested_wrap
+# Drop the uneeded facet (strip and panel)
+# drop_facet(plt.proximity.stratum )
+plt.proximity.stratum <- drop_facet(plt.proximity.stratum, drop = list(c(24,7), c(25, 7)))
 
 # Calculate percentiles of the outcomes relative to both distributions
 
@@ -211,26 +206,27 @@ proximity_maps[[paste0(year, ".OB_TRW_BSAI")]]$HEX_ID.realized
 
 proximity_maps[[paste0(year, ".OB_TRW_GOA")]]$BOX
 proximity_maps[[paste0(year, ".OB_TRW_GOA")]]$HEX_ID.realized
-#' Small gap in WGOA? Only two fewer trips?
+#' \TODO Wait till sample unit is changed to offload before making conclusions
 
 proximity_maps[[paste0(year, ".EM_FIXED_BSAI")]]$BOX
 proximity_maps[[paste0(year, ".EM_FIXED_BSAI")]]$HEX_ID.realized
-#' Seem to have lower than expected monitoring for BSAI trips in EBSAI/WGOA
+#' Seem to have lower than expected monitoring for BSAI trips in EBSAI/WGOA, but also gaps near the end of the year?
 
 proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$BOX
 proximity_maps[[paste0(year, ".EM_FIXED_GOA")]]$HEX_ID.realized
 #' Data needs to be fixed here, but it looks like a bunch of 640 trips were monitored? These plots use the realized 
 #' monitoring rate, not programmed, so this distribution should change as the data is fixed. Still, kind of strange.
 
-#' \TODO Why don't I have EM_TRW GOA?
-proximity_maps[[paste0(year, ".EM_TRW_GOA")]]$BOX
-proximity_maps[[paste0(year, ".EM_TRW_GOA")]]$HEX_ID.realized
+proximity_maps[[paste0(year, ".EM_TRW_GOA_(EFP)")]]$BOX
+proximity_maps[[paste0(year, ".EM_TRW_GOA_(EFP)")]]$HEX_ID.realized
+#' \TODO Wait till sample unit is changed to offload before making conclusions
 
 ### Proximity (coverage, but with a spatial focus) ####
 
-#' For each stratum, visually inspect whether the achieved monitoring coverage was distributed evenly through space. 
-#' The fill color of each spatial cell (hexagon) corresponds to areas where the level of coverage of more (green) or 
-#' less (purple) than expected (i.e., median outcome of simulations), and cells containing a circle indicate outcomes
+#' For each stratum, visually inspect whether the achieved monitoring coverage (weight of trips in boxes in sampled
+#' neighborhoods) was distributed evenly through space. 
+#' The fill color of each spatial cell (hexagon) corresponds to areas where the level of coverage of more \green or 
+#' less `purple` than expected (i.e., median outcome of simulations), and cells containing a *circle* indicate outcomes
 #' that were more extreme than 95% of simulation outcomes
 
 #' Look for clusters of spatial cells with circles, indicating a pattern of departures from expected coverage.
@@ -238,8 +234,7 @@ proximity_maps[[paste0(year, ".EM_TRW_GOA")]]$HEX_ID.realized
 #' This is not counting # of trips in each cell and comparing with how many were monitored! It's calculating the 
 #' proportion of trips in the spatial cell that were covered (monitored or proximal to monitoring) and comparing that to what
 #' was achieved in simulations of random sampling. More trips monitored in a cell does not necessarily translate to 
-#' higher coverage if the monitoring is clumped in time and not distributed evenly with fishing effort! This is very 
-#' apparent in the fixed-gear EM strata where 
+#' higher coverage if the monitoring is clumped in time and not distributed evenly with fishing effort!
 
 #' White (value of ~0) means the achieved monitoring coverage matched the expectation.
 #' Green (value of +1) means no coverage was expected but was fully covered.
@@ -250,8 +245,10 @@ proximity_maps[[paste0(year, ".EM_TRW_GOA")]]$HEX_ID.realized
 # These plots use the simulation results rather than the averages
 spatial_plots_cov <- plot_spatial_coverage(box_def, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels)
 plt.spatial_cov <- spatial_plots_cov$coverage
+# Remove blank facet
+# drop_facet(plt.spatial_cov)
+plt.spatial_cov <- drop_facet(plt.spatial_cov, drop = list(c(24, 7), c(25, 7)))
 
-#' \TODO Remove blank facet
 
 #' *====================================================================================================================*
 # Spatial Analyses ####
@@ -260,17 +257,25 @@ plt.spatial_cov <- spatial_plots_cov$coverage
 ## Spatial Arrangement of Monitored Trips ----
 
 #' Determine whether the spatial arrangement of monitoring was distributed evenly (as expected by random sampling). 
-#' Counts the number of monitored trips in each HEX_ID and compares to the simulation outcomes, highlighting any 
+#' Counts the `number of monitored trips in each HEX_ID` and compares to the simulation outcomes, highlighting any 
 #' actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more 
 #' extreme than 80% of outcomes.
 
 spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels)
 plt.spatial <- spatial_plots$plt.spatial.2024
+# Drop unused facet
+# drop_facet(plt.spatial)
+plt.spatial <- drop_facet(plt.spatial, drop = list(c(24, 7), c(25, 7)))
 
-#' \TODO Remove blank facet
 #' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias. Double-check once we verify the valhalla dataset is
 #' correct, but there really shouldn't be a spatial bias with 1/3 offloads monitored, right? In any case, in the 2025
 #' ADP, we shouldn't have any bias if all offloads are monitored.
+
+
+#' `==================================================================================================================#`
+#   [EVERYTHING ABOVE MOVED TO 4_AR_REPORT.Rmd] ----
+#' `==================================================================================================================#`
+
 
 #' *====================================================================================================================*
 # Realized vs Expected Domain Interspersion of OB with EM and ZERO -----------------------------------------------------
