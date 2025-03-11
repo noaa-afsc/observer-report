@@ -20,33 +20,37 @@ spatiotemp_data_prep <- function(valhalla){
   #' used for the Annual Deployment Plans.
   
   # Subset to partial coverage trips only
-  pc_effort_dt <- valhalla[COVERAGE_TYPE == "PARTIAL"]
-  # Change TRIP_ID to integer class, keeping original TRIP_ID for posterity as (wd_TRIP_ID, or 'work.data TRIP_ID')
-  pc_effort_dt[, wd_TRIP_ID := TRIP_ID][, TRIP_ID := NULL][, TRIP_ID := .GRP, keyby = .(wd_TRIP_ID)]
-  # Change VESSEL_ID to integer class and use it to replace PERMIT (some years don't have PERMIT!)
-  pc_effort_dt[, PERMIT := NULL][, PERMIT := as.integer(VESSEL_ID)]
+  #' \TODO I should instead create st_TRIP_ID rather than replacing TRIP_ID
+  pc_effort_dt <- valhalla |>
+    _[COVERAGE_TYPE == "PARTIAL"
+      # Change TRIP_ID to integer class, keeping original TRIP_ID for posterity as (wd_TRIP_ID, or 'work.data TRIP_ID')
+    ][, wd_TRIP_ID := TRIP_ID
+    ][, TRIP_ID := NULL
+    ][, TRIP_ID := .GRP, keyby = .(wd_TRIP_ID)
+      # Change VESSEL_ID to integer class and use it to replace PERMIT (some years don't have PERMIT!)
+    ][, PERMIT := NULL
+    ][, PERMIT := as.integer(VESSEL_ID)][]
+  
   # Count total of partial coverage trips
   pc_trip_id_count <- uniqueN(pc_effort_dt$TRIP_ID)
   
   # For each trip, identify which FMP had most retained catch, splitting FMP by BSAI and GOA
-  fmp_bsai_goa <- pc_effort_dt[, .(
-    FMP_WT = sum(WEIGHT_POSTED[SOURCE_TABLE == "Y"], na.rm = T)
-  ), by = .(TRIP_ID, BSAI_GOA = FMP)
-  ][, .SD[which.max(FMP_WT)], by = .(TRIP_ID)
-  ][, FMP_WT := NULL][]
+  fmp_bsai_goa <- pc_effort_dt |>
+    _[, .(FMP_WT = sum(WEIGHT_POSTED[SOURCE_TABLE == "Y"], na.rm = T)), by = .(TRIP_ID, BSAI_GOA = FMP)
+    ][, .SD[which.max(FMP_WT)], by = .(TRIP_ID)
+    ][, FMP_WT := NULL][]
   if( (pc_trip_id_count != uniqueN(fmp_bsai_goa$TRIP_ID) ) | (pc_trip_id_count != nrow(fmp_bsai_goa)) ) {
     stop("Something went wrong making 'fmp_bsai_goa'")
   }
   
   # For each trip, Identify which FMP had most retained catch, splitting FMP by BS, AI and GOA
-  fmp_bs_ai_goa <- copy(pc_effort_dt)[
-  ][, BS_AI_GOA := fcase(
-    REPORTING_AREA_CODE %in% c(541, 542, 543), "AI",
-    REPORTING_AREA_CODE %in% c(508, 509, 512, 513, 514, 516, 517, 518, 519, 521, 523, 524), "BS",
-    REPORTING_AREA_CODE %in% c(610, 620 ,630, 640, 649, 650, 659), "GOA")  
-  ][, .(
-    FMP_WT = sum(WEIGHT_POSTED[SOURCE_TABLE == "Y"], na.rm = T)
-  ), by = .(TRIP_ID, BS_AI_GOA)][, .SD[which.max(FMP_WT)], by = .(TRIP_ID)][, FMP_WT := NULL][]
+  fmp_bs_ai_goa <- copy(pc_effort_dt) |>
+    _[, BS_AI_GOA := fcase(
+      REPORTING_AREA_CODE %in% c(541, 542, 543), "AI",
+      REPORTING_AREA_CODE %in% c(508, 509, 512, 513, 514, 516, 517, 518, 519, 521, 523, 524), "BS",
+      REPORTING_AREA_CODE %in% c(610, 620 ,630, 640, 649, 650, 659), "GOA")  
+    ][, .(FMP_WT = sum(WEIGHT_POSTED[SOURCE_TABLE == "Y"], na.rm = T)), by = .(TRIP_ID, BS_AI_GOA)
+    ][, .SD[which.max(FMP_WT)], by = .(TRIP_ID)][, FMP_WT := NULL][]
   if( 
     (pc_trip_id_count != uniqueN(fmp_bs_ai_goa$TRIP_ID) ) | 
     (pc_trip_id_count != uniqueN(fmp_bs_ai_goa[!is.na(BS_AI_GOA), TRIP_ID]) ) 
@@ -54,42 +58,38 @@ spatiotemp_data_prep <- function(valhalla){
     stop("Something went wrong making 'fmp_bs_ai_goa'")
   }
   
-  pc_effort_dt <- unique(
-    pc_effort_dt[, .(
+  # Rename and format columns
+  pc_effort_dt <- pc_effort_dt |>
+    _[, .(
       PERMIT, TARGET = TRIP_TARGET_CODE, AREA = as.integer(REPORTING_AREA_CODE), AGENCY_GEAR_CODE, 
       GEAR = ifelse(AGENCY_GEAR_CODE %in% c("PTR", "NPT"), "TRW", AGENCY_GEAR_CODE), STRATA, OBSERVED_FLAG,
       TRIP_TARGET_DATE, LANDING_DATE, ADFG_STAT_AREA_CODE = as.integer(ADFG_STAT_AREA_CODE), wd_TRIP_ID),
-      keyby = .(ADP = as.integer(ADP), TRIP_ID)])
-  
-  # Merge in FMP classifications
-  pc_effort_dt <- pc_effort_dt[fmp_bsai_goa, on = .(TRIP_ID)][fmp_bs_ai_goa, on = .(TRIP_ID)]
-  
-  # Assign Pool
-  pc_effort_dt[, POOL := ifelse(STRATA %like% "EM", "EM", ifelse(STRATA == "ZERO", "ZE", "OB"))]
+      keyby = .(ADP = as.integer(ADP), TRIP_ID)] |>
+    unique() |>
+    # Merge in FMP classifications
+    _[fmp_bsai_goa, on = .(TRIP_ID)
+    ][fmp_bs_ai_goa, on = .(TRIP_ID)
+      # Assign Pool
+    ][, POOL := ifelse(STRATA %like% "EM", "EM", ifelse(STRATA == "ZERO", "ZE", "OB"))
+      # Replace spaces in STRATA with underscores
+    ][, STRATA := gsub(" ", "_", STRATA)] |>
+    # Set the order of columns
+    setcolorder(neworder = c(
+      "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", "AREA", 
+      "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG")) |>
+    # Order the dataset
+    setorder(ADP, POOL, PERMIT, TRIP_TARGET_DATE) |>
+    # For some reason, my shapefiles don't include ADFG STAT AREA 515832. Seem like it was merged into 515831. 
+    _[ADFG_STAT_AREA_CODE == 515832, ADFG_STAT_AREA_CODE := 515831] |>
+    unique()
   
   # Check for missing landing dates
   if(nrow(pc_effort_dt[is.na(LANDING_DATE)])) {
     warning(paste0(nrow(pc_effort_dt[is.na(LANDING_DATE)]), " records are missing LANDING_DATE! and were removed!"))
     pc_effort_dt <- pc_effort_dt[!is.na(LANDING_DATE)]
   }
-  
   # Make sure no full coverage trips are still in the dataset.
   if(any(unique(pc_effort_dt$STRATA) == "FULL")) stop("There are some FULL coverage trips in the partial coverage dataset!")
-  
-  # Replace spaces in STRATA with underscores
-  pc_effort_dt[, STRATA := gsub(" ", "_", STRATA)]
-  
-  # Set the order of columns
-  setcolorder(pc_effort_dt, neworder = c(
-    "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", "AREA", 
-    "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG"
-  ))
-  setorder(pc_effort_dt, ADP, POOL, PERMIT, TRIP_TARGET_DATE)
-  
-  # For some reason, my shapefiles don't include ADFG STAT AREA 515832. Seem like it was merged into 515831. 
-  pc_effort_dt[ADFG_STAT_AREA_CODE == 515832, ADFG_STAT_AREA_CODE := 515831]
-  pc_effort_dt <- unique(pc_effort_dt)
-  
   # Double-check that all trips have a non-NA for STRATA
   if(nrow(pc_effort_dt[is.na(STRATA)])) stop("Some trips don't have a non-NA STRATA")
   
