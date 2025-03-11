@@ -659,7 +659,7 @@ tender.dups <- filter(work.obs.tender, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FL
                         (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y"))
 
 work.dups.cv <- filter(work.offload, REPORT_ID %in% cv.dups$REPORT_ID)
-work.dups.tender <- filter(work.link, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
+work.dups.tender <- filter(work.offload, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
 
 work.dups <- rbind(work.dups.cv, work.dups.tender)
 
