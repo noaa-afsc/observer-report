@@ -909,6 +909,11 @@ The final selection rate after trips were closed, canceled or waived were within
 ```{r Coverage.tbl, message=FALSE, warning=FALSE, include=FALSE}
 # Coverage table has number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n), and percent observed by deployment method (trip vs. vessel-selection):
 
+#' \TODO *2024 AR* Fix EM Trawl GOA calculations - VALHALLA currently not handling tenders well
+#' For now using observed assignment based on observer data (column: OBS_SALMON_CNT_FLAG)
+#' This means when calculating summaries for partial coverage, we need to remove EM trawl GOA
+#' calculate it on it's own and then join
+
 #' *FULL COVERAGE*
 Coverage.Table.full <- bind_rows(
   # Coverage rates for vessels in the full coverage category (both regulatory
@@ -946,7 +951,9 @@ Coverage.Table.partial <- bind_rows(
   # By strata for vessels in the partial coverage category (trip-selection)
   work.data %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    left_join(select(partial, c(YEAR, STRATA, Rate)), by = join_by(ADP == YEAR, STRATA)) %>%
+    #filter(STRATA != "EM TRW GOA (EFP") %>% #'* 2024 AR only (unitl VALHALLA fixed) *
+    left_join(partial %>% select(YEAR, STRATA, Rate) %>% distinct(),
+              by = join_by(ADP == YEAR, STRATA)) %>%
     group_by(ADP, COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
@@ -978,6 +985,7 @@ Coverage.Table.partial <- bind_rows(
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data %>%
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
+    #filter(STRATA != "EM TRW GOA (EFP") %>% #'* 2024 AR only (unitl VALHALLA fixed) *
     group_by(ADP) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
