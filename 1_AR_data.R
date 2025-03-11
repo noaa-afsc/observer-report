@@ -636,7 +636,18 @@ work.offload <- tender.link %>%
   rbind(cv.link) %>%
   relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
            LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
-           OBS_SALMON_CNT_FLAG)
+           OBS_SALMON_CNT_FLAG) %>%
+  #'* 2024 AR only: * REPORT_ID missing from observer data, need to hardcode that it wasn't monitored
+  #'                  VALHALLA says it was an unmonitored offload and it wasn't a tendered delivery
+  mutate(OBS_SALMON_CNT_FLAG = case_when(REPORT_ID == 9543781 ~ "N",
+                                         TRUE ~ OBS_SALMON_CNT_FLAG))
+
+# Check to make sure all VALHALLA REPORT_IDs have a match in observer data
+if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
+  print("REPORT_IDs exist that are not in observer data")
+} else {
+  print("All REPORT_IDs present in observer data")
+}
 
 # Clean up workspace
 rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, obs.cv, obs.offload, em_trw_offload,
@@ -664,6 +675,8 @@ work.dups.tender <- filter(work.offload, T_REPORT_ID %in% tender.dups$T_REPORT_I
 work.dups <- rbind(work.dups.cv, work.dups.tender)
 
 vessel.issues <- filter(work.offload, CV_ID %in% work.dups$CV_ID)
+
+rm(work.obs.cv, cv.dups, work.obs.tender, tender.dups, work.dups.cv, work.dups.tender, work.dups, vessel.issues)
 
 # Save --------------------------------------------------------------------
 
