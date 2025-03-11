@@ -4,9 +4,8 @@
 library(data.table)   # For data wrangling, very efficient with joins, especially rolling joins
 library(dplyr)        # For data wrangling/piping with sf package
 library(sf)           # For spatial statistics
-
-#' TODO
-#' [] Make the params also store the class of each column (i.e., integer for ADP, character for stratum etc)
+library(gtable)       # For gtable_show_layout(), to visualize which parts of a plot to remove
+library(ggpubr)       # For as_ggplot(), to convert grobs back into ggplot objects
 
 #======================================================================================================================#
 # Data Preparation -----------------------------------------------------------------------------------------------------
@@ -1442,56 +1441,68 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
 }
 
 plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_levels){
-  # box_def <- copy(box_def.stratum); sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum);
+  # box_def <- copy(box_def); sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum);
   
   year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
   
   hex_geom <- unique(select(box_def$geom_sf, HEX_ID) )
   hex_geom.bbox <- st_bbox(hex_geom)
-  trips_dt <- unique(subset(box_def$og_data, select = c(year_strata, "HEX_ID", "TRIP_ID")))
+  trips_dt <- box_def$og_data |>
+    subset(select = c(year_strata, "HEX_ID", "TRIP_ID")) |>
+    unique() |>
+    setkey(TRIP_ID)
   sim_iter <- length(attr(sim.realized.stratum, "mon_lst"))
+  
+  # Subset realized_mon with strata in the box definition
+  realized_mon.sub <- realized_mon[TRIP_ID %in% box_def$og_data$TRIP_ID]
   
   # Summarize count of trips in each HEX_ID for each stratum
   hex_trips_N <- trips_dt[, .(N = uniqueN(TRIP_ID)), keyby = c(year_strata, "HEX_ID")]
   
   # Count number of trips actually monitored in each HEX_ID
-  hex_trips_n <- trips_dt[realized_mon[, .(TRIP_ID)], on = .(TRIP_ID)][, .(n = .N), keyby = c(year_strata, "HEX_ID")]
-  hex_trips_n <- hex_trips_n[hex_trips_N, on = c(year_strata, "HEX_ID")]
-  hex_trips_n[is.na(n), n := 0]
+  hex_trips_n <- trips_dt |>
+    # Subset to only monitored trips
+    _[realized_mon.sub[, .(TRIP_ID)], on = .(TRIP_ID)
+      # Count number of monitored trips in each HEX_ID
+    ][, .(n = .N), keyby = c(year_strata, "HEX_ID")
+      # Merge in the total counts of trips in each HEX_ID (N)
+    ][hex_trips_N, on = c(year_strata, "HEX_ID")
+      # For HEX_IDs without monitored trips, replace NAs with zeroes
+    ][is.na(n), n := 0][]
   
-  # Using the selection simulations assuming the realized rate, count the number of times each HEX_ID was sampled in each iteration
-  hex_trips_n.sim <- rbindlist(lapply(attr(sim.realized.stratum, "mon_lst"), function(x){
-    # x <- test[[1]]
-    trips_dt[data.table(TRIP_ID = x), on = .(TRIP_ID)]
-  }), idcol = "ITER")
-  # Count trips per HEX_ID for each iteration
-  hex_trips_n.sim <- hex_trips_n.sim[, .(n_sim = .N), keyby = c("ITER", year_strata, "HEX_ID")]
-  # Combine actual with simulations
-  hex_trips_n_sim <- hex_trips_n.sim[hex_trips_n, on = c(year_strata, "HEX_ID")]
+  #' Using the selection simulations assuming the realized rate, count the number of times each HEX_ID was sampled 
+  #' in each iteration
+  hex_trips_n_sim <- attr(sim.realized.stratum, "mon_lst") |>
+    lapply(function(x) trips_dt[data.table(TRIP_ID = x)]) |>
+    rbindlist(idcol = "ITER") |>
+    # Count trips per HEX_ID for each iteration
+    _[, .(n_sim = .N), keyby = c("ITER", year_strata, "HEX_ID")
+    # Combine actual with simulations
+    ][hex_trips_n, on = c(year_strata, "HEX_ID")
+    # Calculate median trips monitored in simulations
+    ][, sim_MED := median(n_sim), by = c(year_strata, "HEX_ID")
+      # Specify the direction of the simulated outcome vs realized
+    ][, DIR := sign(n - sim_MED)][]
   
-  # Calculate median trips monitored in simulations
-  hex_trips_n_sim[
-  ][, sim_MED := median(n_sim), by = c(year_strata, "HEX_ID")
-  ][, DIR := sign(n - sim_MED)]
   # Calculate proportion of iterations where the actual value was more extreme
-  hex_trips_n_sim.smry <- hex_trips_n_sim[, .(MORE_EXTREME = fcase(
-    DIR == 0, 0L,
-    DIR == 1, sum(n > n_sim),
-    DIR == -1, sum(n < n_sim)
-  )), by = c(year_strata, "HEX_ID", "N", "n", "sim_MED" ,"DIR")]
-  # Flag instances where the actual value was on the 5% tail
-  hex_trips_n_sim.smry[, TAIL := MORE_EXTREME >= (0.95 * sim_iter)]
-  # Drop strata levels not in strata_levels
-  hex_trips_n_sim.smry <- hex_trips_n_sim.smry[(STRATA %in% strata_levels)]
-  # Set stratum levels
-  hex_trips_n_sim.smry[, STRATA := factor(STRATA, levels = strata_levels)]
-  # Create a facet category that combines year and stratum
-  setorderv(hex_trips_n_sim.smry, year_strata)
-  hex_trips_n_sim.smry[, FACET := paste(ADP, " : ", gsub("_", " ", STRATA))]
-  hex_trips_n_sim.smry[, FACET := factor(FACET, levels = unique(FACET))]
-  
-  # Create label
-  hex_trips_n_sim.smry[, label := ifelse(n - sim_MED != 0, (n - sim_MED), NA)] 
+  hex_trips_n_sim.smry <- hex_trips_n_sim |>
+    _[, .(MORE_EXTREME = fcase(
+      DIR == 0, 0L,
+      DIR == 1, sum(n > n_sim),
+      DIR == -1, sum(n < n_sim)
+    )), by = c(year_strata, "HEX_ID", "N", "n", "sim_MED" ,"DIR")
+      # Flag instances where the actual value was on the 5% tail
+    ][, TAIL := MORE_EXTREME >= (0.95 * sim_iter)
+      # Drop strata levels not in strata_levels
+    ][(STRATA %in% strata_levels)
+      # Set stratum levels
+    ][, STRATA := factor(STRATA, levels = strata_levels)] |>
+    setorderv(year_strata) |>
+      # Create a facet category that combines year and stratum
+    _[, FACET := paste(ADP, " : ", gsub("_", " ", STRATA))
+    ][, FACET := factor(FACET, levels = unique(FACET))
+      # Create label
+    ][, label := ifelse(n - sim_MED != 0, (n - sim_MED), NA)] 
   
   # Set the range of the fill scale
   fill_range <- hex_trips_n_sim.smry[, range(n - sim_MED)]
@@ -1509,10 +1520,10 @@ plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_leve
     dat_sub <- hex_trips_n_sim.smry %>% filter(ADP == map_years[i]) 
     
     map_years.list[[i]] <- ggplot() + 
-      facet_wrap(~ FACET, dir = "h", ncol = 2, drop = F) + 
       geom_sf(data = ak_low_res, fill = "gray80") + 
       geom_sf(data = fmp_low_res, fill  = NA, linetype = 2) + 
       geom_sf(data = dat_sub %>% filter(TAIL == F), aes(fill = DIR * (MORE_EXTREME / sim_iter))) + 
+      facet_wrap(~ STRATA, dir = "h", ncol = 2, drop = F) + 
       geom_sf_text(data = dat_sub %>% filter(TAIL == F), aes(label = label), size = 3, na.rm = T) + 
       # Outline trips with unusual outcomes
       geom_sf(data = dat_sub %>% filter(TAIL == T), aes(fill = DIR * (MORE_EXTREME / sim_iter)), linewidth = 1, color = "dodgerblue") + 
@@ -1533,11 +1544,12 @@ plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_leve
 # For spatial analyses, summarize the coverage achieved in each HEX_ID
 plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, strata_levels){
   # box_def <- copy(box_def.stratum);  sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum)
-  
-  #' [NOTE] *sim.real and sim.prog must have been created by simulate_interspersion with hex_smry = T*
+  # sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum)
+
+#' [NOTE] *sim.real and sim.prog must have been created by calculate_interspersion with hex_smry = T*
   
   year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
-  year_strata_dt <- box_def$dmn$geom_dmn_df %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
+  year_strata_dt <- box_def$geom_sf %>% st_drop_geometry() %>% select(all_of(year_strata)) %>% unique()
   
   # Extract the geometries of the HEX_IDs
   hex_id_geom <- box_def$geom_sf %>% select(HEX_ID, geometry) %>% unique()
@@ -1849,5 +1861,35 @@ plot_dmn_interspersion_density <- function(den, real_interspersion, dmn_N){
     theme(legend.position = "bottom", legend.key = element_rect(fill = "white")) + 
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
     geom_text(data = dmn_N, aes(label = dmn_N, x = -Inf, y = Inf), hjust = -0.1, vjust = 1.1, size = 3.5)
+}
+
+#======================================================================================================================#
+# Helper Functions -----------------------------------------------------------------------------------------------------
+#======================================================================================================================#
+
+#' This function allows you to identify or remove the parts of a plot to remove. If `drop` is left empty, a plot is 
+#' drawn with the coordinates of each plot component. If you feed the coordinates of the components as a list to the
+#' `drop` arugment, the function will return a ggplot object with those components dropped.
+drop_facet <- function(x, drop = NULL) {
+  # x <- copy(plt.proximity.stratum); drop = NULL
+  # x <- copy(plt.proximity.stratum);drop = list(c(24,7), c(25, 7))
+  
+  # Create grob
+  x1 <- ggplotGrob(x)
+  
+  if(is.null(drop)) {
+    
+    # If parameters to drop are not specified, return the layout
+    cat("Identify the coordinates of components to drop and feed them as a list of vectors to the `drop` argument")
+    return(gtable::gtable_show_layout(x1))
+    
+  } else {
+    
+    drop.i <- sapply(drop, function(x) which(x1$layout$t == x[1] & x1$layout$l == x[2]))
+    if(length(drop.i) == 0) stop("No components matched what was specified in `drop`")
+    for(i in drop.i) x1$grobs[[i]] <- nullGrob()
+    
+    return(ggpubr::as_ggplot(x1))
+  }
 }
 
