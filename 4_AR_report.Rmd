@@ -1472,8 +1472,6 @@ density.stratum <- combine_distributions(density.realized.stratum, density.progr
 # Plot distributions vs actually realized
 
 #' \TODO Make better legend descriptions like density assuming realized rate, density assuming programmed rate, etc
-#' \TODO I should I make box_def make create DMN, i.e., make it the same as ADP_STRATA when it's null? Maybe when I do 
-#' the cross-stratua comparison I'll go back to this...
 plt.proximity.stratum <- plot_interspersion_density(
   density.stratum, real_interspersion.stratum, strata_levels) + 
   facet_nested_wrap(
