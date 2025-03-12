@@ -2,10 +2,13 @@
 # Some are further developed version of those in analyses/spatiotemporal_boxes
 
 library(data.table)   # For data wrangling, very efficient with joins, especially rolling joins
+library(ggplot2)      # For plotting
 library(dplyr)        # For data wrangling/piping with sf package
 library(sf)           # For spatial statistics
 library(gtable)       # For gtable_show_layout(), to visualize which parts of a plot to remove
 library(ggpubr)       # For as_ggplot(), to convert grobs back into ggplot objects
+
+#' [] TODO replace 'interspersion' with 'proximity index'. 
 
 #======================================================================================================================#
 # Data Preparation -----------------------------------------------------------------------------------------------------
@@ -844,7 +847,7 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
   mode.simulated <-  is.null(realized_mon) & !is.null(sample_rates) & !is.null(sim_iter) & !is.null(seed)
   mode.expected  <-  is.null(realized_mon) & !is.null(sample_rates) &  is.null(sim_iter) &  is.null(seed)
   if(sum(c(mode.realized, mode.simulated,  mode.expected) == T) != 1) {
-    stop(paste0("The analysis to perform can't be determined from your arguments.\b
+    stop(paste0("Which analysis to perform can't be determined from your arguments. In addition to `box_def`, \b
                 `Realized` requires only `realized_mon`\b
                 `Expected` requires only `sample_rates`\b
                 `Simulated` requires `sample_rates`, `sim_iter`, and `seed`
@@ -872,16 +875,16 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
     
     if(all(is.null(sim_iter), is.null(seed))) {
       
-      #' *--- Realized Interspersion ---*
+      #' *--- Realized Proximity Indices ---*
       #' If simulation parameters are not supplied, use `realized_mon`
-      cat("-- Calculating realized interspersion from the supplied table of monitored TRIP_IDs\n")
+      cat("-- Calculating realized proximity index from the supplied table of monitored TRIP_IDs\n")
       selection.mtx <- matrix(trips$TRIP_ID %in% realized_mon$TRIP_ID, ncol = 1)
       
     } else {
       
-      #' *--- Simulated Intserspersion ---*
+      #' *--- Simulated Proximity Indices ---*
       #' Otherwise randomly sample trip selection using `sample_rates`
-      cat(paste0("-- Simulating interspersion by randomly sampling trips ", sim_iter, " times...\n"))
+      cat(paste0("-- Simulating proximity indices by randomly sampling trips ", sim_iter, " times...\n"))
       #' Generate random number for each trip, sim_iter times, and store in a matrix
       set.seed(seed)
       sim.rn <- matrix(runif(nrow(trips) * sim_iter), ncol = sim_iter)
@@ -982,7 +985,7 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
     
     ## Assign attributes
     
-    # List of monitored trips, each element is an iteraton with a vector of selected TRIP_IDs
+    # List of monitored trips, each element is an iteration with a vector of selected TRIP_IDs
     mon_lst <- apply(selection.mtx, 2, function(x) trips[x, TRIP_ID])
     setattr(sim.dt, "mon_lst", mon_lst)
     
@@ -1071,8 +1074,8 @@ calculate_interspersion <- function(box_def, sample_rates = NULL, realized_mon =
     
   } else {
     
-    #' *--- Expected Interspersion ---*
-    cat("-- Calculating expected interspersion from the supplied sample rates\n")
+    #' *--- Expected Proximity Indices ---*
+    cat("-- Calculating expected proximity indices from the supplied sample rates\n")
     
     out.prob <- sample_rates |>
       # Merge in trip sample rates by stratum
