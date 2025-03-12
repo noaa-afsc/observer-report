@@ -8,7 +8,7 @@ library(sf)           # For spatial statistics
 library(gtable)       # For gtable_show_layout(), to visualize which parts of a plot to remove
 library(ggpubr)       # For as_ggplot(), to convert grobs back into ggplot objects
 
-#' [] TODO replace 'interspersion' with 'proximity index'. 
+#' [] \TODO replace 'interspersion' with 'proximity index'. 
 
 #======================================================================================================================#
 # Data Preparation -----------------------------------------------------------------------------------------------------
@@ -52,7 +52,8 @@ spatiotemp_data_prep <- function(valhalla){
       REPORTING_AREA_CODE %in% c(508, 509, 512, 513, 514, 516, 517, 518, 519, 521, 523, 524), "BS",
       REPORTING_AREA_CODE %in% c(610, 620 ,630, 640, 649, 650, 659), "GOA")  
     ][, .(FMP_WT = sum(WEIGHT_POSTED[SOURCE_TABLE == "Y"], na.rm = T)), by = .(TRIP_ID, BS_AI_GOA)
-    ][, .SD[which.max(FMP_WT)], by = .(TRIP_ID)][, FMP_WT := NULL][]
+    ][, .SD[which.max(FMP_WT)], by = .(TRIP_ID)
+    ][, FMP_WT := NULL][]
   if( 
     (pc_trip_id_count != uniqueN(fmp_bs_ai_goa$TRIP_ID) ) | 
     (pc_trip_id_count != uniqueN(fmp_bs_ai_goa[!is.na(BS_AI_GOA), TRIP_ID]) ) 
