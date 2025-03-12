@@ -21,9 +21,14 @@ if(!require("reshape2"))   install.packages("reshape2")
 if(!require("RColorBrewer"))   install.packages("RColorBrewer") #color palettes in ggplot
 if(!require("scales"))  install.packages("scales")
 if(!require("sf"))  install.packages("sf")
+if(!require("sfheaders")) install.packages("sfheaders") # for sf_remove_holes
 if(!require("tidyverse"))   install.packages("tidyverse") #dplyr, ggplot, tidyr, forcats
 if(!require("viridis"))   install.packages("viridis") #color palettes in ggplot
 if(!require("zoo"))  install.packages("zoo")
+if(!require("gtable")) install.packages("gtable")  # For gtable_show_layout(), to visualize which parts of a plot to remove
+if(!require("grid")) install.packages("grid")  # For nullGrob(), to remove parts of a ggplot
+if(!require("ggpubr")) install.packages("ggpubr")  # For as_ggplot(), to convert grobs back into ggplot objects
+if(!require("ggh4x"))  install.packages("ggh4x")  # facet_grid2 has cleaner facet labels while allowing for independent x and/or y scales
 
 # II. Functions ----
 
