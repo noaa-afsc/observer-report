@@ -223,8 +223,11 @@ proximity_maps[[paste0(year, ".EM_TRW_GOA_(EFP)")]]$HEX_ID.realized
 
 ### Proximity (coverage, but with a spatial focus) ####
 
+#' [NOTE] This section was not added to the 4_AR_report.Rmd analysis. This analysis looks at the realized proximity of
+#' each HEX_ID relative to what would be expected from the realized rates. 
+
 #' For each stratum, visually inspect whether the achieved monitoring coverage (weight of trips in boxes in sampled
-#' neighborhoods) was distributed evenly through space. 
+#' neighborhoods = proximity) was distributed evenly through space. 
 #' The fill color of each spatial cell (hexagon) corresponds to areas where the level of coverage of more \green or 
 #' less `purple` than expected (i.e., median outcome of simulations), and cells containing a *circle* indicate outcomes
 #' that were more extreme than 95% of simulation outcomes
@@ -273,7 +276,7 @@ plt.spatial <- drop_facet(plt.spatial, drop = list(c(24, 7), c(25, 7)))
 
 
 #' `==================================================================================================================#`
-#   [EVERYTHING ABOVE MOVED TO 4_AR_REPORT.Rmd] ----
+#   [ALMOST EVERYTHING ABOVE MOVED TO 4_AR_REPORT.Rmd] ----
 #' `==================================================================================================================#`
 
 
