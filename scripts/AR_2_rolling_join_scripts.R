@@ -38,6 +38,11 @@ load(file = file_1_name)
 # This gets each factor for every date that has a value in haul data for that date.
 # Joining by permit and date ensures that all factors are joined even for 2nd observers, for each vessel and date.
 
+# NEW for AR 2024: we are now looking at multiple unit types for the denominator of the rates.
+# This original method of calculating factors for each DEPLOYMENT DAY, is still the method being used 
+# to calculate the DAYS unit type denominator.
+# Other unit type denominators (e.g., HAULS, TRIPS, OFFLOADS, DEPLOYMENTS, etc) will be calculated separately, at the END of this script.
+# ADK 20250311
 
 #################
 # COMBINE factors, so each COMBINATION is unique.
@@ -60,7 +65,7 @@ assnmts_days_all_groupings <-
                   # This step is just for PLANTS, so we have to filter out the CP's
                   # because those show up as "PROCESSORS" in E-landings.
                   # Also: don't get the VESSEL_TYPE or GEAR_TYPE for PLANTS; those will just be set to null. 
-                  df_offloads %>%
+                  df_elandings_raw %>%
                     filter(VESSEL_TYPE != 'CP/MS') %>%
                     distinct(PERMIT = PROCESSOR_PERMIT_ID,
                              DEPLOYED_DATE = LANDING_DATE, # for plant data, ONLY use the ACTUAL landing date.
@@ -73,11 +78,12 @@ assnmts_days_all_groupings <-
   mutate(VESSEL_TYPE = ifelse(VESSEL_OR_PLANT == 'P', 'PLANT', VESSEL_TYPE),
          GEAR_TYPE   = ifelse(VESSEL_OR_PLANT == 'P', ' ', GEAR_TYPE) # using a space here makes the plots nicer.
          ) %>%
-  # next, join back to the offloads for VESSEL data, to fill in the missing factors
+  # next, join back to the expanded landings data for VESSEL data, to fill in the missing factors
   # for any VESSEL days that do not have haul data, but have a "day" in the offload data, we can get the factors from that.
   # Use dummy column names to prevent joining on the FACTOR columns; 
   # Then only use the DUMMY if the FACTOR is null after the previous 2 steps.
-  left_join(df_offloads %>%
+  # join on ALL dates from fishing_start_date thru landing_date
+  left_join(df_elandings_expand %>%
                filter(VESSEL_TYPE == 'CV') %>%
                distinct(PERMIT        = VESSEL_ID,
                         DEPLOYED_DATE, 
@@ -154,7 +160,7 @@ table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$VESSE
 dt_t <- copy(assnmts_days_all_groupings )
 setDT(dt_t)
 setkey(dt_t, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE) 
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_expand)
 setDT(dt_offloads)
 dt_offloads_v <- dt_offloads[, .(CALENDAR_YEAR, VESSEL_TYPE, PERMIT = VESSEL_ID, DEPLOYED_DATE)]   # removing unneeded columns
 setkey(dt_offloads_v, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)
@@ -228,7 +234,7 @@ table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$GEAR_
 dt_t <- copy(assnmts_days_all_groupings )
 setDT(dt_t)
 setkey(dt_t, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)         
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_expand)
 setDT(dt_offloads)
 dt_offloads_g <- dt_offloads[, .(CALENDAR_YEAR, GEAR_TYPE, PERMIT = VESSEL_ID, DEPLOYED_DATE)]   # removing unneeded columns
 setkey(dt_offloads_g, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)
@@ -248,10 +254,6 @@ table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$GEAR_
 
 test_df <- 
   sqldf('SELECT * FROM assnmts_days_all_groupings WHERE GEAR_TYPE is null')
-
-
-
-
 
 
 
@@ -290,7 +292,7 @@ table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$NMFS_
 dt_t <- copy(assnmts_days_all_groupings %>% filter(VESSEL_TYPE != 'PLANT') )
 setDT(dt_t)
 setkey(dt_t, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)         
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_expand)
 setDT(dt_offloads)
 dt_offloads_n <- dt_offloads[, .(CALENDAR_YEAR, NMFS_REGION, PERMIT = VESSEL_ID, DEPLOYED_DATE)]   # removing unneeded columns
 setkey(dt_offloads_n, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)
@@ -312,17 +314,14 @@ table(assnmts_days_all_groupings_vessel_temp$CALENDAR_YEAR, assnmts_days_all_gro
 
 
 
-
-
-
 # NMFS_REGION
 # For PLANTS, from the OFFLOAD data
 dt_t <- copy(assnmts_days_all_groupings %>% filter(VESSEL_TYPE == 'PLANT') )
 setDT(dt_t)
 setkey(dt_t, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)         
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_raw)
 setDT(dt_offloads)
-dt_offloads_n <- dt_offloads[, .(CALENDAR_YEAR, NMFS_REGION, PERMIT = PROCESSOR_PERMIT_ID, DEPLOYED_DATE = LANDING_DATE)]   # removing unneeded columns
+dt_offloads_n <- dt_offloads[, .(CALENDAR_YEAR, NMFS_REGION, PERMIT = PROCESSOR_PERMIT_ID, DEPLOYED_DATE = LANDING_DATE)]   # removing unneeded columns; for PLANTS, only use LANDING_DATE (not the expanded dates)
 setkey(dt_offloads_n, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)
 dt_offloads_n <- unique(dt_offloads_n)  # removing duplicates
 dt_offloads_n[, NMFS_REGION := as.character(NMFS_REGION)]  # coercing to character instead of factor
@@ -346,6 +345,9 @@ assnmts_days_all_groupings <-
   rbind(assnmts_days_all_groupings_plant_temp,
         assnmts_days_all_groupings_vessel_temp
   )
+
+rm(assnmts_days_all_groupings_plant_temp,
+   assnmts_days_all_groupings_vessel_temp)
 
 
 
@@ -398,7 +400,7 @@ table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$MANAG
 dt_t <- copy(assnmts_days_all_groupings %>% filter(VESSEL_TYPE != 'PLANT') )
 setDT(dt_t)
 setkey(dt_t, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)         
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_expand)
 setDT(dt_offloads)
 dt_offloads_m <- dt_offloads[, .(CALENDAR_YEAR, MANAGEMENT_PROGRAM_CODE, PERMIT = VESSEL_ID, DEPLOYED_DATE)]   # removing unneeded columns
 setkey(dt_offloads_m, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)
@@ -424,7 +426,7 @@ table(assnmts_days_all_groupings_vessel_temp$CALENDAR_YEAR, assnmts_days_all_gro
 dt_t <- copy(assnmts_days_all_groupings %>% filter(VESSEL_TYPE == 'PLANT') )
 setDT(dt_t)
 setkey(dt_t, CALENDAR_YEAR, PERMIT, DEPLOYED_DATE)         
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_raw)
 setDT(dt_offloads)
 # Only use the actual LANDING_DATE for plant data;
 dt_offloads_m <- dt_offloads[, .(CALENDAR_YEAR, MANAGEMENT_PROGRAM_CODE, PERMIT = PROCESSOR_PERMIT_ID, DEPLOYED_DATE = LANDING_DATE)]   # removing unneeded columns
@@ -450,7 +452,7 @@ table(assnmts_days_all_groupings_plant_temp$CALENDAR_YEAR, assnmts_days_all_grou
 dt_t <- copy(assnmts_days_all_groupings_plant_temp )
 setDT(dt_t)
 setkey(dt_t, PERMIT, DEPLOYED_DATE)         
-dt_offloads <- copy(df_offloads)
+dt_offloads <- copy(df_elandings_raw)
 setDT(dt_offloads)
 dt_offloads_m <- dt_offloads[, .(MANAGEMENT_PROGRAM_CODE, PERMIT = PROCESSOR_PERMIT_ID, DEPLOYED_DATE = LANDING_DATE)]   # removing unneeded columns
 setkey(dt_offloads_m, PERMIT, DEPLOYED_DATE)
@@ -466,21 +468,13 @@ assnmts_days_all_groupings_plant_temp <-
   distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
-
-
-
-# Check for NA's.  If none, then the rolling join worked correctly.
+# Check for NA's.
 table(assnmts_days_all_groupings_plant_temp$CALENDAR_YEAR, assnmts_days_all_groupings_plant_temp$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
 
 
 # Bind the vessel and plant rolling joints together.
 assnmts_days_all_groupings <-
-  rbind(assnmts_days_all_groupings_plant_temp %>%
-          # hardcode the last of the missing values.  Do the required digging into the data..
-          mutate(MANAGEMENT_PROGRAM_CODE = ifelse(is.na(MANAGEMENT_PROGRAM_CODE) & PERMIT == 5305, # Sand Point.  For whatever reason, these days aren't joining.  Likekly a date/time issue.
-                                                 'OA',
-                                                  as.character(MANAGEMENT_PROGRAM_CODE))
-                 ),
+  rbind(assnmts_days_all_groupings_plant_temp,
         assnmts_days_all_groupings_vessel_temp) %>%
   distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
@@ -551,6 +545,51 @@ assnmts_days_all_groupings <-
 # remove unneeded temporary objects.
 rm(dt_offloads_m, dt_offloads_n, dt_offloads_g, dt_offloads_v, dt_offloads, dt_hauls, dt_hauls_g, dt_hauls_m,
    dt_hauls_n, dt_hauls_v, nvl_test_df, test_df, dt_t)
+
+
+
+
+############################
+# Calculate the some factor summaries for the other UNIT types.
+# NOTE: not used at this point.  Need to discuss
+# ADK 20250311
+
+# HAULS unit
+hauls_with_factors <-
+assignments_dates_cr_perm %>%
+  distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
+           CALENDAR_YEAR, COVERAGE_TYPE) %>%
+  inner_join(hauls %>%
+               # uses the LEAD_CRUISE only (this is DATA_CRUISE in the statements data)
+               distinct(CRUISE, PERMIT, HAUL_SEQ, CALENDAR_YEAR, DEPLOYED_DATE = HAUL_DATE, 
+                        SAMPLED_BY_CRUISE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM = NA,  NMFS_REGION)
+             )
+             
+
+
+# OFFLOADS unit
+offloads_with_factors <-
+  assignments_dates_cr_perm %>%
+  distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
+           CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_OR_PLANT) %>%
+  inner_join(df_obs_offloads %>%
+               mutate(PERMIT = as.numeric(PERMIT)) %>%
+               inner_join(rbind(df_elandings_raw %>%
+                                 mutate(PERMIT = VESSEL_ID,
+                                        VESSEL_OR_PLANT = 'V'),
+                                 df_elandings_raw %>%
+                                 mutate(PERMIT = PROCESSOR_PERMIT_ID,
+                                        VESSEL_OR_PLANT = 'P')
+                              ) %>%
+                          mutate(TRAWL_EM = ifelse(MANAGEMENT_PROGRAM_CODE == 'TEM','Y', NA)) %>%
+                          distinct(REPORT_ID, DEPLOYED_DATE = LANDING_DATE,
+                                   FISHING_START_DATE, FISHING_DAYS, VESSEL_TYPE, GEAR_TYPE,
+                                   MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, VESSEL_OR_PLANT 
+                                   )  ) )
+
+
+
+
 
 
 
