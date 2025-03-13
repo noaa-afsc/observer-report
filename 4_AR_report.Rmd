@@ -268,7 +268,7 @@ costs.plot <- ggplot(bud_tbl, aes(x = ADP_C)) +
         axis.line = element_line(linewidth = 0.5, color = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank()) +
-  scale_x_continuous(labels = dollar)
+  scale_x_continuous(labels = dollar) +
   #labs(y = paste("Density of simulated outcomes (", year - 1, " ADP", ")\n", sep = ""),
    #    x = paste("\nTotal contract costs in ", year - 1, sep = ""))
   labs(y = paste("Density of simulated outcomes"),
@@ -374,24 +374,27 @@ odds.dat <- odds.dat %>%
 
 #' Based on a trip's stratum and the outcome of the trip, flag trips trips that were either monitored or intended to be
 #' monitored as a result of random selection in `random.test`. Trips whose fate was predetermined by prior trips, e.g., 
-#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, are excluded with a value of [`NA`]. 
+#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, are excluded with a value of [NA]. 
 #' Use `TRIP_MONITOR_CODE` to identify trips in non-100% compliance monitoring strata that were slated for monitoring, 
-#' whether it was realized or not, including those where the trip was waived [`1`]. Finally, trips in strata without 
-#' random selection and trips marked as not monitored are identified [`0`].
+#' whether it was realized or not, including those where the trip was waived [1]. Finally, trips in strata without 
+#' random selection and trips marked as not monitored are identified [0].
 odds.dat <- odds.dat %>% mutate(
   random.test = case_when(
+    #' `Trips that did not go through random selection [NA]`
     # Exclude trips that inherited other trips (selection of this record was not random)
     !is.na(INHERIT_TRIP_SEQ) ~ NA, 
-    # Exclude trips missing random numbers or cancel cascaded (both instances removed with ODDS 3.0 in 2023)
+    # Exclude trips missing random numbers or cancel cascaded
     TRIP_STATUS_CODE == "CC" | is.na(RANDOM_NUMBER_USED) ~ NA,
     # Exclude trips canceled by system, which have an unknown monitoring outcome and do not become inherits
     TRIP_STATUS_CODE == "CS" ~ NA,
-
-    # Trip was intended to be monitored but was waived OR
+    
+    #' `Trips that did go through random selection and were selected [1]`
+    # Trip was intended to be monitored but was waived
     released == 1 ~ 1,
     # Trip was monitored or supposed to be monitored due to random selection (not within compliance monitoring)
     TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & ODDS_SELECTION_PCT != 100 ~ 1,
     
+    #' `Trips that did go through random selection and were NOT selected [0]`
     # Trip was not monitored because it was not selected OR the trip was not randomly selected because it had 100% compliance monitoring
     (TRIP_MONITOR_CODE == "NO") | ODDS_SELECTION_PCT == 100 ~ 0,  
     .default = -99
@@ -399,14 +402,10 @@ odds.dat <- odds.dat %>% mutate(
 )
 if(nrow(odds.dat %>% filter(random.test == -99))) stop("Some records with undefined 'random.test'")
 
-#' Check whether the monitoring outcome matches what was determined by random selection, i.e., trips that were not 
-#' monitored when they were supposed to be or vice versa.
-
-
+#' Check whether the monitoring outcome matches what was determined by random selection, i.e., trips that were not monitored when they were supposed to be or vice versa.
 odds.dat <- odds.dat %>% mutate(random.test.result = ifelse(random.test - random.assign == 0, "PASS", "FAIL"))
-#' \TODO The check below had two vessels that failed the check, and in both instances they were OB FIXED BSAI straum 
-#' trips that had three-in-a-row releases. We had a known bug that the release table was not populating when ODDS 
-#' correctly applied the non-selected status to these trips. For Now I'm hardcoding this fix
+
+#' \TODO The check below had two vessels that failed the check, and in both instances they were OB FIXED BSAI stratum trips that had three-in-a-row releases. We had a known bug that the release table was not populating when ODDS correctly applied the non-selected status to these trips. GMM added this issue to P-Track. For Now I'm hardcoding this fix.
 if(year == 2024) {
   setDT(odds.dat)
   odds.dat[TRIP_PLAN_LOG_SEQ %in% c(202432902, 202427490), 
