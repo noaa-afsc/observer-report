@@ -39,7 +39,8 @@ summ_regs_units <-
  df_obs_statements %>% 
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT) %>%
-  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+  summarise(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
+            N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
             .groups = "drop")
 
 # wide format: reg-level summary.  Not used
@@ -80,9 +81,11 @@ summ_units_used <-
 # Subcat-level summary.  Long format
 summ_subcat_units <-
   df_obs_statements %>%
-  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>% # TODO: do something about these. 
+  # Possibly find them from the unit_issue and update the units data???? For now, just filtering them out.
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>%
-  summarise(DISTINCT_REGS_SELECTED = n_distinct(OLE_REGULATION_SEQ),
+  summarise(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
+            DISTINCT_REGS_SELECTED = n_distinct(OLE_REGULATION_SEQ),
             N_REG_SELECTIONS       = n_distinct(OLE_OBS_STATEMENT_DETAIL_SEQ),
             N_UNITS_REPORTED       = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
             .groups = "drop" )
@@ -232,7 +235,7 @@ subcat_units_rate <-
   left_join(units_melt) %>%
   full_join(summ_units) %>%
   mutate(RATE = N_UNITS_REPORTED/TOTAL_UNITS,
-         RATE_PER_1000_UNITS = RATE*1000,
+         RATE_X_1000 = RATE*1000,
          UNITS_PER_OBSERVER   =  N_UNITS_REPORTED/OBSERVERS,
          UNITS_PER_CRUISE     =  N_UNITS_REPORTED/CRUISES,
          UNITS_PER_ASSIGNMENT =  N_UNITS_REPORTED/ASSIGNMENTS,
@@ -240,9 +243,9 @@ subcat_units_rate <-
          UNITS_PER_1000_DAYS  = (N_UNITS_REPORTED/DAYS)*1000
   ) %>%
   select(CALENDAR_YEAR, CATEGORY, SUBCATEGORY,
-         INCIDENT_UNIT, DISTINCT_REGS_SELECTED, N_REGS_REPORTED, 
+         INCIDENT_UNIT, DISTINCT_REGS_SELECTED, N_REG_SELECTIONS, 
          N_UNITS_REPORTED, TOTAL_UNITS,
-         RATE, RATE_PER_1000_UNITS,
+         RATE, RATE_X_1000,
          OBSERVERS, UNITS_PER_OBSERVER,
          CRUISES, UNITS_PER_CRUISE,
          ASSIGNMENTS, UNITS_PER_ASSIGNMENT,

@@ -42,6 +42,17 @@ write.csv(file =  paste0("tables/tbl_",
 
 
 
+# Write .csv of the priority rate but first remove confidential (total_statements < 3)
+write.csv(file =  paste0("tables/tbl_",
+                         adp_yr,
+                         "_subcat_units_rate.csv"
+),
+x    = subcat_units_rate # %>%
+# filter(TOTAL_STATEMENTS >= 3)
+)
+
+
+
 
 
 ###############
