@@ -163,7 +163,7 @@ df_first_viol_date <-
                 -- from which to pull the date (that's what the above fxn does).
                 -- So the 2nd half of the nvl() fxn accounts for this:
                 -- for any of these, hard-code them: we sleuthed them out based on the UNIT ISSUE comment and/or the text of the statement.
-                -- NOTE: Most are exact; some are inexact, but that is OK, 
+                -- NOTE: Most are exact. Some are inexact, but that is OK, 
                 -- because at this point, really this is only being used to determine which YEAR the statement belongs in.
                 
                 CASE WHEN ole_obs_statement_seq = 30027 THEN trunc(to_date('07-JUN-23', 'DD-MON-RR'))  --obs was unsure of date; using first depl date for permit

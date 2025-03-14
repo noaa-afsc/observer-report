@@ -55,6 +55,11 @@ x    = subcat_units_rate # %>%
 
 
 
+### BELOW IS STILL LAST YEAR'S CODE
+# It is not relevant for the new rates.
+## TODO: update as/if needed for 2024.
+# ADK 20250312
+
 ###############
 
 # Make summary table of just the STATEMENTS and INCIDENTS for each factor grouping, all statement categories aggregated.

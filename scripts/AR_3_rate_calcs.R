@@ -32,11 +32,52 @@ load(file = file_2_name)
 
 
 
-
+# ------------------------
 # Some high-level summary tables of the new statements data.
+
+# Units recorded for each REGULATION, high-level
+# Just so we can see which units were used for which regulations.
+# Mostly just for reference/data exploration
+summ_reg_unit_types <-
+  df_obs_statements %>%
+  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_REGULATION_SEQ, REG_SUMMARY, CATEGORY, SUBCATEGORY) %>%
+  distinct(INCIDENT_UNIT) %>%
+  ungroup()
+
+# Units recorded for each SUBCATEGORY, high-level
+# Just so we can see which units were used for which subcategories.
+# Mostly just for reference/data exploration
+summ_subcat_unit_types <-
+  df_obs_statements %>%
+  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY) %>%
+  distinct(INCIDENT_UNIT) %>%
+  ungroup()
+
+
+
+# Number of units reported in all for each calendar_year.
+# Mostly just for reference/data exploration
+summ_units_used <-
+  df_obs_statements %>%
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
+  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, INCIDENT_UNIT) %>%
+  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+            .groups = "drop" )
+
+
+
+
+
+
+
+
+# ------------------------
+# Here is where we summarize how many units were reported for each statement
+
+# First, for each REGULATION
 # long format: reg-level summary
 summ_regs_units <-
- df_obs_statements %>% 
+  df_obs_statements %>% 
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT) %>%
   summarise(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
@@ -61,27 +102,12 @@ summ_regs_units <-
 #   )
 
 
-# Units recorded, high-level
-summ_reg_unit_types <-
-  df_obs_statements %>%
-  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_REGULATION_SEQ, REG_SUMMARY, CATEGORY, SUBCATEGORY) %>%
-  distinct(INCIDENT_UNIT) %>%
-  ungroup()
-
-
-summ_units_used <-
-  df_obs_statements %>%
-  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
-  group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, INCIDENT_UNIT) %>%
-  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
-            .groups = "drop" )
-
-
-
+# Next, for each SUBCATEGORY
 # Subcat-level summary.  Long format
 summ_subcat_units <-
   df_obs_statements %>%
-  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>% # TODO: do something about these. 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>% 
+  # TODO: do something about these. 
   # Possibly find them from the unit_issue and update the units data???? For now, just filtering them out.
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>%
   summarise(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
@@ -113,7 +139,7 @@ summ_subcat_units <-
 
 
 ###########
-# Unit summaries
+# Unit summaries for TOTALS that are used for the DENOMINATOR.
 ##########
 
 # TODO: determine what factors to group by for 2024
@@ -186,7 +212,8 @@ summ_units <-
            )
                 
 
-# Next MELT this table into LONG format, and use that actual unit names
+# Next MELT this table into LONG format, and use that actual unit names, 
+# so we can JOIN to the STATEMENTS data.
 units_melt <-
   melt(data = summ_units %>%
                 mutate(DEPL = CRUISES,
@@ -220,6 +247,7 @@ reg_units_rate <-
           ) %>%
   select(CALENDAR_YEAR, CATEGORY, SUBCATEGORY,
          OLE_REGULATION_SEQ, REG_SUMMARY,
+         N_STATEMENTS,
          INCIDENT_UNIT, N_UNITS_REPORTED, TOTAL_UNITS,
          RATE, RATE_PER_1000_UNITS,
          OBSERVERS, UNITS_PER_OBSERVER,
@@ -243,6 +271,7 @@ subcat_units_rate <-
          UNITS_PER_1000_DAYS  = (N_UNITS_REPORTED/DAYS)*1000
   ) %>%
   select(CALENDAR_YEAR, CATEGORY, SUBCATEGORY,
+         N_STATEMENTS,
          INCIDENT_UNIT, DISTINCT_REGS_SELECTED, N_REG_SELECTIONS, 
          N_UNITS_REPORTED, TOTAL_UNITS,
          RATE, RATE_X_1000,
