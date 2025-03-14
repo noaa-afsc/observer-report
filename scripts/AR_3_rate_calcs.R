@@ -39,7 +39,8 @@ summ_regs_units <-
  df_obs_statements %>% 
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT) %>%
-  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ))
+  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+            .groups = "drop")
 
 # wide format: reg-level summary.  Not used
 # summ_regs_units <-
@@ -63,14 +64,16 @@ summ_regs_units <-
 summ_reg_unit_types <-
   df_obs_statements %>%
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, OLE_REGULATION_SEQ, REG_SUMMARY, CATEGORY, SUBCATEGORY) %>%
-  distinct(INCIDENT_UNIT)           
+  distinct(INCIDENT_UNIT) %>%
+  ungroup()
 
 
 summ_units_used <-
   df_obs_statements %>%
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, INCIDENT_UNIT) %>%
-  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ))
+  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+            .groups = "drop" )
 
 
 
@@ -79,7 +82,10 @@ summ_subcat_units <-
   df_obs_statements %>%
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>%
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>%
-  summarise(N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ))
+  summarise(DISTINCT_REGS_SELECTED = n_distinct(OLE_REGULATION_SEQ),
+            N_REG_SELECTIONS       = n_distinct(OLE_OBS_STATEMENT_DETAIL_SEQ),
+            N_UNITS_REPORTED       = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+            .groups = "drop" )
 
 
 # Subcat-level summary # Wide format: not used.
@@ -99,61 +105,6 @@ summ_subcat_units <-
 #             ,   N_UNIT_ISSUES     = n_distinct(OLE_OBS_STATEMENT_DETAIL_SEQ[!is.na(UNIT_ISSUE)])
 #             ,   .groups = "drop" 
 #   )
-
-
-
-
-
-
-
-#########################
-# Summarize the DAYS for each factor combination.
-
-# Count deployed days.
-# Frst count the SUM TOTAL of days for cruise/permit/all factors.
-# This double-counts days where multiple factors occur, and is used to WEIGHT the statements in later step: WIEGHTING METHOD 1.
-# Next count DISTINCT days for each cruise/permit ONLY.  Used for WIEGHTING METHOD 2.  Update: this method is not used.
-# Finally count DISTINCT days for each cruise/permit/factor combination
-# Weighting methods 3 and 4 are based on fishery-data-collection days as the denominator, rather than all deployment days.
-# Weighting methods 3 and 4 are not currently used.
-
-
-cnt_dep_days_all_groupings <- 
-  merge(assnmts_days_all_groupings %>%
-          group_by(CALENDAR_YEAR, CRUISE, PERMIT, OBSERVER_SEQ) %>%
-          summarize(TOTAL_FACTOR_DAYS_CR_PERM              = length(DEPLOYED_DATE),
-                    TOTAL_DISTINCT_DAYS_CR_PERM            = length(unique(DEPLOYED_DATE)),
-                    TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM   = length(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']),
-                    TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']))
-          ) %>%
-          ungroup() ,
-        assnmts_days_all_groupings %>% 
-          group_by(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
-          summarize(FACTOR_DAYS = n_distinct(DEPLOYED_DATE),
-                    FACTOR_FSHRY_DATA_DAYS = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y'])) ) %>%
-          ungroup(),
-        all = TRUE) %>%
-  mutate(FACTOR_WEIGHT_MTHD_1 = FACTOR_DAYS/TOTAL_FACTOR_DAYS_CR_PERM,       # Method 1 for WEIGHTING the statements will apportion the number of instances to the number of days in that factor category.
-         FACTOR_WEIGHT_MTHD_2 = FACTOR_DAYS/TOTAL_DISTINCT_DAYS_CR_PERM,     # Method 2 for WEIGHTING the statements will apportion the number of instances to the number of distinct days in that factor category.
-         FACTOR_WEIGHT_MTHD_3 = FACTOR_FSHRY_DATA_DAYS/TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM,       # Method 3 for WEIGHTING the statements will apportion the number of instances to the number of FISHERY_DATA days in that factor category.
-         FACTOR_WEIGHT_MTHD_4 = FACTOR_FSHRY_DATA_DAYS/TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM) %>% # Method 4 for WEIGHTING the statements will apportion the number of instances to the number of DISTINCT FISHERY DATA DAYS in that factor category.
-  select(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, FACTOR_DAYS, TOTAL_FACTOR_DAYS_CR_PERM, TOTAL_DISTINCT_DAYS_CR_PERM, FACTOR_WEIGHT_MTHD_1, FACTOR_WEIGHT_MTHD_2, FACTOR_WEIGHT_MTHD_3, FACTOR_WEIGHT_MTHD_4)
-
-
-
-
-
-# Next, summarize for each factor combination and get the total days etc.  These are the DENOMINATORS of the rates.
-depl_days_summ_by_factor <-
-  cnt_dep_days_all_groupings %>% 
-  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
-  summarize(TOTAL_DAYS      = sum(FACTOR_DAYS), 
-            TOTAL_OBSERVERS = n_distinct(OBSERVER_SEQ),
-            TOTAL_CRUISES   = n_distinct(CRUISE),
-            DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT) ) %>%
-  ungroup()
-
-
 
 
 
@@ -242,7 +193,8 @@ units_melt <-
                        SAMP = TOTAL_SAMPLES,
                        MARM = MAMMAL_INTERACTIONS), 
        id.vars       = c("CALENDAR_YEAR"),
-       measure.vars  = c("DAYS", "DEPL", "TRIP","OFFL", "HAUL", "SAMP", "MARM"),
+       measure.vars  = c("DAYS", "DEPL", "TRIP","OFFL", "HAUL", "SAMP", "MARM"
+                         ),
        value.name    = 'TOTAL_UNITS',
        variable.name = "INCIDENT_UNIT") 
 
@@ -253,18 +205,118 @@ units_melt <-
 # REG-level rate
 reg_units_rate <-
   summ_regs_units %>%
-   inner_join(units_melt) %>%
-   mutate(RATE = N_UNITS_REPORTED/TOTAL_UNITS,
-          RATE_PER_1000_UNITS = RATE*1000 )
+  left_join(units_melt) %>%
+  full_join(summ_units) %>%
+  mutate(RATE = N_UNITS_REPORTED/TOTAL_UNITS,
+         RATE_PER_1000_UNITS = RATE*1000,
+         UNITS_PER_OBSERVER   =  N_UNITS_REPORTED/OBSERVERS,
+         UNITS_PER_CRUISE     =  N_UNITS_REPORTED/CRUISES,
+         UNITS_PER_ASSIGNMENT =  N_UNITS_REPORTED/ASSIGNMENTS,
+         UNITS_PER_DAY        =  N_UNITS_REPORTED/DAYS,
+         UNITS_PER_1000_DAYS  = (N_UNITS_REPORTED/DAYS)*1000
+          ) %>%
+  select(CALENDAR_YEAR, CATEGORY, SUBCATEGORY,
+         OLE_REGULATION_SEQ, REG_SUMMARY,
+         INCIDENT_UNIT, N_UNITS_REPORTED, TOTAL_UNITS,
+         RATE, RATE_PER_1000_UNITS,
+         OBSERVERS, UNITS_PER_OBSERVER,
+         CRUISES, UNITS_PER_CRUISE,
+         ASSIGNMENTS, UNITS_PER_ASSIGNMENT,
+         DAYS, UNITS_PER_DAY, UNITS_PER_1000_DAYS
+         )
   
   
 # SUBCATEGORY-level rate
 subcat_units_rate <-
   summ_subcat_units %>%
-  inner_join(units_melt) %>%
+  left_join(units_melt) %>%
+  full_join(summ_units) %>%
   mutate(RATE = N_UNITS_REPORTED/TOTAL_UNITS,
-         RATE_PER_1000_UNITS = RATE*1000 )
+         RATE_PER_1000_UNITS = RATE*1000,
+         UNITS_PER_OBSERVER   =  N_UNITS_REPORTED/OBSERVERS,
+         UNITS_PER_CRUISE     =  N_UNITS_REPORTED/CRUISES,
+         UNITS_PER_ASSIGNMENT =  N_UNITS_REPORTED/ASSIGNMENTS,
+         UNITS_PER_DAY        =  N_UNITS_REPORTED/DAYS,
+         UNITS_PER_1000_DAYS  = (N_UNITS_REPORTED/DAYS)*1000
+  ) %>%
+  select(CALENDAR_YEAR, CATEGORY, SUBCATEGORY,
+         INCIDENT_UNIT, DISTINCT_REGS_SELECTED, N_REGS_REPORTED, 
+         N_UNITS_REPORTED, TOTAL_UNITS,
+         RATE, RATE_PER_1000_UNITS,
+         OBSERVERS, UNITS_PER_OBSERVER,
+         CRUISES, UNITS_PER_CRUISE,
+         ASSIGNMENTS, UNITS_PER_ASSIGNMENT,
+         DAYS, UNITS_PER_DAY, UNITS_PER_1000_DAYS
+  )
 
+
+# Above table, but FILTERED For OLE_PRIORITY types
+subcat_units_rate_priority <-
+  subcat_units_rate %>%
+  filter(SUBCATEGORY %in% c('REASONABLE ASSISTANCE', 'SAMPLING INTERFERENCE',
+                            'DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS',
+                            'SEXUAL ASSAULT',
+                            'SAFETY',
+                            'ASSAULT',
+                            'SEXUAL HARASSMENT',
+                            'INTIMIDATION/BRIBERY/COERCION',
+                            'IMPEDIMENT',
+                            'HOSTILE WORK ENVIRONMENT'))
+
+
+
+
+
+
+
+########################
+#########################
+# Summarize the DAYS for each factor combination.
+
+# Count deployed days.
+# Frst count the SUM TOTAL of days for cruise/permit/all factors.
+# This double-counts days where multiple factors occur, and is used to WEIGHT the statements in later step: WIEGHTING METHOD 1.
+# Next count DISTINCT days for each cruise/permit ONLY.  Used for WIEGHTING METHOD 2.  Update: this method is not used.
+# Finally count DISTINCT days for each cruise/permit/factor combination
+# Weighting methods 3 and 4 are based on fishery-data-collection days as the denominator, rather than all deployment days.
+# Weighting methods 3 and 4 are not currently used.
+
+# NOTE: this may not be used for 2024 depending on what factors are used.
+
+cnt_dep_days_all_groupings <- 
+  merge(assnmts_days_all_groupings %>%
+          group_by(CALENDAR_YEAR, CRUISE, PERMIT, OBSERVER_SEQ) %>%
+          summarize(TOTAL_FACTOR_DAYS_CR_PERM              = length(DEPLOYED_DATE),
+                    TOTAL_DISTINCT_DAYS_CR_PERM            = length(unique(DEPLOYED_DATE)),
+                    TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM   = length(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']),
+                    TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']))
+          ) %>%
+          ungroup() ,
+        assnmts_days_all_groupings %>% 
+          group_by(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
+          summarize(FACTOR_DAYS = n_distinct(DEPLOYED_DATE),
+                    FACTOR_FSHRY_DATA_DAYS = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y'])) ) %>%
+          ungroup(),
+        all = TRUE) %>%
+  mutate(FACTOR_WEIGHT_MTHD_1 = FACTOR_DAYS/TOTAL_FACTOR_DAYS_CR_PERM,       # Method 1 for WEIGHTING the statements will apportion the number of instances to the number of days in that factor category.
+         FACTOR_WEIGHT_MTHD_2 = FACTOR_DAYS/TOTAL_DISTINCT_DAYS_CR_PERM,     # Method 2 for WEIGHTING the statements will apportion the number of instances to the number of distinct days in that factor category.
+         FACTOR_WEIGHT_MTHD_3 = FACTOR_FSHRY_DATA_DAYS/TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM,       # Method 3 for WEIGHTING the statements will apportion the number of instances to the number of FISHERY_DATA days in that factor category.
+         FACTOR_WEIGHT_MTHD_4 = FACTOR_FSHRY_DATA_DAYS/TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM) %>% # Method 4 for WEIGHTING the statements will apportion the number of instances to the number of DISTINCT FISHERY DATA DAYS in that factor category.
+  select(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, FACTOR_DAYS, TOTAL_FACTOR_DAYS_CR_PERM, TOTAL_DISTINCT_DAYS_CR_PERM, FACTOR_WEIGHT_MTHD_1, FACTOR_WEIGHT_MTHD_2, FACTOR_WEIGHT_MTHD_3, FACTOR_WEIGHT_MTHD_4)
+
+
+
+
+
+# Next, summarize for each factor combination and get the total days etc.  These are the DENOMINATORS of the rates.
+depl_days_summ_by_factor <-
+  cnt_dep_days_all_groupings %>% 
+  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
+  summarize(TOTAL_DAYS      = sum(FACTOR_DAYS), 
+            TOTAL_OBSERVERS = n_distinct(OBSERVER_SEQ),
+            TOTAL_CRUISES   = n_distinct(CRUISE),
+            DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT),
+            .groups = "drop")
 
 
 
@@ -675,7 +727,7 @@ subcat_units_rate <-
 
 file_3_name <- "AR_3_rate_output.Rdata"
 
-save(list = ls(),
+save(list = ls()[!(ls() == 'channel')],
      file = file_3_name)
 
 gdrive_upload(file_3_name, AnnRpt_EnfChp_dribble)

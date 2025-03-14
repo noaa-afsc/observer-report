@@ -12,7 +12,7 @@ library(tidyverse)
 library(data.table)
 library(sqldf)
 library(devtools)
-
+library(FMAtools)
 
 # load the data files. --------------------------------------------------------
 rm(list = ls())
@@ -31,13 +31,13 @@ gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
 load(file = file_3_name)
 
 
-# Write .csv of the priority rate but first remove confidentail (total_statements < 3)
+# Write .csv of the priority rate but first remove confidential (total_statements < 3)
 write.csv(file =  paste0("tables/tbl_",
                          adp_yr,
-                         "_rate_by_subcat_priority.csv"
+                         "_subcat_units_rate_priority.csv"
                           ),
-          x    = rate_by_subcat_priority %>%
-                   filter(TOTAL_STATEMENTS >= 3)
+          x    = subcat_units_rate_priority # %>%
+                  # filter(TOTAL_STATEMENTS >= 3)
           )
 
 
