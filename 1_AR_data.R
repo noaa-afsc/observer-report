@@ -526,7 +526,6 @@ nrow(filter(em_trw_offload, STRATA == "EM TRW BSAI (EFP)" & TENDER == "Y"))
 
 # Check gear type and IFP deliveries
 nrow(filter(em_trw_offload, AGENCY_GEAR_CODE == "NPT" | PORT_CODE == "IFP"))
-#' \TODO *2024 AR* 3 EM TRW GOA EFP trips deployed NPT gear? Also delivered to IFP.
 
 # Get eLandings data for these fish tickets to add TENDER_OFFLOAD_DATE which is needed to match
 #  observer data so we can determine which landings observers marked as monitored
@@ -664,10 +663,5 @@ vessel.issues <- filter(work.offload, CV_ID %in% work.dups$CV_ID)
 
 # Save --------------------------------------------------------------------
 
-# Remove any remaining unwanted objects and save data
-rm(channel_akro, channel_afsc, data_dribble, ADP_Output_dribble, ADP_Tables_dribble, em_trip_end, em_data_available, ob_trips, ob_hauls, afsc_offloads, 
-   akro_offloads, em_data_timeliness, ob_data_timeliness, offload_data_timeliness)
-
-# Save
-save.image(file = "2_AR_data.Rdata")
+save(predicted, bud_scen_lst, bud_tbl, work.data, salmon.landings.obs, odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload, file = "2_AR_data.Rdata")
 gdrive_upload("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
