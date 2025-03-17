@@ -920,7 +920,7 @@ Coverage.Table.full <- bind_rows(
   # and voluntary full coverage)
   work.data %>%
     filter(COVERAGE_TYPE == "FULL") %>% 
-    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
+    group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -929,12 +929,11 @@ Coverage.Table.full <- bind_rows(
            deployment.method = "Trip-Selection",
            Rate = 1,
            meets.expected = ifelse(Pct.obs < 100, "No - lower than expected", "Yes")) %>%
-    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
+    select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected),
   # Totals for vessels in the full coverage category
   work.data %>%
     filter(COVERAGE_TYPE == "FULL") %>%
-  group_by(ADP) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -943,7 +942,7 @@ Coverage.Table.full <- bind_rows(
            Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection")
 ) %>%
-  arrange(ADP, desc(STRATA)) %>%
+  arrange(desc(STRATA)) %>%
   ungroup()
 
 #' *PARTIAL COVERAGE TRIP-SELECTION*
@@ -956,14 +955,15 @@ work.offload.trw_em <- work.offload %>%
   filter(STRATA == "EM TRW GOA (EFP)") %>%
   mutate(REPORT_ID = as.character(REPORT_ID),
          CV_ID = as.integer(CV_ID),
-         ADP = 2024,
          COVERAGE_TYPE = "PARTIAL") %>%
   mutate(REPORT_ID = case_when(!is.na(T_REPORT_ID) ~ T_REPORT_ID,
                                TRUE ~ REPORT_ID)) %>%
-  select(ADP, COVERAGE_TYPE, STRATA, REPORT_ID, CV_ID, OBS_SALMON_CNT_FLAG) %>%
+  select(COVERAGE_TYPE, STRATA, REPORT_ID, CV_ID, OBS_SALMON_CNT_FLAG,
+         OFFLOAD_TO_TENDER_FLAG, FMP, PORT_CODE) %>%
   rename(VESSEL_ID = CV_ID,
          TRIP_ID = REPORT_ID,
-         OBSERVED_FLAG = OBS_SALMON_CNT_FLAG)
+         OBSERVED_FLAG = OBS_SALMON_CNT_FLAG,
+         TENDER = OFFLOAD_TO_TENDER_FLAG)
 
 # Add back to work.data
 work.data.partial <- work.data %>%
@@ -975,9 +975,9 @@ Coverage.Table.partial <- bind_rows(
   # By strata for vessels in the partial coverage category (trip-selection)
   work.data.partial %>% 
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    left_join(partial %>% select(YEAR, STRATA, Rate) %>% distinct(),
-              by = join_by(ADP == YEAR, STRATA)) %>%
-    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
+    left_join(partial %>% select(STRATA, Rate) %>% distinct(),
+              by = join_by(STRATA)) %>%
+    group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -986,7 +986,7 @@ Coverage.Table.partial <- bind_rows(
     mutate(Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") %>% 
     # Add binomial distribution upper and lower 95th percentiles for each partial coverage stratum
-    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
+    group_by(COVERAGE_TYPE, STRATA) %>%
     mutate(
       min.expected = round(
         stats::binom.test(x = n, 
@@ -1001,7 +1001,7 @@ Coverage.Table.partial <- bind_rows(
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                  Rate * 100 < min.expected ~ "No - higher than expected",
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
-    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
+    select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, 
            min.expected, max.expected, meets.expected)
   ,
@@ -1009,7 +1009,6 @@ Coverage.Table.partial <- bind_rows(
   Coverage.Table.partial.total <- work.data.partial %>%
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
     filter(STRATA != "EM TRW GOA (EFP)") %>% #'* 2024 AR only (until VALHALLA fixed) *
-    group_by(ADP) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1018,7 +1017,7 @@ Coverage.Table.partial <- bind_rows(
            Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") 
 ) %>%
-  arrange(ADP, match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW"))) %>%
+  arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW"))) %>%
   ungroup()
 
 #' *ZERO COVERAGE* 
@@ -1027,7 +1026,7 @@ Coverage.Table.zero <-
     filter(STRATA %in% c("ZERO", "Zero EM Research")) %>% #'
     mutate(STRATA = as.character(STRATA)) %>% 
     mutate(STRATA = ifelse(STRATA == "ZERO", "Zero coverage", STRATA)) %>% 
-    group_by(ADP, COVERAGE_TYPE, STRATA) %>%
+    group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1036,14 +1035,13 @@ Coverage.Table.zero <-
            deployment.method = "Trip-Selection",
            Rate = 0,
            meets.expected = ifelse(Pct.obs > 0, "No - higher than expected", "Yes")) %>%
-    select(ADP, COVERAGE_TYPE, STRATA, deployment.method, 
+    select(COVERAGE_TYPE, STRATA, deployment.method, 
            V, v, N, n, Pct.obs, Rate, meets.expected) %>%
   ungroup()
 
 # Totals with EM (number of vessels is not additive)
 #' \TODO: need to address that EM trawl is deliveries not trips
 Coverage.Table.TOTALS <- work.data.partial %>%
-  group_by(ADP) %>%
   summarize(V = length(unique(VESSEL_ID)),
             v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
             # If we want to separate by trip vs delivery
@@ -1102,16 +1100,14 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                                    TRUE ~ COVERAGE_TYPE)) %>%
   mutate(STRATA = as.factor(STRATA),
          COVERAGE_TYPE = as.factor(COVERAGE_TYPE)) %>%
-  select(`Year` = ADP,
-         `Coverage` = COVERAGE_TYPE, 
+  select(`Coverage` = COVERAGE_TYPE, 
          Strata = STRATA,
          V, v, N, n,
          `Expected` = Rate,
          `Realized` = Pct.obs,
          `Lower limit`= min.expected,
          `Upper limit` = max.expected, 
-         `Realized meets expected?` = meets.expected) %>%
-  arrange(Year)
+         `Realized meets expected?` = meets.expected)
 
 # Create an empty factor level so that you can get rid of NAs in the table.
 Coverage.Table$Coverage = factor(Coverage.Table$Coverage, levels = c(levels(Coverage.Table$Coverage), " "))
@@ -1123,7 +1119,7 @@ rm(Coverage.Table.full, Coverage.Table.partial, Coverage.Table.partial.total, Co
 # Check full coverage to see why < 100%
 full.cover.no.obs <- work.data %>%
   filter(COVERAGE_TYPE == "FULL" & OBSERVED_FLAG == "N") %>%
-  select(ADP, TRIP_ID, VESSEL_ID, PERMIT, AGENCY_GEAR_CODE, FMP, MANAGEMENT_PROGRAM_CODE, 
+  select(TRIP_ID, VESSEL_ID, PERMIT, AGENCY_GEAR_CODE, FMP, MANAGEMENT_PROGRAM_CODE, 
          PROCESSING_SECTOR, TRIP_TARGET_CODE, LENGTH_OVERALL) %>%
   distinct()
 
@@ -1133,17 +1129,17 @@ full.cover.no.obs <- work.data %>%
 # Objects referenced in-text:
 
 # Coverage trip and vessel totals (including EM)
-totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == year) %>% select(n) %>% as.numeric()
+totl_obs_trips <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(n) %>% as.numeric()
 
 perc_trips_obs <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total" & Year == year) %>% 
+  filter(Strata == "Total" & Coverage == "Total") %>% 
   transmute(percent.obs = format(as.numeric(n)/as.numeric(N) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 
-totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total" & Year == year) %>% select(v) %>% as.numeric()
+totl_obs_vessels <- Coverage.Table %>% filter(Strata == "Total" & Coverage == "Total") %>% select(v) %>% as.numeric()
 
 perc_vessels_obs <- Coverage.Table %>% 
-  filter(Strata == "Total" & Coverage == "Total" & Year == year) %>%
+  filter(Strata == "Total" & Coverage == "Total") %>%
   transmute(percent.obs = format(as.numeric(v)/as.numeric(V) * 100, digits = 1, nsmall = 1)) %>% 
   as.numeric()
 ```
@@ -1185,6 +1181,7 @@ Note that there are several reasons why the total number of trips and the final 
 ```{r pollock.observed.tbl, message=FALSE, warning=FALSE, include=FALSE}
 # Get all pollock landings and label observed status  
 # Note: tender is intentionally excluded
+#'* This is the old way of doing it, EM trawl needs to be handled a little differently *
 Pollock.landing.data <- work.data %>%
   filter(SOURCE_TABLE == "Y" & # Retained catch
          TENDER == "N" &
@@ -1227,8 +1224,8 @@ Pollock.monitored <- rbind(
 
 # Isolate observed strata
 Pollock.observed <- rbind(
-  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA != "EM TRW BSAI (EFP)"),
-  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA != "EM TRW GOA (EFP)"))
+  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & !grepl("EM TRW", STRATA)),
+  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & !grepl("EM TRW", STRATA)))
 
 # Rename columns and format
 Pollock.observed.table <- Pollock.observed %>% 
@@ -1252,8 +1249,8 @@ Pollock.observed.table <- Pollock.observed %>%
 
 # Isolate EFP strata
 Pollock.efp <- rbind(
-  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & STRATA == "EM TRW BSAI (EFP)"),
-  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & STRATA == "EM TRW GOA (EFP)"))
+  filter(Pollock.monitored, COVERAGE_TYPE == "Full" & grepl("EM TRW", STRATA)),
+  filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & grepl("EM TRW", STRATA)))
 
 # Rename columns and format
 Pollock.efp.table <- Pollock.efp %>% 
