@@ -87,8 +87,8 @@ bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOT
 # * Valhalla ----
 
 # Create a copy of Valhalla named 'work.data' that will be manipulated
-gdrive_download("source_data/2025-01-14cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-load("source_data/2025-01-14cas_valhalla.Rdata")
+gdrive_download("source_data/2025-03-06cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
+load("source_data/2025-03-06cas_valhalla.Rdata")
 work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
 rm(valhalla)
 
@@ -639,7 +639,9 @@ work.offload <- tender.link %>%
   #'* 2024 AR only: * REPORT_ID missing from observer data, need to hardcode that it wasn't monitored
   #'                  VALHALLA says it was an unmonitored offload and it wasn't a tendered delivery
   mutate(OBS_SALMON_CNT_FLAG = case_when(REPORT_ID == 9543781 ~ "N",
-                                         TRUE ~ OBS_SALMON_CNT_FLAG))
+                                         TRUE ~ OBS_SALMON_CNT_FLAG),
+         OFFLOAD_TO_TENDER_FLAG = case_when(REPORT_ID == 9543781 ~ "N",
+                                            TRUE ~ OFFLOAD_TO_TENDER_FLAG))
 
 # Check to make sure all VALHALLA REPORT_IDs have a match in observer data
 if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
