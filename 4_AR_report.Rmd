@@ -1176,7 +1176,8 @@ Pollock.landing.data <- work.data %>%
            AGENCY_GEAR_CODE %in% c("PTR", "NPT") &
            MANAGEMENT_PROGRAM_CODE %in% c("AFA", "OA") &
            PROCESSING_SECTOR == "S" &
-           TRIP_TARGET_CODE %in% c("B", "P")) %>%
+           TRIP_TARGET_CODE %in% c("B", "P"),
+           TENDER == "N") %>%
   distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
   
   # Check for duplicates in REPORT_ID
@@ -1187,6 +1188,7 @@ Pollock.landing.data <- work.data %>%
   }
     .} %>%
   # EM trawl is a pollock fishery, but deliveries may not always be marked as B or P
+  #'* 2024 AR* 1 cod offload in BSAI
   rbind(work.data %>%
           filter(STRATA == "EM TRW BSAI (EFP)") %>%
           distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER)) %>%
@@ -1196,13 +1198,19 @@ Pollock.landing.data <- work.data %>%
   rbind(
     work.offload.trw_em %>%
       filter(STRATA == "EM TRW GOA (EFP)") %>%
-          select(REPORT_ID = TRIP_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, Observed.type = OBSERVED_FLAG, TENDER) %>%
-          mutate(PORT_CODE = case_when(REPORT_ID == "37252024-09-10" ~ "AKU", #'*2024 AR* incorrect assignment of PORT_CODE for 1 tender delivery
+          select(REPORT_ID = TRIP_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE,
+                 Observed.type = OBSERVED_FLAG, TENDER) %>%
+      #'*2024 AR* incorrect assignment of PORT_CODE for 1 tender delivery
+          mutate(PORT_CODE = case_when(REPORT_ID == "37252024-09-10" ~ "AKU",
                                        TRUE ~ PORT_CODE)) %>%
           distinct() %>%
           mutate(Observed.type = if_else(Observed.type == "Y", "Observed", "Not_Observed"),
-                 COVERAGE_TYPE = case_when(grepl("EM TRW GOA", STRATA) & TENDER == "Y" & COVERAGE_TYPE == "PARTIAL" ~ "Partial (tender)",
-                                           grepl("EM TRW GOA", STRATA) & TENDER == "N" & COVERAGE_TYPE == "PARTIAL" ~ "Partial (non-tender)",
+                 COVERAGE_TYPE = case_when(grepl("EM TRW GOA", STRATA)
+                                           & TENDER == "Y"
+                                           & COVERAGE_TYPE == "PARTIAL" ~ "Partial (tender)",
+                                           grepl("EM TRW GOA", STRATA)
+                                           & TENDER == "N"
+                                           & COVERAGE_TYPE == "PARTIAL" ~ "Partial (non-tender)",
                                            TRUE ~ COVERAGE_TYPE)),
         fill = TRUE) %>%
   mutate(FMP = fct_recode(factor(FMP), `Bering Sea` = "BSAI", `Gulf of Alaska` = "GOA"),
