@@ -911,8 +911,8 @@ The final selection rate after trips were closed, canceled or waived were within
 
 #' \TODO *2024 AR* Fix EM Trawl GOA calculations - VALHALLA currently not handling tenders well
 #' For now using observed assignment based on observer data (column: OBS_SALMON_CNT_FLAG)
-#' This means when calculating summaries for partial coverage, we need to remove EM trawl GOA
-#' calculate it on it's own and then join
+#' This means when calculating summaries, we need to remove EM trawl and calculate it on it's
+#' own and then join back to the dataframe
 
 #' * 2024 AR * Temporary fix until VALHALLA trip logic is updated
 # Make delivery data look like trip data
