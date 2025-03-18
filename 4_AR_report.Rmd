@@ -306,7 +306,7 @@ trip.budget.table <-
       filter(obs_act_days, ADP == year)), 
     all = TRUE) %>% 
   # Change NAs to 0 for actual days      
-  mutate(act_days  = ifelse(is.na(act_days), 0, act_days)) %>% 
+  mutate(act_days = ifelse(is.na(act_days), 0, act_days)) %>% 
   # Percent difference between predicted and actual
   mutate(diff = act_days -  pred_days,
          perc = (diff)/pred_days * 100) %>%
@@ -1181,7 +1181,7 @@ Pollock.landing.data <- work.data %>%
     non_pollock_count <- as.data.frame(nrow(filtered_data))
 
     if (non_pollock_count$`nrow(filtered_data)` > 0) {
-      print(paste(non_pollock_count$`nrow(filtered_data)`, "EM trawl offloads are non-pollock"))
+      print(paste(non_pollock_count$`nrow(filtered_data)`, "EM trawl offload(s) non-pollock"))
     } else {
       print("All EM trawl deliveries are pollock")
     }
@@ -1290,8 +1290,8 @@ Pollock.observed.table <- Pollock.observed %>%
   select(`FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
-         `Total offloads (*N*)` = N.pollock,
-         `Observed offloads (*n*)` = N.pollock.obs,
+         `Total deliveries (*N*)` = N.pollock,
+         `Observed deliveries (*n*)` = N.pollock.obs,
          `% observed` = pct.obs)
 
 # Isolate EFP strata
