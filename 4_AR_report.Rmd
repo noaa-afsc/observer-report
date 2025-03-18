@@ -1216,7 +1216,7 @@ Pollock.landing.data <- work.data %>%
       filter(STRATA == "EM TRW GOA (EFP)") %>%
           select(REPORT_ID = TRIP_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE,
                  Observed.type = OBSERVED_FLAG, TENDER) %>%
-      #'*2024 AR* incorrect assignment of PORT_CODE for 1 tender delivery
+      #'*2024 AR* incorrect assignment of PORT_CODE for 1 tender delivery - VMS says it was at AKU
           mutate(PORT_CODE = case_when(REPORT_ID == "37252024-09-10" ~ "AKU",
                                        TRUE ~ PORT_CODE)) %>%
           distinct() %>%
