@@ -3,9 +3,6 @@
 # Get packages and user-defined functions
 source("3_helper.R")
 
-# Get list of all items in helper that can be excluded from output of 2_AR.data.rdata
-helper_objects <- ls()
-
 # Report year (year that fishing and observing took place)
 year <- 2024
 
@@ -16,7 +13,7 @@ channel_afsc  <- eval(parse(text = Sys.getenv('channel_afsc')))
 # Get data ----------------------------------------------------------------
 
 # Assign the address of the Annual Report Project in the Shared Gdrive
-AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter")
+data_dribble <- gdrive_set_dribble("Data")
 
 # * Observer costs ----
 
@@ -27,10 +24,10 @@ AnnRpt_DepChp_dribble <- gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"
 if(FALSE) {
   FMA_Days_Paid <- read.csv("source_data/FMA Days Paid.xlsx - Days_Paid.csv")
   save(FMA_Days_Paid, file = "source_data/FMA_Days_Paid.rdata")
-  gdrive_upload("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
+  gdrive_upload("source_data/FMA_Days_Paid.rdata", data_dribble)
 }
 
-gdrive_download("source_data/FMA_Days_Paid.rdata", AnnRpt_DepChp_dribble)
+gdrive_download("source_data/FMA_Days_Paid.rdata", data_dribble)
 load("source_data/FMA_Days_Paid.rdata")
 days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
@@ -87,8 +84,8 @@ bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOT
 # * Valhalla ----
 
 # Create a copy of Valhalla named 'work.data' that will be manipulated
-gdrive_download("source_data/2025-03-06cas_valhalla.Rdata", AnnRpt_DepChp_dribble)
-load("source_data/2025-03-06cas_valhalla.Rdata")
+gdrive_download("source_data/valhalla.Rdata", data_dribble)
+load("source_data/valhalla.Rdata")
 work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
 rm(valhalla)
 
@@ -507,9 +504,9 @@ work.data <- work.data %>%
 
 # * Shapefiles ----
 # Initial upload to Shared Gdrive
-if(FALSE) gdrive_upload("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+if(FALSE) gdrive_upload("source_data/ak_shp.rdata", data_dribble)
 ## Load land and NMFS stat area shapefiles 
-gdrive_download("source_data/ak_shp.rdata", AnnRpt_DepChp_dribble)
+gdrive_download("source_data/ak_shp.rdata", data_dribble)
 (load(("source_data/ak_shp.rdata")))
 
 # * EM trawl offloads ----
@@ -681,10 +678,5 @@ rm(work.obs.cv, cv.dups, work.obs.tender, tender.dups, work.dups.cv, work.dups.t
 
 # Save --------------------------------------------------------------------
 
-# Remove any remaining unwanted objects and save data
-rm(helper_objects, channel_afsc, ADP_Output_dribble, em_trip_end, em_data_available, ob_trips, ob_hauls, afsc_offloads, 
-   akro_offloads, em_data_timeliness, ob_data_timeliness, offload_data_timeliness)
-
-# Save
-save.image(file = "2_AR_data.Rdata")
-gdrive_upload("2_AR_data.Rdata", AnnRpt_DepChp_dribble)
+save(predicted, bud_scen_lst, bud_tbl, work.data, salmon.landings.obs, odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload, file = "2_AR_data.Rdata")
+gdrive_upload("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
