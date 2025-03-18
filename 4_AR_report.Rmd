@@ -1171,6 +1171,22 @@ Note that there are several reasons why the total number of trips and the final 
 # Get all pollock landings and label observed status  
 # Note: tender is intentionally excluded
 Pollock.landing.data <- work.data %>%
+  
+  # Check for non-pollock EM trawl offloads
+  {
+    filtered_data <- work.data %>%
+      filter(grepl("EM TRW", STRATA) & !(TRIP_TARGET_CODE %in% c("B", "P"))) %>%
+      distinct(REPORT_ID)
+
+    non_pollock_count <- as.data.frame(nrow(filtered_data))
+
+    if (non_pollock_count$`nrow(filtered_data)` > 0) {
+      print(paste(non_pollock_count$`nrow(filtered_data)`, "EM trawl offloads are non-pollock"))
+    } else {
+      print("All EM trawl deliveries are pollock")
+    }
+    .} %>%
+
   filter(STRATA %in% c("OB TRW BSAI", "OB TRW GOA", "FULL") &
            SOURCE_TABLE == "Y" & # Retained catch
            AGENCY_GEAR_CODE %in% c("PTR", "NPT") &
