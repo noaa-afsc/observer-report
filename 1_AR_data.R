@@ -510,7 +510,6 @@ gdrive_download("source_data/ak_shp.rdata", data_dribble)
 (load(("source_data/ak_shp.rdata")))
 
 # * EM trawl offloads ----
-
 em_trw_offload <- work.data %>%
   filter(STRATA %in% c("EM TRW BSAI (EFP)", "EM TRW GOA (EFP)")) %>%
   select(TRIP_ID, REPORT_ID, VESSEL_ID, STRATA, MANAGEMENT_PROGRAM_CODE, AGENCY_GEAR_CODE, COVERAGE_TYPE,
@@ -642,9 +641,65 @@ work.offload <- tender.link %>%
 
 # Check to make sure all VALHALLA REPORT_IDs have a match in observer data
 if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
-  print("REPORT_IDs exist that are not in observer data")
+  cat("\033[31mREPORT_IDs exist that are not in observer data\033[39m\n")
 } else {
-  print("All REPORT_IDs present in observer data")
+  cat("\033[32mAll REPORT_IDs present in observer data\033[39m\n")
+}
+
+# Check port assignments to see if there are mismatches between where a processor is actually located
+# and what was reported in VALHALLA
+# If there are any mismatches, the processor_port object will be created and these can then be checked
+# using VMS and observer deployment data
+# Output will provide the offloads in question and a list of where the observer was stationed on those dates
+{
+  processor_port <- dbGetQuery(channel_afsc,
+                             paste("SELECT d.permit, p.name AS plant_port
+                                    FROM norpac.atl_lov_plant d
+                                    LEFT JOIN norpac.atl_lov_port_code p
+                                      ON d.port_code = p.port_code")) %>%
+  right_join(work.offload, by = join_by(PERMIT == PROCESSOR_PERMIT_ID)) %>%
+  mutate(PLANT_PORT = case_when(PLANT_PORT == "Akutan" ~ "AKU",
+                                PLANT_PORT == "Dutch Harbor" ~ "DUT",
+                                PLANT_PORT == "False Pass" ~ "FSP",
+                                PLANT_PORT == "Kodiak" ~ "KOD",
+                                PLANT_PORT == "Sand Point" ~ "SPT",
+                                PROCESSOR_NAME == "NORTHERN VICTOR" ~ "DUT")) %>%
+  select(CRUISE, REPORT_ID, T_REPORT_ID, PLANT_PORT, PORT_CODE, PROCESSOR_NAME, PERMIT,
+         CV_ID, CV_NAME, TENDER_ID, TENDER_NAME, STRATA, LANDING_DATE, TENDER_OFFLOAD_DATE) %>%
+  filter(PLANT_PORT != PORT_CODE)
+  
+  if (nrow(processor_port) > 0) {
+    print(processor_port)
+    cat("\033[31mSome EM offload ports may be inaccurate\033[39m\n") # red
+    
+    obs_port <- dbGetQuery(channel_afsc,
+                           paste("SELECT dl.deployed_date, vp.permit, vp.cruise, p.name
+                  FROM norpac.ols_vessel_plant vp 
+                  JOIN TABLE(norpac.ole_statement_factors_pkg.get_deployed_dates_list_vp_seq(vp.vessel_plant_seq))  dl
+                    ON vp.vessel_plant_seq = dl.vessel_plant_seq
+                  LEFT JOIN norpac.atl_lov_plant p
+                    ON vp.permit = p.permit
+                  WHERE vp.cruise  IN (",
+                                 paste(processor_port %>%
+                                         select(CRUISE) %>%
+                                         distinct() %>%
+                                         unlist(use.names = FALSE), collapse = ",") ,")")) %>%
+      mutate(DEPLOYED_DATE = as.Date(DEPLOYED_DATE)) %>%
+      filter(DEPLOYED_DATE %in% coalesce(processor_port$TENDER_OFFLOAD_DATE, processor_port$LANDING_DATE))
+    
+    n_count <- as.data.frame(nrow(processor_port))
+    
+    work.offload <- work.offload %>%
+      left_join(processor_port %>% select(REPORT_ID, PLANT_PORT), by = "REPORT_ID") %>%
+      mutate(PORT_CODE = ifelse(!is.na(PLANT_PORT), PLANT_PORT, PORT_CODE)) %>%
+      select(-PLANT_PORT)
+    
+    print(obs_port)
+    cat(paste("\033[31mPORT_CODE replaced for", n_count$`nrow(processor_port)`, "offloads\033[39m\n"))
+    rm(obs_port, n_count)
+  } else {
+    cat("\033[32mEM offload ports match\033[39m\n") # green
+  }
 }
 
 # Clean up workspace

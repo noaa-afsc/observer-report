@@ -1181,9 +1181,9 @@ Pollock.landing.data <- work.data %>%
     non_pollock_count <- as.data.frame(nrow(filtered_data))
 
     if (non_pollock_count$`nrow(filtered_data)` > 0) {
-      print(paste(non_pollock_count$`nrow(filtered_data)`, "EM trawl offload(s) non-pollock"))
+      cat("\033[33m", paste(non_pollock_count$`nrow(filtered_data)`, "EM trawl offload(s) non-pollock\033[0m")) # yellow
     } else {
-      print("All EM trawl deliveries are pollock")
+      cat("\033[32mAll EM trawl deliveries are pollock\033[39m\n")
     }
     .} %>%
 
@@ -1198,9 +1198,9 @@ Pollock.landing.data <- work.data %>%
   
   # Check for duplicates in REPORT_ID
   {if (any(duplicated(.$REPORT_ID))) {
-    print("Duplicate REPORT_IDs found")
+    cat(" \033[31mDuplicate REPORT_IDs found\033[39m\n")
   } else {
-    print("No duplicate REPORT_IDs")
+    cat(" \033[32mNo duplicate REPORT_IDs\033[39m\n")
   }
     .} %>%
   # EM trawl is a pollock fishery, but deliveries may not always be marked as B or P
@@ -1216,9 +1216,6 @@ Pollock.landing.data <- work.data %>%
       filter(STRATA == "EM TRW GOA (EFP)") %>%
           select(REPORT_ID = TRIP_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE,
                  Observed.type = OBSERVED_FLAG, TENDER) %>%
-      #'*2024 AR* incorrect assignment of PORT_CODE for 1 tender delivery - VMS says it was at AKU
-          mutate(PORT_CODE = case_when(REPORT_ID == "37252024-09-10" ~ "AKU",
-                                       TRUE ~ PORT_CODE)) %>%
           distinct() %>%
           mutate(Observed.type = if_else(Observed.type == "Y", "Observed", "Not_Observed"),
                  COVERAGE_TYPE = case_when(grepl("EM TRW GOA", STRATA)
