@@ -667,8 +667,10 @@ if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
   
   if (nrow(processor_port) > 0) {
     print(processor_port)
-    cat("\033[31mSome EM offload ports may be inaccurate\033[39m\n") # red
+    cat("\033[31mPLANT_PORT (port_code based on permit) and PORT_CODE 
+        (valhalla) mismatch for some EM offloads\033[39m\n") # red
     
+    # Check port using the plant observer assignments
     obs_port <- dbGetQuery(channel_afsc,
                            paste("SELECT dl.deployed_date, vp.permit, vp.cruise, p.name
                   FROM norpac.ols_vessel_plant vp 
@@ -686,6 +688,7 @@ if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
     
     n_count <- as.data.frame(nrow(processor_port))
     
+    # Replace PORT_CODE with PLANT_PORT for the records with a mismatch
     work.offload <- work.offload %>%
       left_join(processor_port %>% select(REPORT_ID, PLANT_PORT), by = "REPORT_ID") %>%
       mutate(PORT_CODE = ifelse(!is.na(PLANT_PORT), PLANT_PORT, PORT_CODE)) %>%
