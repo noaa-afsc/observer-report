@@ -634,10 +634,7 @@ work.offload <- tender.link %>%
            OBS_SALMON_CNT_FLAG) %>%
   #'* 2024 AR only: * REPORT_ID missing from observer data, need to hardcode that it wasn't monitored
   #'                  VALHALLA says it was an unmonitored offload and it wasn't a tendered delivery
-  mutate(OBS_SALMON_CNT_FLAG = case_when(REPORT_ID == 9543781 ~ "N",
-                                         TRUE ~ OBS_SALMON_CNT_FLAG),
-         OFFLOAD_TO_TENDER_FLAG = case_when(REPORT_ID == 9543781 ~ "N",
-                                            TRUE ~ OFFLOAD_TO_TENDER_FLAG))
+  mutate(across(c(OBS_SALMON_CNT_FLAG, OFFLOAD_TO_TENDER_FLAG), ~ ifelse(REPORT_ID == 9543781, "N", .x)))
 
 # Check to make sure all VALHALLA REPORT_IDs have a match in observer data
 if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
