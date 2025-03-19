@@ -733,5 +733,7 @@ rm(work.obs.cv, cv.dups, work.obs.tender, tender.dups, work.dups.cv, work.dups.t
 
 # Save --------------------------------------------------------------------
 
-save(predicted, bud_scen_lst, bud_tbl, work.data, salmon.landings.obs, odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload, file = "2_AR_data.Rdata")
+save(year, days_paid, obs_act_days, predicted, bud_scen_lst, bud_tbl, work.data, partial, salmon.landings.obs, 
+     odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload,
+     file = "2_AR_data.Rdata")
 gdrive_upload("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
