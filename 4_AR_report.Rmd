@@ -916,7 +916,7 @@ The final selection rate after trips were closed, canceled or waived were within
 
 #' * 2024 AR * Temporary fix until VALHALLA trip logic is updated
 # Make delivery data look like trip data
-# Assuming one fish ticket per delivery
+# Assuming one landing report per delivery
 # Delivery = when fish actually hit the processing plant (e.g., when a tender delivers all CV offloads)
 # Will still summarize V and v by CV, but N and n will be by tender (when applicable) and CV
 #'* This object is also used for pollock offload summaries *
