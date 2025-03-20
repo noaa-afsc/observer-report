@@ -909,12 +909,12 @@ The final selection rate after trips were closed, canceled or waived were within
 ```{r Coverage.tbl, message=FALSE, warning=FALSE, include=FALSE}
 # Coverage table has number of total vessels (V), sampled vessels (v), total trips (N), sampled trips (n), and percent observed by deployment method (trip vs. vessel-selection):
 
-#' \TODO *2024 AR* Fix EM Trawl GOA calculations - VALHALLA currently not handling tenders well
+#' \TODO *2024 AR* `Fix EM Trawl GOA calculations - VALHALLA currently not handling tenders well`
 #' For now using observed assignment based on observer data (column: OBS_SALMON_CNT_FLAG)
 #' This means when calculating summaries, we need to remove EM trawl and calculate it on it's
 #' own and then join back to the dataframe
 
-#' * 2024 AR * Temporary fix until VALHALLA trip logic is updated
+#' * 2024 AR * `Temporary fix until VALHALLA trip logic is updated`
 # Make delivery data look like trip data
 # Assuming one landing report per delivery
 # Delivery = when fish actually hit the processing plant (e.g., when a tender delivers all CV offloads)
@@ -924,8 +924,8 @@ work.offload.trw_em <- work.offload %>%
   mutate(TRIP_ID = as.character(REPORT_ID),
          VESSEL_ID = as.integer(CV_ID),
          COVERAGE_TYPE = if_else(STRATA == "EM TRW GOA (EFP)", "PARTIAL", "FULL")) %>%
-  mutate(TRIP_ID = case_when(!is.na(T_REPORT_ID) ~ T_REPORT_ID,
-                               TRUE ~ TRIP_ID)) %>%
+  # Replace TRIP_ID with T_REPORT_ID
+  mutate(TRIP_ID = ifelse(!is.na(T_REPORT_ID), T_REPORT_ID, TRIP_ID)) %>%
   select(COVERAGE_TYPE, STRATA, TRIP_ID, VESSEL_ID,
          OBSERVED_FLAG = OBS_SALMON_CNT_FLAG,
          TENDER = OFFLOAD_TO_TENDER_FLAG,
@@ -1006,7 +1006,7 @@ Coverage.Table.partial <- bind_rows(
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data.offload %>%
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    filter(STRATA != "EM TRW GOA (EFP)") %>% #'* 2024 AR only (until VALHALLA fixed) *
+    filter(STRATA != "EM TRW GOA (EFP)") %>%                            #' \TODO * 2024 AR only (until VALHALLA fixed) *
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1185,8 +1185,9 @@ Pollock.landing.data <- work.data %>%
     } else {
       cat("\033[32mAll EM trawl deliveries are pollock\033[39m\n")
     }
-    .} %>%
-
+  .} %>%
+  
+  # Observer Pollock Trawl Trips
   filter(STRATA %in% c("OB TRW BSAI", "OB TRW GOA", "FULL") &
            SOURCE_TABLE == "Y" & # Retained catch
            AGENCY_GEAR_CODE %in% c("PTR", "NPT") &
@@ -1197,12 +1198,15 @@ Pollock.landing.data <- work.data %>%
   distinct(REPORT_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, TENDER) %>%
   
   # Check for duplicates in REPORT_ID
-  {if (any(duplicated(.$REPORT_ID))) {
-    cat(" \033[31mDuplicate REPORT_IDs found\033[39m\n")
-  } else {
-    cat(" \033[32mNo duplicate REPORT_IDs\033[39m\n")
-  }
-    .} %>%
+  {
+    if (any(duplicated(.$REPORT_ID))) {
+      cat(" \033[31mDuplicate REPORT_IDs found\033[39m\n")
+    } else {
+      cat(" \033[32mNo duplicate REPORT_IDs\033[39m\n")
+    }
+  .} %>%
+  
+  # Combine observer pollock trips with EM TRW BSAI trips
   # EM trawl is a pollock fishery, but deliveries may not always be marked as B or P
   #'* 2024 AR* 1 cod offload in BSAI
   rbind(work.data %>%
@@ -1211,21 +1215,21 @@ Pollock.landing.data <- work.data %>%
   
   # salmon.landings.obs is a list of REPORT_IDs for which dockside sampling for salmon occurred (all sectors)
   mutate(Observed.type = ifelse(REPORT_ID %in% salmon.landings.obs$REPORT_ID, "Observed", "Not_Observed")) %>%
+  
+  # Combine with EM TRW GOA trips
   rbind(
     work.offload.trw_em %>%
       filter(STRATA == "EM TRW GOA (EFP)") %>%
-          select(REPORT_ID = TRIP_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE,
-                 Observed.type = OBSERVED_FLAG, TENDER) %>%
-          distinct() %>%
-          mutate(Observed.type = if_else(Observed.type == "Y", "Observed", "Not_Observed"),
-                 COVERAGE_TYPE = case_when(grepl("EM TRW GOA", STRATA)
-                                           & TENDER == "Y"
-                                           & COVERAGE_TYPE == "PARTIAL" ~ "Partial (tender)",
-                                           grepl("EM TRW GOA", STRATA)
-                                           & TENDER == "N"
-                                           & COVERAGE_TYPE == "PARTIAL" ~ "Partial (non-tender)",
-                                           TRUE ~ COVERAGE_TYPE)),
-        fill = TRUE) %>%
+      select(REPORT_ID = TRIP_ID, COVERAGE_TYPE, STRATA, FMP, PORT_CODE, Observed.type = OBSERVED_FLAG, TENDER) %>%
+      distinct() %>%
+      mutate(Observed.type = if_else(Observed.type == "Y", "Observed", "Not_Observed"),
+             COVERAGE_TYPE = case_when(
+               grepl("EM TRW GOA", STRATA) & TENDER == "Y" & COVERAGE_TYPE == "PARTIAL" ~ "Partial (tender)",
+               grepl("EM TRW GOA", STRATA) & TENDER == "N" & COVERAGE_TYPE == "PARTIAL" ~ "Partial (non-tender)",
+               TRUE ~ COVERAGE_TYPE)),
+    fill = TRUE) %>%
+  
+  # Label FMP port, and coverage type
   mutate(FMP = fct_recode(factor(FMP), `Bering Sea` = "BSAI", `Gulf of Alaska` = "GOA"),
          PORT_CODE = fct_recode(factor(PORT_CODE),
                                 `Kodiak` = "KOD", 
@@ -1235,19 +1239,19 @@ Pollock.landing.data <- work.data %>%
                                 `King Cove` = "KCO",
                                 `False Pass` = "FSP",
                                 `Inshore floating processor` = "IFP"),
-         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), `Full` = "FULL", `Partial` = "PARTIAL"),
-         )
+         COVERAGE_TYPE = fct_recode(factor(COVERAGE_TYPE), `Full` = "FULL", `Partial` = "PARTIAL"))
 
 # Summarize offloads by FMP, coverage type, port, and observed status
 Pollock.monitored <- rbind(
+  # Straum and Port
   Pollock.landing.data %>%
     group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
     summarize(N.pollock = n(),
               N.pollock.obs = sum(Observed.type == "Observed")) %>%
     mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 1)) %>% 
     select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.pollock, N.pollock.obs, pct.obs) %>%
-    ungroup()
-  ,
+    ungroup(),
+  # Stratum-specific totals
   Pollock.landing.data %>%
     group_by(COVERAGE_TYPE, STRATA) %>%
     summarize(FMP = as.factor("Total"),
@@ -1257,6 +1261,7 @@ Pollock.monitored <- rbind(
     mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 1)) %>%
     select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.pollock, N.pollock.obs, pct.obs) %>% 
     ungroup(),
+  
   Pollock.landing.data %>%
     filter(STRATA == "EM TRW GOA (EFP)") %>%
     summarize(FMP = as.factor("Total"),
@@ -1269,13 +1274,14 @@ Pollock.monitored <- rbind(
     select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.pollock, N.pollock.obs, pct.obs) %>% 
     ungroup())
 
-# Isolate observed strata
+# Isolate observed strata (Non-EM, both full and partial coverage)
+
 Pollock.observed <- rbind(
   filter(Pollock.monitored, COVERAGE_TYPE == "Full" & !grepl("EM TRW", STRATA)),
   filter(Pollock.monitored, COVERAGE_TYPE == "Partial" & !grepl("EM TRW", STRATA)))
 
 # Rename columns and format
-Pollock.observed.table <- Pollock.observed %>% 
+Pollock.observed.table <- Pollock.observed %>%
   mutate(N.pollock = as.character(N.pollock),
          N.pollock.obs = as.character(N.pollock.obs),
          FMP = case_when(FMP == "Bering Sea" ~ "BSAI",
@@ -1283,7 +1289,7 @@ Pollock.observed.table <- Pollock.observed %>%
                          FMP == "Gulf of Alaska" ~ "GOA",
                          COVERAGE_TYPE == "Partial" ~ "GOA total",
                          TRUE ~ FMP)) %>% 
-  mutate(COVERAGE_TYPE = case_when(FMP %like% "total" ~ "", TRUE ~ COVERAGE_TYPE) ) %>%
+  mutate(COVERAGE_TYPE = if_else(FMP %like% "total", "", COVERAGE_TYPE)) %>%
   select(`FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
@@ -1309,7 +1315,7 @@ Pollock.efp.table <- Pollock.efp %>%
                          COVERAGE_TYPE == "Partial (tender)" ~ "GOA tender total",
                          COVERAGE_TYPE == "Partial" ~ "GOA total",
                          TRUE ~ FMP)) %>% 
-  mutate(COVERAGE_TYPE = case_when(FMP %like% "total" ~ "", TRUE ~ COVERAGE_TYPE) ) %>%
+  mutate(COVERAGE_TYPE = if_else(FMP %like% "total", "", COVERAGE_TYPE)) %>%
   select(`FMP` = FMP, 
          `Coverage category` = COVERAGE_TYPE,
          `Port` = PORT_CODE, 
