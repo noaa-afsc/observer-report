@@ -648,6 +648,9 @@ if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
 # If there are any mismatches, the processor_port object will be created and these can then be checked
 # using VMS and observer deployment data
 # Output will provide the offloads in question and a list of where the observer was stationed on those dates
+
+#' \TBD May not need this pending figuring out what is going on here. Offloading for salmon counts before loading 
+#' sorted catch back on to the tender before offloading elsewhere?
 {
   processor_port <- dbGetQuery(channel_afsc,
                              paste("SELECT d.permit, p.name AS plant_port
