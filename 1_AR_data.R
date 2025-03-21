@@ -651,7 +651,7 @@ if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
 
 #' \TBD May not need this pending figuring out what is going on here. Offloading for salmon counts before loading 
 #' sorted catch back on to the tender before offloading elsewhere?
-{
+if(F) {
   processor_port <- dbGetQuery(channel_afsc,
                              paste("SELECT d.permit, p.name AS plant_port
                                     FROM norpac.atl_lov_plant d
