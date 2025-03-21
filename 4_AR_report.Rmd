@@ -1178,10 +1178,10 @@ Pollock.landing.data <- work.data %>%
       filter(grepl("EM TRW", STRATA) & !(TRIP_TARGET_CODE %in% c("B", "P"))) %>%
       distinct(REPORT_ID)
 
-    non_pollock_count <- as.data.frame(nrow(filtered_data))
+    non_pollock_count <- nrow(filtered_data)
 
-    if (non_pollock_count$`nrow(filtered_data)` > 0) {
-      cat("\033[33m", paste(non_pollock_count$`nrow(filtered_data)`, "EM trawl offload(s) non-pollock\033[0m")) # yellow
+    if (non_pollock_count > 0) {
+      cat("\033[33m", paste(non_pollock_count, "EM trawl offload(s) non-pollock\033[0m")) # yellow
     } else {
       cat("\033[32mAll EM trawl deliveries are pollock\033[39m\n")
     }
