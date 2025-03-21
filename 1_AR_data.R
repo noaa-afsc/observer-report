@@ -510,7 +510,6 @@ gdrive_download("source_data/ak_shp.rdata", data_dribble)
 (load(("source_data/ak_shp.rdata")))
 
 # * EM trawl offloads ----
-
 em_trw_offload <- work.data %>%
   filter(STRATA %in% c("EM TRW BSAI (EFP)", "EM TRW GOA (EFP)")) %>%
   select(TRIP_ID, REPORT_ID, VESSEL_ID, STRATA, MANAGEMENT_PROGRAM_CODE, AGENCY_GEAR_CODE, COVERAGE_TYPE,
@@ -632,14 +631,89 @@ work.offload <- tender.link %>%
   rbind(cv.link) %>%
   relocate(TRIP_ID, REPORT_ID, T_REPORT_ID, CV_ID, CV_NAME, TENDER_ID, TENDER_VESSEL_ADFG_NUMBER, TENDER_NAME,
            LANDING_DATE, TENDER_OFFLOAD_DATE, PORT_CODE, TENDER, OFFLOAD_TO_TENDER_FLAG, OBSERVED_FLAG,
-           OBS_SALMON_CNT_FLAG)
+           OBS_SALMON_CNT_FLAG) %>%
+  #'* 2024 AR only: * REPORT_ID missing from observer data, need to hardcode that it wasn't monitored
+  #'                  VALHALLA says it was an unmonitored offload and it wasn't a tendered delivery
+  mutate(across(c(OBS_SALMON_CNT_FLAG, OFFLOAD_TO_TENDER_FLAG), ~ ifelse(REPORT_ID == 9543781, "N", .x)))
+
+# Check to make sure all VALHALLA REPORT_IDs have a match in observer data
+if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
+  cat("\033[31mREPORT_IDs exist that are not in observer data\033[39m\n")
+} else {
+  cat("\033[32mAll REPORT_IDs present in observer data\033[39m\n")
+}
+
+# Check port assignments to see if there are mismatches between where a processor is actually located
+# and what was reported in VALHALLA
+# If there are any mismatches, the processor_port object will be created and these can then be checked
+# using VMS and observer deployment data
+# Output will provide the offloads in question and a list of where the observer was stationed on those dates
+
+#' \TBD May not need this pending figuring out what is going on here. Offloading for salmon counts before loading 
+#' sorted catch back on to the tender before offloading elsewhere?
+{
+  processor_port <- dbGetQuery(channel_afsc,
+                             paste("SELECT d.permit, p.name AS plant_port
+                                    FROM norpac.atl_lov_plant d
+                                    LEFT JOIN norpac.atl_lov_port_code p
+                                      ON d.port_code = p.port_code")) %>%
+  right_join(work.offload, by = join_by(PERMIT == PROCESSOR_PERMIT_ID)) %>%
+  mutate(PLANT_PORT = case_when(PLANT_PORT == "Akutan" ~ "AKU",
+                                PLANT_PORT == "Dutch Harbor" ~ "DUT",
+                                PLANT_PORT == "False Pass" ~ "FSP",
+                                PLANT_PORT == "Kodiak" ~ "KOD",
+                                PLANT_PORT == "Sand Point" ~ "SPT",
+                                PROCESSOR_NAME == "NORTHERN VICTOR" ~ "DUT")) %>%
+  select(CRUISE, REPORT_ID, T_REPORT_ID, PLANT_PORT, PORT_CODE, PROCESSOR_NAME, PERMIT,
+         CV_ID, CV_NAME, TENDER_ID, TENDER_NAME, STRATA, LANDING_DATE, TENDER_OFFLOAD_DATE) %>%
+  filter(PLANT_PORT != PORT_CODE)
+  
+  if (nrow(processor_port) > 0) {
+    print(processor_port)
+    cat("\033[31mPLANT_PORT (port_code based on permit) and PORT_CODE 
+        (valhalla) mismatch for some EM offloads\033[39m\n") # red
+    
+    # Check port using the plant observer assignments
+    obs_port <- dbGetQuery(channel_afsc,
+                           paste("SELECT dl.deployed_date, vp.permit, vp.cruise, p.name
+                  FROM norpac.ols_vessel_plant vp 
+                  JOIN TABLE(norpac.ole_statement_factors_pkg.get_deployed_dates_list_vp_seq(vp.vessel_plant_seq))  dl
+                    ON vp.vessel_plant_seq = dl.vessel_plant_seq
+                  LEFT JOIN norpac.atl_lov_plant p
+                    ON vp.permit = p.permit
+                  WHERE vp.cruise  IN (",
+                                 paste(processor_port %>%
+                                         select(CRUISE) %>%
+                                         distinct() %>%
+                                         unlist(use.names = FALSE), collapse = ",") ,")")) %>%
+      mutate(DEPLOYED_DATE = as.Date(DEPLOYED_DATE)) %>%
+      filter(DEPLOYED_DATE %in% coalesce(processor_port$TENDER_OFFLOAD_DATE, processor_port$LANDING_DATE))
+    
+    n_count <- as.data.frame(nrow(processor_port))
+    
+    # Replace PORT_CODE with PLANT_PORT for the records with a mismatch
+    work.offload <- work.offload %>%
+      left_join(processor_port %>% select(REPORT_ID, PLANT_PORT), by = "REPORT_ID") %>%
+      mutate(PORT_CODE = ifelse(!is.na(PLANT_PORT), PLANT_PORT, PORT_CODE)) %>%
+      select(-PLANT_PORT)
+    
+    print(obs_port)
+    cat(paste("\033[31mPORT_CODE replaced for", n_count$`nrow(processor_port)`, "offloads\033[39m\n"))
+    rm(obs_port, n_count)
+  } else {
+    cat("\033[32mEM offload ports match\033[39m\n") # green
+  }
+}
 
 # Clean up workspace
 rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, obs.cv, obs.offload, em_trw_offload,
    eland.offload, script)
 
 # Evaluate differences between what VALHALLA says is observed compared to what observer records say
-#'* Remove when finalizing code *
+#'* Remove code below when finalizing code *
+#' This code creates objects so we can see where there are mismatches between what is flagged as observed in
+#' VALHALLA versus what NORPAC says was monitored. Once we update VALHALLA logic or decide on another method
+#' for assigning observed flag to EM Trawl offloads we don't need these checks anymore.
 work.obs.cv <- filter(work.offload, is.na(T_REPORT_ID))
 nrow(filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
               (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
@@ -655,13 +729,17 @@ tender.dups <- filter(work.obs.tender, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FL
                         (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y"))
 
 work.dups.cv <- filter(work.offload, REPORT_ID %in% cv.dups$REPORT_ID)
-work.dups.tender <- filter(work.link, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
+work.dups.tender <- filter(work.offload, T_REPORT_ID %in% tender.dups$T_REPORT_ID)
 
 work.dups <- rbind(work.dups.cv, work.dups.tender)
 
 vessel.issues <- filter(work.offload, CV_ID %in% work.dups$CV_ID)
 
+rm(work.obs.cv, cv.dups, work.obs.tender, tender.dups, work.dups.cv, work.dups.tender, work.dups, vessel.issues)
+
 # Save --------------------------------------------------------------------
 
-save(predicted, bud_scen_lst, bud_tbl, work.data, salmon.landings.obs, odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload, file = "2_AR_data.Rdata")
+save(year, days_paid, obs_act_days, predicted, bud_scen_lst, bud_tbl, work.data, partial, salmon.landings.obs, 
+     odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload,
+     file = "2_AR_data.Rdata")
 gdrive_upload("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))
