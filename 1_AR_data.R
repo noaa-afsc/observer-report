@@ -710,7 +710,10 @@ rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, ob
    eland.offload, script)
 
 # Evaluate differences between what VALHALLA says is observed compared to what observer records say
-#'* Remove when finalizing code *
+#'* Remove code below when finalizing code *
+#' This code creates objects so we can see where there are mismatches between what is flagged as observed in
+#' VALHALLA versus what NORPAC says was monitored. Once we update VALHALLA logic or decide on another method
+#' for assigning observed flag to EM Trawl offloads we don't need these checks anymore.
 work.obs.cv <- filter(work.offload, is.na(T_REPORT_ID))
 nrow(filter(work.obs.cv, (OBSERVED_FLAG == "Y" & OBS_SALMON_CNT_FLAG == "N") |
               (OBSERVED_FLAG == "N" & OBS_SALMON_CNT_FLAG == "Y")))
