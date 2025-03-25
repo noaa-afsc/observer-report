@@ -346,6 +346,7 @@ odds.dat <- odds.dat %>% mutate(
     (RANDOM_NUMBER_USED >= ODDS_SELECTION_PCT / 100) | (ODDS_SELECTION_PCT == 100) ~ 0,
     # Trip was randomly selected to be monitored
     RANDOM_NUMBER_USED < ODDS_SELECTION_PCT / 100 ~ 1,
+    # Use -99 to identify records where none of the above conditions were met. 
     .default = -99
   )
 )
@@ -407,6 +408,8 @@ odds.dat <- odds.dat %>% mutate(random.test.result = ifelse(random.test - random
 
 #' \TODO The check below had two vessels that failed the check, and in both instances they were OB FIXED BSAI stratum trips that had three-in-a-row releases. We had a known bug that the release table was not populating when ODDS correctly applied the non-selected status to these trips. GMM added this issue to P-Track. For Now I'm hardcoding this fix.
 if(year == 2024) {
+  cat(paste("2024 only: hard-coding releases for two trips that failed the `random.test.result` due to three-in-a-row 
+            release not populating correctly."))
   setDT(odds.dat)
   odds.dat[TRIP_PLAN_LOG_SEQ %in% c(202432902, 202427490), 
            ':=' (TRIP_MONITOR_CODE = "RL", RELEASE_COMMENT = "Three-in-a-row", 
@@ -461,7 +464,7 @@ disposition <- disposition %>% mutate(random.assign = case_when(
 
 disposition.table <-
   disposition %>%
-  arrange(YEAR, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "Total"))) %>%
+  arrange(YEAR, match(STRATA, strata.order)) %>%
   rename("Strata" = STRATA,
          "Year" = YEAR,
          "Random number outcomes" = random.assign,
