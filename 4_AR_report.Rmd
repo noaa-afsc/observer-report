@@ -484,51 +484,60 @@ disposition.table <-
 #' are totaled for each day. These time series will be totaled for `odds.logged.tbl` and converted to cumulative totals
 #' in`odds.ts.daily.cuml`
 
-# These are all logged trips BEFORE cancellations, inherits and waivers
-odds.ts.all <- odds.dat %>% 
-  # Randomly-selected trips only (omitting any that inherited prior monitoring)
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100) & is.na(INHERIT_TRIP_SEQ)) %>%
-  transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
-  group_by(YEAR, STRATA, Date) %>%
+#' Fist, subset the data to exclude trips where random selection is irrelevant, i.e., zero selection, 100% selection, and trips with voluntary monitoring. Ensure 1 row = 1 TRIP_ID
+odds.ts.sub <-  odds.dat %>%
+  filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
+  mutate(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
+  # Simplify the dataset such that each record is one trip
+  select(YEAR, Date, TRIP_PLAN_LOG_SEQ, TRIP_STATUS_CODE, ODDS_SELECTION_PCT, RANDOM_NUMBER_USED, 
+         INHERIT_TRIP_SEQ, STRATA, random.assign, released) %>%
+  unique() %>% 
+  # Group the data by stratum and date for subsequent summaries
+  group_by(YEAR, STRATA, Date) 
+if(any(duplicated(odds.ts.sub$TRIP_PLAN_LOG_SEQ))) stop("There are duplicated TRIP_ID in odds.ts.sub!")
+
+#' Count trips subject to random selection BEFORE cancellations, inherits and waivers
+odds.ts.all <- odds.ts.sub  %>% 
+  filter(is.na(INHERIT_TRIP_SEQ)) %>%
   summarize(
-    n = sum(random.assign[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
-    N = length(unique(TRIP_PLAN_LOG_SEQ)),
+    # Count number of logged trips that were randomly selected on each date
+    n = sum(random.assign, na.rm = TRUE),
+    N = n(),
     TYPE = "Original date: All logged trips") %>% 
   arrange(Date) %>% 
   ungroup()
 
-# Completed or pending trips only, including counts for inherits and waivers
-odds.ts.cp <- odds.dat %>% 
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100) & TRIP_STATUS_CODE %in% c("CP", "PD")) %>%
-  transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
-  group_by(YEAR, STRATA, Date) %>%
+#' Count completed or pending trips only, including counts for inherits and waivers
+odds.ts.cp <- odds.ts.sub %>% 
+  filter(TRIP_STATUS_CODE %in% c("CP", "PD")) %>%
   summarize(
+    # Count trips subject to random selection
     n = sum(random.assign[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
-    ni = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ)])),
+    # Count trips that inherited selection
+    ni = sum(!is.na(INHERIT_TRIP_SEQ)),
+    # Count trips that were released
     nr = sum(released, na.rm = TRUE),
-    N = length(unique(TRIP_PLAN_LOG_SEQ)),
+    N = n(),
     TYPE = "Adjusted date: Valid trips only") %>% 
   arrange(Date) %>% 
   ungroup()
 
-#' Get the dates that inherited trips were created (canceled randomly-selected trips where coverage was not waived) and
-#' realized
-odds.ts.ni.create <- odds.dat %>% 
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100) & !(TRIP_STATUS_CODE %in% c("CP", "PD"))) %>%
-  transform(Date = as.Date(ORIGINAL_EMBARK_DATE, format = "%Y-%m-%d")) %>%
-  group_by(YEAR, STRATA, Date) %>%
-  summarize(ni.create = sum(random.assign[is.na(INHERIT_TRIP_SEQ) & released == 0], na.rm = TRUE)) %>%
+#' Get the dates that inherited trips were created and realized, i.e., canceled randomly-selected trips where coverage 
+#' was not released
+odds.ts.ni.create <- odds.ts.sub %>% 
+  filter(!(TRIP_STATUS_CODE %in% c("CP", "PD")) & is.na(INHERIT_TRIP_SEQ) & released == 0) %>%
+  summarize(ni.create = sum(random.assign, na.rm = TRUE)) %>%
   filter(ni.create > 0) %>%
-  mutate(TYPE = "Original date: All logged trips")
+  mutate(TYPE = "Original date: All logged trips") %>%
+  ungroup()
 
-# Get the dates when inherits are realized
-odds.ts.ni.real <- odds.dat %>% 
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100) & TRIP_STATUS_CODE %in% c("CP", "PD")) %>%
-  transform(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>%
-  group_by(YEAR, STRATA, Date) %>%
-  summarize(ni.real = length(unique(TRIP_PLAN_LOG_SEQ[!is.na(INHERIT_TRIP_SEQ) & released == 0]))) %>% 
+#' Count inherited trips that were completed and not released
+odds.ts.ni.real <- odds.ts.sub %>% 
+  filter(TRIP_STATUS_CODE %in% c("CP", "PD") & !is.na(INHERIT_TRIP_SEQ) & released == 0) %>%
+  summarize(ni.real = n()) %>% 
   filter(ni.real > 0) %>%
-  mutate(TYPE = "Adjusted date: Valid trips only")
+  mutate(TYPE = "Adjusted date: Valid trips only") %>%
+  ungroup()
 
 ```
 
@@ -554,6 +563,7 @@ logged <- odds.ts.cp %>%
 # Disposition of trips - showing only valid trips and categories are exclusive
 logged.table <- bind_rows(
   logged, 
+  # Calculate totals
   logged %>% 
     group_by(YEAR) %>%          
     summarise(STRATA = "Total",
@@ -575,7 +585,7 @@ logged.table <- bind_rows(
          "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
          "% Selected from inherits ((*i*/*T*) × 100)" = Pct.selected.from.inherit, 
          "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) × 100)" = Pct.allselected.from.waiver) %>% 
-  arrange(Year, match(Strata, c("OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT",  "Total")))
+  arrange(Year, match(Strata, strata.order))
 ```
 
 ```{r selection.tbl, warning=FALSE, include=FALSE}
