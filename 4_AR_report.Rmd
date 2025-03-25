@@ -539,6 +539,7 @@ odds.ts.ni.real <- odds.ts.sub %>%
   mutate(TYPE = "Adjusted date: Valid trips only") %>%
   ungroup()
 
+rm(odds.ts.sub)
 ```
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
@@ -592,33 +593,32 @@ logged.table <- bind_rows(
 # Table 3-4 (2019) or Table 3-2 (2020) (Full ODDS summary, realized versus expected rates) ----
 # This table will show probabilities that selection rates = programmed rates under various assumptions
 
-for.p.wide <- merge(
+for.p.wide <- logged %>% 
   # Completed non-100% monitored trips only (after cancellations)
-  logged %>% 
-    group_by(YEAR, STRATA) %>%
-    summarize(random.n = Random.selected,
-              # after inherits
-              inherit.n = Total.final.selected,
-              #'total before waivers*
-              inherit.butnowaiver.n = (Total.final.selected + Waived),
-              Total.n = Total.trips,
-              Source = "Valid trips only"),
+  group_by(YEAR, STRATA) %>%
+  summarize(random.n = Random.selected,
+            # after inherits
+            inherit.n = Total.final.selected,
+            #'total before waivers*
+            inherit.butnowaiver.n = (Total.final.selected + Waived),
+            Total.n = Total.trips,
+            Source = "Valid trips only") %>%
   #' Now add in the total trips for the random number only. This includes every trip logged in ODDS (excluding those in 
   #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
   #' inherits, cancellations, and waivers
-  odds.ts.all %>%
-    group_by(YEAR, STRATA) %>%
-    summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
-  all = TRUE) %>%
-  arrange(YEAR, Source, STRATA)
-
-# Merge in the selection rates of each stratum for calculating p-values later
-for.p.wide <- for.p.wide %>%
+  merge(
+    odds.ts.all %>%
+      group_by(YEAR, STRATA) %>%
+      summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
+    all = TRUE
+  ) %>%
+  arrange(YEAR, Source, STRATA) %>%
+  # Merge in the selection rates of each stratum for calculating p-values later
   left_join(
-    partial %>% select(!GEAR) %>% distinct(), 
+    partial %>% select(-GEAR) %>% distinct(), 
     by = c("STRATA", "YEAR")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
-  select(., !c(formatted_strat, Rate))
+  select(!c(formatted_strat, Rate))
 
 # Put into long format
 p.table <- for.p.wide %>%
@@ -636,7 +636,8 @@ for(i in 1:nrow(p.table)){
   # Check out this format - forces digits even if zero value!
   p.table$p[i] = format(round(stats::binom.test(p.table$value[i], p.table$Total.n[i], 
                         p = p.table$ODDS_SELECTION_PCT[i] / 100, 
-                        alternative = "two.sided")$p.value, 3), nsmall = 3)}
+                        alternative = "two.sided")$p.value, 3), nsmall = 3)
+}
 
 #' Format programmed and realized monitoring rates as percentages to 2 decimal places.
 p.table <- p.table %>% 
@@ -655,21 +656,21 @@ p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 Selection.table <- p.table %>%
   mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
   arrange(YEAR, STRATA, Source, desc(key)) %>%
-  arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
-  mutate(new_trip_type = 
-        derivedFactor("Initial Random Selection, *a*"= Source == "ODDS random number",
-                      "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
-                      "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
-                      "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
-                      .ordered = TRUE, .method = "unique")) %>% 
+  arrange(match(STRATA, strata.order)) %>% 
+  mutate(new_trip_type = mosaic::derivedFactor(
+    "Initial Random Selection, *a*"= Source == "ODDS random number",
+    "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
+    "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
+    "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
+    .ordered = TRUE, .method = "unique")) %>% 
   select("Year" = YEAR,
-        "Strata" = STRATA, 
-        "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
-        "n" = value,  # "Selected trips"
-        "N" = Total.n,   # "Total trips"
-        "Actu" = pct,   # "Actual selection (%)"
-        "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
-        "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
+         "Strata" = STRATA, 
+         "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
+         "n" = value,  # "Selected trips"
+         "N" = Total.n,   # "Total trips"
+         "Actu" = pct,   # "Actual selection (%)"
+         "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
+         "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
@@ -772,8 +773,10 @@ odds.by.date.plot <-
   scale_color_manual(name = "Rate Type", values = c("gray50", "black")) +
   ylab("Cumulative coverage percent\n") +
   xlab("\nDate") +
-  geom_rug(data = odds.ts.ni.create %>% filter(ni.create > 0 & YEAR == year), sides = "b", color = "gray50") + 
-  geom_rug(data = odds.ts.ni.real %>% filter(ni.real > 0 & YEAR == year), sides = "t") + 
+  # Bottom rug lines indicate when selected trips were canceled, i.e. when inherits are created 
+  geom_rug(data = odds.ts.ni.create %>% filter(YEAR == year), sides = "b", color = "gray50") + 
+  # Top rug lines indicate when inherited monitoring is realized on a completed trip
+  geom_rug(data = odds.ts.ni.real %>% filter(YEAR == year), sides = "t") + 
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Programmed (%) = ", label.programmed, sep = "")), 
             hjust = 1.02, vjust = 2, size = 3, color = "black", check_overlap = TRUE) +
   geom_text(aes(x = as.Date(Inf), y = Inf, label = paste("Original (%) = ", label.original, sep = "")), 
