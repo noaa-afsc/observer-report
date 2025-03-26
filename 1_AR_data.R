@@ -672,33 +672,33 @@ processor_port <- dbGetQuery(channel_afsc,
          CV_ID, CV_NAME, TENDER_ID, TENDER_NAME, STRATA, LANDING_DATE, TENDER_OFFLOAD_DATE) %>%
   filter(PLANT_PORT != PORT_CODE)
   
-  if (nrow(processor_port) > 0) {
-    print(processor_port)
-    cat("\033[31mPLANT_PORT (port_code based on permit) and PORT_CODE 
-        (valhalla) mismatch for some EM offloads\033[39m\n") # red
-    
-    # Check port using the plant observer assignments
-    obs_port <- dbGetQuery(channel_afsc,
-                           paste("SELECT dl.deployed_date, vp.permit, vp.cruise, p.name
-                  FROM norpac.ols_vessel_plant vp 
-                  JOIN TABLE(norpac.ole_statement_factors_pkg.get_deployed_dates_list_vp_seq(vp.vessel_plant_seq))  dl
-                    ON vp.vessel_plant_seq = dl.vessel_plant_seq
-                  LEFT JOIN norpac.atl_lov_plant p
-                    ON vp.permit = p.permit
-                  WHERE vp.cruise  IN (",
-                                 paste(processor_port %>%
-                                         select(CRUISE) %>%
-                                         distinct() %>%
-                                         unlist(use.names = FALSE), collapse = ",") ,")")) %>%
-      mutate(DEPLOYED_DATE = as.Date(DEPLOYED_DATE)) %>%
-      filter(DEPLOYED_DATE %in% coalesce(processor_port$TENDER_OFFLOAD_DATE, processor_port$LANDING_DATE))
-    
-    print(obs_port)
-    cat("\033[31mObserver plant assignments for these deliveries\033[39m\n") # red
-    rm(obs_port)
-  } else {
-    cat("\033[32mEM offload ports match\033[39m\n") # green
-  }
+if (nrow(processor_port) > 0) {
+  print(processor_port)
+  cat("\033[31mPLANT_PORT (port_code based on permit) and PORT_CODE 
+      (valhalla) mismatch for some EM offloads\033[39m\n") # red
+  
+  # Check port using the plant observer assignments
+  obs_port <- dbGetQuery(channel_afsc,
+                         paste("SELECT dl.deployed_date, vp.permit, vp.cruise, p.name
+                FROM norpac.ols_vessel_plant vp 
+                JOIN TABLE(norpac.ole_statement_factors_pkg.get_deployed_dates_list_vp_seq(vp.vessel_plant_seq))  dl
+                  ON vp.vessel_plant_seq = dl.vessel_plant_seq
+                LEFT JOIN norpac.atl_lov_plant p
+                  ON vp.permit = p.permit
+                WHERE vp.cruise  IN (",
+                               paste(processor_port %>%
+                                       select(CRUISE) %>%
+                                       distinct() %>%
+                                       unlist(use.names = FALSE), collapse = ",") ,")")) %>%
+    mutate(DEPLOYED_DATE = as.Date(DEPLOYED_DATE)) %>%
+    filter(DEPLOYED_DATE %in% coalesce(processor_port$TENDER_OFFLOAD_DATE, processor_port$LANDING_DATE))
+  
+  print(obs_port)
+  cat("\033[31mObserver plant assignments for these deliveries\033[39m\n") # red
+  rm(obs_port)
+} else {
+  cat("\033[32mEM offload ports match\033[39m\n") # green
+}
 
 #'* 2024 AR only: * Replace PORT_CODE with PLANT_PORT for the records with a mismatch
 work.offload <- work.offload %>%
