@@ -375,7 +375,8 @@ odds.dat <- odds.dat %>%
 
 #' Based on a trip's stratum and the outcome of the trip, flag trips trips that were either monitored or intended to be
 #' monitored as a result of random selection in `random.test`. Trips whose fate was predetermined by prior trips, e.g., 
-#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, are excluded with a value of [NA]. 
+#' via inherits and cascade cancels OR were undetermined, e.g., system canceled, OR requested monitoring when fishing 
+#' IFQ/CDQ in multiple areas are excluded with a value of [NA]. 
 #' Use `TRIP_MONITOR_CODE` to identify trips in non-100% compliance monitoring strata that were slated for monitoring, 
 #' whether it was realized or not, including those where the trip was waived [1]. Finally, trips in strata without 
 #' random selection and trips marked as not monitored are identified [0].
@@ -388,9 +389,11 @@ odds.dat <- odds.dat %>% mutate(
     TRIP_STATUS_CODE == "CC" | is.na(RANDOM_NUMBER_USED) ~ NA,
     # Exclude trips canceled by system, which have an unknown monitoring outcome and do not become inherits
     TRIP_STATUS_CODE == "CS" ~ NA,
+    # Exclude trips that requested coverage (multi-area IFQ/CDQ trips)
+    USER_REQST_COVERAGE == "Y" ~ NA,
     
     #' `Trips that did go through random selection and were selected [1]`
-    # Trip was intended to be monitored but was waived
+    # Trip was randomly selected for monitoring but was released
     released == 1 ~ 1,
     # Trip was monitored or supposed to be monitored due to random selection (not within compliance monitoring)
     TRIP_MONITOR_CODE %in% c("ND", "RO", "OA", "RL") & ODDS_SELECTION_PCT != 100 ~ 1,
@@ -403,13 +406,12 @@ odds.dat <- odds.dat %>% mutate(
 )
 if(nrow(odds.dat %>% filter(random.test == -99))) stop("Some records with undefined 'random.test'")
 
-#' Check whether the monitoring outcome matches what was determined by random selection, i.e., trips that were not monitored when they were supposed to be or vice versa.
+#' Check whether the monitoring outcome matches what was determined by random selection, i.e., trips that were not monitored when they were supposed to be or vice versa. Trips that did not under random selection will return NA.
 odds.dat <- odds.dat %>% mutate(random.test.result = ifelse(random.test - random.assign == 0, "PASS", "FAIL"))
 
 #' \TODO The check below had two vessels that failed the check, and in both instances they were OB FIXED BSAI stratum trips that had three-in-a-row releases. We had a known bug that the release table was not populating when ODDS correctly applied the non-selected status to these trips. GMM added this issue to P-Track. For Now I'm hardcoding this fix.
 if(year == 2024) {
-  cat(paste("2024 only: hard-coding releases for two trips that failed the `random.test.result` due to three-in-a-row 
-            release not populating correctly."))
+  cat(paste("2024 only: hard-coding releases for two trips that failed the `random.test.result` due to three-in-a-row releases in odds.odds_strata_release not populating correctly."))
   setDT(odds.dat)
   odds.dat[TRIP_PLAN_LOG_SEQ %in% c(202432902, 202427490), 
            ':=' (TRIP_MONITOR_CODE = "RL", RELEASE_COMMENT = "Three-in-a-row", 
@@ -432,8 +434,8 @@ if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
 
 # Summarize by stratum and random.assign
 disposition <- odds.dat %>%
-  filter(ODDS_SELECTION_PCT != 100) %>%
-  select(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, released, TRIP_PLAN_NUMBER) %>%
+  filter(ODDS_SELECTION_PCT != 100 & (USER_REQST_COVERAGE %in% c("N", NA)) ) %>%
+  distinct(YEAR, STRATA, random.assign, TRIP_STATUS_CODE, TRIP_PLAN_LOG_SEQ, released, TRIP_PLAN_NUMBER) %>%
   group_by(YEAR, STRATA, random.assign) %>%
   summarize(Trips.logged.ODDS = length(unique(TRIP_PLAN_LOG_SEQ)),
             Trips.canceled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
@@ -476,6 +478,25 @@ disposition.table <-
          "Paper" = Paper.tickets,
          "% User cancellation (*d*/*c* × 100)" = Cancellation.Pct,
          "Waiver (%)" = Waiver.Pct)
+
+#' So far, the vessels that requested monitoring, i.e., multi-area IFQ/CDQ trips, have been excluded in these counts because these trips are not subject to random selection. Count the number of completed trips that requested monitoring by stratum.
+#' \TODO incorporate the `multi_area_ifq.string` object in the text to list off which trips did not undergo random selection.
+multi_area_ifq <- odds.dat %>% 
+  filter(USER_REQST_COVERAGE == "Y" & TRIP_STATUS_CODE %in% c("CP", "PD")) %>%
+  group_by(YEAR, STRATA) %>%
+  summarize(REQ = uniqueN(TRIP_PLAN_LOG_SEQ)) %>%
+  arrange(match(STRATA, strata.order))
+multi_area_ifq_vec <- apply(multi_area_ifq, 1, function(x) paste0(
+    x[['REQ']], " trip", if(x[['REQ']] > 1) "s", " in the ", x[['STRATA']], " stratum"))
+multi_area_ifq_vec.length <- length(multi_area_ifq_vec)
+if(multi_area_ifq_vec.length > 2) {
+  multi_area_ifq.string <- paste0(
+    paste0(multi_area_ifq_vec[-multi_area_ifq_vec.length], collapse = ", "), " and ",
+    multi_area_ifq_vec[multi_area_ifq_vec.length])
+} else if(mutli_arae_ifq_vec == 2) {
+  multi_area_ifq.string <- paste0(multi_area_ifq_vec[1], " and ", multi_area_ifq_vec[2])
+} else multi_area_ifq.string <- multi_area_ifq_vec
+rm(multi_area_ifq, multi_area_ifq_vec, multi_area_ifq_vec.length)
 ```
 
 ```{r odds.time_series, warning=FALSE, include=FALSE}
@@ -544,6 +565,7 @@ rm(odds.ts.sub)
 
 ```{r odds.logged.tbl, warning=FALSE, include=FALSE}
 
+#' \TODO 'logged' is perhaps not the best label as all trips are logged, and should instead specify that these are completed/closed trips. The table caption for Table 3-3 could also better describe this.
 #' Summary of ODDS *completed trips* disposition by stratum, with total completed trips, total randomly selected 
 #' trips, total inherited trips, and waived trips,where waived trips are not mutually exclusive from the randomly selected
 #' or inherited trips and should be subtracted.
