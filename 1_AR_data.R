@@ -644,15 +644,19 @@ if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
 }
 
 # Check port assignments to see if there are mismatches between where a processor is actually located
-# and what was reported in VALHALLA
-# If there are any mismatches, the processor_port object will be created and these can then be checked
-# using VMS and observer deployment data
+#  and what was reported in VALHALLA
+#  If there are any mismatches, the processor_port object will be created and these can then be checked
+#  using VMS and observer deployment data
 # Output will provide the offloads in question and a list of where the observer was stationed on those dates
 
-#' \TBD May not need this pending figuring out what is going on here. Offloading for salmon counts before loading 
-#' sorted catch back on to the tender before offloading elsewhere?
-if(F) {
-  processor_port <- dbGetQuery(channel_afsc,
+#'* 2024 AR only: * These 4 tender deliveries were at AKU. CVs offloaded to the tenders at SPT, but
+#'                  tenders did not deliver to SPT, instead they traveled directly to AKU and delivered
+#'                  unsorted catch where observers were able to monitor these deliveries (info from Joel K. on Mar 24).
+#'                  Phil G. working on getting these records updated on AKRO end to reflect AKU as the port.
+#'* 2025 AR note: * In 2024, CVs are offloading catch at the plant in SPT where it is sorted and monitored by
+#'                  observers. Some of these offloads are then being pumped onto a tender to be taken to
+#'                  AKU for processing. Observers should not be monitoring/recording these deliveries at AKU
+processor_port <- dbGetQuery(channel_afsc,
                              paste("SELECT d.permit, p.name AS plant_port
                                     FROM norpac.atl_lov_plant d
                                     LEFT JOIN norpac.atl_lov_port_code p
@@ -689,21 +693,18 @@ if(F) {
       mutate(DEPLOYED_DATE = as.Date(DEPLOYED_DATE)) %>%
       filter(DEPLOYED_DATE %in% coalesce(processor_port$TENDER_OFFLOAD_DATE, processor_port$LANDING_DATE))
     
-    n_count <- as.data.frame(nrow(processor_port))
-    
-    # Replace PORT_CODE with PLANT_PORT for the records with a mismatch
-    work.offload <- work.offload %>%
-      left_join(processor_port %>% select(REPORT_ID, PLANT_PORT), by = "REPORT_ID") %>%
-      mutate(PORT_CODE = ifelse(!is.na(PLANT_PORT), PLANT_PORT, PORT_CODE)) %>%
-      select(-PLANT_PORT)
-    
     print(obs_port)
-    cat(paste("\033[31mPORT_CODE replaced for", n_count$`nrow(processor_port)`, "offloads\033[39m\n"))
-    rm(obs_port, n_count)
+    cat("\033[31mObserver plant assignments for these deliveries\033[39m\n") # red
+    rm(obs_port)
   } else {
     cat("\033[32mEM offload ports match\033[39m\n") # green
   }
-}
+
+#'* 2024 AR only: * Replace PORT_CODE with PLANT_PORT for the records with a mismatch
+work.offload <- work.offload %>%
+  left_join(processor_port %>% select(REPORT_ID, PLANT_PORT), by = "REPORT_ID") %>%
+  mutate(PORT_CODE = ifelse(!is.na(PLANT_PORT), PLANT_PORT, PORT_CODE)) %>%
+  select(-PLANT_PORT)
 
 # Clean up workspace
 rm(vessels, val.tender, val.cv, tender.link, cv.link, work.eland, obs.tender, obs.cv, obs.offload, em_trw_offload,
