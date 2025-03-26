@@ -21,6 +21,8 @@ editor_options:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # Load packages and functions 
 source("3_helper.R")
+# Load spatiotemporal functions 
+source("functions/spatiotemp_functions.R")
 ```
 
 ```{r, include=FALSE, eval=FALSE}
@@ -46,6 +48,10 @@ set_flextable_defaults(font.family = "Times New Roman", font.size = 11)
 
 # Set order of strata
 strata.order <- c("Full", "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)", "Zero coverage", "Total")
+
+# Set the simulation parameters for the spatiotemporal analyses
+sim_iter <- 1e4      # 1e3 iterations is good for testing quickly, 1e4 is better for the final run
+seed <- 12345
 
 # Is this the annual report or the tech memo?
 # This will control whether certain text chunks are included and formatting of table/figure captions.
@@ -1493,13 +1499,181 @@ Temporal.plot <-
 The cumulative number of fishing trips in each stratum was multiplied by the stratum-specific selection rate to obtain the expected number of observed trips. Under the assumption that there is no temporal bias in observer coverage, 2.5% of values should be larger than the upper 95% confidence limit and 2.5% should be smaller than the lower limit. At the end of `r year` the number of observed trips was outside of this expected range in three of the six partial coverage strata: *OB TRW* (expected rate = 22.7%, realized rate = 32.3%, *p*-value < 0.001), *EM HAL* (expected rate: 30.0%, realized rate: 22.5%, *p*-value < 0.001), and *EM POT* (expected rate = 30.0%, realized rate = 18.7%, *p*-value < 0.001; `r tbl_nums('Coverage.Table', display = "cite")` and `r fig_nums('Temporal.plot', display = "cite")`). The *OB HAL* stratum was outside of the expected range earlier in the year but fell within the expected range by the end of April. Coverage rates were within their expected ranges for 100% of the year for the *OB POT* stratum (expected rate = 17.1%, realized rate = 17.8%, *p*-value = 0.543).
 
 ## Spatial Patterns in Trip-Selection  
-```{r spatial_bias_analysis, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
-# Spatial analyses now completed by "spatiotemp_analysis.Rmd" created by Geoff Mayhew (circa 2024)
+```{r spatiotemporal_analysis, message=FALSE, warning=FALSE, include=FALSE, eval=TRUE}
+# Spatial analyses, moved from spatiotemp_analysis.R for the 2024 AR
+
+#' \TODO Need to replace 'interspersion' with 'proximity index' in this script and functions/spatiotemp_functions.R
+
+## Setup for spatial and spatiotemporal analyses -----------------------------------------------------------------------
+
+# Make FMP-specific polygons
+shp_fmp <- rbind(
+  shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
+    mutate(FMP = "BSAI"),
+  shp_nmfs %>% filter(SubArea == "GOA") %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
+    mutate(FMP = "GOA")
+) %>% st_set_crs(st_crs(3467))
+#' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
+shp_land <- shp_land %>% st_set_crs(st_crs(3467))
+ak_low_res <- shp_land %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_land)) %>% select(geometry) %>%
+  st_set_crs(st_crs(3467))
+nmfs_low_res <- shp_nmfs %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_nmfs)) %>% select(geometry) %>% 
+  st_set_crs(st_crs(3467))
+fmp_low_res <- shp_fmp %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_fmp)) %>% select(geometry) %>%
+  st_set_crs(st_crs(3467))
+
+# Load the ADFG statistical area shapefile.
+stat_area_sf <- st_read(
+  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = TRUE) %>%
+  select(STAT_AREA) %>%
+  st_transform(crs = 3467)
+
+# Wrangle the Valhalla data set for spatiotemporal analyses
+pc_effort_st <- spatiotemp_data_prep(work.data)
+
+#' Realized Rates *Check that these match up with the realized rates in 4_AR_report*
+realized_rates.val  <- pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)] |>
+  unique() |>
+  _[, .(STRATA_N = .N, SAMPLE_RATE = sum(OBSERVED_FLAG == "Y")/.N), keyby = .(ADP, STRATA)]
+
+# Create a subset table of realized monitored trips
+realized_mon <- unique(pc_effort_st[OBSERVED_FLAG == "Y", .(ADP, STRATA, TRIP_ID)])
+
+# Calculate the realized rates of each STRATUM x ADP
+programmed_rates <- copy(data.table(partial)) |>
+  # Remove gear type so STRATA and Rate are 1:1
+  _[, -c("formatted_strat", "GEAR")] |>
+  unique() |>
+  _[, STRATA := gsub(" ", "_", STRATA)][]
+setnames(programmed_rates, old = c("YEAR", "Rate"), new = c("ADP", "SAMPLE_RATE"))
+# Add ZERO to programmed rates
+programmed_rates <- rbind(programmed_rates, data.table(ADP = year, STRATA = "ZERO", SAMPLE_RATE = 0))
+# Add STRATA_N to programmed_rates
+programmed_rates[, STRATA_N := realized_rates.val[programmed_rates, STRATA_N, on = .(ADP, STRATA)]]
+setcolorder(programmed_rates, c("ADP", "STRATA", "STRATA_N", "SAMPLE_RATE"))
+
+#' Check to make sure all year/strata names match between rates objects
+if(!fsetequal(unique(realized_rates.val[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
+  stop("STRATA and ADP in `realized_rates.val` does not match those in `programmed_rates!`")
+}
+#' Check to make sure all year/strata names match between pc_effort_st and rates objects!
+if(!fsetequal(unique(pc_effort_st[, .(STRATA, ADP)]), unique(programmed_rates[, .(STRATA, ADP)])) ){
+  stop("STRATA and ADP in `pc_effort_dt` does not match those in `programmed_rates!`")
+}
+
+# Specify ordering of strata. Adding a blank stratum for the sake of aligning BSAI/GOA in plots.
+strata_levels <- c(
+  "OB_FIXED_BSAI", "OB_FIXED_GOA", "OB_TRW_BSAI", "OB_TRW_GOA", "EM_FIXED_BSAI", "EM_FIXED_GOA", "", "EM_TRW_GOA_(EFP)"
+)
+
+#' Define boxes using the 2024 stratum definitions, post-stratifying the fixed gear strata by Gear type. Exclude the ZERO stratum as we don't need to simulate interspersion for a stratum with a 0% selection rate.
+
+#' \TODO For the `EM_TRW_EFP_(GOA)` stratum, need to redefine TRIP_ID by shoreside deliveries!
+
+box_def <- define_boxes(
+  data = pc_effort_st[STRATA != "ZERO"], space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
+  year_col = "ADP", stratum_cols = "STRATA", geom = TRUE, ps_cols = "GEAR")
+
+# Stratum-Specific Proximity ------------------------------------------------------------------------------------------
+
+# Expected proximity given the programmed and realized rates
+exp_interspersion.programmed <- calculate_interspersion(box_def, sample_rates = programmed_rates)
+exp_interspersion.realized   <- calculate_interspersion(box_def, sample_rates = realized_rates.val)
+
+# Actually realized proximity
+real_interspersion.stratum   <- calculate_interspersion(box_def, realized_mon = realized_mon)
+
+# Simulate trip selection to create distributions of proximity indices. This should take ~2 minutes to run.
+# Programmed rates
+sim.programmed.stratum <- calculate_interspersion(
+  box_def, sample_rates = programmed_rates, sim_iter = sim_iter, seed = seed, hex_smry = TRUE)
+# Realized rates
+sim.realized.stratum <- calculate_interspersion(
+  box_def, sample_rates = realized_rates.val, sim_iter = sim_iter, seed = seed, hex_smry = TRUE)
+
+# Calculate density of both distributions
+density.programmed.stratum <- calculate_density(sim.programmed.stratum, "dodgerblue", adjust = 2)
+density.realized.stratum <- calculate_density(sim.realized.stratum, "green", adjust = 2)
+
+# Combine distributions
+density.stratum <- combine_distributions(density.realized.stratum, density.programmed.stratum)
+
+# Plot distributions vs actually realized
+
+#' \TODO Make better legend descriptions like density assuming realized rate, density assuming programmed rate, etc
+plt.proximity.stratum <- plot_interspersion_density(
+  density.stratum, real_interspersion.stratum, strata_levels) + 
+  facet_nested_wrap(
+    STRATA ~ ., dir = "h", ncol = 2, scales = "free", drop = F,
+    labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x) )))
+# Drop the uneeded facet (strip and panel)
+# drop_facet(plt.proximity.stratum )
+plt.proximity.stratum <- drop_facet(plt.proximity.stratum, drop = list(c(24,7), c(25, 7)))
+
+# Calculate percentiles of the outcomes relative to both distributions
+
+#' \TODO This table was not in the 2023 AR document. It can perhaps be used to annotate the plt.proximity.stratum figure as some of the distributions and/or expected values are very squished together, and it may be hard to tell whether outcomes are are in the tails or not.
+#' \TODO Make the column names better, match what is in the document
+percentile.stratum <- insp_percentile(
+  real_interspersion.stratum[, -"ITER"], 
+  sim.programmed.stratum, 
+  sim.realized.stratum) |>
+  _[, c("PROG_SIG", "REAL_SIG") := lapply(.SD, function(x) {
+    fcase(
+      x < 0.025, "<<", 
+      x < 0.05, "<", 
+      x > 0.975, ">>", 
+      x > 0.95, ">", default = "")
+    }), .SDcols = c("PERC_PROG", "PERC_REAL")
+  # ecdf function can't have an open right side, so check if the realized rate is outside of 95% interval
+  ][, PROG_SIG_CHECK := data.table::between(INSP, prog_0.025, prog_0.975)
+  ][PROG_SIG_CHECK == T, PROG_SIG := ""
+  ][, REAL_SIG_CHECK := data.table::between(INSP, real_0.025, real_0.975)
+  ][REAL_SIG_CHECK == T, REAL_SIG := ""
+  ][, c("prog_0.025", "prog_0.975", "real_0.025", "real_0.975", "PROG_SIG_CHECK", "REAL_SIG_CHECK") := NULL
+  ][, STRATA := factor(STRATA, levels = strata_levels)][]
+setorder(percentile.stratum, ADP, STRATA)
+colnames(percentile.stratum) <- gsub("_", " ", colnames(percentile.stratum))
+tbl.percentile.stratum <- percentile.stratum %>%
+  flextable() %>%
+  colformat_int(j = 1, big.mark = "") %>%
+  colformat_double(j = 3, digits = 2) %>%
+  colformat_double(j = c(5, 6, 7), digits = 4) %>%
+  merge_v(j = 1) %>%
+  hline(i = which(diff(percentile.stratum$ADP) > 0)) %>%
+  fix_border_issues() %>% 
+  autofit()
+
+## Proximity Maps----
+
+#' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
+proximity_maps <- plot_interspersion_map(
+  box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed)
+#' \TODO save `proximity_maps` to outputs folder as a multi-page PDF
+#' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
+
+
+## Spatial Maps, trips by spatial cell ----
+
+# Determine whether the spatial arrangement of monitoring was distributed evenly (as expected by random sampling). 
+# Counts the `number of monitored trips in each HEX_ID` and compares to the simulation outcomes, highlighting any actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more extreme than 80% of outcomes.
+
+spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels)
+plt.spatial <- spatial_plots$plt.spatial.2024
+# Drop unused facet
+# drop_facet(plt.spatial)
+plt.spatial <- drop_facet(plt.spatial, drop = list(c(24, 7), c(25, 7)))
+
+#' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias. Double-check once we verify the valhalla dataset is
+#' correct, but there really shouldn't be a spatial bias with 1/3 offloads monitored, right? In any case, in the 2025
+#' ADP, we shouldn't have any bias if all offloads are monitored.
+
+
 ```
 
-Under a random selection of trips / deliveries the spatial distribution of monitored trips should reflect the spatial distribution of all trips / deliveries. To evaluate whether the actual spatial distribution of monitoring matched what would be expected from random selection or exhibited unlikely spatial patterns, the sample units of each stratum were divided into 200 km wide hexagonal spatial cells (“cells”). The total count of trips actually monitored in each cell was compared to results of 10,000 simulations of randomized trip selection using the actual monitored rate. The difference in the count of actually monitored trips versus the median count was calculated for each simulation. Cells where the count of actually monitored trips in a spatial cell were more extreme than 95% of simulations were identified to represent unlikely outcomes under the assumption of random sampling. By graphically viewing where the spatial distribution of actual monitoring deviated from the distribution provided by the simulations, regional patterns in the over- or under-representation by monitoring could be identified. Maps summarizing these patterns are provided in `r fig_nums('spatial', display = "cite")`.\
+Under a random selection of trips / deliveries the spatial distribution of monitored trips should reflect the spatial distribution of all trips / deliveries. To evaluate whether the actual spatial distribution of monitoring matched what would be expected from random selection or exhibited unlikely spatial patterns, the sample units of each stratum were divided into 200 km wide hexagonal spatial cells (“cells”). The total count of trips actually monitored in each cell was compared to results of 10,000 simulations of randomized trip selection using the actual monitored rate. The difference in the count of actually monitored trips versus the median count was calculated for each simulation. Cells where the count of actually monitored trips in a spatial cell were more extreme than 95% of simulations were identified to represent unlikely outcomes under the assumption of random sampling. By graphically viewing where the spatial distribution of actual monitoring deviated from the distribution provided by the simulations, regional patterns in the over- or under-representation by monitoring could be identified. Maps summarizing these patterns are provided in `r fig_nums('plt.spatial', display = "cite")`.\
 \
-The only obvious spatial bias in the distribution of monitored trips was in the *OB HAL* stratum, where an unexpectedly high number of trips were monitored in the central GOA near Kodiak and fewer trips were monitored in the western and eastern GOA. Other strata exhibited spatial patterns that were not as pronounced or unexpected. In the *OB POT* stratum, the western GOA was overrepresented in the sample. In the *OB TRW* stratum, there were some slight localized biases in the central GOA, but no spatial cells had an unlikely number of monitored trips. In the *EM HAL* stratum, the central GOA was underrepresented and the eastern GOA was overrepresented. The spatial distribution of monitoring was as expected in the *EM POT* and *EM TRW EFP* strata, with no spatial cells with an unlikely number of monitored trips / deliveries (`r fig_nums('spatial', display = "cite")`).
+The only obvious spatial bias in the distribution of monitored trips was in the *OB HAL* stratum, where an unexpectedly high number of trips were monitored in the central GOA near Kodiak and fewer trips were monitored in the western and eastern GOA. Other strata exhibited spatial patterns that were not as pronounced or unexpected. In the *OB POT* stratum, the western GOA was overrepresented in the sample. In the *OB TRW* stratum, there were some slight localized biases in the central GOA, but no spatial cells had an unlikely number of monitored trips. In the *EM HAL* stratum, the central GOA was underrepresented and the eastern GOA was overrepresented. The spatial distribution of monitoring was as expected in the *EM POT* and *EM TRW EFP* strata, with no spatial cells with an unlikely number of monitored trips / deliveries (`r fig_nums('plt.spatial', display = "cite")`).
 
 ## Spatiotemporal Distribution of Monitoring Coverage
 Under a random selection of trips / deliveries the spatiotemporal distribution of monitoring in a stratum should reflect the spatiotemporal distribution of all trips / deliveries in the stratum. The evaluation methods here are adapted from the proximity index described in the `r year` Draft ADP (NMFSa 2023). The proximity index was defined as the proportion of sample units in a stratum that were either monitored or near a monitored sample unit in space or time. By considering sample units that were neither monitored nor neighboring a monitored trip as a gap in monitoring, the proximity index quantifies the spatiotemporal extent of monitoring coverage.\
@@ -1508,11 +1682,11 @@ To calculate the proximity index, sample units were placed into spatiotemporal b
 \
 Comparing the proximity indices obtained from real data within each stratum to those obtained by simulated random sampling at rates achieved and rates programmed into ODDS, we can determine how well the distribution of monitoring matched what was expected under random sampling at the actual rates that were achieved and how well the distribution of actual monitoring matched what was expected from selection rates specified in the `r year` ADP.\
 \
-Proximity indices were calculated for each stratum to evaluate whether coverage met expectations overall (`r fig_nums('interspersion', display = "cite")`), and for the BSAI and GOA separately following the use of Fishery Management Plan (FMP) in the stratum definition for the `r year` ADP (NMFS 2023b, `r fig_nums('interspersion_fmp', display = "cite")`).\
+Proximity indices were calculated for each stratum to evaluate whether coverage met expectations overall (`r fig_nums('plt.proximity.stratum', display = "cite")`) for the `r year` ADP (NMFS 2023b).\
 \
-The spatiotemporal distributions of monitoring coverage in strata were within the expected ranges (the upper, green distributions of Figures `r fig_nums('interspersion', display = "num")` and `r fig_nums('interspersion_fmp', display = "num")`) with only one exception. The proximity value of the EM HAL stratum was lower than expected (`r fig_nums('interspersion', display = "cite")`), particularly in the GOA (`r fig_nums('interspersion_fmp', display = "cite")`). Therefore, a spatiotemporal bias was apparent in the EM HAL stratum based on the available data. The proximity value for the EM TRW EFP stratum was low but not unexpected, and resulting proximity values were very close to 1 (indicating good spatiotemporal overlap).\
+The spatiotemporal distributions of monitoring coverage in strata were within the expected ranges (the upper, green distributions of Figures `r fig_nums('plt.proximity.stratum', display = "num")` with only one exception. The proximity value of the EM HAL stratum was lower than expected (`r fig_nums('plt.proximity.stratum', display = "cite")`). Therefore, a spatiotemporal bias was apparent in the EM HAL stratum based on the available data. The proximity value for the EM TRW EFP stratum was low but not unexpected, and resulting proximity values were very close to 1 (indicating good spatiotemporal overlap).\
 \
-The achieved proximity values were within the expected ranges from the sampling rates defined by the ADP (the lower, blue distributions of Figures `r fig_nums('interspersion', display = "num")` and `r fig_nums('interspersion_fmp', display = "num")`) for the *OB HAL*, *OB POT* and *EM TRW EFP* strata. The *OB TRW* stratum had a higher proximity index than expected because it had an unexpectedly high realized monitoring rate. Both fixed-gear EM strata, *EM HAL* and *EM POT*, had lower proximity indices than expected due to the lower than expected realized monitoring rates. At the FMP-level, proximity values for these strata were lower than expected except for in the BSAI of the *EM HAL* stratum, which had a very wide expected range due to low fishing effort and low expected sample size (`r fig_nums('interspersion_fmp', display = "cite")`).
+The achieved proximity values were within the expected ranges from the sampling rates defined by the ADP (the lower, blue distributions of Figures `r fig_nums('plt.proximity.stratum', display = "num")`) for the *OB HAL*, *OB POT* and *EM TRW EFP* strata. The *OB TRW* stratum had a higher proximity index than expected because it had an unexpectedly high realized monitoring rate. Both fixed-gear EM strata, *EM HAL* and *EM POT*, had lower proximity indices than expected due to the lower than expected realized monitoring rates.
 
 ## Trip Metrics  
 This section analyzes whether monitored trips are similar to unmonitored trips using a permutation test (a.k.a., randomization test). This test evaluates the question “How likely is the difference we found if these two groups have the same distribution (in the metric we are comparing)?” Permutation tests compare the actual difference found between two groups to the distribution of many differences derived by randomizing the labels defining the two groups (e.g., monitored and unmonitored). Difference values in the permutation test were calculated by subtracting the mean metric value for the “No” condition from the mean metric value for the “Yes” condition. For example, the difference between vessel lengths in a permutation test for a monitoring effect would be the mean value for unmonitored trips subtracted from the mean value for all monitored trips. By randomizing group assignments, the combined distribution of randomized differences represents the sampling distribution under the null hypothesis that the two groups are equal. In this report, 1,000 randomized trials were run for the permutation test. The *p*-value from the test is calculated as the number of randomized trials with greater absolute differences than the actual difference divided by the number of randomized trials. Similar to the other statistical tests used in this report, low *p*-values indicate unlikely events under the hypothesis of equality and are therefore considered evidence against that hypothesis. Unlike other statistical tests used in this report, a Bonferroni adjustment has been applied to the significance threshold of 0.05 by dividing it by the number of metrics being tested. This results in an adjusted significance threshold of 0.05 / 6 = 0.00833. The *p*-values are then compared to the adjusted significance threshold. In an attempt to improve clarity, five values are calculated in the test: (1) the difference between groups, (2) the mean difference between groups from randomized trials, (3) #1 expressed as a percentage of the mean value of the metric being tested, (4) #2 expressed as a percentage of the mean value of the metric being tested and (5) the *p*-value of the test; however, only values (1), (3) and (5) are presented.\
@@ -2019,15 +2193,19 @@ print(Temporal.plot)
 
 \newpage
 
-`r fig_nums('spatial', caption = paste0('Spatial patterns of the distribution of monitoring in partial coverage in ', year, '. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips / deliveries actually monitored relative to the median of 10,000 simulations of random sampling using the stratum’s realized monitoring rate. Cells without a number had the same number of monitored trips / deliveries as the median of the simulations (difference of zero). Cells where the actual number of monitored trips / deliveries was more extreme than 80% of simulated outcomes are colored pink (fewer trips / deliveries than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes are outlined in blue with bold text.'))`
+```{r plt.spatial, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+print(plt.spatial)
+```
+
+`r fig_nums('plt.spatial', caption = paste0('Spatial patterns of the distribution of monitoring in partial coverage in ', year, '. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips / deliveries actually monitored relative to the median of 10,000 simulations of random sampling using the stratum’s realized monitoring rate. Cells without a number had the same number of monitored trips / deliveries as the median of the simulations (difference of zero). Cells where the actual number of monitored trips / deliveries was more extreme than 80% of simulated outcomes are colored pink (fewer trips / deliveries than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes are outlined in blue with bold text.'))`
 
 \newpage
 
-`r fig_nums('interspersion', caption = paste0('Stratum-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
+```{r plt.proximity.stratum, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
+print(plt.proximity.stratum)
+```
 
-\newpage
-
-`r fig_nums('interspersion_fmp', caption = paste0('Stratum and FMP-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum and FMP is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
+`r fig_nums('plt.proximity.stratum', caption = paste0('Stratum-level proximity indices in partial coverage in ', year, '. The purple vertical dashed line represents actual proximity indices. The distributions show the proximity values obtained from 10,000 simulations of random sampling, where the upper (green) distribution sampled using the realized monitoring rate and the lower (blue) distribution used the programmed monitoring rate. The 2.5% tails of the distributions are shaded darker to represent unlikely outcomes. The number of sample units in each stratum is displayed in the upper-left of each facet. Note the varying scales of the x-axes between facets.'))`
 
 \newpage
 
