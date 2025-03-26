@@ -28,9 +28,9 @@ rm(list = setdiff(ls(), c("work.data", "partial", "project_folder", "shp_land", 
 # Make FMP-specific polygons
 shp_fmp <- rbind(
   shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
-    mutate(FMP = "GOA"),
+    mutate(FMP = "BSAI"),
   shp_nmfs %>% filter(SubArea == "GOA") %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
-    mutate(FMP = "BSAI")
+    mutate(FMP = "GOA")
 ) %>% st_set_crs(st_crs(3467))
 #' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
 shp_land <- shp_land %>% st_set_crs(st_crs(3467))
