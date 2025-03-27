@@ -573,12 +573,15 @@ rm(odds.ts.sub)
 
 #' \TODO 'logged' is perhaps not the best label as all trips are logged, and should instead specify that these are completed/closed trips. The table caption for Table 3-3 could also better describe this.
 #' Summary of ODDS *completed trips* disposition by stratum, with total completed trips, total randomly selected 
-#' trips, total inherited trips, and waived trips,where waived trips are not mutually exclusive from the randomly selected
+#' trips, total inherited trips, and waived trips, where waived trips are not mutually exclusive from the randomly selected
 #' or inherited trips and should be subtracted.
 
 logged <- odds.ts.cp %>%
   group_by(YEAR, STRATA) %>%
-  summarize(Total.trips = sum(N), Random.selected = sum(n), Inherit.selected = sum(ni), Waived = sum(nr)) %>%
+  summarize(Total.trips = sum(N),
+            Random.selected = sum(n),
+            Inherit.selected = sum(ni),
+            Waived = sum(nr)) %>%
   mutate(
     Total.final.selected = Random.selected + Inherit.selected - Waived,
     Pct.selected.from.inherit = round(Inherit.selected / Total.final.selected * 100, 1),  # Realized inherits, BEFORE waivers
