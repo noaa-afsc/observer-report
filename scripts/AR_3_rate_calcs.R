@@ -32,7 +32,7 @@ load(file = file_2_name)
 
 
 
-# ------------------------
+# Statements summaries------------------------
 # Some high-level summary tables of the new statements data.
 
 # Units recorded for each REGULATION, high-level
@@ -71,7 +71,7 @@ summ_units_used <-
 
 
 
-# ------------------------
+# Units Numerator------------------------
 # Here is where we summarize how many units were reported for each statement
 
 # First, for each REGULATION
@@ -138,7 +138,7 @@ summ_subcat_units <-
 
 
 
-###########
+# Units Denom summaries----------
 # Unit summaries for TOTALS that are used for the DENOMINATOR.
 ##########
 
@@ -215,7 +215,7 @@ summ_units <-
 # Next MELT this table into LONG format, and use that actual unit names, 
 # so we can JOIN to the STATEMENTS data.
 units_melt <-
-  melt(data = summ_units %>%
+  reshape2::melt(data = summ_units %>%
                 mutate(DEPL = CRUISES,
                        TRIP = TOTAL_TRIPS,
                        OFFL = OFFLOADS,
@@ -301,7 +301,455 @@ subcat_units_rate_priority <-
 
 
 
+
+
+
+
+
+
+
+
+
+# Get factors for each selected unit in statements----------------------
+
+# Deployments
+chosen_depl_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'DEPL') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR) %>%
+  left_join(assnmts_days_all_groupings %>%
+              distinct(CRUISE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE,
+                       MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+            relationship = "many-to-many"
+             )
+
+# check for NAs
+table(chosen_depl_with_factors$CALENDAR_YEAR, chosen_depl_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+# Days
+chosen_days_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'DAYS') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+         PERMIT = as.numeric(PERMIT),
+         DEPLOYED_DATE = as.Date(ANSWER, 
+                                 format = "%m/%d/%Y")) %>%
+  left_join(rbind(assnmts_days_all_groupings %>%
+                    # accounting for 0s and NA in the permit column
+                    distinct(CRUISE, PERMIT = 0, DEPLOYED_DATE = as.Date(DEPLOYED_DATE), COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  assnmts_days_all_groupings %>%
+                    distinct(CRUISE, PERMIT = NA, DEPLOYED_DATE = as.Date(DEPLOYED_DATE), COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  assnmts_days_all_groupings %>%
+                    distinct(CRUISE, PERMIT,      DEPLOYED_DATE = as.Date(DEPLOYED_DATE), 
+                             COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+                  ),
+            relationship = "many-to-many"
+            )
+
+# check for NAs
+# There are 46 NAs after this join, I believe the observer may have selected units that were deleted from their data later?
+# TODO: figure this out????
+table(chosen_days_with_factors$CALENDAR_YEAR, chosen_days_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+# Hauls
+chosen_hauls_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'HAUL') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+         PERMIT = as.numeric(PERMIT),
+         HAUL_SEQ = as.numeric(ANSWER),
+         CRUISE = DATA_CRUISE) %>%
+  left_join(rbind(hauls_with_factors %>%
+                    # accounting for 0s and NA in the permit column
+                    distinct(CRUISE, PERMIT = 0,  HAUL_SEQ, COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  hauls_with_factors %>%
+                    distinct(CRUISE, PERMIT = NA, HAUL_SEQ, COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  hauls_with_factors %>%
+                    distinct(CRUISE, PERMIT,      HAUL_SEQ, COVERAGE_TYPE,
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+                  ),
+  relationship = "many-to-many"
+  )
+
+# check for NAs
+# There are 101 NAs after this join
+# I believe the observers may have selected units that were deleted from their data later???
+# TODO: figure this out ????
+table(chosen_hauls_with_factors$CALENDAR_YEAR, chosen_hauls_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+
+
+
+# Hauls
+chosen_trips_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'TRIP') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+         PERMIT = as.numeric(PERMIT),
+         TRIP_SEQ = as.numeric(ANSWER),
+         CRUISE = DATA_CRUISE) %>%
+  left_join(rbind(hauls_with_factors %>%
+                    # accounting for 0s and NA in the permit column
+                    distinct(CRUISE, PERMIT = 0,  TRIP_SEQ, COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  hauls_with_factors %>%
+                    distinct(CRUISE, PERMIT = NA, TRIP_SEQ, COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  hauls_with_factors %>%
+                    distinct(CRUISE, PERMIT,      TRIP_SEQ, COVERAGE_TYPE,
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  ),
+  relationship = "many-to-many"
+  )
+
+# check for NAs
+# There are 97 NAs after this join
+# I believe the observers may have selected units that were deleted from their data later???
+# TODO: figure this out ????
+table(chosen_trips_with_factors$CALENDAR_YEAR, chosen_trips_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+# Samples
+chosen_samples_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'SAMP') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+         PERMIT   = as.numeric(PERMIT),
+         SAMPLE_SEQ = as.numeric(ANSWER),
+         CRUISE   = DATA_CRUISE) %>%
+  left_join(samp_with_factors %>%
+              # whew, don't need to account for 0s and NA in the permit column, there are none, yay!
+                distinct(CRUISE, PERMIT, SAMPLE_SEQ, COVERAGE_TYPE,
+                         VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+  relationship = "many-to-many"
+           )
+
+# check for NAs
+# There are 7 NAs after this join
+# I believe the observers may have selected units that were deleted from their data later???
+# TODO: figure this out ????
+table(chosen_samples_with_factors$CALENDAR_YEAR, chosen_samples_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+
+# Offloads
+chosen_offloads_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'OFFL') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+         PERMIT = as.numeric(PERMIT),
+         OFFLOAD_SEQ = as.numeric(ANSWER),
+         CRUISE = DATA_CRUISE) %>%
+  left_join(rbind(offloads_with_factors %>%
+                    # accounting for 0s and NA in the permit column
+                    distinct(CRUISE, PERMIT = 0,  OFFLOAD_SEQ, COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  offloads_with_factors %>%
+                    distinct(CRUISE, PERMIT = NA, OFFLOAD_SEQ, COVERAGE_TYPE, 
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  offloads_with_factors %>%
+                    distinct(CRUISE, PERMIT,      OFFLOAD_SEQ, COVERAGE_TYPE,
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  ),
+  relationship = "many-to-many"
+  )
+
+# check for NAs
+# There are 53 NAs after this join
+# I believe the observers may have selected units that were deleted from their data later???
+# TODO: figure this out ????
+table(chosen_offloads_with_factors$CALENDAR_YEAR, chosen_offloads_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+
+# Marine Mammals
+chosen_marm_with_factors <-
+  df_obs_statements %>% 
+  filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT == 'MARM') %>%
+  mutate(CALENDAR_YEAR = FIRST_VIOL_YEAR,
+         PERMIT   = as.numeric(PERMIT),
+         MAMMAL_SEQ = as.numeric(ANSWER),
+         CRUISE   = DATA_CRUISE) %>%
+  left_join(marm_with_factors %>%
+              # whew, don't need to account for 0s and NA in the permit column, there are none, yay!
+              distinct(CRUISE, PERMIT, MAMMAL_SEQ, COVERAGE_TYPE,
+                       VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+            relationship = "many-to-many"
+  )
+
+# check for NAs
+# There is 1 NA after this join
+# I believe the observers may have selected units that were deleted from their data later???
+# TODO: figure this out ????
+table(chosen_marm_with_factors$CALENDAR_YEAR, chosen_marm_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+###
+# stick all the units with their factors together.
+chosen_units_with_factors <-
+  rbind(chosen_depl_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE),
+        chosen_days_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE),
+        chosen_trips_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE),
+        chosen_offloads_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE),
+        chosen_hauls_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE),
+        chosen_samples_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE),
+        chosen_marm_with_factors %>%
+          distinct(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+                   CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT,
+                   CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ,
+                   OLE_OBS_STATEMENT_UNIT_SEQ, ANSWER, DATA_CRUISE)
+        )
+
+# Units Numerator with Factors------------------------
+# Here is where we summarize how many units were reported for each statement, WITHIN THE DESIRED FACTOR GROUPS
+
+# First, for each REGULATION
+# long format: reg-level summary
+summ_regs_units_for_factors <-
+  chosen_units_with_factors %>% 
+   group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+            CATEGORY, SUBCATEGORY, OLE_REGULATION_SEQ, REG_SUMMARY, INCIDENT_UNIT) %>%
+  summarize(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
+            N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+            .groups = "drop")
+
+
+
+# Next, for each SUBCATEGORY
+# long format: subcat-level summary
+summ_subcat_units_for_factors <-
+  chosen_units_with_factors %>% 
+  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+           CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>%
+  summarize(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
+            DISTINCT_REGS_SELECTED = n_distinct(OLE_REGULATION_SEQ),
+            N_REG_SELECTIONS       = n_distinct(OLE_OBS_STATEMENT_DETAIL_SEQ),
+            N_UNITS_REPORTED = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+            .groups = "drop")
+
+
+
+###########
+# Unit summaries for TOTALS that are used for the DENOMINATOR, continued
+# This time, with the factor groups for 2024.
+# Those are:
+#   COVERAGE_TYPE (ct)
+#   VESSEL_TYPE   (vt)
+#   NMFS_REGION   (nr)
+
+summ_units_for_factors <-
+  # DEPL and DAYS units
+  assnmts_days_all_groupings %>%
+  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%  # Adding add'l factors.  Add add'l if desired!
+  summarize(DAYS         = n_distinct(CRUISE, PERMIT, DEPLOYED_DATE),
+            ASSIGNMENTS  = n_distinct(CRUISE, PERMIT),
+            CRUISES      = n_distinct(CRUISE),
+            OBSERVERS    = n_distinct(OBSERVER_SEQ),
+            .groups = "drop") %>%
+  
+  # TRIPS
+  left_join(
+    trips_with_factors %>%
+      mutate(CR_PERM_SEQ = paste0(CRUISE, PERMIT, TRIP_SEQ)) %>%       
+      group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%  # Adding add'l factors
+      summarise(TOTAL_TRIPS   = n_distinct(CRUISE, PERMIT, TRIP_SEQ),
+                NONFISH_TRIPS = n_distinct(CR_PERM_SEQ[DID_FISHING_OCCUR_FLAG == 'N']),
+                FISH_TRIPS    = n_distinct(CR_PERM_SEQ[DID_FISHING_OCCUR_FLAG == 'Y']),
+                .groups = "drop")
+  ) %>%
+  
+  # OFFLOADS
+  left_join(
+    offloads_with_factors %>%
+      distinct(CRUISE, PERMIT, OFFLOAD_SEQ, CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, VESSEL_OR_PLANT) %>%  # Adding add'l factors
+      group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%  # Adding add'l factors
+      summarise(OFFLOADS = n_distinct(CRUISE, PERMIT, OFFLOAD_SEQ),
+                .groups = "drop")
+  ) %>%
+  
+  # HAULS
+  left_join(
+    hauls_with_factors %>%
+      group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%  # Adding add'l factors
+      summarise(HAULS = n_distinct(CRUISE, PERMIT, HAUL_SEQ),
+                .groups = "drop")
+  ) %>% 
+  
+  # SAMPLES
+  left_join(
+    samp_with_factors %>%
+      mutate(CR_PERM_SEQ = paste0(CRUISE, PERMIT, SAMPLE_SEQ)) %>%
+      group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%  # Adding add'l factors
+      summarise(TOTAL_SAMPLES     = n_distinct(CRUISE, PERMIT, SAMPLE_SEQ),
+                PARENT_SAMPLES    = n_distinct(CR_PERM_SEQ[SUBSAMPLE_FLAG == 'N']),
+                SUBSAMPLES        = n_distinct(CR_PERM_SEQ[SUBSAMPLE_FLAG   == 'Y']),
+                DECKSORT_SAMPLES  = n_distinct(CR_PERM_SEQ[DECKSORT_FLAG    == 'Y']),
+                PRESORTED_SAMPLES = n_distinct(CR_PERM_SEQ[PRESORTED_FLAG   == 'Y']),
+                .groups = "drop")
+  ) %>%
+  
+  # MARINE MAMMALS
+  left_join(
+    marm_with_factors %>%
+      group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%  # Adding add'l factors
+      summarise(MAMMAL_INTERACTIONS = n_distinct(CRUISE, PERMIT, MAMMAL_SEQ),
+                .groups = "drop")
+  )
+
+
+# Next MELT this table into LONG format, and use that actual unit names, 
+# so we can JOIN to the STATEMENTS data.
+units_for_factors_melt <-
+  reshape2::melt(data = summ_units_for_factors %>%
+                   mutate(DEPL = CRUISES,
+                          TRIP = TOTAL_TRIPS,
+                          OFFL = OFFLOADS,
+                          HAUL = HAULS,
+                          SAMP = TOTAL_SAMPLES,
+                          MARM = MAMMAL_INTERACTIONS), 
+                 id.vars       = c("CALENDAR_YEAR", "COVERAGE_TYPE", "VESSEL_TYPE", "NMFS_REGION"),
+                 measure.vars  = c("DAYS", "DEPL", "TRIP","OFFL", "HAUL", "SAMP", "MARM"
+                 ),
+                 value.name    = 'TOTAL_UNITS',
+                 variable.name = "INCIDENT_UNIT") 
+
+#########
+# Rates for Units
+#########
+
+# REG-level rate
+reg_units_for_factors_rate <-
+  summ_regs_units_for_factors %>%
+  left_join(units_for_factors_melt) %>%
+  full_join(summ_units_for_factors) %>%
+  mutate(RATE = N_UNITS_REPORTED/TOTAL_UNITS,
+         RATE_PER_1000_UNITS = RATE*1000,
+         UNITS_PER_OBSERVER   =  N_UNITS_REPORTED/OBSERVERS,
+         UNITS_PER_CRUISE     =  N_UNITS_REPORTED/CRUISES,
+         UNITS_PER_ASSIGNMENT =  N_UNITS_REPORTED/ASSIGNMENTS,
+         UNITS_PER_DAY        =  N_UNITS_REPORTED/DAYS,
+         UNITS_PER_1000_DAYS  = (N_UNITS_REPORTED/DAYS)*1000
+  ) %>%
+  select(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, 
+         CATEGORY, SUBCATEGORY,
+         OLE_REGULATION_SEQ, REG_SUMMARY,
+         N_STATEMENTS,
+         INCIDENT_UNIT, N_UNITS_REPORTED, TOTAL_UNITS,
+         RATE, RATE_PER_1000_UNITS,
+         OBSERVERS, UNITS_PER_OBSERVER,
+         CRUISES, UNITS_PER_CRUISE,
+         ASSIGNMENTS, UNITS_PER_ASSIGNMENT,
+         DAYS, UNITS_PER_DAY, UNITS_PER_1000_DAYS
+  )
+
+
+# SUBCATEGORY-level rate
+subcat_units_rate_for_factors <-
+  summ_subcat_units_for_factors %>%
+  left_join(units_for_factors_melt) %>%
+  full_join(summ_units_for_factors) %>%
+  mutate(RATE = N_UNITS_REPORTED/TOTAL_UNITS,
+         RATE_X_1000 = RATE*1000,
+         UNITS_PER_OBSERVER   =  N_UNITS_REPORTED/OBSERVERS,
+         UNITS_PER_CRUISE     =  N_UNITS_REPORTED/CRUISES,
+         UNITS_PER_ASSIGNMENT =  N_UNITS_REPORTED/ASSIGNMENTS,
+         UNITS_PER_DAY        =  N_UNITS_REPORTED/DAYS,
+         UNITS_PER_1000_DAYS  = (N_UNITS_REPORTED/DAYS)*1000
+  ) %>%
+  select(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, CATEGORY, SUBCATEGORY,
+         N_STATEMENTS,
+         INCIDENT_UNIT, DISTINCT_REGS_SELECTED, N_REG_SELECTIONS, 
+         N_UNITS_REPORTED, TOTAL_UNITS,
+         RATE, RATE_X_1000,
+         OBSERVERS, UNITS_PER_OBSERVER,
+         CRUISES, UNITS_PER_CRUISE,
+         ASSIGNMENTS, UNITS_PER_ASSIGNMENT,
+         DAYS, UNITS_PER_DAY, UNITS_PER_1000_DAYS
+  )
+
+
+# Above table, but FILTERED For OLE_PRIORITY types
+subcat_units_rate_for_factors_priority <-
+  subcat_units_rate_for_factors %>%
+  filter(SUBCATEGORY %in% c('REASONABLE ASSISTANCE', 'SAMPLING INTERFERENCE',
+                            'DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS',
+                            'SEXUAL ASSAULT',
+                            'SAFETY',
+                            'ASSAULT',
+                            'SEXUAL HARASSMENT',
+                            'INTIMIDATION/BRIBERY/COERCION',
+                            'IMPEDIMENT',
+                            'HOSTILE WORK ENVIRONMENT'))
+
+
+
+
+
+
+# ###############
+# # OLD CODE, COMMENTING OUT FOR 2024
 ########################
+
+
 #########################
 # Summarize the DAYS for each factor combination.
 
@@ -315,50 +763,48 @@ subcat_units_rate_priority <-
 
 # NOTE: this may not be used for 2024 depending on what factors are used.
 
-cnt_dep_days_all_groupings <- 
-  merge(assnmts_days_all_groupings %>%
-          group_by(CALENDAR_YEAR, CRUISE, PERMIT, OBSERVER_SEQ) %>%
-          summarize(TOTAL_FACTOR_DAYS_CR_PERM              = length(DEPLOYED_DATE),
-                    TOTAL_DISTINCT_DAYS_CR_PERM            = length(unique(DEPLOYED_DATE)),
-                    TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM   = length(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']),
-                    TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']))
-          ) %>%
-          ungroup() ,
-        assnmts_days_all_groupings %>% 
-          group_by(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
-          summarize(FACTOR_DAYS = n_distinct(DEPLOYED_DATE),
-                    FACTOR_FSHRY_DATA_DAYS = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y'])) ) %>%
-          ungroup(),
-        all = TRUE) %>%
-  mutate(FACTOR_WEIGHT_MTHD_1 = FACTOR_DAYS/TOTAL_FACTOR_DAYS_CR_PERM,       # Method 1 for WEIGHTING the statements will apportion the number of instances to the number of days in that factor category.
-         FACTOR_WEIGHT_MTHD_2 = FACTOR_DAYS/TOTAL_DISTINCT_DAYS_CR_PERM,     # Method 2 for WEIGHTING the statements will apportion the number of instances to the number of distinct days in that factor category.
-         FACTOR_WEIGHT_MTHD_3 = FACTOR_FSHRY_DATA_DAYS/TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM,       # Method 3 for WEIGHTING the statements will apportion the number of instances to the number of FISHERY_DATA days in that factor category.
-         FACTOR_WEIGHT_MTHD_4 = FACTOR_FSHRY_DATA_DAYS/TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM) %>% # Method 4 for WEIGHTING the statements will apportion the number of instances to the number of DISTINCT FISHERY DATA DAYS in that factor category.
-  select(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, FACTOR_DAYS, TOTAL_FACTOR_DAYS_CR_PERM, TOTAL_DISTINCT_DAYS_CR_PERM, FACTOR_WEIGHT_MTHD_1, FACTOR_WEIGHT_MTHD_2, FACTOR_WEIGHT_MTHD_3, FACTOR_WEIGHT_MTHD_4)
+# cnt_dep_days_all_groupings <- 
+#   merge(assnmts_days_all_groupings %>%
+#           group_by(CALENDAR_YEAR, CRUISE, PERMIT, OBSERVER_SEQ) %>%
+#           summarize(TOTAL_FACTOR_DAYS_CR_PERM              = length(DEPLOYED_DATE),
+#                     TOTAL_DISTINCT_DAYS_CR_PERM            = length(unique(DEPLOYED_DATE)),
+#                     TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM   = length(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']),
+#                     TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y']))
+#           ) %>%
+#           ungroup() ,
+#         assnmts_days_all_groupings %>% 
+#           group_by(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
+#           summarize(FACTOR_DAYS = n_distinct(DEPLOYED_DATE),
+#                     FACTOR_FSHRY_DATA_DAYS = length(unique(DEPLOYED_DATE[FISHERY_DATA_BOOL == 'Y'])) ) %>%
+#           ungroup(),
+#         all = TRUE) %>%
+#   mutate(FACTOR_WEIGHT_MTHD_1 = FACTOR_DAYS/TOTAL_FACTOR_DAYS_CR_PERM,       # Method 1 for WEIGHTING the statements will apportion the number of instances to the number of days in that factor category.
+#          FACTOR_WEIGHT_MTHD_2 = FACTOR_DAYS/TOTAL_DISTINCT_DAYS_CR_PERM,     # Method 2 for WEIGHTING the statements will apportion the number of instances to the number of distinct days in that factor category.
+#          FACTOR_WEIGHT_MTHD_3 = FACTOR_FSHRY_DATA_DAYS/TOTAL_FACTOR_FSHRY_DATA_DAYS_CR_PERM,       # Method 3 for WEIGHTING the statements will apportion the number of instances to the number of FISHERY_DATA days in that factor category.
+#          FACTOR_WEIGHT_MTHD_4 = FACTOR_FSHRY_DATA_DAYS/TOTAL_DISTINCT_FSHRY_DATA_DAYS_CR_PERM) %>% # Method 4 for WEIGHTING the statements will apportion the number of instances to the number of DISTINCT FISHERY DATA DAYS in that factor category.
+#   select(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, FACTOR_DAYS, TOTAL_FACTOR_DAYS_CR_PERM, TOTAL_DISTINCT_DAYS_CR_PERM, FACTOR_WEIGHT_MTHD_1, FACTOR_WEIGHT_MTHD_2, FACTOR_WEIGHT_MTHD_3, FACTOR_WEIGHT_MTHD_4)
+# 
+# 
+# 
+# 
+# 
+# # Next, summarize for each factor combination and get the total days etc.  These are the DENOMINATORS of the rates.
+# depl_days_summ_by_factor <-
+#   cnt_dep_days_all_groupings %>% 
+#   group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
+#   summarize(TOTAL_DAYS      = sum(FACTOR_DAYS), 
+#             TOTAL_OBSERVERS = n_distinct(OBSERVER_SEQ),
+#             TOTAL_CRUISES   = n_distinct(CRUISE),
+#             DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT),
+#             .groups = "drop")
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 
-
-
-
-
-# Next, summarize for each factor combination and get the total days etc.  These are the DENOMINATORS of the rates.
-depl_days_summ_by_factor <-
-  cnt_dep_days_all_groupings %>% 
-  group_by(CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION) %>%
-  summarize(TOTAL_DAYS      = sum(FACTOR_DAYS), 
-            TOTAL_OBSERVERS = n_distinct(OBSERVER_SEQ),
-            TOTAL_CRUISES   = n_distinct(CRUISE),
-            DISTINCT_OBSERVER_ASSIGNMENTS = n_distinct(CRUISE, PERMIT),
-            .groups = "drop")
-
-
-
-
-
-
-
-
-# ###############
-# # OLD CODE, COMMENTING OUT FOR 2024
 # 
 # ######################
 # # Finally!!!!
@@ -763,3 +1209,4 @@ save(list = ls()[!(ls() == 'channel')],
      file = file_3_name)
 
 gdrive_upload(file_3_name, AnnRpt_EnfChp_dribble)
+

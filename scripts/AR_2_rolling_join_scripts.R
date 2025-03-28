@@ -54,7 +54,7 @@ load(file = file_1_name)
 assnmts_days_all_groupings <-   
   assignments_dates_cr_perm %>%
   filter(CALENDAR_YEAR <= as.numeric(adp_yr) & CALENDAR_YEAR >= as.numeric(adp_yr) -1 ) %>%
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, VESSEL_OR_PLANT, COVERAGE_TYPE) %>%  # remove duplicates; rows are unique by cruise, permit, date, and factor combination.
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME, CRUISE, PERMIT, DEPLOYED_DATE, VESSEL_OR_PLANT, COVERAGE_TYPE) %>%  # remove duplicates; rows are unique by cruise, permit, date, and factor combination.
   left_join(rbind(hauls %>%
                     # exact match(es) for VESSEL days where hauls exist:
                     distinct(PERMIT,
@@ -97,7 +97,7 @@ assnmts_days_all_groupings <-
          MANAGEMENT_PROGRAM_CODE = ifelse(is.na(MANAGEMENT_PROGRAM_CODE), DUMMY_MANAGEMENT_PROGRAM_CODE, MANAGEMENT_PROGRAM_CODE),
          NMFS_REGION = ifelse(is.na(NMFS_REGION), DUMMY_NMFS_REGION, NMFS_REGION)
           ) %>%
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
 
@@ -149,7 +149,7 @@ assnmts_days_all_groupings[, FINAL_V := ifelse(!is.na(i.VESSEL_TYPE), i.VESSEL_T
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(VESSEL_TYPE = FINAL_V) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's
 table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$VESSEL_TYPE, exclude = FALSE)
@@ -171,7 +171,7 @@ assnmts_days_all_groupings[, FINAL_V := ifelse(!is.na(i.VESSEL_TYPE), i.VESSEL_T
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(VESSEL_TYPE = FINAL_V) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE,VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's
  table(assnmts_days_all_groupings$VESSEL_TYPE, exclude = FALSE)
@@ -220,7 +220,7 @@ assnmts_days_all_groupings[, FINAL_G := ifelse(!is.na(i.GEAR_TYPE), i.GEAR_TYPE,
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(GEAR_TYPE = FINAL_G ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's
 table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$GEAR_TYPE, exclude = FALSE)
@@ -247,7 +247,7 @@ assnmts_days_all_groupings[, FINAL_G := ifelse(!is.na(i.GEAR_TYPE), i.GEAR_TYPE,
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(GEAR_TYPE = FINAL_G ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's
 table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$GEAR_TYPE, exclude = FALSE)
@@ -279,7 +279,7 @@ assnmts_days_all_groupings[, FINAL_N := ifelse(!is.na(i.NMFS_REGION), i.NMFS_REG
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(NMFS_REGION = FINAL_N) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -305,7 +305,7 @@ assnmts_days_all_groupings_vessel_temp[, FINAL_N := ifelse(!is.na(i.NMFS_REGION)
 assnmts_days_all_groupings_vessel_temp <-
   assnmts_days_all_groupings_vessel_temp %>%
   mutate(NMFS_REGION = FINAL_N) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -332,7 +332,7 @@ assnmts_days_all_groupings_plant_temp[, FINAL_N := ifelse(!is.na(i.NMFS_REGION),
 assnmts_days_all_groupings_plant_temp <-
   assnmts_days_all_groupings_plant_temp %>%
   mutate(NMFS_REGION = FINAL_N) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -387,7 +387,7 @@ assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's.  If none, then the rolling join worked correctly.
 table(assnmts_days_all_groupings$CALENDAR_YEAR, assnmts_days_all_groupings$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
@@ -414,7 +414,7 @@ assnmts_days_all_groupings_vessel_temp <-
   assnmts_days_all_groupings_vessel_temp %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M
   ) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's.  If none, then the rolling join worked correctly.
 table(assnmts_days_all_groupings_vessel_temp$CALENDAR_YEAR, assnmts_days_all_groupings_vessel_temp$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
@@ -440,7 +440,7 @@ assnmts_days_all_groupings_plant_temp[, FINAL_M := ifelse(!is.na(MANAGEMENT_PROG
 assnmts_days_all_groupings_plant_temp <-
   assnmts_days_all_groupings_plant_temp %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 #Check for NA's
 table(assnmts_days_all_groupings_plant_temp$CALENDAR_YEAR, assnmts_days_all_groupings_plant_temp$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
@@ -465,7 +465,7 @@ assnmts_days_all_groupings_plant_temp[, FINAL_M := ifelse(!is.na(i.MANAGEMENT_PR
 assnmts_days_all_groupings_plant_temp <-
   assnmts_days_all_groupings_plant_temp %>%
   mutate(MANAGEMENT_PROGRAM_CODE = FINAL_M) %>% 
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
 # Check for NA's.
@@ -476,7 +476,7 @@ table(assnmts_days_all_groupings_plant_temp$CALENDAR_YEAR, assnmts_days_all_grou
 assnmts_days_all_groupings <-
   rbind(assnmts_days_all_groupings_plant_temp,
         assnmts_days_all_groupings_vessel_temp) %>%
-  distinct(CALENDAR_YEAR, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME,  CRUISE, PERMIT, DEPLOYED_DATE, COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
 
 
 #Check for NA's.  If none, then the rolling join worked correctly.
@@ -550,47 +550,273 @@ rm(dt_offloads_m, dt_offloads_n, dt_offloads_g, dt_offloads_v, dt_offloads, dt_h
 
 
 ############################
-# Calculate the some factor summaries for the other UNIT types.
-# NOTE: not used at this point.  Need to discuss
+# Calculate the same factor summaries for the other UNIT types.
 # ADK 20250311
 
 # HAULS unit
 hauls_with_factors <-
-assignments_dates_cr_perm %>%
-  distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
-           CALENDAR_YEAR, COVERAGE_TYPE) %>%
-  inner_join(hauls %>%
-               # uses the LEAD_CRUISE only (this is DATA_CRUISE in the statements data)
-               distinct(CRUISE, PERMIT, HAUL_SEQ, CALENDAR_YEAR, DEPLOYED_DATE = HAUL_DATE, 
-                        SAMPLED_BY_CRUISE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM = NA,  NMFS_REGION)
-             )
+  hauls %>%
+    # uses the LEAD_CRUISE only (this is DATA_CRUISE in the statements data)
+    # TODO: consider this further.  Do we need to get for 2nd observers...??? not sure at this point. ADK 20250325
+    distinct(CRUISE, PERMIT, HAUL_SEQ, TRIP_SEQ, CALENDAR_YEAR, DEPLOYED_DATE = HAUL_DATE, 
+             SAMPLED_BY_CRUISE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM = NA,  NMFS_REGION) %>%
+    # have to join to assignments to get coverage_type for the DEPLOYED_DATE, by matching that to the HAUL_DATE
+    inner_join(assignments_dates_cr_perm %>%
+                distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
+                         CALENDAR_YEAR, COVERAGE_TYPE)
+              ) %>%
+    distinct()
              
 
 
 # OFFLOADS unit
 offloads_with_factors <-
+  # have to join to assignments to get coverage_type for the DEPLOYED_DATE, then can match that to the LANDING_DATE
   assignments_dates_cr_perm %>%
-  distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
-           CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_OR_PLANT) %>%
-  inner_join(df_obs_offloads %>%
-               mutate(PERMIT = as.numeric(PERMIT)) %>%
-               inner_join(rbind(df_elandings_raw %>%
-                                 mutate(PERMIT = VESSEL_ID,
-                                        VESSEL_OR_PLANT = 'V'),
-                                 df_elandings_raw %>%
-                                 mutate(PERMIT = PROCESSOR_PERMIT_ID,
-                                        VESSEL_OR_PLANT = 'P')
-                              ) %>%
-                          mutate(TRAWL_EM = ifelse(MANAGEMENT_PROGRAM_CODE == 'TEM','Y', NA)) %>%
-                          distinct(REPORT_ID, DEPLOYED_DATE = LANDING_DATE,
-                                   FISHING_START_DATE, FISHING_DAYS, VESSEL_TYPE, GEAR_TYPE,
-                                   MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, VESSEL_OR_PLANT 
-                                   )  ) )
+    distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
+             CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_OR_PLANT) %>%
+    inner_join(df_obs_offloads %>%
+                 mutate(PERMIT = as.numeric(PERMIT)) %>%
+                 inner_join(rbind(df_elandings_raw %>%
+                                   mutate(PERMIT = VESSEL_ID,
+                                          VESSEL_OR_PLANT = 'V'),
+                                   df_elandings_raw %>%
+                                   mutate(PERMIT = PROCESSOR_PERMIT_ID,
+                                          VESSEL_OR_PLANT = 'P',
+                                          VESSEL_TYPE = 'PLANT')  # for plant observers, remove the vessel_type from the fish ticket data and replace with PLANT
+                                ) %>%
+                            mutate(TRAWL_EM = ifelse(MANAGEMENT_PROGRAM_CODE == 'TEM','Y', NA)) %>%
+                            distinct(REPORT_ID, DEPLOYED_DATE = LANDING_DATE,
+                                     FISHING_START_DATE, FISHING_DAYS, VESSEL_TYPE, GEAR_TYPE,
+                                     MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION, VESSEL_OR_PLANT 
+                                     )  ) )
+
+
+# TRIPS unit
+#   Uses the assnmts_days_all_groupings to get the FACTORS,
+#   because we need to include non-fishing trips. Because there are statements written with NF trips as the selected unit!
+#   Then there are still some trips that do not join with deployment days.
+#   (11 days in 2024 ).  This is likely bad data, need to investigate.
+#   Since we are only getting the factors at the trip level we use a rolling join 
+#   to fill in these gaps
+
+trips_with_factors <-
+  # start with exact join to get haul-based factors for all fishing trips
+  # then have to join to assignments to get factors for the DEPLOYED_DATE, then can match that to the TRIP_START_DATE or TRIP_END_DATE
+  obs_trips_expand %>%
+    mutate(PERMIT = as.numeric(PERMIT)) %>%
+    left_join(assnmts_days_all_groupings %>%
+                distinct(CALENDAR_YEAR, OBSERVER_SEQ, OBSERVER_NAME, CRUISE, PERMIT, DEPLOYED_DATE, 
+                         COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+              relationship = "many-to-many") # there are often multiple factors for a cruise/permit/date
+
+
+#Check for NA's
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$VESSEL_TYPE, exclude = FALSE)
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$GEAR_TYPE, exclude = FALSE)
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$COVERAGE_TYPE, exclude = FALSE)
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$NMFS_REGION, exclude = FALSE)
 
 
 
 
 
+# Next do rolling join scripts  for TRIP factors
+
+# First, for VESSEL TYPE
+# uses the EXPANDED trips data.frame so we can match on EACH DAY OF THE TRIP.
+# Then will collapse using distinct() later so that there is only one row x factor combination for each trip.
+dt_t     <- setkey(setDT(copy(trips_with_factors)), 
+                   CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts <- unique(setkey(setDT(copy(assnmts_days_all_groupings)), 
+                          CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE))
+dt_assnmts_t <- dt_assnmts[, .(CALENDAR_YEAR, VESSEL_TYPE, CRUISE, PERMIT, DEPLOYED_DATE)]   # removing unneeded columns
+setkey(dt_assnmts_t, CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts_t <- unique(dt_assnmts_t)  # removing duplicates
+dt_assnmts_t[, VESSEL_TYPE := as.character(VESSEL_TYPE)]  # coercing to character instead of factor
+
+trips_with_factors <- dt_assnmts_t[dt_t, roll="nearest"] # now join the dates using a rolling join.
+trips_with_factors[, FINAL_T := ifelse(!is.na(i.VESSEL_TYPE), i.VESSEL_TYPE, VESSEL_TYPE)]  # Finally, use the actual join date if it exists; if not, use the rolling join date instead.  Using i.VESSEL_TYPE if present, otherwise using VESSEL_TYPE
+trips_with_factors <-
+  trips_with_factors %>%
+  mutate(VESSEL_TYPE = FINAL_T)
+
+
+#Check for NA's
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$VESSEL_TYPE, exclude = FALSE)
+
+
+
+
+# Next, for GEAR TYPE
+dt_t     <- setkey(setDT(copy(trips_with_factors)), 
+                   CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts <- unique(setkey(setDT(copy(assnmts_days_all_groupings)), 
+                            CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE))
+dt_assnmts_t <- dt_assnmts[, .(CALENDAR_YEAR, GEAR_TYPE, CRUISE, PERMIT, DEPLOYED_DATE)]   # removing unneeded columns
+setkey(dt_assnmts_t, CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts_t <- unique(dt_assnmts_t)  # removing duplicates
+dt_assnmts_t[, GEAR_TYPE := as.character(GEAR_TYPE)]  # coercing to character instead of factor
+
+trips_with_factors <- dt_assnmts_t[dt_t, roll="nearest"] # now join the dates using a rolling join.
+trips_with_factors[, FINAL_T := ifelse(!is.na(i.GEAR_TYPE), i.GEAR_TYPE, GEAR_TYPE)]  # Finally, use the actual join date if it exists; if not, use the rolling join date instead.  Using i.VESSEL_TYPE if present, otherwise using VESSEL_TYPE
+trips_with_factors <-
+  trips_with_factors %>%
+  mutate(GEAR_TYPE = FINAL_T) 
+
+#Check for NA's
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$GEAR_TYPE, exclude = FALSE)
+
+
+
+
+
+
+# Next, for COVERAGE_TYPE
+dt_t     <- setkey(setDT(copy(trips_with_factors)), 
+                   CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts <- unique(setkey(setDT(copy(assnmts_days_all_groupings)), 
+                            CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE))
+dt_assnmts_t <- dt_assnmts[, .(CALENDAR_YEAR, COVERAGE_TYPE, CRUISE, PERMIT, DEPLOYED_DATE)]   # removing unneeded columns
+setkey(dt_assnmts_t, CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts_t <- unique(dt_assnmts_t)  # removing duplicates
+dt_assnmts_t[, COVERAGE_TYPE := as.character(COVERAGE_TYPE)]  # coercing to character instead of factor
+
+trips_with_factors <- dt_assnmts_t[dt_t, roll="nearest"] # now join the dates using a rolling join.
+trips_with_factors[, FINAL_T := ifelse(!is.na(i.COVERAGE_TYPE), i.COVERAGE_TYPE, COVERAGE_TYPE)]  # Finally, use the actual join date if it exists; if not, use the rolling join date instead.  Using i.VESSEL_TYPE if present, otherwise using VESSEL_TYPE
+trips_with_factors <-
+  trips_with_factors %>%
+  mutate(COVERAGE_TYPE = FINAL_T) 
+
+#Check for NA's
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$COVERAGE_TYPE, exclude = FALSE)
+
+
+
+
+
+# Next, for MANAGEMENT_PROGRAM_CODE
+dt_t     <- setkey(setDT(copy(trips_with_factors)), 
+                   CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts <- unique(setkey(setDT(copy(assnmts_days_all_groupings)), 
+                            CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE))
+dt_assnmts_t <- dt_assnmts[, .(CALENDAR_YEAR, MANAGEMENT_PROGRAM_CODE, CRUISE, PERMIT, DEPLOYED_DATE)]   # removing unneeded columns
+setkey(dt_assnmts_t, CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts_t <- unique(dt_assnmts_t)  # removing duplicates
+dt_assnmts_t[, MANAGEMENT_PROGRAM_CODE := as.character(MANAGEMENT_PROGRAM_CODE)]  # coercing to character instead of factor
+
+trips_with_factors <- dt_assnmts_t[dt_t, roll="nearest"] # now join the dates using a rolling join.
+trips_with_factors[, FINAL_T := ifelse(!is.na(i.MANAGEMENT_PROGRAM_CODE), i.MANAGEMENT_PROGRAM_CODE, MANAGEMENT_PROGRAM_CODE)]  # Finally, use the actual join date if it exists; if not, use the rolling join date instead.  Using i.VESSEL_TYPE if present, otherwise using VESSEL_TYPE
+trips_with_factors <-
+  trips_with_factors %>%
+  mutate(MANAGEMENT_PROGRAM_CODE = FINAL_T)
+
+#Check for NA's
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$MANAGEMENT_PROGRAM_CODE, exclude = FALSE)
+
+
+
+
+
+
+
+
+
+# Next, for NMFS_REGION
+dt_t     <- setkey(setDT(copy(trips_with_factors)), 
+                   CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts <- unique(setkey(setDT(copy(assnmts_days_all_groupings)), 
+                            CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE))
+dt_assnmts_t <- dt_assnmts[, .(CALENDAR_YEAR, NMFS_REGION, CRUISE, PERMIT, DEPLOYED_DATE)]   # removing unneeded columns
+setkey(dt_assnmts_t, CALENDAR_YEAR, CRUISE, PERMIT, DEPLOYED_DATE)
+dt_assnmts_t <- unique(dt_assnmts_t)  # removing duplicates
+dt_assnmts_t[, NMFS_REGION := as.character(NMFS_REGION)]  # coercing to character instead of factor
+
+trips_with_factors <- dt_assnmts_t[dt_t, roll="nearest"] # now join the dates using a rolling join.
+trips_with_factors[, FINAL_T := ifelse(!is.na(i.NMFS_REGION), i.NMFS_REGION, NMFS_REGION)]  # Finally, use the actual join date if it exists; if not, use the rolling join date instead.  Using i.VESSEL_TYPE if present, otherwise using VESSEL_TYPE
+trips_with_factors <-
+  trips_with_factors %>%
+  mutate(NMFS_REGION = FINAL_T) %>% 
+  # LAST STEP, get rid of duplicate days.
+  # for the TRIP data we only need one row per trip x factor combination! (not one for each day on the trip)
+  distinct(CALENDAR_YEAR, OBSERVER_SEQ,  OBSERVER_NAME, CRUISE, PERMIT, TRIP_SEQ, TRIP_DESCRIPTION, TRIP_START_DATE, TRIP_END_DATE,
+           EMBARKED_PORT_CODE, EMBARKED_PORT, DISEMBARKED_PORT_CODE, DISEMBARKED_PORT,
+           DID_FISHING_OCCUR_FLAG, FISH_IN_HOLD_AT_START_FLAG, TRIP_DAYS,
+           COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION
+  )
+
+
+
+#Check for NA's
+table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$NMFS_REGION, exclude = FALSE)
+
+
+
+##################
+# remove unneeded temporary objects.
+rm(dt_t, dt_assnmts, dt_assnmts_t)
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+
+#####################
+# SAMPLES
+samp_with_factors <-
+  df_obs_samples %>%
+  mutate(PERMIT = as.numeric(PERMIT),
+         ) %>%
+  inner_join(rbind(hauls_with_factors %>%
+                     distinct(OBSERVER_NAME, OBSERVER_SEQ, CALENDAR_YEAR, CRUISE, PERMIT, 
+                              HAUL_SEQ, OFFLOAD_SEQ = NA,
+                              COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, NMFS_REGION,
+                              MANAGEMENT_PROGRAM_CODE, TRAWL_EM),
+                   offloads_with_factors %>%
+                     distinct(OBSERVER_NAME, OBSERVER_SEQ, CALENDAR_YEAR, CRUISE, PERMIT, 
+                              HAUL_SEQ = NA, OFFLOAD_SEQ,
+                              COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, NMFS_REGION,
+                              MANAGEMENT_PROGRAM_CODE, TRAWL_EM)
+             ),
+             relationship = "many-to-many") %>%
+  distinct()
+
+
+# MARINE MAMMALS (MARM)
+marm_with_factors <-
+  df_obs_marm %>%
+   mutate(PERMIT = as.numeric(PERMIT)) %>%
+   inner_join(rbind(hauls_with_factors %>%
+                        distinct(OBSERVER_NAME, OBSERVER_SEQ, CALENDAR_YEAR, CRUISE, PERMIT, 
+                                 HAUL_SEQ, TRIP_SEQ = NA, OFFLOAD_SEQ = NA,
+                                 COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, NMFS_REGION,
+                                 MANAGEMENT_PROGRAM_CODE, TRAWL_EM),
+                    
+                    offloads_with_factors %>%
+                        distinct(OBSERVER_NAME, OBSERVER_SEQ, CALENDAR_YEAR, CRUISE, PERMIT, 
+                                 HAUL_SEQ = NA, TRIP_SEQ = NA, OFFLOAD_SEQ,
+                                 COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, NMFS_REGION,
+                                 MANAGEMENT_PROGRAM_CODE, TRAWL_EM),
+                    
+                    trips_with_factors %>%
+                        distinct(OBSERVER_NAME, OBSERVER_SEQ, CALENDAR_YEAR, CRUISE, PERMIT, 
+                                 HAUL_SEQ = NA, TRIP_SEQ, OFFLOAD_SEQ = NA,
+                                 COVERAGE_TYPE, VESSEL_TYPE, GEAR_TYPE, NMFS_REGION,
+                                 MANAGEMENT_PROGRAM_CODE, TRAWL_EM)
+                    ),
+              relationship = "many-to-many") %>%
+  distinct()
+   
 
 
 

@@ -15,8 +15,8 @@
 if(!require("odbc"))        install.packages("odbc",        repos='http://cran.us.r-project.org')
 if(!require("plyr"))        install.packages("plyr",        repos='http://cran.us.r-project.org')
 if(!require("tidyverse"))   install.packages("tidyverse",   repos='http://cran.us.r-project.org')
-if(!require("devtools"))     install.packages("devtools",   repos='http://cran.us.r-project.org')
-if(!require("FMAtools"))     devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
+if(!require("devtools"))    install.packages("devtools",   repos='http://cran.us.r-project.org')
+if(!require("FMAtools"))    devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
 
 ###############################################################################
 ###############################################################################
@@ -267,9 +267,9 @@ assignments_dates_cr_perm <-
                 JOIN norpac.atl_vessplant_v v   ON v.permit = vp.permit
                 JOIN ols_observer_cruise ocr    ON ocr.cruise = vp.cruise
                 JOIN ols_observer_contract oco  ON oco.contract_number = ocr.contract_number
-                JOIN ols_debriefing_schedule ds ON ds.cruise = ocr.cruise
                 JOIN TABLE(norpac.ole_statement_factors_pkg.get_deployed_dates_list_vp_seq(vp.vessel_plant_seq))  dl
-                  ON vp.vessel_plant_seq = dl.vessel_plant_seq  
+                  ON vp.vessel_plant_seq = dl.vessel_plant_seq 
+                LEFT JOIN ols_debriefing_schedule ds ON ds.cruise = ocr.cruise 
                WHERE vp.cruise > ", first_cruise,
            " AND ols_cruise.isFMAcruiseTF(vp.cruise) = 'T')  --eliminate HAKE cruises.
               WHERE DEPLOYED_DATE BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR') 
@@ -308,6 +308,7 @@ hauls <-
                      h.sampled_by AS sampled_by_cruise,
                      to_number(h.permit) AS permit,
                      h.haul_seq,
+                     h.trip_seq,
                      trunc(h.retrv_date_time) haul_date,
                      h.nmfs_area,
                      CASE WHEN rv.nmfs_region like '%GOA%' 
@@ -403,27 +404,60 @@ df_obs_offloads <-
 df_obs_trips <-
   dbGetQuery(
     channel,
-    paste0("SELECT cruise, permit, trip_seq,
-                   norpac.ole_statement_pkg.get_unit_description(
-                             p_data_cruise   => cruise,
-                             p_permit        => permit,
-                             p_answer        => to_char(trip_seq),
-                             p_incident_unit => 'TRIP'
-                             )  AS trip_description,    
-                   trunc(start_date) as trip_start_date,
-                   trunc(end_date) AS trip_end_date,
-                   embarked_port_code, 
-                  (SELECT name FROM norpac.atl_lov_port_code WHERE port_code = embarked_port_code) AS embarked_port,
-                   disembarked_port_code, 
-                  (SELECT name FROM norpac.atl_lov_port_code WHERE port_code = disembarked_port_code) AS disembarked_port,
-                   did_fishing_occur_flag, fish_in_hold_at_start_flag
-              FROM norpac.atl_fma_trip
-             WHERE cruise >= ", first_cruise,
-           " AND norpac.ols_cruise.isFMAcruiseTF(cruise) = 'T'
-             AND (trunc(start_date) BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR')
-              OR trunc(end_date) BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR')
-                 )
+    paste0(
+      "SELECT  cruise, permit, trip_seq,
+                 norpac.ole_statement_pkg.get_unit_description(
+                           p_data_cruise   => cruise,
+                           p_permit        => permit,
+                           p_answer        => to_char(trip_seq),
+                           p_incident_unit => 'TRIP'
+                           )  AS trip_description,    
+                 trunc(start_date) as trip_start_date,
+                 trunc(end_date) AS trip_end_date,
+                 embarked_port_code, 
+                (SELECT name FROM norpac.atl_lov_port_code WHERE port_code = embarked_port_code) AS embarked_port,
+                 disembarked_port_code, 
+                (SELECT name FROM norpac.atl_lov_port_code WHERE port_code = disembarked_port_code) AS disembarked_port,
+                did_fishing_occur_flag, fish_in_hold_at_start_flag,
+                (trunc(end_date) - trunc(start_date)) +1 as trip_days
+          FROM  norpac.atl_fma_trip
+         WHERE  cruise >= ", first_cruise,
+         " AND  norpac.ols_cruise.isFMAcruiseTF(cruise) = 'T'
+           AND (trunc(start_date) BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR')
+            OR  trunc(end_date) BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR')
+                )  
            "))
+
+
+# Exploded view of df_obs_trips, with a DEPLOYED_DATE for each trip date
+obs_trips_expand <-
+  df_obs_trips %>%
+    group_by(CRUISE, PERMIT, TRIP_SEQ, TRIP_DAYS, 
+             TRIP_DESCRIPTION, EMBARKED_PORT_CODE, EMBARKED_PORT, DISEMBARKED_PORT_CODE, DISEMBARKED_PORT, 
+             DID_FISHING_OCCUR_FLAG,   FISH_IN_HOLD_AT_START_FLAG) %>%
+    expand(DEPLOYED_DATE = seq(min(TRIP_START_DATE), 
+                               max(TRIP_END_DATE), 
+                               by = '1 day')
+          ) %>%
+    ungroup %>%
+    inner_join(df_obs_trips) %>% # have to get fishing_start_date and landing_date columns back into the df (this is a hack LOL)
+  # filter out any DAYS that are not in the calendar_year - because trips can span years.
+    filter(year(DEPLOYED_DATE) <= adp_yr & year(DEPLOYED_DATE) >= adp_yr-1) %>%
+    mutate(CALENDAR_YEAR = year(DEPLOYED_DATE)) %>%
+    select(CALENDAR_YEAR, DEPLOYED_DATE,
+           CRUISE, PERMIT, TRIP_SEQ, TRIP_DAYS, TRIP_DESCRIPTION,
+           TRIP_START_DATE, TRIP_END_DATE, EMBARKED_PORT_CODE, EMBARKED_PORT,
+           DISEMBARKED_PORT_CODE, DISEMBARKED_PORT, DID_FISHING_OCCUR_FLAG, FISH_IN_HOLD_AT_START_FLAG
+           ) 
+
+
+
+
+
+
+
+
+
 
 
 
