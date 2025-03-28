@@ -925,17 +925,18 @@ The final selection rate after trips were closed, canceled or waived were within
 # Assuming one landing report per delivery
 # Delivery = when fish actually hit the processing plant (e.g., when a tender delivers all CV offloads)
 # Will still summarize V and v by CV, but N and n will be by tender (when applicable) and CV
-#'* This object is also used for pollock offload summaries *
+#'* This object is also used for pollock offload summaries and spatiotemporal analyses *
 work.offload.trw_em <- work.offload %>%
+  # First, use REPORT_ID to replace TRIP_ID
   mutate(TRIP_ID = as.character(REPORT_ID),
          VESSEL_ID = as.integer(CV_ID),
          COVERAGE_TYPE = if_else(STRATA == "EM TRW GOA (EFP)", "PARTIAL", "FULL")) %>%
-  # Replace TRIP_ID with T_REPORT_ID
+  # Replace TRIP_ID with T_REPORT_ID if present to group up shoreside tender deliveries
   mutate(TRIP_ID = ifelse(!is.na(T_REPORT_ID), T_REPORT_ID, TRIP_ID)) %>%
   select(COVERAGE_TYPE, STRATA, TRIP_ID, VESSEL_ID,
          OBSERVED_FLAG = OBS_SALMON_CNT_FLAG,
          TENDER = OFFLOAD_TO_TENDER_FLAG,
-         FMP, PORT_CODE)
+         FMP, PORT_CODE, REPORT_ID)
 
 # Add back to work.data
 work.data.offload <- work.data %>%
@@ -1492,7 +1493,20 @@ stat_area_sf <- st_read(
   st_transform(crs = 3467)
 
 # Wrangle the Valhalla data set for spatiotemporal analyses
-pc_effort_st <- spatiotemp_data_prep(work.data)
+# First, re-assign TRIP_ID for the trawl EM strata to properly identify the sample unit as the delivery
+work.data.st.join <- unique(work.offload.trw_em[, .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)])
+work.data.st <- copy(work.data) |>
+  # Merge in new TRIP_ID and OBSERVED_FLAG using REPORT_ID
+  _[, TRIP_ID_NEW := work.data.st.join[work.data.st, TRIP_ID, on = .(REPORT_ID)]
+  ][, OBS_FLAG_NEW := work.data.st.join[work.data.st, OBSERVED_FLAG, on = .(REPORT_ID)]
+  # Need TRIP_ID Too stay numeric, so make a helper column
+  ][, MAX_TRIP_ID := max(TRIP_ID)
+  ][, TRIP_ID_NEW.int := MAX_TRIP_ID + .GRP, by = .(TRIP_ID_NEW)
+  # For trawl EM trips only (those with TRIP_ID_NEW), replace TRIP_ID and OBSERVED_FLAG
+  ][!is.na(TRIP_ID_NEW), ':=' (TRIP_ID = TRIP_ID_NEW.int, OBSERVED_FLAG = OBS_FLAG_NEW)
+  # Remove helper columns
+  ][, c("MAX_TRIP_ID", "TRIP_ID_NEW", "TRIP_ID_NEW.int", "OBS_FLAG_NEW") := NULL][]
+pc_effort_st <- spatiotemp_data_prep(work.data.st)
 
 #' Realized Rates *Check that these match up with the realized rates in 4_AR_report*
 realized_rates.val  <- pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)] |>
@@ -1530,8 +1544,6 @@ strata_levels <- c(
 )
 
 #' Define boxes using the 2024 stratum definitions, post-stratifying the fixed gear strata by Gear type. Exclude the ZERO stratum as we don't need to simulate interspersion for a stratum with a 0% selection rate.
-
-#' \TODO For the `EM_TRW_EFP_(GOA)` stratum, need to redefine TRIP_ID by shoreside deliveries!
 
 box_def <- define_boxes(
   data = pc_effort_st[STRATA != "ZERO"], space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
@@ -1626,11 +1638,6 @@ plt.spatial <- spatial_plots$plt.spatial.2024
 # Drop unused facet
 # drop_facet(plt.spatial)
 plt.spatial <- drop_facet(plt.spatial, drop = list(c(24, 7), c(25, 7)))
-
-#' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias. Double-check once we verify the valhalla dataset is
-#' correct, but there really shouldn't be a spatial bias with 1/3 offloads monitored, right? In any case, in the 2025
-#' ADP, we shouldn't have any bias if all offloads are monitored.
-
 
 ```
 
