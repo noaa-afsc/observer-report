@@ -478,7 +478,7 @@ disposition.table <-
          "Canceled by user (*d*)" = Trips.canceled.byusers,
          "Waived" = Trips.waived,
          "Paper" = Paper.tickets,
-         "% User cancellation (*d*/*c* × 100)" = Cancellation.Pct,
+         "% User cancellation (*d*/*c* x 100)" = Cancellation.Pct,
          "Waiver (%)" = Waiver.Pct)
 ```
 
@@ -1845,7 +1845,7 @@ flextable(disposition.table) %>%
          value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
   mk_par(j = 9, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
-  italic(j = 1, i = 1:10) %>%
+  italic(j = 1, i = ~Strata != "Total") %>%
   align(j = 3:10, part = "all", align = "right") %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
