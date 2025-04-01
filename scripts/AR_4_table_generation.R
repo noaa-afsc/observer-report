@@ -5,6 +5,7 @@
 
 library(reshape2)
 library(tidyverse)
+library(patchwork)
 library(FMAtools)
 
 # Load data ------------------------------------------------------------------------------------------------------------
@@ -18,6 +19,67 @@ AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 
 #  otherwise it will load your local
 gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
 load(file = file_3_name)
+
+
+# Data manipulation ----------------------------------------------------------------------------------------------------
+
+#TODO - Placeholder until Andy is done in AR_2 & AR_3, then make sure this is in there
+subcat_units_rate_priority <-
+  subcat_units_rate %>%
+  filter(SUBCATEGORY %in% c("ACCESS", "ASSAULT", "BIN MONITORING",
+                            "DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS",
+                            "FOOD AND ACCOMMODATIONS", "FORCED TO PERFORM CREW DUTIES",
+                            "HOSTILE WORK ENVIRONMENT", "IMPEDIMENT",
+                            "INTIMIDATION/BRIBERY/COERCION", "MARINE CASUALTY",
+                            "NOTIFICATION", "OBSERVER SAMPLING STATION",
+                            "REASONABLE ASSISTANCE", "SAFETY",
+                            "SAMPLING INTERFERENCE", "SCALES", "SEXUAL ASSAULT",
+                            "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
+                            "VMS REQUIREMENTS")) %>%
+  mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
+                            "OBSERVER SAFETY AND WORK ENVIRONMENT / USCG-SAFETY", CATEGORY))
+
+# Priority subcategories
+subcat_priority <- 
+  subcat_units_rate_priority %>%
+  filter(CALENDAR_YEAR == adp_yr) %>%
+  mutate(!! paste0("RATE_X_", rate_x) := RATE * rate_x,
+         # Create dummy column for color scale
+         #!! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_priority/rate_x) * rate_x,
+         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
+                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
+                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
+                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
+                                   TRUE ~ INCIDENT_UNIT),
+         CAT_COMBO = ifelse(str_detect(CATEGORY, "GEAR"), "GEAR / EQUIPMENT REQUIREMENTS",
+                            CAT_COMBO)) %>%
+  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x)#,
+        # paste0("RATE_X_", rate_x, "_plot")
+        )
+
+# Non-priority subcategories
+subcat_other <- subcat_units_rate %>%
+  filter(CALENDAR_YEAR == adp_yr,
+         !(SUBCATEGORY %in% subcat_priority$SUBCATEGORY)) %>%
+  mutate(CAT_COMBO = case_when(str_detect(CATEGORY, "SAFETY-USCG|MARPOL") ~
+                                 "SAFETY-USCG / MARPOL / OIL SPILL",
+                               str_detect(CATEGORY, "PERMITS/DOCUMENTS|OPERATIONAL|GEAR") ~
+                                 "GEAR / EQUIPMENT / OPERATIONAL REQUIREMENTS / PERMITS / DOCUMENTS / RECORD KEEPING AND REPORTING",
+                               str_detect(CATEGORY, "SUSTAINABLE|SPECIES") ~
+                                 "PROHIBITED SPECIES / MARINE MAMMALS / SEABIRDS / SUSTAINABLE FISHERIES",
+                               TRUE ~ CATEGORY),
+         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
+                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
+                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
+                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
+                                   TRUE ~ INCIDENT_UNIT),
+         !! paste0("RATE_X_", rate_x) := RATE * rate_x,
+         # Create dummy column for color scale
+       #  !! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x
+       ) %>%
+  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x)#,
+     #    paste0("RATE_X_", rate_x, "_plot")
+     )
 
 # Start Christian Tables -----------------------------------------------------------------------------------------------
 
@@ -86,28 +148,8 @@ rbind(subcat_units_rate %>%
 # Create flextable object
 
 
-#'`================================================================================`
 
-# Placeholder until Andy is done in AR_2 & AR_3, then make sure this is in there
-subcat_units_rate_priority <-
-  subcat_units_rate %>%
-  filter(SUBCATEGORY %in% c("ACCESS", "ASSAULT", "BIN MONITORING",
-                            "DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS",
-                            "FOOD AND ACCOMMODATIONS", "FORCED TO PERFORM CREW DUTIES",
-                            "HOSTILE WORK ENVIRONMENT", "IMPEDIMENT",
-                            "INTIMIDATION/BRIBERY/COERCION", "MARINE CASUALTY",
-                            "NOTIFICATION", "OBSERVER SAMPLING STATION",
-                            "REASONABLE ASSISTANCE", "SAFETY",
-                            "SAMPLING INTERFERENCE", "SCALES", "SEXUAL ASSAULT",
-                            "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
-                            "VMS REQUIREMENTS")) %>%
-  mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
-                            "OBSERVER SAFETY AND WORK ENVIRONMENT / USCG-SAFETY", CATEGORY))
-
-#'`================================================================================`
-# Heatmaps ----
-
-library(patchwork)
+# Heatmaps -------------------------------------------------------------------------------------------------------------
 
 # Because of the way ggplot handles faceting, each category will need to be plotted
 #  separately and then combined using patchwork so that tiles are the same size across
@@ -119,7 +161,6 @@ library(patchwork)
 #  when creating the plots so that they match between all categories that will be
 #  plotted together.
 
-#'*----------------------------------------------------------*
 ## Inputs ----
 
 # Factor order for plotting
@@ -128,7 +169,6 @@ fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAR MAM"
 # Rate
 rate_x <- 100
 
-#'*----------------------------------------------------------*
 ## Functions ----
 
 # Plot function
@@ -185,6 +225,82 @@ create_plot <- function(data, txt_width, type = c("top", "mid", "bottom")) {
     }
 }
 
+#TODO - I think that this is a mistake.  Better to use natural breaks (jenks) and set by that.
+###########################################################################################
+# install.packages("classInt")   # Uncomment if not already installed
+# install.packages("ggplot2")    # Uncomment if not already installed
+# install.packages("viridis")    # Uncomment if not already installed
+# install.packages("scales")     # Uncomment if not already installed
+
+library(classInt)
+library(ggplot2)
+library(viridis)
+library(scales)
+
+# Function to calculate Goodness of Variance Fit (GVF)
+calc_gvf <- function(x, breaks) {
+  # Total Sum of Squares
+  SST <- sum((x - mean(x))^2)
+  
+  # Assign each value to its class
+  class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
+  
+  # Sum of squares within each class
+  SSW <- sum(tapply(x, class_assignments, function(z) sum((z - mean(z))^2)))
+  
+  gvf <- (SST - SSW) / SST
+  return(gvf)
+}
+
+# Function to automatically determine the optimal number of breaks using Jenks natural breaks.
+# It iterates until the number of items in the top break is less than 6.
+optimal_jenks_breaks <- function(x, min_k = 2, max_k = 10, gvf_threshold = 0.9, top_count_threshold = 6) {
+  best_result <- NULL
+  for (k in min_k:max_k) {
+    ci <- classIntervals(x, n = k, style = "jenks")
+    current_breaks <- ci$brks
+    current_gvf <- calc_gvf(x, current_breaks)
+    
+    # Count items in the top (highest) break.
+    # The top break spans from the second-to-last break to the last break.
+    top_break_count <- sum(x >= current_breaks[length(current_breaks) - 1] & x <= current_breaks[length(current_breaks)])
+    
+    cat("For", k, "classes: GVF =", round(current_gvf, 3),
+        " | Top break count =", top_break_count, "\n")
+    
+    # Check if both GVF meets the threshold and top break count is less than the threshold.
+    if (current_gvf >= gvf_threshold && top_break_count < top_count_threshold) {
+      best_result <- list(n_breaks = k, breaks = current_breaks, gvf = current_gvf, top_break_count = top_break_count)
+      break
+    }
+  }
+  
+  # If no candidate meets both conditions, use the maximum candidate.
+  if (is.null(best_result)) {
+    ci <- classIntervals(x, n = max_k, style = "jenks")
+    best_result <- list(n_breaks = max_k, breaks = ci$brks, gvf = calc_gvf(x, ci$brks),
+                        top_break_count = sum(x >= ci$brks[length(ci$brks) - 1] & x <= ci$brks[length(ci$brks)]))
+  }
+  
+  return(best_result)
+}
+
+# Determine optimal breaks for the 'rate' column
+opt_result <- optimal_jenks_breaks(subcat_units_rate_priority$RATE, min_k = 2, max_k = 10, gvf_threshold = 0.9, top_count_threshold = 6)
+print(opt_result)
+
+# Create a heatmap with ggplot2 using the computed natural breaks in the color bar
+# ggplot(df, aes(x = factor(x), y = factor(y), fill = rate)) +
+#   geom_tile(color = "white") +
+#   scale_fill_gradientn(
+#     colours = viridis(100),
+#     breaks = opt_result$breaks,
+#     labels = number_format(accuracy = 0.1)
+#   ) +
+#   theme_minimal() +
+#   labs(x = "X-axis", y = "Y-axis", fill = "Rate")
+
+############################################################################################
 # Define common color scale with global limits
 #  The color_scale function is used to apply a customized color gradient scale
 #  to a numeric variable, typically a rate. It provides a navy-to-red gradient,
@@ -285,43 +401,6 @@ calculate_threshold(filter(subcat_units_rate,
 
 #'*----------------------------------------------------------*
 ## Prepare data ----
-# Priority subcategories
-subcat_priority <- subcat_units_rate_priority %>%
-  filter(CALENDAR_YEAR == adp_yr) %>%
-  mutate(!! paste0("RATE_X_", rate_x) := RATE * rate_x,
-         # Create dummy column for color scale
-         !! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_priority/rate_x) * rate_x,
-         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
-                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
-                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
-                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
-                                   TRUE ~ INCIDENT_UNIT),
-         CAT_COMBO = ifelse(str_detect(CATEGORY, "GEAR"), "GEAR / EQUIPMENT REQUIREMENTS",
-                            CAT_COMBO)) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x),
-         paste0("RATE_X_", rate_x, "_plot"))
-
-# Non-priority subcategories
-subcat_other <- subcat_units_rate %>%
-  filter(CALENDAR_YEAR == adp_yr,
-         !(SUBCATEGORY %in% subcat_priority$SUBCATEGORY)) %>%
-  mutate(CAT_COMBO = case_when(str_detect(CATEGORY, "SAFETY-USCG|MARPOL") ~
-                                 "SAFETY-USCG / MARPOL / OIL SPILL",
-                               str_detect(CATEGORY, "PERMITS/DOCUMENTS|OPERATIONAL|GEAR") ~
-                                 "GEAR / EQUIPMENT / OPERATIONAL REQUIREMENTS / PERMITS / DOCUMENTS / RECORD KEEPING AND REPORTING",
-                               str_detect(CATEGORY, "SUSTAINABLE|SPECIES") ~
-                                 "PROHIBITED SPECIES / MARINE MAMMALS / SEABIRDS / SUSTAINABLE FISHERIES",
-                               TRUE ~ CATEGORY),
-         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
-                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
-                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
-                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
-                                   TRUE ~ INCIDENT_UNIT),
-         !! paste0("RATE_X_", rate_x) := RATE * rate_x,
-         # Create dummy column for color scale
-         !! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x),
-         paste0("RATE_X_", rate_x, "_plot"))
 
 #'*----------------------------------------------------------*
 ## Priority categories plot ----
