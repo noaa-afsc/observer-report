@@ -543,7 +543,7 @@ odds.ts.ni.real <- odds.dat %>%
 #' or inherited trips and should be subtracted.
 
 logged <- odds.ts.cp %>%
-  group_by(YEAR, STRATA) %>%
+  group_by(STRATA) %>%
   summarize(Total.trips = sum(N), Random.selected = sum(n), Inherit.selected = sum(ni), Waived = sum(nr)) %>%
   mutate(
     Total.final.selected = Random.selected + Inherit.selected - Waived,
@@ -556,30 +556,26 @@ logged <- odds.ts.cp %>%
 # Tells us with more granularity how many selected trips were canceled or waived. 
 
 # Disposition of trips - showing only valid trips and categories are exclusive
-logged.table <- bind_rows(
-  logged, 
-  logged %>% 
-    group_by(YEAR) %>%          
-    summarise(STRATA = "Total",
-              Total.trips = sum(Total.trips),
-              Random.selected = sum(Random.selected),
-              Inherit.selected = sum(Inherit.selected),
-              Waived = sum(Waived),
-              Total.final.selected = sum(Total.final.selected)) %>% 
-    mutate(
-      Pct.selected.from.inherit = round((Inherit.selected / Total.final.selected) * 100, 1),
-      Pct.allselected.from.waiver = round(((Waived) / (Total.final.selected + Waived)) * 100, 1))
-) %>% 
-  select("Year" = YEAR, 
-         "Strata" = STRATA, 
-         "Total Trips" = Total.trips,
+logged.table <- logged %>%
+  bind_rows(
+    logged %>% 
+      summarise(STRATA = "Total",
+                Total.trips = sum(Total.trips),
+                Random.selected = sum(Random.selected),
+                Inherit.selected = sum(Inherit.selected),
+                Waived = sum(Waived),
+                Total.final.selected = sum(Total.final.selected)) %>% 
+      mutate(Pct.selected.from.inherit = round((Inherit.selected / Total.final.selected) * 100, 1),
+             Pct.allselected.from.waiver = round(((Waived) / (Total.final.selected + Waived)) * 100, 1))) %>% 
+  select("Strata" = STRATA, 
+         "Total completed trips" = Total.trips,
          "Random number selection (*r*)" = Random.selected, 
          "Inherited selection** (*i*)" = Inherit.selected,
          "Waived (*w*)" = Waived, 
          "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
-         "% Selected from inherits ((*i*/*T*) × 100)" = Pct.selected.from.inherit, 
-         "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) × 100)" = Pct.allselected.from.waiver) %>% 
-  arrange(Year, match(Strata, c("OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT",  "Total")))
+         "% Selected from inherits ((*i*/*T*) x 100)" = Pct.selected.from.inherit, 
+         "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) x 100)" = Pct.allselected.from.waiver) %>% 
+  arrange(match(Strata, c("OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT",  "Total")))
 ```
 
 ```{r selection.tbl, warning=FALSE, include=FALSE}
@@ -589,7 +585,7 @@ logged.table <- bind_rows(
 for.p.wide <- merge(
   # Completed non-100% monitored trips only (after cancellations)
   logged %>% 
-    group_by(YEAR, STRATA) %>%
+    group_by(STRATA) %>%
     summarize(random.n = Random.selected,
               # after inherits
               inherit.n = Total.final.selected,
@@ -601,22 +597,23 @@ for.p.wide <- merge(
   #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
   #' inherits, cancellations, and waivers
   odds.ts.all %>%
-    group_by(YEAR, STRATA) %>%
+    select(-YEAR) %>%
+    group_by(STRATA) %>%
     summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
   all = TRUE) %>%
-  arrange(YEAR, Source, STRATA)
+  arrange(Source, STRATA)
 
 # Merge in the selection rates of each stratum for calculating p-values later
 for.p.wide <- for.p.wide %>%
   left_join(
-    partial %>% select(!GEAR) %>% distinct(), 
-    by = c("STRATA", "YEAR")) %>%
+    partial %>% select(-GEAR, -YEAR) %>% distinct(), 
+    by = c("STRATA")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
   select(., !c(formatted_strat, Rate))
 
 # Put into long format
 p.table <- for.p.wide %>%
-  pivot_longer(cols = c(-STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source), names_to = "key", values_to = "value")
+  pivot_longer(cols = c(-STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source), names_to = "key", values_to = "value")
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
@@ -648,7 +645,7 @@ p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 # Create table
 Selection.table <- p.table %>%
   mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
-  arrange(YEAR, STRATA, Source, desc(key)) %>%
+  arrange(STRATA, Source, desc(key)) %>%
   arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
   mutate(new_trip_type = 
         derivedFactor("Initial Random Selection, *a*"= Source == "ODDS random number",
@@ -656,14 +653,14 @@ Selection.table <- p.table %>%
                       "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
                       "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
                       .ordered = TRUE, .method = "unique")) %>% 
-  select("Year" = YEAR,
-        "Strata" = STRATA, 
-        "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
-        "n" = value,  # "Selected trips"
-        "N" = Total.n,   # "Total trips"
-        "Actu" = pct,   # "Actual selection (%)"
-        "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
-        "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
+  select("Strata" = STRATA, 
+         "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
+         "n" = value,  # "Selected trips"
+         "N" = Total.n,   # "Total trips"
+         "Actu" = pct,   # "Actual selection (%)"
+         "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
+         "*p*" = p) %>%    # "*p*-value (H0: Actual = Programmed)"
+  arrange(factor(Strata, levels = strata.order))
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
@@ -832,32 +829,32 @@ sel.max.canc <- disposition %>%
  
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
 inherit.min <- logged %>%
-               group_by(YEAR, STRATA) %>% 
+               group_by(STRATA) %>% 
                summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
                slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
                mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(YEAR, STRATA, Pct.selected.from.inherit)
+               select(STRATA, Pct.selected.from.inherit)
 
 inherit.max <- logged %>%
-               group_by(YEAR, STRATA) %>%  
+               group_by(STRATA) %>%  
                summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
                slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
                mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(YEAR, STRATA, Pct.selected.from.inherit)
+               select(STRATA, Pct.selected.from.inherit)
 
 waiver.min <- logged %>% 
-              group_by(YEAR, STRATA) %>% 
+              group_by(STRATA) %>% 
               summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
               slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
               mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(YEAR, STRATA, Pct.allselected.from.waiver)
+              select(STRATA, Pct.allselected.from.waiver)
 
 waiver.max <- logged %>% 
-              group_by(YEAR, STRATA) %>% 
+              group_by(STRATA) %>% 
               summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
               slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
               mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(YEAR, STRATA, Pct.allselected.from.waiver)
+              select(STRATA, Pct.allselected.from.waiver)
 ```
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
@@ -867,7 +864,7 @@ waiver.max <- logged %>%
 # Text strings for reporting on the observer initial selection rates by strata
 pct_txt <- p.table %>% 
            filter(Source == "ODDS random number") %>% 
-           mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum in ", YEAR)) %>%
+           mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>%
            distinct(pct_txt) 
 
 # Extract p-values associated with random selection (H0: observed = expected
@@ -876,15 +873,14 @@ random_pvals <- merge(
   p.table, 
   partial %>% 
     filter(STRATA != "EM TRW EFP") %>% 
-    distinct(STRATA, formatted_strat)
-) %>% 
+    distinct(STRATA, formatted_strat)) %>% 
   filter(Source == "ODDS random number") %>% 
-  select(YEAR, p, formatted_strat)
+  select(p, formatted_strat)
  
 # Text strings for reporting on the observer FINAL selection rates by strata
 final_pct_txt <- p.table %>% 
                  filter(key == "Expected") %>% 
-                 mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum in ", YEAR)) %>% 
+                 mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>% 
                  distinct(pct_txt) 
 
 # Extract p-values associated with FINAL selection (H0: final observed = expected
@@ -893,10 +889,9 @@ final_pvals <- merge(
   p.table, 
   partial %>% 
     filter(STRATA != "EM TRW EFP") %>% 
-    distinct(STRATA, formatted_strat)
-) %>% 
+    distinct(STRATA, formatted_strat)) %>% 
   filter(key == "Expected") %>% 
-  select(YEAR, p, formatted_strat)
+  select(p, formatted_strat)
 ```
 
 The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW EFP* stratum.\
@@ -1140,20 +1135,34 @@ perc_vessels_obs <- Coverage.Table %>%
   as.numeric()
 ```
 
-```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
+```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=TRUE}
+data_timeliness.strata_order <- c(
+  "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", 
+  "EM FIXED BSAI", "EM FIXED GOA", "EM TRW BSAI (EFP)", "EM TRW GOA (EFP)"
+)
+
+# Set the ordering of the strata and calculate summary statistics
+data_timeliness <- data_timeliness %>% 
+  mutate(STRATA = factor(STRATA, levels = data_timeliness.strata_order))
+
 times_smry <- data_timeliness %>%
               group_by(YEAR, COVERAGE_TYPE, STRATA) %>%
               summarise(median = round(median(data_timeliness), 2), 
                         mean = round(mean(data_timeliness), 2), 
-                        .groups = "drop")
+                        .groups = "drop") %>%
+  mutate(STRATA = factor(STRATA, levels = data_timeliness.strata_order))
 
 times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
-                facet_wrap(STRATA ~ ., scales="free_y", ncol = 2) +
-                geom_histogram(bins = 20, fill="gray70") +
+                facet_wrap(STRATA ~ ., scales = "free_y", ncol = 2) +
+                geom_histogram(bins = 20, fill = "gray70") +
                 geom_vline(data = times_smry, aes(xintercept = median), color = "black") +
                 geom_vline(data = times_smry, aes(xintercept = mean), color = "red", lty = 2) +
-                geom_text(data = times_smry, aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), angle = 90, hjust = 1.2, vjust = -0.3) +
-                geom_text(data = times_smry, aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))), angle = 90, hjust = 1.2, vjust = 1.1) +
+                geom_text(data = times_smry,
+                          aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), 
+                          angle = 90, hjust = 1.2, vjust = -0.3) +
+                geom_text(data = times_smry, 
+                          aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))),
+                          angle = 90, hjust = 1.2, vjust = 1.1) +
                 labs(x = "Data timeliness (days)", y = "Count") +
                 theme_bw()
 
@@ -1169,7 +1178,7 @@ Evaluations for the full coverage category and zero-selection pool are straightf
 \
 Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for monitored trips) will contain the actual deployment rate 95% percent of the time. If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal.\
 \
-Coverage rates were consistent with expected values in only half of the six partial coverage strata. Coverage rates were higher than expected for the *EM HAL* and *EM POT* strata (`r tbl_nums('Coverage.Table', display = "cite")`). The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('em.times.figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
+Coverage rates were consistent with expected values in only half of the six partial coverage strata. Coverage rates were higher than expected for the *EM HAL* and *EM POT* strata (`r tbl_nums('Coverage.Table', display = "cite")`). The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('times_figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
 \
 Note that there are several reasons why the total number of trips and the final monitoring rates presented in this section differ with what was presented earlier within the ODDS. The *OB HAL* stratum had a higher than expected monitoring rate in ODDS (`r tbl_nums('Selection.table', display = "cite")`), but was within the expected range (although elevated) according to the dataset using eLandings and CAS (`r tbl_nums('Coverage.Table', display = "cite")`). There is no robust link between the ODDS database and eLandings, and therefore, trips in ODDS cannot be linked directly to realized landings in eLandings, which inform the trip identification numbers created by CAS. The FMSC has recommended in past reports that this linkage be established. Moreover, ODDS trips are sometimes not logged as required (see Chapter 5, section 1.5.2, Figure 5.5) and records are not created in ODDS after-the-fact.   
 
@@ -1871,14 +1880,9 @@ flextable(disposition.table) %>%
 # Table 3 from 2019 Annual Report
 
 logged.table <- logged.table %>%
-  mutate(Year = as.factor(Year),
-         `Total Trips` = as.numeric(`Total Trips`)) %>%
+  mutate(`Total completed trips` = as.numeric(`Total completed trips`)) %>%
   arrange(factor(Strata, levels = strata.order)) %>%
-  ungroup() #' *SHOULD PROBABLY DEAL WITH THIS GROUPING EARLIER*
-
-logged.table <- logged.table %>%
-  filter(Year == year) %>%
-  select(-Year)
+  ungroup()
 
 flextable(logged.table) %>%
   mk_par(j = 3, part = "header", 
@@ -1914,14 +1918,6 @@ flextable(logged.table) %>%
 `r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
 
 ```{r Selection.table, tab.cap=""}
-
-Selection.table <- Selection.table %>%
-  mutate(Year = as.factor(Year)) %>%
-  arrange(factor(Strata, levels = strata.order))
-
-Selection.table <- Selection.table %>%
-  filter(Year == year) %>%
-  select(-Year)
 
 flextable(Selection.table) %>%
   set_header_labels(values = list(
@@ -2138,7 +2134,8 @@ suppressWarnings(print(odds.by.date.plot))
 
 \newpage
 
-```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
+```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=TRUE}
+#' \TODO MOVE THIS FIGURE - IT should be last, after permutation tests?
 suppressMessages(print(times_figure))
 ```
 
