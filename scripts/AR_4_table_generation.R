@@ -53,7 +53,7 @@ subcat_priority <-
                                    TRUE ~ INCIDENT_UNIT),
          CAT_COMBO = ifelse(str_detect(CATEGORY, "GEAR"), "GEAR / EQUIPMENT REQUIREMENTS",
                             CAT_COMBO)) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x)#,
+  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, RATE, paste0("RATE_X_", rate_x)#,
         # paste0("RATE_X_", rate_x, "_plot")
         )
 
@@ -77,7 +77,7 @@ subcat_other <- subcat_units_rate %>%
          # Create dummy column for color scale
        #  !! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x
        ) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x)#,
+  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, RATE, paste0("RATE_X_", rate_x)#,
      #    paste0("RATE_X_", rate_x, "_plot")
      )
 
@@ -146,8 +146,6 @@ rbind(subcat_units_rate %>%
                               TRUE ~ CATEGORY))
 
 # Create flextable object
-
-
 
 # Heatmaps -------------------------------------------------------------------------------------------------------------
 
@@ -227,10 +225,6 @@ create_plot <- function(data, txt_width, type = c("top", "mid", "bottom")) {
 
 #TODO - I think that this is a mistake.  Better to use natural breaks (jenks) and set by that.
 ###########################################################################################
-# install.packages("classInt")   # Uncomment if not already installed
-# install.packages("ggplot2")    # Uncomment if not already installed
-# install.packages("viridis")    # Uncomment if not already installed
-# install.packages("scales")     # Uncomment if not already installed
 
 library(classInt)
 library(ggplot2)
@@ -239,55 +233,32 @@ library(scales)
 
 # Function to calculate Goodness of Variance Fit (GVF)
 calc_gvf <- function(x, breaks) {
-  # Total Sum of Squares
   SST <- sum((x - mean(x))^2)
-  
-  # Assign each value to its class
   class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
-  
-  # Sum of squares within each class
   SSW <- sum(tapply(x, class_assignments, function(z) sum((z - mean(z))^2)))
-  
-  gvf <- (SST - SSW) / SST
-  return(gvf)
+  (SST - SSW) / SST
 }
 
-# Function to automatically determine the optimal number of breaks using Jenks natural breaks.
-# It iterates until the number of items in the top break is less than 6.
+# Function to determine optimal Jenks natural breaks.
 optimal_jenks_breaks <- function(x, min_k = 2, max_k = 10, gvf_threshold = 0.9, top_count_threshold = 6) {
   best_result <- NULL
   for (k in min_k:max_k) {
     ci <- classIntervals(x, n = k, style = "jenks")
     current_breaks <- ci$brks
     current_gvf <- calc_gvf(x, current_breaks)
-    
-    # Count items in the top (highest) break.
-    # The top break spans from the second-to-last break to the last break.
     top_break_count <- sum(x >= current_breaks[length(current_breaks) - 1] & x <= current_breaks[length(current_breaks)])
-    
-    cat("For", k, "classes: GVF =", round(current_gvf, 3),
-        " | Top break count =", top_break_count, "\n")
-    
-    # Check if both GVF meets the threshold and top break count is less than the threshold.
+    cat("For", k, "classes: GVF =", round(current_gvf, 3), "| Top break count =", top_break_count, "\n")
     if (current_gvf >= gvf_threshold && top_break_count < top_count_threshold) {
-      best_result <- list(n_breaks = k, breaks = current_breaks, gvf = current_gvf, top_break_count = top_break_count)
+      best_result <- list(n_breaks = k, breaks = current_breaks, gvf = current_gvf)
       break
     }
   }
-  
-  # If no candidate meets both conditions, use the maximum candidate.
   if (is.null(best_result)) {
     ci <- classIntervals(x, n = max_k, style = "jenks")
-    best_result <- list(n_breaks = max_k, breaks = ci$brks, gvf = calc_gvf(x, ci$brks),
-                        top_break_count = sum(x >= ci$brks[length(ci$brks) - 1] & x <= ci$brks[length(ci$brks)]))
+    best_result <- list(n_breaks = max_k, breaks = ci$brks, gvf = calc_gvf(x, ci$brks))
   }
-  
-  return(best_result)
+  best_result
 }
-
-# Determine optimal breaks for the 'rate' column
-opt_result <- optimal_jenks_breaks(subcat_units_rate_priority$RATE, min_k = 2, max_k = 10, gvf_threshold = 0.9, top_count_threshold = 6)
-print(opt_result)
 
 # Create a heatmap with ggplot2 using the computed natural breaks in the color bar
 # ggplot(df, aes(x = factor(x), y = factor(y), fill = rate)) +
@@ -357,6 +328,7 @@ process_data <- function(data, search_string, incident_units) {
 #  The function will check the maximum value within the data and if it is 2×
 #  greater or more than the next largest value, it will set a threshold
 #  value = 1.55× the second largest value 
+
 calculate_threshold <- function(df, return_name) {
   # return_name: the object name you want the value to be returned as
   
@@ -385,7 +357,18 @@ ggplot(filter(subcat_units_rate_priority, CALENDAR_YEAR == adp_yr),
   geom_point() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
+# Christian
 calculate_threshold(subcat_units_rate_priority, "threshold_priority")
+threshold_priority
+
+# Craig
+opt_result_priority <- optimal_jenks_breaks(subcat_units_rate_priority$RATE, 
+                                   min_k = 2, 
+                                   max_k = 10, 
+                                   gvf_threshold = 0.8, 
+                                   top_count_threshold = 6)
+opt_result_priority$breaks * 100
+
 
 # Non-priority subcategories
 ggplot(filter(subcat_units_rate,
@@ -395,13 +378,28 @@ ggplot(filter(subcat_units_rate,
   geom_point() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
+# Christian
 calculate_threshold(filter(subcat_units_rate,
                            !(SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY)),
                     "threshold_other")
+threshold_other
+
+# Craig
+opt_result_other <- optimal_jenks_breaks(subcat_units_rate$RATE[!(subcat_units_rate$SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY)], 
+                                   min_k = 2, 
+                                   max_k = 10, 
+                                   gvf_threshold = 0.8, 
+                                   top_count_threshold = 6)
+opt_result_other$breaks * 100
+
 
 #'*----------------------------------------------------------*
 ## Prepare data ----
+subcat_priority <- subcat_priority %>% mutate(
+  !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x) # Create dummy column for color scale
 
+subcat_other <- subcat_other %>% mutate(
+  !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x) # Create dummy column for color scale
 #'*----------------------------------------------------------*
 ## Priority categories plot ----
 
@@ -452,6 +450,7 @@ ggsave(paste0("confidential_figures/fig_", adp_yr, "_priority_subcat_plot.jpg"),
 
 #'*----------------------------------------------------------*
 ### ALT: Priority categories plot ----
+#TODO - this doesnt look right.  Uses priority data and then plots non priority
 # This still needs to be cleaned up a lot, but here is what the data look like
 # Wanted you to at least have something while I'm away CG 20250328
 
@@ -614,6 +613,7 @@ ggsave(paste0("confidential_figures/fig_", adp_yr, "_non_priority_subcat_plot.jp
        dpi = 300)
 
 #'*----------------------------------------------------------*
+#TODO - Hate it.
 ### ALT: Non-priority categories plot ----
 # This can be cleaned up a lot, but I just wanted to get it in here since I'll be away CG 20250328
 
@@ -798,6 +798,15 @@ ggsave(paste0("confidential_figures/fig_", adp_yr, "_non_priority_subcat_plot_lo
 rm(color_scale, create_plot, process_data, fact_order, rate_x,
    plot1, plot2, plot3, plot4, subcat_other, subcat_priority, threshold_other,
    threshold_priority, calculate_threshold)
+
+
+# Detailed dive into high rates with factors ---------------------------------------------------------------------------
+
+
+
+
+
+
 
 # Save Output -------------------------------------------------------------
 
