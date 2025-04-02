@@ -8,35 +8,41 @@ library(tidyverse)
 library(patchwork)
 library(FMAtools)
 
-# Load data ------------------------------------------------------------------------------------------------------------
+# User inputs ------------------------------------------------------------------------------------------------------------
 # Set the .Rdata file we will load
 file_3_name <- "AR_3_rate_output.Rdata"
 
+# Factor order for plotting
+fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAR MAM")
+
+# Rate
+rate_x <- 100
+
+# Load data ------------------------------------------------------------------------------------------------------------
 # Assign the address of the Annual Report Project in the Shared Gdrive
 AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 5/2024_data")
 
 # Pull Rdata file from google drive. This will update your local if the GDrive version is newer,
 #  otherwise it will load your local
 gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
+
 load(file = file_3_name)
-
-
 # Data manipulation ----------------------------------------------------------------------------------------------------
 
 #TODO - Placeholder until Andy is done in AR_2 & AR_3, then make sure this is in there
 subcat_units_rate_priority <-
-  subcat_units_rate %>%
-  filter(SUBCATEGORY %in% c("ACCESS", "ASSAULT", "BIN MONITORING",
-                            "DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS",
-                            "FOOD AND ACCOMMODATIONS", "FORCED TO PERFORM CREW DUTIES",
-                            "HOSTILE WORK ENVIRONMENT", "IMPEDIMENT",
-                            "INTIMIDATION/BRIBERY/COERCION", "MARINE CASUALTY",
-                            "NOTIFICATION", "OBSERVER SAMPLING STATION",
-                            "REASONABLE ASSISTANCE", "SAFETY",
-                            "SAMPLING INTERFERENCE", "SCALES", "SEXUAL ASSAULT",
-                            "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
-                            "VMS REQUIREMENTS")) %>%
-  mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
+  subcat_units_rate_priority %>%
+  # filter(SUBCATEGORY %in% c("ACCESS", "ASSAULT", "BIN MONITORING",
+  #                           "DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS",
+  #                           "FOOD AND ACCOMMODATIONS", "FORCED TO PERFORM CREW DUTIES",
+  #                           "HOSTILE WORK ENVIRONMENT", "IMPEDIMENT",
+  #                           "INTIMIDATION/BRIBERY/COERCION", "MARINE CASUALTY",
+  #                           "NOTIFICATION", "OBSERVER SAMPLING STATION",
+  #                           "REASONABLE ASSISTANCE", "SAFETY",
+  #                           "SAMPLING INTERFERENCE", "SCALES", "SEXUAL ASSAULT",
+  #                           "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
+  #                           "VMS REQUIREMENTS")) %>%
+   mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
                             "OBSERVER SAFETY AND WORK ENVIRONMENT / USCG-SAFETY", CATEGORY))
 
 # Priority subcategories
@@ -58,7 +64,8 @@ subcat_priority <-
         )
 
 # Non-priority subcategories
-subcat_other <- subcat_units_rate %>%
+subcat_other <- 
+  subcat_units_rate %>%
   filter(CALENDAR_YEAR == adp_yr,
          !(SUBCATEGORY %in% subcat_priority$SUBCATEGORY)) %>%
   mutate(CAT_COMBO = case_when(str_detect(CATEGORY, "SAFETY-USCG|MARPOL") ~
@@ -83,7 +90,7 @@ subcat_other <- subcat_units_rate %>%
 
 # Start Christian Tables -----------------------------------------------------------------------------------------------
 
-library(flextable)
+#library(flextable)
 #library(officer)
 
 # Summary of total observer statements per reporting category with total numbers
@@ -145,7 +152,7 @@ rbind(subcat_units_rate %>%
                                 "Interference with Duties",
                               TRUE ~ CATEGORY))
 
-# Create flextable object
+# TODO - Create flextable object
 
 # Heatmaps -------------------------------------------------------------------------------------------------------------
 
@@ -158,14 +165,6 @@ rbind(subcat_units_rate %>%
 #  In these cases, you'll need to adjust "incident_units" in the "process_data()" fxn
 #  when creating the plots so that they match between all categories that will be
 #  plotted together.
-
-## Inputs ----
-
-# Factor order for plotting
-fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAR MAM")
-
-# Rate
-rate_x <- 100
 
 ## Functions ----
 
@@ -367,7 +366,8 @@ opt_result_priority <- optimal_jenks_breaks(subcat_units_rate_priority$RATE,
                                    max_k = 10, 
                                    gvf_threshold = 0.8, 
                                    top_count_threshold = 6)
-opt_result_priority$breaks * 100
+opt_result_priority$breaks <- opt_result_priority$breaks * rate_x #Adjusts for the correct column.
+opt_result_priority$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
 
 
 # Non-priority subcategories
@@ -390,19 +390,21 @@ opt_result_other <- optimal_jenks_breaks(subcat_units_rate$RATE[!(subcat_units_r
                                    max_k = 10, 
                                    gvf_threshold = 0.8, 
                                    top_count_threshold = 6)
-opt_result_other$breaks * 100
-
+opt_result_other$breaks <- opt_result_other$breaks * rate_x #Adjusts for the correct column.
+opt_result_other$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
 
 #'*----------------------------------------------------------*
 ## Prepare data ----
 subcat_priority <- subcat_priority %>% mutate(
-  !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x) # Create dummy column for color scale
+  !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_priority/rate_x) * rate_x,
+  Label_cf = cut(RATE * rate_x, breaks = opt_result_priority$breaks)) # Create dummy column for color scale
 
 subcat_other <- subcat_other %>% mutate(
   !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x) # Create dummy column for color scale
 #'*----------------------------------------------------------*
 ## Priority categories plot ----
-
+#TODO - well poop, now this does not work.  Likely bc of new columns?
+subcat_priority <- subcat_priority %>% select(-Label_cf)
 # Step 1: Create individual plots for each CATEGORY
 # Plot for CATEGORY_1
 plot1 <- create_plot(process_data(subcat_priority, "GEAR",
@@ -440,6 +442,7 @@ priority_subcat_plot <- plot1 / plot2 / plot3 + plot_layout(
 
 # Step 3: Display and save the combined plot
 priority_subcat_plot
+
 
 ggsave(paste0("confidential_figures/fig_", adp_yr, "_priority_subcat_plot.jpg"),
        device = "jpeg",
