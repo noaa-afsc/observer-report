@@ -1,11 +1,15 @@
 
 # Annual Report Enforcement chapter: Table generation --------------------------
-# Contact Andy Kingham
-# 206-526-4212
+# Contact Craig Faunce
+
+#TODO - flextable the proposed table outputs
+#TODO - main figure dimensions need to be determined for output.
 
 library(reshape2)
 library(tidyverse)
 library(patchwork)
+library(ggplot2)
+library(stringr) #Allows for plot overflow of labels for rows
 library(FMAtools)
 
 # User inputs ------------------------------------------------------------------------------------------------------------
@@ -91,11 +95,7 @@ subcat_other <-
      #    paste0("RATE_X_", rate_x, "_plot")
      )
 
-# Start Christian Tables -----------------------------------------------------------------------------------------------
-
-#library(flextable)
-#library(officer)
-
+# Tables -----------------------------------------------------------------------------------------------
 # Summary of total observer statements per reporting category with total numbers
 #  of various factors for comparisons of total effort
 
@@ -155,75 +155,7 @@ rbind(subcat_units_rate %>%
                                 "Interference with Duties",
                               TRUE ~ CATEGORY))
 
-# TODO - Create flextable object
-
-# Heatmaps -------------------------------------------------------------------------------------------------------------
-
-# Because of the way ggplot handles faceting, each category will need to be plotted
-#  separately and then combined using patchwork so that tiles are the same size across
-#  panels.
-
-# Plots will need to be adjusted depending on what categories/subcategories are included
-#  For example, not all category/subcategory combinations contain the same units.
-#  In these cases, you'll need to adjust "incident_units" in the "process_data()" fxn
-#  when creating the plots so that they match between all categories that will be
-#  plotted together.
-
-## Functions ----
-
-# Plot function
-#  The create_plot function is designed to create a customizable faceted heatmap-style
-#  plot in ggplot2. It is flexible in terms of handling facet labels, legend placement,
-#  and formatting based on the user's input.
-create_plot <- function(data, txt_width, type = c("top", "mid", "bottom")) {
-  # txt_width = width in characters for facet row labels before being wrapped
-  # top:    include facet labels for columns but no legend
-  # mid:    no facet labels for columns or legend
-  # bottom: no facet labels for columns, legend on right
-  
-  type <- match.arg(type)  # Ensure valid input for type
-  
-  plot <- ggplot(data) +
-    geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)),
-                  fill = .data[[paste0("RATE_X_", rate_x, "_plot")]])) +
-    geom_text(aes(x = 1, y = SUBCATEGORY,
-                  label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-              color = "white", size = 4) +
-    facet_grid(cols = vars(INCIDENT_UNIT),
-               rows = vars(CAT_COMBO),
-               labeller = labeller(CAT_COMBO = label_wrap_gen(width = txt_width)),
-               scales = "free_y") +
-    theme_bw() +
-      theme(
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.title.x = element_blank(),
-        axis.text.y = element_text(size = 8, color = "black"),
-        axis.title.y = element_blank(),
-        strip.text = element_text(size = 8),
-        panel.grid = element_blank(),
-        plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-        panel.spacing.x = unit(0.1, "cm")
-      )
-    
-    # Add theme customization based on the type
-    if (type == "top") {
-      plot + theme(
-        legend.position = "none"
-      )
-    } else if (type == "mid") {
-      plot + theme(
-        strip.text.x = element_blank(), 
-        legend.position = "none"
-      )
-    } else if (type == "bottom") {
-      plot + theme(
-        legend.title = element_text(size = 8),
-        strip.text.x = element_blank(),
-        legend.text = element_text(size = 8)
-      )
-    }
-}
+# Determine color breaks ------------------------------------------------------------------------------------
 
 library(classInt)
 library(ggplot2)
@@ -231,7 +163,8 @@ library(viridis)
 library(scales)
 
 # Function to calculate Goodness of Variance Fit (GVF)
-calc_gvf <- function(x, breaks) {
+calc_gvf <- function(x, 
+                     breaks) {
   SST <- sum((x - mean(x))^2)
   class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
   SSW <- sum(tapply(x, class_assignments, function(z) sum((z - mean(z))^2)))
@@ -239,7 +172,11 @@ calc_gvf <- function(x, breaks) {
 }
 
 # Function to determine optimal Jenks natural breaks.
-optimal_jenks_breaks <- function(x, min_k = 2, max_k = 10, gvf_threshold = 0.9, top_count_threshold = 6) {
+optimal_jenks_breaks <- function(x, 
+                                 min_k = 2, 
+                                 max_k = 10, 
+                                 gvf_threshold = 0.9, 
+                                 top_count_threshold = 6) {
   best_result <- NULL
   for (k in min_k:max_k) {
     ci <- classIntervals(x, n = k, style = "jenks")
@@ -258,7 +195,9 @@ optimal_jenks_breaks <- function(x, min_k = 2, max_k = 10, gvf_threshold = 0.9, 
   }
   best_result
 }
+# End functions for breaks
 
+# Priority category breaks for plot colors
 opt_result_priority <- optimal_jenks_breaks(subcat_units_rate_priority$RATE, 
                                    min_k = 2, 
                                    max_k = 10, 
@@ -268,7 +207,7 @@ opt_result_priority$breaks <- opt_result_priority$breaks * rate_x #Adjusts for t
 opt_result_priority$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
 
 
-# Non-priority subcategories
+# Non-priority subcategory breaks for plot colors
 opt_result_other <- optimal_jenks_breaks(subcat_units_rate$RATE[!(subcat_units_rate$SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY)], 
                                    min_k = 2, 
                                    max_k = 10, 
@@ -277,19 +216,14 @@ opt_result_other <- optimal_jenks_breaks(subcat_units_rate$RATE[!(subcat_units_r
 opt_result_other$breaks <- opt_result_other$breaks * rate_x #Adjusts for the correct column.
 opt_result_other$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
 
-#'*----------------------------------------------------------*
 ## Prepare data ----
 subcat_priority <- subcat_priority %>% mutate(
   Label= cut(RATE * rate_x, breaks = opt_result_priority$breaks)) # Create dummy column for color scale
 
 subcat_other <- subcat_other %>% mutate(
   Label= cut(RATE * rate_x, breaks = opt_result_other$breaks)) # Create dummy column for color scale
-#'*----------------------------------------------------------*
-## Priority categories plot ----
 
-library(ggplot2)
-library(stringr) #Allows for plot overflow of labels for rows
-
+# Priority categories plot ---------------------------------------------------------------------------
 plot_format_fxn <- function(
     df,
     rate_x,                       # user can pass 100 if wanting RATE_X_100
@@ -368,15 +302,12 @@ plot_format_fxn <- function(
   return(p)
 }
 
-# ------------------- Usage Examples --------------------
-#
 # If you want to display RATE_X_100, do:
 # p <- plot_format_fxn(df = subcat_priority, rate_x = rate_x)
 #
-plot_format_fxn(df = subcat_priority, rate_x = rate_x, start_color = start_color, end_color = end_color)
+priority_plot <- plot_format_fxn(df = subcat_priority, rate_x = rate_x, start_color = start_color, end_color = end_color)
 
-plot_format_fxn(df = subcat_other, rate_x = rate_x, start_color = start_color, end_color = end_color)
-
+other_plot <- plot_format_fxn(df = subcat_other, rate_x = rate_x, start_color = start_color, end_color = end_color)
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
 
