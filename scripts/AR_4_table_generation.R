@@ -15,6 +15,9 @@ file_3_name <- "AR_3_rate_output.Rdata"
 # Factor order for plotting
 fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAR MAM")
 
+start_color   <- "navy"
+end_color     <- "red3"
+
 # Rate
 rate_x <- 100
 
@@ -43,7 +46,7 @@ subcat_units_rate_priority <-
   #                           "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
   #                           "VMS REQUIREMENTS")) %>%
    mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
-                            "OBSERVER SAFETY AND WORK ENVIRONMENT / USCG-SAFETY", CATEGORY))
+                            "SAFETY / WORK ENVIRONMENT", CATEGORY))
 
 # Priority subcategories
 subcat_priority <- 
@@ -222,9 +225,6 @@ create_plot <- function(data, txt_width, type = c("top", "mid", "bottom")) {
     }
 }
 
-#TODO - I think that this is a mistake.  Better to use natural breaks (jenks) and set by that.
-###########################################################################################
-
 library(classInt)
 library(ggplot2)
 library(viridis)
@@ -259,132 +259,16 @@ optimal_jenks_breaks <- function(x, min_k = 2, max_k = 10, gvf_threshold = 0.9, 
   best_result
 }
 
-# Create a heatmap with ggplot2 using the computed natural breaks in the color bar
-# ggplot(df, aes(x = factor(x), y = factor(y), fill = rate)) +
-#   geom_tile(color = "white") +
-#   scale_fill_gradientn(
-#     colours = viridis(100),
-#     breaks = opt_result$breaks,
-#     labels = number_format(accuracy = 0.1)
-#   ) +
-#   theme_minimal() +
-#   labs(x = "X-axis", y = "Y-axis", fill = "Rate")
-
-############################################################################################
-# Define common color scale with global limits
-#  The color_scale function is used to apply a customized color gradient scale
-#  to a numeric variable, typically a rate. It provides a navy-to-red gradient,
-#  adjusts the scale based on the data's range and a user-defined upper limit (max),
-#  and customizes the appearance of the color scale's legend.
-color_scale <- function(data, max) {
-  # max: set appropriate "threshold_" object
-  
-  color_scale <- scale_fill_gradient(
-    low = "navy", 
-    high = "red",
-    na.value = "transparent", 
-    name = paste0("Rate (× ", rate_x, ")"),
-    limits = c(min(data[[paste0("RATE_X_", rate_x)]], na.rm = TRUE),
-               max(max, na.rm = TRUE)),
-    # Legend (currently not used)
-    breaks = data.frame(n = seq(1, max(data[[paste0("RATE_X_", rate_x)]]) + 25, by = 25)) %>%
-      mutate(n = ifelse(n > 1, n - 1, n)) %>% unlist(use.names = FALSE),
-    guide = guide_colorbar(
-      order = 2,
-      title.hjust = 0.8,
-      ticks = FALSE,
-      barheight = unit(1.33, "in"),
-      barwidth = unit(0.33, "in")
-    )
-  )
-}
-
-# Process data for individual plots
-#  The process_data function processes a dataset by:
-#  1) Filtering rows based on a search string that identifies a specific category
-#     in the CAT_COMBO column.
-#  2) Adding missing incident units for visualization, ensuring that all required
-#     INCIDENT_UNIT types are present in the dataset.
-#  3) Adjusting the factor levels of the INCIDENT_UNIT column to a predefined
-#     order for consistent plotting.
-process_data <- function(data, search_string, incident_units) {
-  # search_string:  unique string that identifies a specific category.
-  #       enter as a string, e.g., "SPECIES"
-  # incident_units: missing unit types to be added for plotting.
-  #       enter as: c("UNIT_TYPE_1", "UNIT_TYPE_2", "ETC.")
-  
-  data %>%
-    filter(str_detect(CAT_COMBO, search_string)) %>%
-    bind_rows(.,
-              tibble(CAT_COMBO = pull(., CAT_COMBO)[1],
-                     SUBCATEGORY = pull(., SUBCATEGORY)[1],
-                     INCIDENT_UNIT = incident_units)) %>%
-    mutate(INCIDENT_UNIT = factor(INCIDENT_UNIT, levels = fact_order))
-}
-
-# Set threshold value where all colors >= will be the "hottest" color
-#  Threshold is needed when there are large outliers
-#  The function will check the maximum value within the data and if it is 2×
-#  greater or more than the next largest value, it will set a threshold
-#  value = 1.55× the second largest value 
-
-calculate_threshold <- function(df, return_name) {
-  # return_name: the object name you want the value to be returned as
-  
-  # Compute threshold priority
-  threshold <- df %>%
-    filter(CALENDAR_YEAR == adp_yr) %>%
-    select(RATE) %>%
-    filter(!is.na(RATE)) %>%
-    unlist() %>%
-    { 
-      max_rate <- max(.)
-      second_largest_rate <- sort(., decreasing = TRUE)[2]
-      ifelse(max_rate < 2 * second_largest_rate,
-             max_rate * rate_x,
-             1.55 * second_largest_rate * rate_x)
-    }
-  # Dynamically create the variable name in the parent environment
-  assign(return_name, threshold, envir = parent.frame())
-}
-
-#'*----------------------------------------------------------*
-## Check data values ----
-# Priority subcategories
-ggplot(filter(subcat_units_rate_priority, CALENDAR_YEAR == adp_yr),
-       aes(x = SUBCATEGORY, y = RATE * rate_x)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-# Christian
-calculate_threshold(subcat_units_rate_priority, "threshold_priority")
-threshold_priority
-
-# Craig
 opt_result_priority <- optimal_jenks_breaks(subcat_units_rate_priority$RATE, 
                                    min_k = 2, 
                                    max_k = 10, 
-                                   gvf_threshold = 0.8, 
+                                   gvf_threshold = 0.9, 
                                    top_count_threshold = 6)
 opt_result_priority$breaks <- opt_result_priority$breaks * rate_x #Adjusts for the correct column.
 opt_result_priority$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
 
 
 # Non-priority subcategories
-ggplot(filter(subcat_units_rate,
-              !(SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY) &
-                CALENDAR_YEAR == adp_yr),
-       aes(x = SUBCATEGORY, y = RATE * rate_x)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-# Christian
-calculate_threshold(filter(subcat_units_rate,
-                           !(SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY)),
-                    "threshold_other")
-threshold_other
-
-# Craig
 opt_result_other <- optimal_jenks_breaks(subcat_units_rate$RATE[!(subcat_units_rate$SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY)], 
                                    min_k = 2, 
                                    max_k = 10, 
@@ -396,411 +280,102 @@ opt_result_other$breaks[1] <- 0 #Sets the lower end of the first break to be zer
 #'*----------------------------------------------------------*
 ## Prepare data ----
 subcat_priority <- subcat_priority %>% mutate(
-  !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_priority/rate_x) * rate_x,
-  Label_cf = cut(RATE * rate_x, breaks = opt_result_priority$breaks)) # Create dummy column for color scale
+  Label= cut(RATE * rate_x, breaks = opt_result_priority$breaks)) # Create dummy column for color scale
 
 subcat_other <- subcat_other %>% mutate(
-  !!paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x) # Create dummy column for color scale
+  Label= cut(RATE * rate_x, breaks = opt_result_other$breaks)) # Create dummy column for color scale
 #'*----------------------------------------------------------*
 ## Priority categories plot ----
-#TODO - well poop, now this does not work.  Likely bc of new columns?
-subcat_priority <- subcat_priority %>% select(-Label_cf)
-# Step 1: Create individual plots for each CATEGORY
-# Plot for CATEGORY_1
-plot1 <- create_plot(process_data(subcat_priority, "GEAR",
-                                  c("OFFLOAD", "SAMPLE")),
-                     txt_width = 17,
-                     "top") +
-  color_scale(subcat_priority, max = threshold_priority)
 
-# plot for CATEGORY_2
-plot2 <- create_plot(process_data(subcat_priority, "INTERFERENCE",
-                                  c("TRIP")),
-                     txt_width = 15,
-                     "mid") +
-  color_scale(subcat_priority, max = threshold_priority)
+library(ggplot2)
+library(stringr) #Allows for plot overflow of labels for rows
 
-# Plot for CATEGORY_3
-plot3 <- create_plot(process_data(subcat_priority, "USCG",
-                                  c("HAUL", "OFFLOAD", "SAMPLE")),
-                     txt_width = 37,
-                     "mid") +
-  color_scale(subcat_priority, max = threshold_priority)
-
-# Step 2: Combine the plots using patchwork
-priority_subcat_plot <- plot1 / plot2 / plot3 + plot_layout(
-  heights = subcat_priority %>%
-    group_by(CAT_COMBO) %>%
-    summarize(n = n_distinct(SUBCATEGORY)) %>%
-    .[["n"]]) +
-  theme(
-    axis.title.y = element_text(size = 10,
-                                hjust = 1.2, # Likely have to play around with this to get it centered
-                                margin = margin(r = 20),
-                                angle = 90)) +
-  labs(y = "SUBCATEGORY")
-
-# Step 3: Display and save the combined plot
-priority_subcat_plot
-
-
-ggsave(paste0("confidential_figures/fig_", adp_yr, "_priority_subcat_plot.jpg"),
-       device = "jpeg",
-       width = 9,
-       height = 6,
-       units = "in",
-       dpi = 300)
-
-#'*----------------------------------------------------------*
-### ALT: Priority categories plot ----
-#TODO - this doesnt look right.  Uses priority data and then plots non priority
-# This still needs to be cleaned up a lot, but here is what the data look like
-# Wanted you to at least have something while I'm away CG 20250328
-
-library(ggh4x)
-
-color_scale_factor <- function(data, max) {
-  # max: set appropriate "threshold_" object
-  
-  color_scale <- scale_fill_gradient(
-    low = "navy", 
-    high = "red",
-    na.value = "transparent", 
-    name = paste0("Rate (× ", rate_x, ")"),
-    limits = c(min(data[[paste0("RATE_X_", rate_x)]], na.rm = TRUE),
-               max(max, na.rm = TRUE))
+plot_format_fxn <- function(
+    df,
+    rate_x,                       # user can pass 100 if wanting RATE_X_100
+    factor_col   = "Label",
+    start_color  = "navy",
+    end_color    = "red",
+    numeric_format = "%.2f",
+    text_color     = "white",
+    text_size      = 4,
+    legend_title   = "Rate Category",
+    base_theme     = theme_bw
+) {
+  # 1) Reorder the factor levels so the highest interval is last
+  df[[factor_col]] <- factor(
+    df[[factor_col]],
+    levels = sort(levels(df[[factor_col]]))
   )
-}
-
-create_factor_plot <- function(data, txt_width, type = c("top", "mid", "bottom")) {
-  # txt_width = width in characters for facet row labels before being wrapped
-  # top:    include facet labels for columns but no legend
-  # mid:    no facet labels for columns or legend
-  # bottom: no facet labels for columns, legend on right
   
-  type <- match.arg(type)  # Ensure valid input for type
+  # 2) Create "nice" labels from cut() defaults (e.g., "(0.05,0.1]" -> "0.05 - 0.1")
+  old_labels <- levels(df[[factor_col]])
+  new_labels <- gsub("\\(", "", old_labels)       # remove "("
+  new_labels <- gsub("\\]", "", new_labels)       # remove "]"
+  new_labels <- gsub(",",  " - ", new_labels)     # replace commas with dash
+  new_labels <- gsub("-Inf", "-∞", new_labels)    # optional: nicer negative infinity
+  new_labels <- gsub("Inf",  "∞",  new_labels)    # optional: nicer infinity
   
-  plot <- ggplot(data) +
-    geom_tile(aes(x = VESSEL_TYPE, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)),
-                  fill = .data[[paste0("RATE_X_", rate_x, "_plot")]])) +
-    geom_text(aes(x = VESSEL_TYPE, y = SUBCATEGORY,
-                  label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-              color = "white", size = 4) +
-    facet_nested(rows = vars(CAT_COMBO),
-                 cols = vars(INCIDENT_UNIT, COVERAGE_TYPE, NMFS_REGION),
-                 labeller = labeller(CAT_COMBO = label_wrap_gen(width = txt_width)),
-                 scales = "free_y") +
-    theme_bw() +
+  # 3) Create a color palette from user-supplied start_color to end_color
+  n_levels  <- length(old_labels)
+  my_colors <- colorRampPalette(c(start_color, end_color))(n_levels)
+  
+  # 4) Build the ggplot
+  p <- ggplot(df, aes(x = factor(1))) +
+    geom_tile(aes(
+      y = reorder(SUBCATEGORY, desc(SUBCATEGORY)),
+      fill = .data[[factor_col]]
+    )) +
+    geom_text(
+      aes(
+        y = SUBCATEGORY,
+        label = sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]])
+      ),
+      color = text_color,
+      size  = text_size
+    ) +
+    # Use "free_y" and "free" space so that facets don't compress rows unevenly
+    facet_grid(
+      CAT_COMBO ~ INCIDENT_UNIT,
+      scales = "free_y",
+      space  = "free_y",    
+      labeller = labeller(
+        # Wrap the facet labels for CAT_COMBO to a given width (e.g., 20 characters)
+        CAT_COMBO = function(x) str_wrap(x, width = 10)
+      )) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_fill_manual(
+      values = my_colors,
+      labels = new_labels,
+      # Reverse the legend order so highest interval is on top
+      guide = guide_legend(reverse = TRUE)
+    ) +
+    base_theme() +
     theme(
       axis.title.x = element_blank(),
-      axis.text.y = element_text(size = 8, color = "black"),
+      axis.text.x  = element_blank(),
+      axis.text.y  = element_text(size = 8), #NEW
+      strip.text.x = element_text(size = 8),  # column facet labels
+      strip.text.y = element_text(size = 8),   # row facet labels
+      axis.ticks.x = element_blank(),
       axis.title.y = element_blank(),
-      strip.text = element_text(size = 8),
-      panel.grid = element_blank(),
-      plot.margin = unit(c(0, 0, 0, 0), "cm"),
-      panel.spacing.x = unit(0.1, "cm"),
-      legend.position = "none",
-      axis.text.x = element_text(angle = 90, hjust= 0, vjust = 0.5)
-    )
+      panel.grid   = element_blank(),
+      strip.placement = "outside",                # Place strips fully outside the plot area
+      strip.text.y.right = element_text(angle = 0) # Force row labels to be horizontal on the right
+    ) +
+    labs(fill = legend_title)
   
-  # # Add theme customization based on the type
-  # if (type == "top") {
-  #   plot + theme(
-  #     axis.text.x = element_blank(),
-  #     legend.position = "none"
-  #   )
-  # } else if (type == "mid") {
-  #   plot + theme(
-  #     axis.text.x = element_blank(),
-  #     strip.text.x = element_blank(), 
-  #     legend.position = "none"
-  #   )
-  # } else if (type == "bottom") {
-  #   plot + theme(
-  #     strip.text.x = element_blank(),
-  #     legend.position = "none"
-  #   )
-  # }
+  return(p)
 }
 
-subcat_units_rate_for_factors_priority <-
-  subcat_units_rate_for_factors %>%
-  filter(SUBCATEGORY %in% c("ACCESS", "ASSAULT", "BIN MONITORING",
-                            "DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS",
-                            "FOOD AND ACCOMMODATIONS", "FORCED TO PERFORM CREW DUTIES",
-                            "HOSTILE WORK ENVIRONMENT", "IMPEDIMENT",
-                            "INTIMIDATION/BRIBERY/COERCION", "MARINE CASUALTY",
-                            "NOTIFICATION", "OBSERVER SAMPLING STATION",
-                            "REASONABLE ASSISTANCE", "SAFETY",
-                            "SAMPLING INTERFERENCE", "SCALES", "SEXUAL ASSAULT",
-                            "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
-                            "VMS REQUIREMENTS")) %>%
-  mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
-                            "OBSERVER SAFETY AND WORK ENVIRONMENT / USCG-SAFETY", CATEGORY))
+# ------------------- Usage Examples --------------------
+#
+# If you want to display RATE_X_100, do:
+# p <- plot_format_fxn(df = subcat_priority, rate_x = rate_x)
+#
+plot_format_fxn(df = subcat_priority, rate_x = rate_x, start_color = start_color, end_color = end_color)
 
-calculate_threshold(subcat_units_rate_for_factors_priority, "threshold_factor_priority")
-
-subcat_factors_priority <- subcat_units_rate_for_factors_priority %>%
-  filter(CALENDAR_YEAR == adp_yr) %>%
-  mutate(!! paste0("RATE_X_", rate_x) := RATE * rate_x,
-         # Create dummy column for color scale
-         !! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_factor_priority/rate_x) * rate_x,
-         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
-                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
-                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
-                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
-                                   TRUE ~ INCIDENT_UNIT),
-         CAT_COMBO = ifelse(str_detect(CATEGORY, "GEAR"), "GEAR / EQUIPMENT REQUIREMENTS",
-                            CAT_COMBO)) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, paste0("RATE_X_", rate_x),
-         paste0("RATE_X_", rate_x, "_plot"), COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION) %>%
-  filter(!is.na(NMFS_REGION))
-
-create_factor_plot(subcat_factors_priority,
-                   txt_width = 17) +
-  color_scale_factor(subcat_factors_priority, max = threshold_factor_priority)
-
-#'*----------------------------------------------------------*
-## Non-priority categories plot ----
-
-# Step 1: Create individual plots for each CATEGORY
-# Plot for CATEGORY_1
-plot1 <- create_plot(process_data(subcat_other, "CONTRACTOR",
-                                  c("HAUL", "MAR MAM", "OFFLOAD", "SAMPLE", "TRIP")),
-                     txt_width = 15,
-                     "top") +
-  color_scale(subcat_other, max = threshold_other)
-
-# Plot for CATEGORY_2
-plot2 <- create_plot(process_data(subcat_other, "OPERATIONAL REQ",
-                                  c("DEPLOY", "MAR MAM")),
-                     txt_width = 55,
-                     "mid") +
-  color_scale(subcat_other, max = threshold_other)
-
-# Plot for CATEGORY_3
-plot3 <- create_plot(process_data(subcat_other, "SPECIES",
-                                  c("DAYS", "DEPLOY", "SAMPLE")),
-                     txt_width = 37,
-                     "mid") +
-  color_scale(subcat_other, max = threshold_other)
-
-# Plot for CATEGORY_4
-plot4 <- create_plot(process_data(subcat_other, "USCG",
-                                  c("DEPLOY", "HAUL", "MAR MAM", "OFFLOAD", "SAMPLE")),
-                     txt_width = 19,
-                     "mid") +
-  color_scale(subcat_other, max = threshold_other)
-
-# Step 2: Combine the plots using patchwork
-non_priority_subcat_plot <- plot1 / plot2 / plot3 / plot4 + plot_layout(
-  heights = subcat_other %>%
-    group_by(CAT_COMBO) %>%
-    summarize(n = n_distinct(SUBCATEGORY)) %>%
-    .[["n"]]) +
-  theme(
-    axis.title.y = element_text(size = 10,
-                                hjust = 17, # Likely have to play around with this to get it centered
-                                margin = margin(r = 20),
-                                angle = 90)) +
-  labs(y = "SUBCATEGORY")
-
-# Step 3: Display and save the combined plot
-non_priority_subcat_plot
-
-ggsave(paste0("confidential_figures/fig_", adp_yr, "_non_priority_subcat_plot.jpg"),
-       device = "jpeg",
-       width = 10,
-       height = 9.5,
-       units = "in",
-       dpi = 300)
-
-#'*----------------------------------------------------------*
-#TODO - Hate it.
-### ALT: Non-priority categories plot ----
-# This can be cleaned up a lot, but I just wanted to get it in here since I'll be away CG 20250328
-
-plot1 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "DEP"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-plot2 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "DAY"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-plot3 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "TRIP"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-plot4 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "OFF"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-plot5 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "HAUL"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-plot6 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "SAM"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-plot7 <- ggplot(filter(subcat_other, str_detect(INCIDENT_UNIT, "MAR"))) +
-  geom_tile(aes(x = 1, y = reorder(SUBCATEGORY, desc(SUBCATEGORY)), fill = RATE_X_100_plot)) +
-  geom_text(aes(x = 1, y = SUBCATEGORY,
-                label = sprintf("%.2f", .data[[paste0("RATE_X_", rate_x)]])),
-            color = "white", size = 4) +
-  facet_grid(rows = vars(INCIDENT_UNIT), scales = "free_y") + 
-  theme_bw() +
-  theme(
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_blank(),
-    axis.text.y = element_text(size = 8, color = "black"),
-    axis.title.y = element_blank(),
-    strip.text = element_text(size = 8),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0.5, 0, -0.5, 0), "cm"),
-    panel.spacing.x = unit(0.1, "cm")
-  ) +
-  color_scale(subcat_other, max = threshold_other) +
-  theme(
-    legend.position = "none")
-
-non_priority_subcat_plot <- plot1 / plot2 / plot3 / plot4 / plot5 / plot6 / plot7 + plot_layout(
-  heights = subcat_other %>%
-    mutate(INCIDENT_UNIT = factor(INCIDENT_UNIT, levels = fact_order)) %>%
-    group_by(INCIDENT_UNIT) %>%
-    summarize(n = n_distinct(SUBCATEGORY)) %>%
-    .[["n"]]) +
-  theme(
-    axis.title.y = element_text(size = 10,
-                                hjust = 17, # Likely have to play around with this to get it centered
-                                margin = margin(r = 20),
-                                angle = 90)) +
-  labs(y = "SUBCATEGORY")
-
-non_priority_subcat_plot
-
-ggsave(paste0("confidential_figures/fig_", adp_yr, "_non_priority_subcat_plot_long.jpg"),
-       device = "jpeg",
-       width = 7,
-       height = 10.5,
-       units = "in",
-       dpi = 300)
-
-
-# Clear unneeded objects
-rm(color_scale, create_plot, process_data, fact_order, rate_x,
-   plot1, plot2, plot3, plot4, subcat_other, subcat_priority, threshold_other,
-   threshold_priority, calculate_threshold)
+plot_format_fxn(df = subcat_other, rate_x = rate_x, start_color = start_color, end_color = end_color)
 
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
@@ -813,9 +388,9 @@ rm(color_scale, create_plot, process_data, fact_order, rate_x,
 
 # Save Output -------------------------------------------------------------
 
-file_4_name <- "AR_4_summary_tables_output.Rdata"
-
-save(list = ls(),
-     file = file_4_name)
-
-gdrive_upload(file_4_name, AnnRpt_EnfChp_dribble)
+# file_4_name <- "AR_4_summary_tables_output.Rdata"
+# 
+# save(list = ls(),
+#      file = file_4_name)
+# 
+# gdrive_upload(file_4_name, AnnRpt_EnfChp_dribble)
