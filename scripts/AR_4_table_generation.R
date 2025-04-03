@@ -2,6 +2,9 @@
 # Annual Report Enforcement chapter: Table generation --------------------------
 # Contact Craig Faunce
 
+#TODO - source data has RATE == NA!
+#TODO - make each major figure from for_figures
+#TODO - repeat for factor figures
 #TODO - flextable the proposed table outputs
 #TODO - main figure dimensions need to be determined for output.
 
@@ -34,67 +37,75 @@ AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 
 gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
 
 load(file = file_3_name)
+
+rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
+                            "start_color", "end_color", "rate_x", "adp_yr")])
+
 # Data manipulation ----------------------------------------------------------------------------------------------------
 
-#TODO - Placeholder until Andy is done in AR_2 & AR_3, then make sure this is in there
-subcat_units_rate_priority <-
-  subcat_units_rate_priority %>%
-  # filter(SUBCATEGORY %in% c("ACCESS", "ASSAULT", "BIN MONITORING",
-  #                           "DESTRUCTION OF SAMPLE/WORK/PERSONAL EFFECTS",
-  #                           "FOOD AND ACCOMMODATIONS", "FORCED TO PERFORM CREW DUTIES",
-  #                           "HOSTILE WORK ENVIRONMENT", "IMPEDIMENT",
-  #                           "INTIMIDATION/BRIBERY/COERCION", "MARINE CASUALTY",
-  #                           "NOTIFICATION", "OBSERVER SAMPLING STATION",
-  #                           "REASONABLE ASSISTANCE", "SAFETY",
-  #                           "SAMPLING INTERFERENCE", "SCALES", "SEXUAL ASSAULT",
-  #                           "SEXUAL HARASSMENT", "VIDEO MONITORING SYSTEM",
-  #                           "VMS REQUIREMENTS")) %>%
-   mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
-                            "SAFETY / WORK ENVIRONMENT", CATEGORY))
+subcat_priority <-
+  subcat_units_rate %>%
+  filter(CALENDAR_YEAR == adp_yr,
+         CATEGORY %in% c("GEAR/EQUIPMENT REQUIREMENTS", "INTERFERENCE WITH DUTIES",
+                         "OBSERVER SAFETY AND WORK ENVIRONMENT", "SAFETY-USCG-MARINE CASUALTY")) %>%
+   mutate(SUPER_CAT = "PRIORITY",
+          COVERAGE_TYPE = NA,
+          VESSEL_TYPE = NA,
+          NMFS_REGION = NA) %>% 
+  select(SUPER_CAT, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, CATEGORY, SUBCATEGORY, INCIDENT_UNIT, RATE)
 
-# Priority subcategories
-subcat_priority <- 
-  subcat_units_rate_priority %>%
-  filter(CALENDAR_YEAR == adp_yr) %>%
-  mutate(!! paste0("RATE_X_", rate_x) := RATE * rate_x,
-         # Create dummy column for color scale
-         #!! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_priority/rate_x) * rate_x,
-         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
-                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
-                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
-                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
-                                   TRUE ~ INCIDENT_UNIT),
-         CAT_COMBO = ifelse(str_detect(CATEGORY, "GEAR"), "GEAR / EQUIPMENT REQUIREMENTS",
-                            CAT_COMBO)) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, RATE, paste0("RATE_X_", rate_x)#,
-        # paste0("RATE_X_", rate_x, "_plot")
-        )
+# Priority subcategories by factor
+factor_priority <-   
+  subcat_units_rate_for_factors %>%
+  filter(CALENDAR_YEAR == adp_yr, CATEGORY %in% subcat_priority$CATEGORY) %>%
+  mutate(SUPER_CAT = "PRIORITY_FACTORS") %>%
+  select(SUPER_CAT, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, CATEGORY, SUBCATEGORY, INCIDENT_UNIT, RATE)
+
+priority <- rbind(subcat_priority, factor_priority) %>%
+  mutate(CAT_COMBO = ifelse(str_detect(CATEGORY, "USCG|SAFETY"),
+                   "SAFETY / WORK ENVIRONMENT", CATEGORY),
+         CAT_COMBO = ifelse(str_detect(CATEGORY, "GEAR"), 
+                            "GEAR / EQUIPMENT REQUIREMENTS",
+                   CAT_COMBO))
 
 # Non-priority subcategories
 subcat_other <- 
   subcat_units_rate %>%
   filter(CALENDAR_YEAR == adp_yr,
-         !(SUBCATEGORY %in% subcat_priority$SUBCATEGORY)) %>%
-  mutate(CAT_COMBO = case_when(str_detect(CATEGORY, "SAFETY-USCG|MARPOL") ~
-                                 "SAFETY-USCG / MARPOL / OIL SPILL",
-                               str_detect(CATEGORY, "PERMITS/DOCUMENTS|OPERATIONAL|GEAR") ~
-                                 "GEAR / EQUIPMENT / OPERATIONAL REQUIREMENTS / PERMITS / DOCUMENTS / RECORD KEEPING AND REPORTING",
-                               str_detect(CATEGORY, "SUSTAINABLE|SPECIES") ~
-                                 "PROHIBITED SPECIES / MARINE MAMMALS / SEABIRDS / SUSTAINABLE FISHERIES",
-                               TRUE ~ CATEGORY),
-         INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
-                                   INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
-                                   INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
-                                   INCIDENT_UNIT == "MARM" ~ "MAR MAM",
-                                   TRUE ~ INCIDENT_UNIT),
-         !! paste0("RATE_X_", rate_x) := RATE * rate_x,
-         # Create dummy column for color scale
-       #  !! paste0("RATE_X_", rate_x, "_plot") := pmin(RATE, threshold_other/rate_x) * rate_x
-       ) %>%
-  select(CAT_COMBO, SUBCATEGORY, INCIDENT_UNIT, RATE, paste0("RATE_X_", rate_x)#,
-     #    paste0("RATE_X_", rate_x, "_plot")
-     )
+         !(CATEGORY %in% subcat_priority$CATEGORY)) %>%
+  mutate(SUPER_CAT = "NON-PRIORITY",
+         COVERAGE_TYPE = NA,
+         VESSEL_TYPE = NA,
+         NMFS_REGION = NA) %>% 
+  select(SUPER_CAT, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, CATEGORY, SUBCATEGORY, INCIDENT_UNIT, RATE)
 
+ factor_other <-  
+   subcat_units_rate_for_factors %>%
+   filter(CALENDAR_YEAR == adp_yr, 
+          !(CATEGORY %in% subcat_priority$CATEGORY)) %>%
+   mutate(SUPER_CAT = "NON-PRIORITY_FACTORS") %>%
+   select(SUPER_CAT, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, CATEGORY, SUBCATEGORY, INCIDENT_UNIT, RATE)
+ 
+ non_priority <- 
+   rbind(subcat_other, factor_other) %>%
+   mutate(CAT_COMBO = case_when(str_detect(CATEGORY, "SAFETY-USCG|MARPOL") ~
+                                  "SAFETY-USCG / MARPOL / OIL SPILL",
+                                str_detect(CATEGORY, "PERMITS/DOCUMENTS|OPERATIONAL|GEAR") ~
+                                  "GEAR / EQUIPMENT / OPERATIONAL REQUIREMENTS / PERMITS / DOCUMENTS / RECORD KEEPING AND REPORTING",
+                                str_detect(CATEGORY, "SUSTAINABLE|SPECIES") ~
+                                  "PROHIBITED SPECIES / MARINE MAMMALS / SEABIRDS / SUSTAINABLE FISHERIES",
+                                TRUE ~ CATEGORY))
+  
+for_figures <- 
+  rbind(priority, non_priority) %>%
+   mutate(INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
+                             INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
+                             INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
+                             INCIDENT_UNIT == "MARM" ~ "MAR MAM",
+                             TRUE ~ INCIDENT_UNIT),
+        !! paste0("RATE_X_", rate_x) := RATE * rate_x) %>% filter(!is.na(RATE)) #NAs removed
+
+rm(subcat_priority, subcat_other, priority, non_priority, factor_priority, factor_other)
 # Tables -----------------------------------------------------------------------------------------------
 # Summary of total observer statements per reporting category with total numbers
 #  of various factors for comparisons of total effort
@@ -158,70 +169,135 @@ rbind(subcat_units_rate %>%
 # Determine color breaks ------------------------------------------------------------------------------------
 
 library(classInt)
-library(ggplot2)
-library(viridis)
-library(scales)
 
-# Function to calculate Goodness of Variance Fit (GVF)
-calc_gvf <- function(x, 
-                     breaks) {
+#--- Functions from your code ---------------------------------------------
+calc_gvf <- function(x, breaks) {
   SST <- sum((x - mean(x))^2)
   class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
   SSW <- sum(tapply(x, class_assignments, function(z) sum((z - mean(z))^2)))
   (SST - SSW) / SST
 }
 
-# Function to determine optimal Jenks natural breaks.
 optimal_jenks_breaks <- function(x, 
                                  min_k = 2, 
                                  max_k = 10, 
                                  gvf_threshold = 0.9, 
                                  top_count_threshold = 6) {
+  # -- 1) Remove all NAs --
+  x <- na.omit(x)
+  
+  # -- 2) If there's not enough data left, return a default result --
+  if (length(x) < 2) {
+    cat("No data or insufficient data after removing NAs.\n")
+    return(list(n_breaks = NA, breaks = NA, gvf = NA))
+  }
+  
   best_result <- NULL
   for (k in min_k:max_k) {
     ci <- classIntervals(x, n = k, style = "jenks")
     current_breaks <- ci$brks
+    
+    # Calculate current GVF
     current_gvf <- calc_gvf(x, current_breaks)
-    top_break_count <- sum(x >= current_breaks[length(current_breaks) - 1] & x <= current_breaks[length(current_breaks)])
-    cat("For", k, "classes: GVF =", round(current_gvf, 3), "| Top break count =", top_break_count, "\n")
-    if (current_gvf >= gvf_threshold && top_break_count < top_count_threshold) {
+    
+    # Count how many data points fall in the top break
+    top_break_count <- sum(x >= current_breaks[length(current_breaks) - 1] &
+                             x <= current_breaks[length(current_breaks)])
+    
+    cat("For", k, "classes: GVF =", round(current_gvf, 3),
+        "| Top break count =", top_break_count, "\n")
+    
+    # -- 3) Safely check for NA in current_gvf --
+    if (!is.na(current_gvf) && current_gvf >= gvf_threshold && top_break_count < top_count_threshold) {
       best_result <- list(n_breaks = k, breaks = current_breaks, gvf = current_gvf)
       break
     }
   }
+  
+  # If we never found a solution that met the conditions, fall back to max_k
   if (is.null(best_result)) {
     ci <- classIntervals(x, n = max_k, style = "jenks")
-    best_result <- list(n_breaks = max_k, breaks = ci$brks, gvf = calc_gvf(x, ci$brks))
+    best_result <- list(
+      n_breaks = max_k, 
+      breaks   = ci$brks, 
+      gvf      = calc_gvf(x, ci$brks)
+    )
   }
+  
   best_result
 }
-# End functions for breaks
 
-# Priority category breaks for plot colors
-opt_result_priority <- optimal_jenks_breaks(subcat_units_rate_priority$RATE, 
-                                   min_k = 2, 
-                                   max_k = 10, 
-                                   gvf_threshold = 0.9, 
-                                   top_count_threshold = 6)
-opt_result_priority$breaks <- opt_result_priority$breaks * rate_x #Adjusts for the correct column.
-opt_result_priority$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
+#--- End of functions -----------------------------------------------------
+# 
+# #------------------------------------------------------------------
+# # Example data (replace with your real 'for_figures' data frame)
+# #------------------------------------------------------------------
+# set.seed(123)
+# for_figures <- data.frame(
+#   SUPER_CAT = sample(c("PRIORITY","NORMAL","URGENT"), 50, replace=TRUE),
+#   RATE      = rexp(50, rate=0.1)  # random numeric data
+# )
+# 
 
+#------------------------------------------------------------------
+# 1) Get unique categories from SUPER_CAT
+#------------------------------------------------------------------
+cats <- unique(for_figures$SUPER_CAT)
 
-# Non-priority subcategory breaks for plot colors
-opt_result_other <- optimal_jenks_breaks(subcat_units_rate$RATE[!(subcat_units_rate$SUBCATEGORY %in% subcat_units_rate_priority$SUBCATEGORY)], 
-                                   min_k = 2, 
-                                   max_k = 10, 
-                                   gvf_threshold = 0.8, 
-                                   top_count_threshold = 6)
-opt_result_other$breaks <- opt_result_other$breaks * rate_x #Adjusts for the correct column.
-opt_result_other$breaks[1] <- 0 #Sets the lower end of the first break to be zero.
+#------------------------------------------------------------------
+# 2) For each category, compute Jenks breaks and store in a list
+#------------------------------------------------------------------
+breaks_list <- setNames(vector("list", length(cats)), cats)
 
-## Prepare data ----
-subcat_priority <- subcat_priority %>% mutate(
-  Label= cut(RATE * rate_x, breaks = opt_result_priority$breaks)) # Create dummy column for color scale
+for (cat in cats) {
+  #testing cat <- cats[1]
+  # Subset RATE values only for this category
+  x_subset <- for_figures$RATE[for_figures$SUPER_CAT == cat]
+  
+  # Calculate optimal Jenks breaks
+  best <- optimal_jenks_breaks(x_subset, 
+                               min_k = 2, 
+                               max_k = 5, 
+                               gvf_threshold = 0.8, 
+                               top_count_threshold = 6)
+  
+  # Scale breaks by rate_x
+  best$breaks <- best$breaks * rate_x
+  
+  # (Optional) Set the lower bound to zero
+  best$breaks[1] <- 0
+  
+  # Store results
+  breaks_list[[cat]] <- best
+}
 
-subcat_other <- subcat_other %>% mutate(
-  Label= cut(RATE * rate_x, breaks = opt_result_other$breaks)) # Create dummy column for color scale
+#------------------------------------------------------------------
+# 3) Create a new column 'Label' using the category-specific breaks
+#------------------------------------------------------------------
+for_figures$Label <- NA  # initialize
+
+for (cat in cats) {
+  # Index only the rows for this category
+  idx <- for_figures$SUPER_CAT == cat
+  
+  # Use the precomputed breaks for this category
+  cat_breaks <- breaks_list[[cat]]$breaks
+  
+  # Cut the scaled RATE values into the category-specific bins
+  for_figures$Label[idx] <- as.character(cut(
+    x      = for_figures$RATE[idx] * rate_x,
+    breaks = cat_breaks))
+  #Intervals look like (lower, upper], meaning the upper bound is included while the lower bound is not.
+}
+
+#------------------------------------------------------------------
+# Check results
+#------------------------------------------------------------------
+head(for_figures)
+# You now have a 'Label' factor with intervals that depend on each
+# category's own Jenks classification.
+
+rm(best, breaks_list, cat, cat_breaks, cats, idx, x_subset)
 
 # Priority categories plot ---------------------------------------------------------------------------
 plot_format_fxn <- function(
@@ -239,16 +315,19 @@ plot_format_fxn <- function(
   # 1) Reorder the factor levels so the highest interval is last
   df[[factor_col]] <- factor(
     df[[factor_col]],
-    levels = sort(levels(df[[factor_col]]))
+    levels = sort(unique(df[[factor_col]]))
   )
   
   # 2) Create "nice" labels from cut() defaults (e.g., "(0.05,0.1]" -> "0.05 - 0.1")
   old_labels <- levels(df[[factor_col]])
-  new_labels <- gsub("\\(", "", old_labels)       # remove "("
-  new_labels <- gsub("\\]", "", new_labels)       # remove "]"
-  new_labels <- gsub(",",  " - ", new_labels)     # replace commas with dash
-  new_labels <- gsub("-Inf", "-∞", new_labels)    # optional: nicer negative infinity
-  new_labels <- gsub("Inf",  "∞",  new_labels)    # optional: nicer infinity
+  new_labels <- gsub("\\(", "", old_labels)  # removing "("
+  new_labels <- gsub("\\]", "", new_labels)  # removing "]"
+  new_labels <- gsub(",", " - ", new_labels)
+  # Now fix the duplicate boundary. For example, replace something like
+  # "0 - 1" with "0 - <1"
+  # "1 - 2" with "1 - <2", etc.
+  # A simple approach could be:
+  new_labels <- gsub("( - )(\\d+(\\.\\d+)?)$", " - <\\2", new_labels)
   
   # 3) Create a color palette from user-supplied start_color to end_color
   n_levels  <- length(old_labels)
@@ -305,12 +384,12 @@ plot_format_fxn <- function(
 # If you want to display RATE_X_100, do:
 # p <- plot_format_fxn(df = subcat_priority, rate_x = rate_x)
 #
-priority_plot <- plot_format_fxn(df = subcat_priority, rate_x = rate_x, start_color = start_color, end_color = end_color)
+priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
 
-other_plot <- plot_format_fxn(df = subcat_other, rate_x = rate_x, start_color = start_color, end_color = end_color)
+other_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "NON-PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
-
+#For factors, we want to use coverage type, FMP, and Vessel Type.
 
 
 
