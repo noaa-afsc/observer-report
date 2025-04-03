@@ -3,10 +3,7 @@
 # Contact Craig Faunce
 
 #TODO - source data has RATE == NA!
-#TODO - make each major figure from for_figures
-#TODO - repeat for factor figures
 #TODO - flextable the proposed table outputs
-#TODO - main figure dimensions need to be determined for output.
 
 library(reshape2)
 library(tidyverse)
