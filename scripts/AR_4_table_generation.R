@@ -13,6 +13,7 @@ library(tidyverse)
 library(patchwork)
 library(ggplot2)
 library(stringr) #Allows for plot overflow of labels for rows
+library(classInt)
 library(FMAtools)
 
 # User inputs ------------------------------------------------------------------------------------------------------------
@@ -22,8 +23,8 @@ file_3_name <- "AR_3_rate_output.Rdata"
 # Factor order for plotting
 fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAR MAM")
 
-start_color   <- "navy"
-end_color     <- "red3"
+end_color   <- "red"
+start_color     <- "darkblue"
 
 # Rate
 rate_x <- 100
@@ -167,10 +168,6 @@ rbind(subcat_units_rate %>%
                               TRUE ~ CATEGORY))
 
 # Determine color breaks ------------------------------------------------------------------------------------
-
-library(classInt)
-
-#--- Functions from your code ---------------------------------------------
 calc_gvf <- function(x, breaks) {
   SST <- sum((x - mean(x))^2)
   class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
@@ -227,26 +224,10 @@ optimal_jenks_breaks <- function(x,
   best_result
 }
 
-#--- End of functions -----------------------------------------------------
-# 
-# #------------------------------------------------------------------
-# # Example data (replace with your real 'for_figures' data frame)
-# #------------------------------------------------------------------
-# set.seed(123)
-# for_figures <- data.frame(
-#   SUPER_CAT = sample(c("PRIORITY","NORMAL","URGENT"), 50, replace=TRUE),
-#   RATE      = rexp(50, rate=0.1)  # random numeric data
-# )
-# 
-
-#------------------------------------------------------------------
 # 1) Get unique categories from SUPER_CAT
-#------------------------------------------------------------------
 cats <- unique(for_figures$SUPER_CAT)
 
-#------------------------------------------------------------------
 # 2) For each category, compute Jenks breaks and store in a list
-#------------------------------------------------------------------
 breaks_list <- setNames(vector("list", length(cats)), cats)
 
 for (cat in cats) {
@@ -271,9 +252,7 @@ for (cat in cats) {
   breaks_list[[cat]] <- best
 }
 
-#------------------------------------------------------------------
 # 3) Create a new column 'Label' using the category-specific breaks
-#------------------------------------------------------------------
 for_figures$Label <- NA  # initialize
 
 for (cat in cats) {
@@ -290,27 +269,28 @@ for (cat in cats) {
   #Intervals look like (lower, upper], meaning the upper bound is included while the lower bound is not.
 }
 
-#------------------------------------------------------------------
 # Check results
-#------------------------------------------------------------------
 head(for_figures)
 # You now have a 'Label' factor with intervals that depend on each
 # category's own Jenks classification.
 
 rm(best, breaks_list, cat, cat_breaks, cats, idx, x_subset)
 
-# Priority categories plot ---------------------------------------------------------------------------
+# Plots ---------------------------------------------------------------------------
+## Plot function
 plot_format_fxn <- function(
     df,
     rate_x,                       # user can pass 100 if wanting RATE_X_100
-    factor_col   = "Label",
-    start_color  = "navy",
-    end_color    = "red",
+    factor_col    = "Label",
+    start_color   = "navy",
+    end_color     = "red",
     numeric_format = "%.2f",
-    text_color     = "white",
-    text_size      = 4,
-    legend_title   = "Rate Category",
-    base_theme     = theme_bw
+    text_color    = "white",
+    text_size     = 4,
+    legend_title  = "Rate Category",
+    base_theme    = theme_bw,
+    # New argument lets you override the facet formula:
+    facet_formula = CAT_COMBO ~ INCIDENT_UNIT
 ) {
   # 1) Reorder the factor levels so the highest interval is last
   df[[factor_col]] <- factor(
@@ -318,18 +298,14 @@ plot_format_fxn <- function(
     levels = sort(unique(df[[factor_col]]))
   )
   
-  # 2) Create "nice" labels from cut() defaults (e.g., "(0.05,0.1]" -> "0.05 - 0.1")
+  # 2) Create "nice" labels from cut() defaults
   old_labels <- levels(df[[factor_col]])
-  new_labels <- gsub("\\(", "", old_labels)  # removing "("
-  new_labels <- gsub("\\]", "", new_labels)  # removing "]"
-  new_labels <- gsub(",", " - ", new_labels)
-  # Now fix the duplicate boundary. For example, replace something like
-  # "0 - 1" with "0 - <1"
-  # "1 - 2" with "1 - <2", etc.
-  # A simple approach could be:
+  new_labels <- gsub("\\(", "", old_labels)  # remove "("
+  new_labels <- gsub("\\]", "", new_labels)  # remove "]"
+  new_labels <- gsub(",",  " - ", new_labels)
   new_labels <- gsub("( - )(\\d+(\\.\\d+)?)$", " - <\\2", new_labels)
   
-  # 3) Create a color palette from user-supplied start_color to end_color
+  # 3) Create a color palette
   n_levels  <- length(old_labels)
   my_colors <- colorRampPalette(c(start_color, end_color))(n_levels)
   
@@ -347,34 +323,33 @@ plot_format_fxn <- function(
       color = text_color,
       size  = text_size
     ) +
-    # Use "free_y" and "free" space so that facets don't compress rows unevenly
     facet_grid(
-      CAT_COMBO ~ INCIDENT_UNIT,
+      facet_formula,
       scales = "free_y",
-      space  = "free_y",    
+      space  = "free_y",
       labeller = labeller(
-        # Wrap the facet labels for CAT_COMBO to a given width (e.g., 20 characters)
+        # Wrap if you still want custom label behavior – or remove if not needed
         CAT_COMBO = function(x) str_wrap(x, width = 10)
-      )) +
+      )
+    ) +
     scale_x_discrete(expand = c(0, 0)) +
     scale_fill_manual(
       values = my_colors,
       labels = new_labels,
-      # Reverse the legend order so highest interval is on top
       guide = guide_legend(reverse = TRUE)
     ) +
     base_theme() +
     theme(
       axis.title.x = element_blank(),
       axis.text.x  = element_blank(),
-      axis.text.y  = element_text(size = 8), #NEW
-      strip.text.x = element_text(size = 8),  # column facet labels
-      strip.text.y = element_text(size = 8),   # row facet labels
+      axis.text.y  = element_text(size = 8),
+      strip.text.x = element_text(size = 8),
+      strip.text.y = element_text(size = 8),
       axis.ticks.x = element_blank(),
       axis.title.y = element_blank(),
       panel.grid   = element_blank(),
-      strip.placement = "outside",                # Place strips fully outside the plot area
-      strip.text.y.right = element_text(angle = 0) # Force row labels to be horizontal on the right
+      strip.placement = "outside",
+      strip.text.y.right = element_text(angle = 0)
     ) +
     labs(fill = legend_title)
   
@@ -386,21 +361,50 @@ plot_format_fxn <- function(
 #
 priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
 
-other_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "NON-PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
+non_priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "NON-PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
 #For factors, we want to use coverage type, FMP, and Vessel Type.
+super_levels <- data.frame(SUPER_CAT = c("PRIORITY", "NON-PRIORITY"))
+super_levels$SUPER_FACT = paste0(super_levels$SUPER_CAT, "_FACTORS")
 
+#Lets get the super group
+for(i in 1:nrow(super_levels)){
+  
+df_super <- for_figures %>% filter(SUPER_CAT == super_levels$SUPER_CAT[i])
+df_super$Label <- factor(df_super$Label, levels = sort(unique(df_super$Label)))
+# This ensures the lowest interval is first in levels(), and the highest is last.
 
+# 2) Grab only rows that have the highest (last) factor level
+highest_level <- tail(levels(df_super$Label), 1)             # e.g. "(2,3]"
+df_highest    <- subset(df_super, Label == highest_level)
 
+#Now we grab the factors data
+df <- for_figures %>% filter(SUPER_CAT == super_levels$SUPER_FACT[i])
 
+#Now limit df to just those categories
+df <- merge(df, 
+            df_highest %>% select(CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>% distinct())
+#Make plot
+factor_plot <- plot_format_fxn(df = df, rate_x = rate_x, 
+                               start_color = start_color, 
+                               end_color = end_color,
+                               facet_formula = NMFS_REGION ~ COVERAGE_TYPE + VESSEL_TYPE + INCIDENT_UNIT
+                               )
+#Give it a name
+assign(paste0(tolower(gsub("-", "_", super_levels$SUPER_FACT[i])), "_plot"), factor_plot)
 
+#cleanup
+rm(df_super, highest_level, df_highest, df, factor_plot)
+}
+rm(super_levels, i)
 
 # Save Output -------------------------------------------------------------
+ggsave("priority_plot.pdf", plot = priority_plot, width = 12, height = 6, units = "in", path = "Plots/")
+ggsave("non_priority_plot.pdf", plot = non_priority_plot, width = 12, height = 6, units = "in", path = "Plots/")
+ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, height = 6, units = "in", path = "Plots/")
+ggsave("non_priority_factors_plot.pdf", plot = non_priority_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
 
-# file_4_name <- "AR_4_summary_tables_output.Rdata"
-# 
-# save(list = ls(),
-#      file = file_4_name)
+save.image(file = "AR_4_summary_tables_output.Rdata")
 # 
 # gdrive_upload(file_4_name, AnnRpt_EnfChp_dribble)
