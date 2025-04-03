@@ -407,4 +407,4 @@ ggsave("non_priority_factors_plot.pdf", plot = non_priority_factors_plot, width 
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
 # 
-# gdrive_upload(file_4_name, AnnRpt_EnfChp_dribble)
+gdrive_upload("AR_4_summary_tables_output.Rdata", AnnRpt_EnfChp_dribble)
