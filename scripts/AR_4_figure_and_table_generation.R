@@ -3,14 +3,13 @@
 # Contact Craig Faunce
 
 #TODO - source data has RATE == NA!
-#TODO - flextable the proposed table outputs
 
-library(reshape2)
 library(tidyverse)
-library(patchwork)
 library(ggplot2)
 library(stringr) #Allows for plot overflow of labels for rows
 library(classInt)
+library(flextable)
+library(officer)
 library(FMAtools)
 
 # User inputs ------------------------------------------------------------------------------------------------------------
@@ -18,7 +17,7 @@ library(FMAtools)
 file_3_name <- "AR_3_rate_output.Rdata"
 
 # Factor order for plotting
-fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAR MAM")
+fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAMMALS")
 
 end_color   <- "red"
 start_color     <- "darkblue"
@@ -66,12 +65,12 @@ priority <- rbind(subcat_priority, factor_priority) %>%
                             "GEAR / EQUIPMENT REQUIREMENTS",
                    CAT_COMBO))
 
-# Non-priority subcategories
+# Other subcategories
 subcat_other <- 
   subcat_units_rate %>%
   filter(CALENDAR_YEAR == adp_yr,
          !(CATEGORY %in% subcat_priority$CATEGORY)) %>%
-  mutate(SUPER_CAT = "NON-PRIORITY",
+  mutate(SUPER_CAT = "OTHER",
          COVERAGE_TYPE = NA,
          VESSEL_TYPE = NA,
          NMFS_REGION = NA) %>% 
@@ -81,10 +80,10 @@ subcat_other <-
    subcat_units_rate_for_factors %>%
    filter(CALENDAR_YEAR == adp_yr, 
           !(CATEGORY %in% subcat_priority$CATEGORY)) %>%
-   mutate(SUPER_CAT = "NON-PRIORITY_FACTORS") %>%
+   mutate(SUPER_CAT = "OTHER_FACTORS") %>%
    select(SUPER_CAT, COVERAGE_TYPE, VESSEL_TYPE, NMFS_REGION, CATEGORY, SUBCATEGORY, INCIDENT_UNIT, RATE)
  
- non_priority <- 
+ other <- 
    rbind(subcat_other, factor_other) %>%
    mutate(CAT_COMBO = case_when(str_detect(CATEGORY, "SAFETY-USCG|MARPOL") ~
                                   "SAFETY-USCG / MARPOL / OIL SPILL",
@@ -95,15 +94,15 @@ subcat_other <-
                                 TRUE ~ CATEGORY))
   
 for_figures <- 
-  rbind(priority, non_priority) %>%
+  rbind(priority, other) %>%
    mutate(INCIDENT_UNIT = case_when(INCIDENT_UNIT == "OFFL" ~ "OFFLOAD",
                              INCIDENT_UNIT == "SAMP" ~ "SAMPLE",
                              INCIDENT_UNIT == "DEPL" ~ "DEPLOY",
-                             INCIDENT_UNIT == "MARM" ~ "MAR MAM",
+                             INCIDENT_UNIT == "MARM" ~ "MAMMALS",
                              TRUE ~ INCIDENT_UNIT),
         !! paste0("RATE_X_", rate_x) := RATE * rate_x) %>% filter(!is.na(RATE)) #NAs removed
 
-rm(subcat_priority, subcat_other, priority, non_priority, factor_priority, factor_other)
+rm(subcat_priority, subcat_other, priority, other, factor_priority, factor_other)
 # Tables -----------------------------------------------------------------------------------------------
 # Summary of total observer statements per reporting category with total numbers
 #  of various factors for comparisons of total effort
@@ -133,6 +132,9 @@ T_summary_units <-
   arrange(desc(TOTAL_UNITS)) %>%
   rename("Incident Unit" = INCIDENT_UNIT,
          "Total Units" = TOTAL_UNITS)
+# make pretty table
+T_summary_units <- autofit(flextable(T_summary_units))
+T_summary_units
 
 #Total number of Statements 
 T_statement_totals <-
@@ -163,6 +165,22 @@ rbind(subcat_units_rate %>%
                               str_detect(CATEGORY, "Interference") ~
                                 "Interference with Duties",
                               TRUE ~ CATEGORY))
+T_statement_totals <- autofit(flextable(T_statement_totals))
+T_statement_totals
+
+# Create a new Word document (portrait by default)
+doc <- read_docx()
+# Optionally, add a heading or title
+#doc <- body_add_par(doc, "Two Tables Stacked on One Page", style = "heading 1")
+
+# Add first flextable
+doc <- body_add_flextable(doc, value = T_summary_units)
+
+# Add some space or another paragraph (optional)
+doc <- body_add_par(doc, "Space Added")
+
+# Add second flextable
+doc <- body_add_flextable(doc, value = T_statement_totals)
 
 # Determine color breaks ------------------------------------------------------------------------------------
 calc_gvf <- function(x, breaks) {
@@ -267,7 +285,7 @@ for (cat in cats) {
 }
 
 # Check results
-head(for_figures)
+#head(for_figures)
 # You now have a 'Label' factor with intervals that depend on each
 # category's own Jenks classification.
 
@@ -358,11 +376,11 @@ plot_format_fxn <- function(
 #
 priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
 
-non_priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "NON-PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
+other_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "OTHER"), rate_x = rate_x, start_color = start_color, end_color = end_color)
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
 #For factors, we want to use coverage type, FMP, and Vessel Type.
-super_levels <- data.frame(SUPER_CAT = c("PRIORITY", "NON-PRIORITY"))
+super_levels <- data.frame(SUPER_CAT = c("PRIORITY", "OTHER"))
 super_levels$SUPER_FACT = paste0(super_levels$SUPER_CAT, "_FACTORS")
 
 #Lets get the super group
@@ -379,9 +397,14 @@ df_highest    <- subset(df_super, Label == highest_level)
 #Now we grab the factors data
 df <- for_figures %>% filter(SUPER_CAT == super_levels$SUPER_FACT[i])
 
+#Make a SASH df for adding in later
+df_SASH <- df %>% filter(SUBCATEGORY %in% c("SEXUAL HARASSMENT", "SEXUAL ASSAULT"))
+
 #Now limit df to just those categories
 df <- merge(df, 
             df_highest %>% select(CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>% distinct())
+df <- rbind(df, df_SASH)
+
 #Make plot
 factor_plot <- plot_format_fxn(df = df, rate_x = rate_x, 
                                start_color = start_color, 
@@ -392,15 +415,18 @@ factor_plot <- plot_format_fxn(df = df, rate_x = rate_x,
 assign(paste0(tolower(gsub("-", "_", super_levels$SUPER_FACT[i])), "_plot"), factor_plot)
 
 #cleanup
-rm(df_super, highest_level, df_highest, df, factor_plot)
+rm(df_super, highest_level, df_highest, df, factor_plot, df_SASH)
 }
 rm(super_levels, i)
 
 # Save Output -------------------------------------------------------------
 ggsave("priority_plot.pdf", plot = priority_plot, width = 12, height = 6, units = "in", path = "Plots/")
-ggsave("non_priority_plot.pdf", plot = non_priority_plot, width = 12, height = 6, units = "in", path = "Plots/")
+ggsave("other_plot.pdf", plot = other_plot, width = 12, height = 6, units = "in", path = "Plots/")
 ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, height = 6, units = "in", path = "Plots/")
-ggsave("non_priority_factors_plot.pdf", plot = non_priority_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
+ggsave("other_factors_plot.pdf", plot = other_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
+
+#TODO # Save the Word document
+print(doc, target = "Plots/Tables.docx")
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
 # 
