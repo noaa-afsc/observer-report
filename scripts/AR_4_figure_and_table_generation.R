@@ -3,7 +3,6 @@
 # Contact Craig Faunce
 
 #TODO - source data has RATE == NA!
-#TODO - Update so rates that display as "0.00" display as "<0.01"
 #TODO - Put a line above total row in the statements table
 #TODO - Generate summary of number of regulations at the category level for Table
 
@@ -192,7 +191,7 @@ rbind(subcat_units_rate %>%
         filter(CALENDAR_YEAR == adp_yr) %>%
         summarize(`Statements (#)` = sum(N_STATEMENTS))
         )
-      ) %>%
+      ) %>% 
   mutate(CATEGORY = str_to_title(CATEGORY),
          CATEGORY = case_when(str_detect(CATEGORY, "Uscg-Equipment") ~
                                 "Safety-USCG: Equipment",
@@ -208,8 +207,13 @@ rbind(subcat_units_rate %>%
                                 "MARPOL/Oil Spill",
                               str_detect(CATEGORY, "Interference") ~
                                 "Interference with Duties",
-                              TRUE ~ CATEGORY))
+                              TRUE ~ CATEGORY)) %>%
+  rename("Category" = CATEGORY)
 T_statement_totals <- autofit(flextable(T_statement_totals))
+#Add a line above totals https://github.com/davidgohel/flextable/issues/421
+T_statement_totals <- 
+  T_statement_totals %>% colformat_double() %>% 
+  hline(i = ~ before(Category, "Total"), border = fp_border_default())
 T_statement_totals
 
 # Create a new Word document (portrait by default)
@@ -219,6 +223,7 @@ doc <- read_docx()
 
 # Add first flextable
 doc <- body_add_flextable(doc, value = T_summary_units)
+
 
 # Add some space or another paragraph (optional)
 doc <- body_add_par(doc, "Space Added")
