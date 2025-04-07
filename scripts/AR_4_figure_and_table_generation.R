@@ -8,6 +8,7 @@ library(tidyverse)
 library(ggplot2)
 library(stringr) #Allows for plot overflow of labels for rows
 library(classInt)
+library(ggh4x) # (pretty headers) https://teunbrand.github.io/ggh4x/articles/Facets.html
 library(flextable)
 library(officer)
 library(FMAtools)
@@ -338,7 +339,7 @@ plot_format_fxn <- function(
       color = text_color,
       size  = text_size
     ) +
-    facet_grid(
+    facet_nested(
       facet_formula,
       scales = "free_y",
       space  = "free_y",
@@ -425,7 +426,7 @@ ggsave("other_plot.pdf", plot = other_plot, width = 12, height = 6, units = "in"
 ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, height = 6, units = "in", path = "Plots/")
 ggsave("other_factors_plot.pdf", plot = other_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
 
-#TODO # Save the Word document
+#Save the Word document
 print(doc, target = "Plots/Tables.docx")
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
