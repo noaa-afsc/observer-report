@@ -3,6 +3,49 @@
 # Contact Craig Faunce
 
 #TODO - source data has RATE == NA!
+#TODO - Update so rates that display as "0.00" display as "<0.01"
+#TODO - Put a line above total row in the statements table
+#TODO - Generate summary of number of regulations at the category level for Table
+
+#TODO - Add ODDS Table
+# # load ODDS data from google sheet
+# # the ORIGINAL spreadsheet can be found at this link:
+# # https://docs.google.com/spreadsheets/d/17BsqLarIh-8gqu9W5VWiEvFTjjnzaK-R48TXweXc2ag/edit?usp=sharing
+# # here we are using a COPY of this spreadsheet, made 4/17/2024
+# 
+# # to properly load the ODDS data, we need to create the unique dribble ID
+# # THIS IS UNIQUE TO EACH USER SINCE THE DATA IS NOT HOUSED IN A SHARED FOLDER
+# # EDIT THE FOLLOWING LINE ACCORDING TO WHERE THE DATA IS LOCATED IN YOUR DRIVE
+# project_dribble <- googledrive::drive_get("2023 Observer Program Annual Report/Chap 5 - Enforcement & Compliance/possible_trips_not_logged_or_logged_incorrectly_copy")
+# 
+# # extract the ID of the file (if there are multiple, select 1 since there should
+# # be no difference among the files (I'm not certain though))
+# id <- as.character(project_dribble$id[1])
+# 
+# # specify this file 
+# data_dribble <- googledrive::drive_get(googledrive::as_id(id))
+# 
+# # download the file from g-drive into local
+# drive_download(
+#   data_dribble,
+#   path = paste0(Rdata_files_path, "possible_trips_not_logged_or_logged_incorrectly.xlsx"),
+#   overwrite = T
+# )
+# 
+# # format the excel sheet to function within R
+# # IMPORTANT: comment out the below code and recreate the function call with
+# # YOUR SPECIFIC FILE PATH
+# # the map function allows for multiple sheets to be clumped into one list
+# odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
+#   map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
+# 
+# # create dataset for 2023
+# # the number corresponds to the sheet # in the spreadsheet
+# # 2024 is the first (1) item in the list
+# odds_2023 <- odds_data[[2]]
+# # create dataset for 2022
+# odds_2022 <- odds_data[[3]]
+
 
 library(tidyverse)
 library(ggplot2)
