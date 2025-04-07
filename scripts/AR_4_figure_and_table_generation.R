@@ -377,7 +377,11 @@ plot_format_fxn <- function(
     geom_text(
       aes(
         y = SUBCATEGORY,
-        label = sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]])
+        label = ifelse(
+          sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]]) == "0.00",
+          "< 0.01",
+          sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]])
+        )
       ),
       color = text_color,
       size  = text_size
