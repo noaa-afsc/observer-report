@@ -535,7 +535,7 @@ nrow(filter(em_trw_offload, AGENCY_GEAR_CODE == "NPT" | PORT_CODE == "IFP"))
 # Get eLandings data for these fish tickets to add TENDER_OFFLOAD_DATE which is needed to match
 #  observer data so we can determine which landings observers marked as monitored
 script <- paste(
-  "SELECT report_id, vessel_id, tender_vessel_adfg_number, tender_offload_date, processor_name
+  "SELECT report_id, vessel_id, tender_vessel_adfg_number, to_char(tender_offload_date, 'yyyy-mm-dd') as tender_offload_date, processor_name
    FROM norpac_views.atl_landing_id
    WHERE year = ", year
 )
@@ -644,7 +644,7 @@ work.offload <- tender.link %>%
 
 # Check to make sure all VALHALLA REPORT_IDs have a match in observer data
 if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
-  cat("\033[31mREPORT_IDs exist that are not in observer data\033[39m\n")
+  stop("\033[31mREPORT_IDs exist that are not in observer data\033[39m\n")
 } else {
   cat("\033[32mAll REPORT_IDs present in observer data\033[39m\n")
 }
