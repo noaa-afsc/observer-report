@@ -46,7 +46,7 @@ load(file = file_3_name)
 excel_sheets(odds_file)
 odds_dat <- read_excel(odds_file, sheet = "2024 Issues") #TODO - update this every year
 
-rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
+rm(list = ls()[!ls() %in% c("df_obs_statements", "subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
                             "start_color", "end_color", "rate_x", "adp_yr", "AnnRpt_EnfChp_dribble", "odds_dat")])
 # Data manipulation ----------------------------------------------------------------------------------------------------
 
@@ -159,21 +159,91 @@ T_summary_units <-
          "Total Units" = TOTAL_UNITS)
 # make pretty table
 T_summary_units <- autofit(flextable(T_summary_units))
-#T_summary_units
+T_summary_units
 
 #Total number of Statements 
 T_statement_totals <-
-rbind(subcat_units_rate %>%
-               filter(CALENDAR_YEAR == adp_yr) %>%
-               group_by(CATEGORY) %>%
-               summarize(`Statements (#)` = sum(N_STATEMENTS)) %>% 
-        arrange(desc(`Statements (#)`)),
-      merge(data.frame(CATEGORY = "TOTAL"),
-            subcat_units_rate %>%
-        filter(CALENDAR_YEAR == adp_yr) %>%
-        summarize(`Statements (#)` = sum(N_STATEMENTS))
+  # rbind(subcat_units_rate %>%
+  #                filter(CALENDAR_YEAR == adp_yr) %>%
+  #                group_by(CATEGORY) %>%
+  #                summarize(`Statements (#)` = sum(N_STATEMENTS)) %>% 
+  #         arrange(desc(`Statements (#)`)),
+  #       merge(data.frame(CATEGORY = "TOTAL"),
+  #             subcat_units_rate %>%
+  #         filter(CALENDAR_YEAR == adp_yr) %>%
+  #         summarize(`Statements (#)` = sum(N_STATEMENTS))
+  #         )
+  #       ) %>%
+  
+  # UPDATE ADK 20250409
+  # need to use "df_obs_statements" because "subcat_units_rate" filters out statements 
+  # that do not have any units (i.e, the units are NA).
+  # Those need to be INCLUDED in high-level statement summaries.
+  # they are excluded from the rate calc because NA's cause problems with division and joins.
+  # but we need to 
+  #   a) include them
+  #   b) come up with a way to handle them
+  
+  # Also adding add'l columns for more data
+  
+  rbind(df_obs_statements %>%
+          filter(FIRST_VIOL_YEAR == adp_yr) %>% 
+          group_by(CATEGORY) %>%
+          summarise(`Statements (#)`              = n_distinct(OLE_OBS_STATEMENT_SEQ),
+                    `Subcategories Selected (#)`  = n_distinct(SUBCATEGORY),
+                    `Regs Selected (#)`           = n_distinct(OLE_REGULATION_SEQ),
+                    `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+                    .groups = "drop" ) %>%
+          # Adding the UNITS that were selected as well
+          # Wanted to just do it as another line in the summarise statement,
+          # but I couldn't figure out how to get the distinct INCIDENT UNITS to list in the summarize correctly, 
+          # so I'm doing it separately and left-joining it
+          # Makes the code ugly.  But oh well.
+          left_join(
+            df_obs_statements %>%
+              filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ), # here we DO need to filter out the NAs because we only care about the units that have value
+                     FIRST_VIOL_YEAR == adp_yr) %>% 
+              distinct(CATEGORY, INCIDENT_UNIT) %>%
+              mutate(INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'DEPL', 'Deployments', INCIDENT_UNIT),
+                     INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'TRIP', 'Trips',       INCIDENT_UNIT),
+                     INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'HAUL', 'Hauls',       INCIDENT_UNIT),
+                     INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'SAMP', 'Samples',     INCIDENT_UNIT),
+                     INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'MARM', 'Marine Mammal Interactions', INCIDENT_UNIT),
+                     INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'OFFL', 'Offloads',    INCIDENT_UNIT),
+                     INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'DAYS', 'Days',        INCIDENT_UNIT),
+              ) %>%
+              group_by(CATEGORY) %>%
+              summarise(`Occurrence Units`  = paste(INCIDENT_UNIT, collapse = ", "),
+                        .groups = "drop" ) 
+          ) %>% 
+          arrange(desc(`Statements (#)`)),
+        merge(data.frame(CATEGORY = "TOTAL"),
+              df_obs_statements %>%
+                filter(FIRST_VIOL_YEAR == adp_yr) %>%
+                summarise(`Statements (#)`              = n_distinct(OLE_OBS_STATEMENT_SEQ),
+                          `Subcategories Selected (#)`  = n_distinct(SUBCATEGORY),
+                          `Regs Selected (#)`           = n_distinct(OLE_REGULATION_SEQ),
+                          `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+                          .groups = "drop" ) %>%
+                cross_join(
+                  df_obs_statements %>%
+                    filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ), # here it is OK to filter them out because we only care about the units that have value
+                           FIRST_VIOL_YEAR == adp_yr) %>% 
+                    distinct(INCIDENT_UNIT) %>%
+                    mutate(INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'DEPL', 'Deployments', INCIDENT_UNIT),
+                           INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'TRIP', 'Trips',       INCIDENT_UNIT),
+                           INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'HAUL', 'Hauls',       INCIDENT_UNIT),
+                           INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'SAMP', 'Samples',     INCIDENT_UNIT),
+                           INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'MARM', 'Marine Mammal Interactions', INCIDENT_UNIT),
+                           INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'OFFL', 'Offloads',    INCIDENT_UNIT),
+                           INCIDENT_UNIT = ifelse(INCIDENT_UNIT == 'DAYS', 'Days',        INCIDENT_UNIT),
+                    ) %>%
+                    summarise(`Occurrence Units`  = paste(INCIDENT_UNIT, collapse = ", "),
+                              .groups = "drop" ) 
+                )
+              
         )
-      ) %>% 
+  ) %>% 
   mutate(CATEGORY = str_to_title(CATEGORY),
          CATEGORY = case_when(str_detect(CATEGORY, "Uscg-Equipment") ~
                                 "Safety-USCG: Equipment",
@@ -191,23 +261,27 @@ rbind(subcat_units_rate %>%
                                 "Interference with Duties",
                               TRUE ~ CATEGORY)) %>%
   rename("Category" = CATEGORY)
+
 T_statement_totals <- autofit(flextable(T_statement_totals))
 #Add a line above totals https://github.com/davidgohel/flextable/issues/421
 T_statement_totals <- 
   T_statement_totals %>% colformat_double() %>% 
   hline(i = ~ before(Category, "Total"), border = fp_border_default())
-#T_statement_totals
+
+ T_statement_totals
 
 #ODDS
 odds_table <- 
   merge(odds_dat %>% group_by(Port = `Trip Ending Port`, 
                               Issue = `Issue Category`) %>% 
-          summarize(total_records = n()) %>%
+          summarize(total_records = n(),
+                    .groups= "drop") %>%
           pivot_wider(names_from = Issue, values_from = total_records)
         ,
         odds_dat %>% group_by(Port = `Trip Ending Port`) %>% 
           summarize(total_records = n(),
-                    Cases = sum(!is.na(`Case Number`)))
+                    Cases = sum(!is.na(`Case Number`)),
+                    .groups= "drop")
   ) %>% arrange(desc(total_records)) %>%
   rename(`Ending Port` = Port,
          `Records (#)` = total_records,
@@ -225,7 +299,8 @@ odds_table <- autofit(flextable(odds_table))
 odds_table <- #Add pretty line obove totals as in prior tables
   odds_table %>% colformat_double() %>% 
   hline(i = ~ before(`Ending Port`, "Total"), border = fp_border_default())
-#odds_table
+
+odds_table
 
 # Create a new Word document (portrait by default)
 doc <- read_docx()
