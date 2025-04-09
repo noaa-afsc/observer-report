@@ -3,49 +3,7 @@
 # Contact Craig Faunce
 
 #TODO - source data has RATE == NA!
-#TODO - Update so rates that display as "0.00" display as "<0.01"
-#TODO - Put a line above total row in the statements table
 #TODO - Generate summary of number of regulations at the category level for Table
-
-#TODO - Add ODDS Table
-# # load ODDS data from google sheet
-# # the ORIGINAL spreadsheet can be found at this link:
-# # https://docs.google.com/spreadsheets/d/17BsqLarIh-8gqu9W5VWiEvFTjjnzaK-R48TXweXc2ag/edit?usp=sharing
-# # here we are using a COPY of this spreadsheet, made 4/17/2024
-# 
-# # to properly load the ODDS data, we need to create the unique dribble ID
-# # THIS IS UNIQUE TO EACH USER SINCE THE DATA IS NOT HOUSED IN A SHARED FOLDER
-# # EDIT THE FOLLOWING LINE ACCORDING TO WHERE THE DATA IS LOCATED IN YOUR DRIVE
-# project_dribble <- googledrive::drive_get("2023 Observer Program Annual Report/Chap 5 - Enforcement & Compliance/possible_trips_not_logged_or_logged_incorrectly_copy")
-# 
-# # extract the ID of the file (if there are multiple, select 1 since there should
-# # be no difference among the files (I'm not certain though))
-# id <- as.character(project_dribble$id[1])
-# 
-# # specify this file 
-# data_dribble <- googledrive::drive_get(googledrive::as_id(id))
-# 
-# # download the file from g-drive into local
-# drive_download(
-#   data_dribble,
-#   path = paste0(Rdata_files_path, "possible_trips_not_logged_or_logged_incorrectly.xlsx"),
-#   overwrite = T
-# )
-# 
-# # format the excel sheet to function within R
-# # IMPORTANT: comment out the below code and recreate the function call with
-# # YOUR SPECIFIC FILE PATH
-# # the map function allows for multiple sheets to be clumped into one list
-# odds_data <- excel_sheets(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx') %>%
-#   map(~read_xlsx(path = 'C:/Users/cameron.vanhorn/Work/AR_2024_Chapter5/data_files/possible_trips_not_logged_or_logged_incorrectly.xlsx',.))
-# 
-# # create dataset for 2023
-# # the number corresponds to the sheet # in the spreadsheet
-# # 2024 is the first (1) item in the list
-# odds_2023 <- odds_data[[2]]
-# # create dataset for 2022
-# odds_2022 <- odds_data[[3]]
-
 
 library(tidyverse)
 library(ggplot2)
@@ -54,11 +12,13 @@ library(classInt)
 library(ggh4x) # (pretty headers) https://teunbrand.github.io/ggh4x/articles/Facets.html
 library(flextable)
 library(officer)
+library(readxl) #for importing the odds data
 library(FMAtools)
 
 # User inputs ------------------------------------------------------------------------------------------------------------
 # Set the .Rdata file we will load
 file_3_name <- "AR_3_rate_output.Rdata"
+odds_file <- "possible_trips_not_logged_or_logged_incorrectly_copy_4_7_2025.xlsx"
 
 # Factor order for plotting
 fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAMMALS")
@@ -76,12 +36,18 @@ AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 
 # Pull Rdata file from google drive. This will update your local if the GDrive version is newer,
 #  otherwise it will load your local
 gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
+gdrive_download(odds_file, AnnRpt_EnfChp_dribble)
 
+#load violations
 load(file = file_3_name)
 
-rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
-                            "start_color", "end_color", "rate_x", "adp_yr")])
+#load odds violations
+#Identify the available sheets
+excel_sheets(odds_file)
+odds_dat <- read_excel(odds_file, sheet = "2024 Issues") #TODO - update this every year
 
+rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
+                            "start_color", "end_color", "rate_x", "adp_yr", "AnnRpt_EnfChp_dribble", "odds_dat")])
 # Data manipulation ----------------------------------------------------------------------------------------------------
 
 subcat_priority <-
@@ -146,6 +112,21 @@ for_figures <-
                              TRUE ~ INCIDENT_UNIT),
         !! paste0("RATE_X_", rate_x) := RATE * rate_x) %>% filter(!is.na(RATE)) #NAs removed
 
+#ODDS
+odds_dat$`Issue Category` <- ifelse(grepl("not logged", odds_dat$`Issue Category`, ignore.case = TRUE), 
+                                    "No Logged Trip", 
+                                    odds_dat$`Issue Category`)
+odds_dat$`Issue Category` <- ifelse(grepl("canceled", odds_dat$`Issue Category`, ignore.case = TRUE), 
+                                    "Canceled Trip Fished", 
+                                    odds_dat$`Issue Category`)
+odds_dat$`Issue Category` <- ifelse(grepl("NMFS", odds_dat$`Issue Category`, ignore.case = TRUE), 
+                                    "Incorrect FMP Area", 
+                                    odds_dat$`Issue Category`)
+odds_dat$`Trip Ending Port` <- ifelse(grepl("San Point", odds_dat$`Trip Ending Port`, ignore.case = TRUE), 
+                                      "Sand Point", 
+                                      odds_dat$`Trip Ending Port`)
+
+
 rm(subcat_priority, subcat_other, priority, other, factor_priority, factor_other)
 # Tables -----------------------------------------------------------------------------------------------
 # Summary of total observer statements per reporting category with total numbers
@@ -178,7 +159,7 @@ T_summary_units <-
          "Total Units" = TOTAL_UNITS)
 # make pretty table
 T_summary_units <- autofit(flextable(T_summary_units))
-T_summary_units
+#T_summary_units
 
 #Total number of Statements 
 T_statement_totals <-
@@ -192,7 +173,7 @@ rbind(subcat_units_rate %>%
         filter(CALENDAR_YEAR == adp_yr) %>%
         summarize(`Statements (#)` = sum(N_STATEMENTS))
         )
-      ) %>%
+      ) %>% 
   mutate(CATEGORY = str_to_title(CATEGORY),
          CATEGORY = case_when(str_detect(CATEGORY, "Uscg-Equipment") ~
                                 "Safety-USCG: Equipment",
@@ -208,132 +189,113 @@ rbind(subcat_units_rate %>%
                                 "MARPOL/Oil Spill",
                               str_detect(CATEGORY, "Interference") ~
                                 "Interference with Duties",
-                              TRUE ~ CATEGORY))
+                              TRUE ~ CATEGORY)) %>%
+  rename("Category" = CATEGORY)
 T_statement_totals <- autofit(flextable(T_statement_totals))
-T_statement_totals
+#Add a line above totals https://github.com/davidgohel/flextable/issues/421
+T_statement_totals <- 
+  T_statement_totals %>% colformat_double() %>% 
+  hline(i = ~ before(Category, "Total"), border = fp_border_default())
+#T_statement_totals
+
+#ODDS
+odds_table <- 
+  merge(odds_dat %>% group_by(Port = `Trip Ending Port`, 
+                              Issue = `Issue Category`) %>% 
+          summarize(total_records = n()) %>%
+          pivot_wider(names_from = Issue, values_from = total_records)
+        ,
+        odds_dat %>% group_by(Port = `Trip Ending Port`) %>% 
+          summarize(total_records = n(),
+                    Cases = sum(!is.na(`Case Number`)))
+  ) %>% arrange(desc(total_records)) %>%
+  rename(`Ending Port` = Port,
+         `Records (#)` = total_records,
+         `Cases (#)` = Cases) %>% 
+  select(-`Records (#)`) #Decision by OLE
+
+# add a total row for this table
+odds_totals <- colSums(odds_table[sapply(odds_table, is.numeric)], na.rm = TRUE) #only numeric columns
+total_row <- c(Name = "Total", odds_totals) # add a descriptor
+
+odds_table <- rbind(odds_table, total_row) # add row to table
+
+odds_table <- autofit(flextable(odds_table))
+
+odds_table <- #Add pretty line obove totals as in prior tables
+  odds_table %>% colformat_double() %>% 
+  hline(i = ~ before(`Ending Port`, "Total"), border = fp_border_default())
+#odds_table
 
 # Create a new Word document (portrait by default)
 doc <- read_docx()
 # Optionally, add a heading or title
 #doc <- body_add_par(doc, "Two Tables Stacked on One Page", style = "heading 1")
 
-# Add first flextable
-doc <- body_add_flextable(doc, value = T_summary_units)
-
-# Add some space or another paragraph (optional)
-doc <- body_add_par(doc, "Space Added")
-
-# Add second flextable
+doc <- body_add_flextable(doc, value = T_summary_units) # Add first flextable
+doc <- body_add_par(doc, "Space Added")# Add some space or another paragraph (optional)
 doc <- body_add_flextable(doc, value = T_statement_totals)
+doc <- body_add_par(doc, "Space Added")
+doc <- body_add_flextable(doc, value = odds_table)
 
 # Determine color breaks ------------------------------------------------------------------------------------
-calc_gvf <- function(x, breaks) {
-  SST <- sum((x - mean(x))^2)
-  class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
-  SSW <- sum(tapply(x, class_assignments, function(z) sum((z - mean(z))^2)))
-  (SST - SSW) / SST
-}
 
-optimal_jenks_breaks <- function(x, 
-                                 min_k = 2, 
-                                 max_k = 10, 
-                                 gvf_threshold = 0.9, 
-                                 top_count_threshold = 6) {
-  # -- 1) Remove all NAs --
-  x <- na.omit(x)
+breaks_fxn <- function(cats, df_in, rate_x = 1) {
+  # Create list to store breaks for each category
+  breaks_list <- setNames(vector("list", length(cats)), cats)
   
-  # -- 2) If there's not enough data left, return a default result --
-  if (length(x) < 2) {
-    cat("No data or insufficient data after removing NAs.\n")
-    return(list(n_breaks = NA, breaks = NA, gvf = NA))
+  for (cat in cats) {
+
+    # Subset RATE values only for this category
+    x_subset <- df_in$RATE[df_in$SUPER_CAT == cat]
+    
+    # Determine number of unique values; Jenks requires at least two classes.
+    unique_vals <- unique(x_subset)
+    n_classes <- if (length(unique_vals) < 5) max(2, length(unique_vals)) else 5
+    
+    # Compute Jenks natural breaks with the adjusted number of classes
+    ci <- classIntervals(x_subset, n = n_classes, style = "jenks")
+    breaks <- ci$brks
+    
+    # Scale breaks by rate_x
+    breaks <- breaks * rate_x
+    
+    # (Optional) Set the lower bound to zero
+    breaks[1] <- 0
+    
+    # Store the breaks for this category
+    breaks_list[[cat]] <- breaks
   }
   
-  best_result <- NULL
-  for (k in min_k:max_k) {
-    ci <- classIntervals(x, n = k, style = "jenks")
-    current_breaks <- ci$brks
-    
-    # Calculate current GVF
-    current_gvf <- calc_gvf(x, current_breaks)
-    
-    # Count how many data points fall in the top break
-    top_break_count <- sum(x >= current_breaks[length(current_breaks) - 1] &
-                             x <= current_breaks[length(current_breaks)])
-    
-    cat("For", k, "classes: GVF =", round(current_gvf, 3),
-        "| Top break count =", top_break_count, "\n")
-    
-    # -- 3) Safely check for NA in current_gvf --
-    if (!is.na(current_gvf) && current_gvf >= gvf_threshold && top_break_count < top_count_threshold) {
-      best_result <- list(n_breaks = k, breaks = current_breaks, gvf = current_gvf)
-      break
-    }
-  }
+  # Create a new column 'Label' using the category-specific breaks
+  df_in$Label <- NA  # initialize
   
-  # If we never found a solution that met the conditions, fall back to max_k
-  if (is.null(best_result)) {
-    ci <- classIntervals(x, n = max_k, style = "jenks")
-    best_result <- list(
-      n_breaks = max_k, 
-      breaks   = ci$brks, 
-      gvf      = calc_gvf(x, ci$brks)
-    )
-  }
+  for (cat in cats) {
+    # Subset the rows for this category
+    idx <- df_in$SUPER_CAT == cat
+    
+    # Get precomputed breaks for this category
+    cat_breaks <- breaks_list[[cat]]
+    
+    # Cut the scaled RATE values into the category-specific bins
+    df_in$Label[idx] <- as.character(cut(
+      x = df_in$RATE[idx] * rate_x,
+      breaks = cat_breaks
+    ))
+    # Note: intervals are of the form (lower, upper] meaning the upper bound is included.
+  } 
   
-  best_result
+  return(df_in)
 }
 
 # 1) Get unique categories from SUPER_CAT
-cats <- unique(for_figures$SUPER_CAT)
-
-# 2) For each category, compute Jenks breaks and store in a list
-breaks_list <- setNames(vector("list", length(cats)), cats)
-
-for (cat in cats) {
-  #testing cat <- cats[1]
-  # Subset RATE values only for this category
-  x_subset <- for_figures$RATE[for_figures$SUPER_CAT == cat]
-  
-  # Calculate optimal Jenks breaks
-  best <- optimal_jenks_breaks(x_subset, 
-                               min_k = 2, 
-                               max_k = 5, 
-                               gvf_threshold = 0.8, 
-                               top_count_threshold = 6)
-  
-  # Scale breaks by rate_x
-  best$breaks <- best$breaks * rate_x
-  
-  # (Optional) Set the lower bound to zero
-  best$breaks[1] <- 0
-  
-  # Store results
-  breaks_list[[cat]] <- best
-}
-
-# 3) Create a new column 'Label' using the category-specific breaks
-for_figures$Label <- NA  # initialize
-
-for (cat in cats) {
-  # Index only the rows for this category
-  idx <- for_figures$SUPER_CAT == cat
-  
-  # Use the precomputed breaks for this category
-  cat_breaks <- breaks_list[[cat]]$breaks
-  
-  # Cut the scaled RATE values into the category-specific bins
-  for_figures$Label[idx] <- as.character(cut(
-    x      = for_figures$RATE[idx] * rate_x,
-    breaks = cat_breaks))
-  #Intervals look like (lower, upper], meaning the upper bound is included while the lower bound is not.
-}
+cats <- unique(for_figures$SUPER_CAT[!grepl("_FACTOR", for_figures$SUPER_CAT)]) #Ignoring factors dfs.
+for_figures <- breaks_fxn(cats, for_figures, rate_x = rate_x)
 
 # Check results
 #head(for_figures)
 # You now have a 'Label' factor with intervals that depend on each
 # category's own Jenks classification.
-
-rm(best, breaks_list, cat, cat_breaks, cats, idx, x_subset)
 
 # Plots ---------------------------------------------------------------------------
 ## Plot function
@@ -346,7 +308,7 @@ plot_format_fxn <- function(
     numeric_format = "%.2f",
     text_color    = "white",
     text_size     = 4,
-    legend_title  = "Rate Category",
+    legend_title  = "Rate (%)",
     base_theme    = theme_bw,
     # New argument lets you override the facet formula:
     facet_formula = CAT_COMBO ~ INCIDENT_UNIT
@@ -377,7 +339,11 @@ plot_format_fxn <- function(
     geom_text(
       aes(
         y = SUBCATEGORY,
-        label = sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]])
+        label = ifelse(
+          sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]]) == "0.00",
+          "< 0.01",
+          sprintf(numeric_format, .data[[paste0("RATE_X_", rate_x)]])
+        )
       ),
       color = text_color,
       size  = text_size
@@ -429,7 +395,7 @@ super_levels$SUPER_FACT = paste0(super_levels$SUPER_CAT, "_FACTORS")
 
 #Lets get the super group
 for(i in 1:nrow(super_levels)){
-  
+#TESTING i <- 1  
 df_super <- for_figures %>% filter(SUPER_CAT == super_levels$SUPER_CAT[i])
 df_super$Label <- factor(df_super$Label, levels = sort(unique(df_super$Label)))
 # This ensures the lowest interval is first in levels(), and the highest is last.
@@ -449,19 +415,30 @@ df <- merge(df,
             df_highest %>% select(CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>% distinct())
 df <- rbind(df, df_SASH)
 
+if(i == 1){df_out <- df}
+if(i > 1){df_out <- rbind(df_out, df)}
+}
+
+cats <- super_levels$SUPER_FACT
+for_factor_figures <- suppressWarnings(breaks_fxn(cats, df_out, rate_x = rate_x))
+
+#TODO - cleanup
+
 #Make plot
-factor_plot <- plot_format_fxn(df = df, rate_x = rate_x, 
+
+for(i in 1:length(cats)){
+factor_plot <- plot_format_fxn(df = for_factor_figures %>% filter(SUPER_CAT == cats[i]), 
+                               rate_x = rate_x, 
                                start_color = start_color, 
                                end_color = end_color,
                                facet_formula = NMFS_REGION ~ COVERAGE_TYPE + VESSEL_TYPE + INCIDENT_UNIT
                                )
 #Give it a name
 assign(paste0(tolower(gsub("-", "_", super_levels$SUPER_FACT[i])), "_plot"), factor_plot)
+}
 
 #cleanup
-rm(df_super, highest_level, df_highest, df, factor_plot, df_SASH)
-}
-rm(super_levels, i)
+rm(df, df_SASH, i, df_super, df_out, df_highest, super_levels)
 
 # Save Output -------------------------------------------------------------
 ggsave("priority_plot.pdf", plot = priority_plot, width = 12, height = 6, units = "in", path = "Plots/")
@@ -470,7 +447,7 @@ ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, he
 ggsave("other_factors_plot.pdf", plot = other_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
 
 #Save the Word document
-print(doc, target = "Plots/Tables.docx")
+print(doc, target = "tables/tables.docx")
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
 # 
