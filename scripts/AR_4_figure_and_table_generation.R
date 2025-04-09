@@ -4,7 +4,6 @@
 
 #TODO - source data has RATE == NA!
 #TODO - Generate summary of number of regulations at the category level for Table
-#TODO - Add ODDS Table
 
 library(tidyverse)
 library(ggplot2)
@@ -160,7 +159,7 @@ T_summary_units <-
          "Total Units" = TOTAL_UNITS)
 # make pretty table
 T_summary_units <- autofit(flextable(T_summary_units))
-T_summary_units
+#T_summary_units
 
 #Total number of Statements 
 T_statement_totals <-
@@ -197,7 +196,7 @@ T_statement_totals <- autofit(flextable(T_statement_totals))
 T_statement_totals <- 
   T_statement_totals %>% colformat_double() %>% 
   hline(i = ~ before(Category, "Total"), border = fp_border_default())
-T_statement_totals
+#T_statement_totals
 
 #ODDS
 odds_table <- 
@@ -215,7 +214,18 @@ odds_table <-
          `Cases (#)` = Cases) %>% 
   select(-`Records (#)`) #Decision by OLE
 
+# add a total row for this table
+odds_totals <- colSums(odds_table[sapply(odds_table, is.numeric)], na.rm = TRUE) #only numeric columns
+total_row <- c(Name = "Total", odds_totals) # add a descriptor
+
+odds_table <- rbind(odds_table, total_row) # add row to table
+
 odds_table <- autofit(flextable(odds_table))
+
+odds_table <- #Add pretty line obove totals as in prior tables
+  odds_table %>% colformat_double() %>% 
+  hline(i = ~ before(`Ending Port`, "Total"), border = fp_border_default())
+#odds_table
 
 # Create a new Word document (portrait by default)
 doc <- read_docx()
@@ -298,7 +308,7 @@ plot_format_fxn <- function(
     numeric_format = "%.2f",
     text_color    = "white",
     text_size     = 4,
-    legend_title  = "Rate Category",
+    legend_title  = "Rate (%)",
     base_theme    = theme_bw,
     # New argument lets you override the facet formula:
     facet_formula = CAT_COMBO ~ INCIDENT_UNIT
@@ -410,14 +420,15 @@ if(i > 1){df_out <- rbind(df_out, df)}
 }
 
 cats <- super_levels$SUPER_FACT
-for_factor_figures <- suppressWarnings(breaks_fxn(cats, df_out))
+for_factor_figures <- suppressWarnings(breaks_fxn(cats, df_out, rate_x = rate_x))
 
 #TODO - cleanup
 
 #Make plot
 
 for(i in 1:length(cats)){
-factor_plot <- plot_format_fxn(df = for_factor_figures %>% filter(SUPER_CAT == cats[i]), rate_x = rate_x, 
+factor_plot <- plot_format_fxn(df = for_factor_figures %>% filter(SUPER_CAT == cats[i]), 
+                               rate_x = rate_x, 
                                start_color = start_color, 
                                end_color = end_color,
                                facet_formula = NMFS_REGION ~ COVERAGE_TYPE + VESSEL_TYPE + INCIDENT_UNIT
