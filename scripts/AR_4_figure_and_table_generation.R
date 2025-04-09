@@ -4,7 +4,6 @@
 
 #TODO - source data has RATE == NA!
 #TODO - Generate summary of number of regulations at the category level for Table
-#TODO - update colors to use jenks with 5 classes.
 #TODO - Add ODDS Table
 
 library(tidyverse)
@@ -14,11 +13,13 @@ library(classInt)
 library(ggh4x) # (pretty headers) https://teunbrand.github.io/ggh4x/articles/Facets.html
 library(flextable)
 library(officer)
+library(readxl) #for importing the odds data
 library(FMAtools)
 
 # User inputs ------------------------------------------------------------------------------------------------------------
 # Set the .Rdata file we will load
 file_3_name <- "AR_3_rate_output.Rdata"
+odds_file <- "possible_trips_not_logged_or_logged_incorrectly_copy_4_7_2025.xlsx"
 
 # Factor order for plotting
 fact_order <- c("DEPLOY", "DAYS", "TRIP", "OFFLOAD", "HAUL", "SAMPLE", "MAMMALS")
@@ -36,12 +37,18 @@ AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 
 # Pull Rdata file from google drive. This will update your local if the GDrive version is newer,
 #  otherwise it will load your local
 gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
+gdrive_download(odds_file, AnnRpt_EnfChp_dribble)
 
+#load violations
 load(file = file_3_name)
 
-rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
-                            "start_color", "end_color", "rate_x", "adp_yr", "AnnRpt_EnfChp_dribble")])
+#load odds violations
+#Identify the available sheets
+excel_sheets(odds_file)
+odds_dat <- read_excel(odds_file, sheet = "2024 Issues") #TODO - update this every year
 
+rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
+                            "start_color", "end_color", "rate_x", "adp_yr", "AnnRpt_EnfChp_dribble", "odds_dat")])
 # Data manipulation ----------------------------------------------------------------------------------------------------
 
 subcat_priority <-
@@ -105,6 +112,21 @@ for_figures <-
                              INCIDENT_UNIT == "MARM" ~ "MAMMALS",
                              TRUE ~ INCIDENT_UNIT),
         !! paste0("RATE_X_", rate_x) := RATE * rate_x) %>% filter(!is.na(RATE)) #NAs removed
+
+#ODDS
+odds_dat$`Issue Category` <- ifelse(grepl("not logged", odds_dat$`Issue Category`, ignore.case = TRUE), 
+                                    "No Logged Trip", 
+                                    odds_dat$`Issue Category`)
+odds_dat$`Issue Category` <- ifelse(grepl("canceled", odds_dat$`Issue Category`, ignore.case = TRUE), 
+                                    "Canceled Trip Fished", 
+                                    odds_dat$`Issue Category`)
+odds_dat$`Issue Category` <- ifelse(grepl("NMFS", odds_dat$`Issue Category`, ignore.case = TRUE), 
+                                    "Incorrect FMP Area", 
+                                    odds_dat$`Issue Category`)
+odds_dat$`Trip Ending Port` <- ifelse(grepl("San Point", odds_dat$`Trip Ending Port`, ignore.case = TRUE), 
+                                      "Sand Point", 
+                                      odds_dat$`Trip Ending Port`)
+
 
 rm(subcat_priority, subcat_other, priority, other, factor_priority, factor_other)
 # Tables -----------------------------------------------------------------------------------------------
@@ -177,20 +199,34 @@ T_statement_totals <-
   hline(i = ~ before(Category, "Total"), border = fp_border_default())
 T_statement_totals
 
+#ODDS
+odds_table <- 
+  merge(odds_dat %>% group_by(Port = `Trip Ending Port`, 
+                              Issue = `Issue Category`) %>% 
+          summarize(total_records = n()) %>%
+          pivot_wider(names_from = Issue, values_from = total_records)
+        ,
+        odds_dat %>% group_by(Port = `Trip Ending Port`) %>% 
+          summarize(total_records = n(),
+                    Cases = sum(!is.na(`Case Number`)))
+  ) %>% arrange(desc(total_records)) %>%
+  rename(`Ending Port` = Port,
+         `Records (#)` = total_records,
+         `Cases (#)` = Cases) %>% 
+  select(-`Records (#)`) #Decision by OLE
+
+odds_table <- autofit(flextable(odds_table))
+
 # Create a new Word document (portrait by default)
 doc <- read_docx()
 # Optionally, add a heading or title
 #doc <- body_add_par(doc, "Two Tables Stacked on One Page", style = "heading 1")
 
-# Add first flextable
-doc <- body_add_flextable(doc, value = T_summary_units)
-
-
-# Add some space or another paragraph (optional)
-doc <- body_add_par(doc, "Space Added")
-
-# Add second flextable
+doc <- body_add_flextable(doc, value = T_summary_units) # Add first flextable
+doc <- body_add_par(doc, "Space Added")# Add some space or another paragraph (optional)
 doc <- body_add_flextable(doc, value = T_statement_totals)
+doc <- body_add_par(doc, "Space Added")
+doc <- body_add_flextable(doc, value = odds_table)
 
 # Determine color breaks ------------------------------------------------------------------------------------
 
@@ -400,7 +436,7 @@ ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, he
 ggsave("other_factors_plot.pdf", plot = other_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
 
 #Save the Word document
-print(doc, target = "Plots/Tables.docx")
+print(doc, target = "tables/tables.docx")
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
 # 
