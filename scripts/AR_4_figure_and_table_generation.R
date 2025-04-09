@@ -4,7 +4,7 @@
 
 #TODO - source data has RATE == NA!
 #TODO - Generate summary of number of regulations at the category level for Table
-
+#TODO - update colors to use jenks with 5 classes.
 #TODO - Add ODDS Table
 
 library(tidyverse)
@@ -40,7 +40,7 @@ gdrive_download(file_3_name, AnnRpt_EnfChp_dribble)
 load(file = file_3_name)
 
 rm(list = ls()[!ls() %in% c("subcat_units_rate", "subcat_units_rate_for_factors","assignments_dates_cr_perm",
-                            "start_color", "end_color", "rate_x", "adp_yr")])
+                            "start_color", "end_color", "rate_x", "adp_yr", "AnnRpt_EnfChp_dribble")])
 
 # Data manipulation ----------------------------------------------------------------------------------------------------
 
@@ -193,113 +193,63 @@ doc <- body_add_par(doc, "Space Added")
 doc <- body_add_flextable(doc, value = T_statement_totals)
 
 # Determine color breaks ------------------------------------------------------------------------------------
-calc_gvf <- function(x, breaks) {
-  SST <- sum((x - mean(x))^2)
-  class_assignments <- cut(x, breaks = breaks, include.lowest = TRUE, right = FALSE)
-  SSW <- sum(tapply(x, class_assignments, function(z) sum((z - mean(z))^2)))
-  (SST - SSW) / SST
-}
 
-optimal_jenks_breaks <- function(x, 
-                                 min_k = 2, 
-                                 max_k = 10, 
-                                 gvf_threshold = 0.9, 
-                                 top_count_threshold = 6) {
-  # -- 1) Remove all NAs --
-  x <- na.omit(x)
+breaks_fxn <- function(cats, df_in, rate_x = 1) {
+  # Create list to store breaks for each category
+  breaks_list <- setNames(vector("list", length(cats)), cats)
   
-  # -- 2) If there's not enough data left, return a default result --
-  if (length(x) < 2) {
-    cat("No data or insufficient data after removing NAs.\n")
-    return(list(n_breaks = NA, breaks = NA, gvf = NA))
+  for (cat in cats) {
+
+    # Subset RATE values only for this category
+    x_subset <- df_in$RATE[df_in$SUPER_CAT == cat]
+    
+    # Determine number of unique values; Jenks requires at least two classes.
+    unique_vals <- unique(x_subset)
+    n_classes <- if (length(unique_vals) < 5) max(2, length(unique_vals)) else 5
+    
+    # Compute Jenks natural breaks with the adjusted number of classes
+    ci <- classIntervals(x_subset, n = n_classes, style = "jenks")
+    breaks <- ci$brks
+    
+    # Scale breaks by rate_x
+    breaks <- breaks * rate_x
+    
+    # (Optional) Set the lower bound to zero
+    breaks[1] <- 0
+    
+    # Store the breaks for this category
+    breaks_list[[cat]] <- breaks
   }
   
-  best_result <- NULL
-  for (k in min_k:max_k) {
-    ci <- classIntervals(x, n = k, style = "jenks")
-    current_breaks <- ci$brks
-    
-    # Calculate current GVF
-    current_gvf <- calc_gvf(x, current_breaks)
-    
-    # Count how many data points fall in the top break
-    top_break_count <- sum(x >= current_breaks[length(current_breaks) - 1] &
-                             x <= current_breaks[length(current_breaks)])
-    
-    cat("For", k, "classes: GVF =", round(current_gvf, 3),
-        "| Top break count =", top_break_count, "\n")
-    
-    # -- 3) Safely check for NA in current_gvf --
-    if (!is.na(current_gvf) && current_gvf >= gvf_threshold && top_break_count < top_count_threshold) {
-      best_result <- list(n_breaks = k, breaks = current_breaks, gvf = current_gvf)
-      break
-    }
-  }
+  # Create a new column 'Label' using the category-specific breaks
+  df_in$Label <- NA  # initialize
   
-  # If we never found a solution that met the conditions, fall back to max_k
-  if (is.null(best_result)) {
-    ci <- classIntervals(x, n = max_k, style = "jenks")
-    best_result <- list(
-      n_breaks = max_k, 
-      breaks   = ci$brks, 
-      gvf      = calc_gvf(x, ci$brks)
-    )
-  }
+  for (cat in cats) {
+    # Subset the rows for this category
+    idx <- df_in$SUPER_CAT == cat
+    
+    # Get precomputed breaks for this category
+    cat_breaks <- breaks_list[[cat]]
+    
+    # Cut the scaled RATE values into the category-specific bins
+    df_in$Label[idx] <- as.character(cut(
+      x = df_in$RATE[idx] * rate_x,
+      breaks = cat_breaks
+    ))
+    # Note: intervals are of the form (lower, upper] meaning the upper bound is included.
+  } 
   
-  best_result
+  return(df_in)
 }
 
 # 1) Get unique categories from SUPER_CAT
-cats <- unique(for_figures$SUPER_CAT)
-
-# 2) For each category, compute Jenks breaks and store in a list
-breaks_list <- setNames(vector("list", length(cats)), cats)
-
-for (cat in cats) {
-  #testing cat <- cats[1]
-  # Subset RATE values only for this category
-  x_subset <- for_figures$RATE[for_figures$SUPER_CAT == cat]
-  
-  # Calculate optimal Jenks breaks
-  best <- optimal_jenks_breaks(x_subset, 
-                               min_k = 2, 
-                               max_k = 5, 
-                               gvf_threshold = 0.8, 
-                               top_count_threshold = 6)
-  
-  # Scale breaks by rate_x
-  best$breaks <- best$breaks * rate_x
-  
-  # (Optional) Set the lower bound to zero
-  best$breaks[1] <- 0
-  
-  # Store results
-  breaks_list[[cat]] <- best
-}
-
-# 3) Create a new column 'Label' using the category-specific breaks
-for_figures$Label <- NA  # initialize
-
-for (cat in cats) {
-  # Index only the rows for this category
-  idx <- for_figures$SUPER_CAT == cat
-  
-  # Use the precomputed breaks for this category
-  cat_breaks <- breaks_list[[cat]]$breaks
-  
-  # Cut the scaled RATE values into the category-specific bins
-  for_figures$Label[idx] <- as.character(cut(
-    x      = for_figures$RATE[idx] * rate_x,
-    breaks = cat_breaks))
-  #Intervals look like (lower, upper], meaning the upper bound is included while the lower bound is not.
-}
+cats <- unique(for_figures$SUPER_CAT[!grepl("_FACTOR", for_figures$SUPER_CAT)]) #Ignoring factors dfs.
+for_figures <- breaks_fxn(cats, for_figures, rate_x = rate_x)
 
 # Check results
 #head(for_figures)
 # You now have a 'Label' factor with intervals that depend on each
 # category's own Jenks classification.
-
-rm(best, breaks_list, cat, cat_breaks, cats, idx, x_subset)
 
 # Plots ---------------------------------------------------------------------------
 ## Plot function
@@ -399,7 +349,7 @@ super_levels$SUPER_FACT = paste0(super_levels$SUPER_CAT, "_FACTORS")
 
 #Lets get the super group
 for(i in 1:nrow(super_levels)){
-  
+#TESTING i <- 1  
 df_super <- for_figures %>% filter(SUPER_CAT == super_levels$SUPER_CAT[i])
 df_super$Label <- factor(df_super$Label, levels = sort(unique(df_super$Label)))
 # This ensures the lowest interval is first in levels(), and the highest is last.
@@ -419,19 +369,29 @@ df <- merge(df,
             df_highest %>% select(CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>% distinct())
 df <- rbind(df, df_SASH)
 
+if(i == 1){df_out <- df}
+if(i > 1){df_out <- rbind(df_out, df)}
+}
+
+cats <- super_levels$SUPER_FACT
+for_factor_figures <- suppressWarnings(breaks_fxn(cats, df_out))
+
+#TODO - cleanup
+
 #Make plot
-factor_plot <- plot_format_fxn(df = df, rate_x = rate_x, 
+
+for(i in 1:length(cats)){
+factor_plot <- plot_format_fxn(df = for_factor_figures %>% filter(SUPER_CAT == cats[i]), rate_x = rate_x, 
                                start_color = start_color, 
                                end_color = end_color,
                                facet_formula = NMFS_REGION ~ COVERAGE_TYPE + VESSEL_TYPE + INCIDENT_UNIT
                                )
 #Give it a name
 assign(paste0(tolower(gsub("-", "_", super_levels$SUPER_FACT[i])), "_plot"), factor_plot)
+}
 
 #cleanup
-rm(df_super, highest_level, df_highest, df, factor_plot, df_SASH)
-}
-rm(super_levels, i)
+rm(df, df_SASH, i, df_super, df_out, df_highest, super_levels)
 
 # Save Output -------------------------------------------------------------
 ggsave("priority_plot.pdf", plot = priority_plot, width = 12, height = 6, units = "in", path = "Plots/")
