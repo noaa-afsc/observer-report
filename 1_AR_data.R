@@ -372,10 +372,12 @@ select h.ODDS_TRIP_NUMBER,
 -- sampling strata information
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
 ss.sampling_strata_code as strata,
-trunc(min(r.EFFECTIVE_DATE)) data_available
+trunc(r.EFFECTIVE_DATE) data_available,
+count(distinct s.species_pk) species
 from AKFISH_REPORT.CATCH_REPORT_SOURCE r
 join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
 join AKFISH_REPORT.EM_HAUL h on f.EM_HAUL_PK = h.EM_HAUL_PK
+join AKFISH_REPORT.SPECIES s on f.SPECIES_PK = s.SPECIES_PK
 join AKFISH_REPORT.CALENDAR_DATE c on f.REPORT_DATE_PK = c.CALENDAR_DATE_PK
 join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
 where r.year_pk >=", year-1, "
@@ -383,8 +385,16 @@ and r.CATCH_REPORT_TYPE_CODE = 'EM'
 and ss.sampling_strata_code != 'N/A'
 group by h.ODDS_TRIP_NUMBER,
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end,
-ss.sampling_strata_code
-order by h.ODDS_TRIP_NUMBER"))
+ss.sampling_strata_code, trunc(r.EFFECTIVE_DATE)
+order by h.ODDS_TRIP_NUMBER, trunc(r.EFFECTIVE_DATE)"))
+
+em_data_available <- em_data_available %>% 
+  group_by(ODDS_TRIP_NUMBER) %>% 
+  # Isolate rows in which all species data were available to catch accounting
+  filter(SPECIES == max(SPECIES)) %>% 
+  group_by(ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA) %>% 
+  # Isolate the earliest date at which all species data were available to catch accounting
+  summarise(DATA_AVAILABLE = min(DATA_AVAILABLE), .groups = 'drop')
 
 ob_trips <- dbGetQuery(channel_afsc, paste("
 select extract(year from t.start_date) as year, t.cruise, t.permit, t.trip_seq, t.end_date as trip_end

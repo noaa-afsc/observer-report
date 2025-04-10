@@ -1191,8 +1191,8 @@ times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
                 geom_histogram(bins = 20, fill="gray70") +
                 geom_vline(data = times_smry, aes(xintercept = median), color = "black") +
                 geom_vline(data = times_smry, aes(xintercept = mean), color = "red", lty = 2) +
-                geom_text(data = times_smry, aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), angle = 90, hjust = 1.2, vjust = -0.3) +
-                geom_text(data = times_smry, aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))), angle = 90, hjust = 1.2, vjust = 1.1) +
+                geom_text(data = times_smry, aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), angle = 90, hjust = 1.2, vjust = -0.55) +
+                geom_text(data = times_smry, aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))), angle = 90, hjust = 1.2, vjust = 1.35) +
                 labs(x = "Data timeliness (days)", y = "Count") +
                 theme_bw()
 
