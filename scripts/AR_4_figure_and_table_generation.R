@@ -128,6 +128,8 @@ odds_dat$`Trip Ending Port` <- ifelse(grepl("San Point", odds_dat$`Trip Ending P
 
 
 rm(subcat_priority, subcat_other, priority, other, factor_priority, factor_other)
+
+
 # Tables -----------------------------------------------------------------------------------------------
 # Summary of total observer statements per reporting category with total numbers
 #  of various factors for comparisons of total effort
@@ -158,18 +160,25 @@ T_summary_units <-
               summarize(TOTAL_UNITS = n_distinct(PERMIT),
                         N_UNITS_REPORTED = n_distinct(PERMIT[!is.na(OLE_OBS_STATEMENT_SEQ)])) %>%
               ungroup() %>%
-              mutate(VESSEL_OR_PLANT = ifelse(VESSEL_OR_PLANT == "V", "Vessels", "Plants")) %>%
+              mutate(VESSEL_OR_PLANT = paste0(ifelse(VESSEL_OR_PLANT == "V", "Vessels", "Plants"), '*')) %>%
               rename(OCCURRENCE_UNIT = VESSEL_OR_PLANT)
             ) %>% 
-  mutate(PERCENT_SELECTED = round((N_UNITS_REPORTED/TOTAL_UNITS)*100, 2)) %>%
+  mutate(PERCENT_SELECTED = round((N_UNITS_REPORTED/TOTAL_UNITS)*100, 1)) %>%
   arrange(desc(TOTAL_UNITS)) %>%
   rename("Occurrence Unit" = OCCURRENCE_UNIT,
          "Total Units (#)" = TOTAL_UNITS,
          "Selected in Statements (#)" = N_UNITS_REPORTED,
-         "% Selected" = PERCENT_SELECTED
+         "Selected (%)" = PERCENT_SELECTED
          )
 # make pretty table
 T_summary_units <- autofit(flextable(T_summary_units))
+T_summary_units <- bold(T_summary_units, bold = TRUE, part = "header")
+T_summary_units <-
+  T_summary_units %>% 
+    colformat_double() %>% 
+    hline(i      = ~ before(`Occurrence Unit`, "Vessels*"),
+          border = fp_border_default())
+
 T_summary_units
 
 #Total number of Statements 
@@ -202,7 +211,7 @@ T_statement_totals <-
           group_by(CATEGORY) %>%
           summarise(`Statements (#)`              = n_distinct(OLE_OBS_STATEMENT_SEQ),
                     `Regs Selected (#)`           = n_distinct(OLE_REGULATION_SEQ),
-                    `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+                    `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ, na.rm = TRUE),
                     .groups = "drop" ) %>%
           # Adding the UNITS that were selected as well
           # Wanted to just do it as another line in the summarise statement,
@@ -232,7 +241,7 @@ T_statement_totals <-
                 filter(FIRST_VIOL_YEAR == adp_yr) %>%
                 summarise(`Statements (#)`              = n_distinct(OLE_OBS_STATEMENT_SEQ),
                           `Regs Selected (#)`           = n_distinct(OLE_REGULATION_SEQ),
-                          `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
+                          `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ, na.rm = TRUE),
                           .groups = "drop" ) %>%
                 cross_join(
                   df_obs_statements %>%
@@ -272,12 +281,20 @@ T_statement_totals <-
   rename("Category" = CATEGORY)
 
 T_statement_totals <- autofit(flextable(T_statement_totals))
+
+# make bold headers and total
+T_statement_totals <- bold(T_statement_totals, bold = TRUE, part = "header")
+T_statement_totals <- bold(T_statement_totals, bold = TRUE, 
+                           i= ~ Category == "Total",
+                           j= ~ `Category` + `Statements (#)` + `Regs Selected (#)` + `Occurrences (#)`
+                           )
+
 #Add a line above totals https://github.com/davidgohel/flextable/issues/421
 T_statement_totals <- 
   T_statement_totals %>% colformat_double() %>% 
   hline(i = ~ before(Category, "Total"), border = fp_border_default())
 
- T_statement_totals
+T_statement_totals
 
 #ODDS
 odds_table <- 
@@ -305,7 +322,12 @@ odds_table <- rbind(odds_table, total_row) # add row to table
 
 odds_table <- autofit(flextable(odds_table))
 
-odds_table <- #Add pretty line obove totals as in prior tables
+# make bold headers
+odds_table <- bold(odds_table, bold = TRUE, part = "header")
+
+odds_table <- bold(odds_table, bold = TRUE,  i= ~ `Ending Port` == "Total"  )
+
+odds_table <- #Add pretty line above totals as in prior tables
   odds_table %>% colformat_double() %>% 
   hline(i = ~ before(`Ending Port`, "Total"), border = fp_border_default())
 
