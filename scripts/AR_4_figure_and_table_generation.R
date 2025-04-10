@@ -136,11 +136,11 @@ rm(subcat_priority, subcat_other, priority, other, factor_priority, factor_other
 T_summary_units <- 
   subcat_units_rate %>%
   filter(CALENDAR_YEAR == adp_yr) %>%
-  group_by(INCIDENT_UNIT) %>%
+  group_by(OCCURRENCE_UNIT = INCIDENT_UNIT) %>%
   summarise(TOTAL_UNITS = max(TOTAL_UNITS),
             N_UNITS_REPORTED = sum(N_UNITS_REPORTED),
             .groups = "drop") %>%
-  mutate(INCIDENT_UNIT = fct_recode(factor(INCIDENT_UNIT),
+  mutate(OCCURRENCE_UNIT = fct_recode(factor(OCCURRENCE_UNIT),
                                     "Deployments" = "DEPL",
                                     "Hauls" = "HAUL",
                                     "Days" = "DAYS",
@@ -159,11 +159,11 @@ T_summary_units <-
                         N_UNITS_REPORTED = n_distinct(PERMIT[!is.na(OLE_OBS_STATEMENT_SEQ)])) %>%
               ungroup() %>%
               mutate(VESSEL_OR_PLANT = ifelse(VESSEL_OR_PLANT == "V", "Vessels", "Plants")) %>%
-              rename(INCIDENT_UNIT = VESSEL_OR_PLANT)
+              rename(OCCURRENCE_UNIT = VESSEL_OR_PLANT)
             ) %>% 
   mutate(PERCENT_SELECTED = round((N_UNITS_REPORTED/TOTAL_UNITS)*100, 2)) %>%
   arrange(desc(TOTAL_UNITS)) %>%
-  rename("Incident Unit" = INCIDENT_UNIT,
+  rename("Occurrence Unit" = OCCURRENCE_UNIT,
          "Total Units (#)" = TOTAL_UNITS,
          "Selected in Statements (#)" = N_UNITS_REPORTED,
          "% Selected" = PERCENT_SELECTED
@@ -201,7 +201,6 @@ T_statement_totals <-
           filter(FIRST_VIOL_YEAR == adp_yr) %>% 
           group_by(CATEGORY) %>%
           summarise(`Statements (#)`              = n_distinct(OLE_OBS_STATEMENT_SEQ),
-                    `Subcategories Selected (#)`  = n_distinct(SUBCATEGORY),
                     `Regs Selected (#)`           = n_distinct(OLE_REGULATION_SEQ),
                     `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
                     .groups = "drop" ) %>%
@@ -232,7 +231,6 @@ T_statement_totals <-
               df_obs_statements %>%
                 filter(FIRST_VIOL_YEAR == adp_yr) %>%
                 summarise(`Statements (#)`              = n_distinct(OLE_OBS_STATEMENT_SEQ),
-                          `Subcategories Selected (#)`  = n_distinct(SUBCATEGORY),
                           `Regs Selected (#)`           = n_distinct(OLE_REGULATION_SEQ),
                           `Occurrences (#)`             = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ),
                           .groups = "drop" ) %>%
