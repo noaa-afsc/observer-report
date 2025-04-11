@@ -65,7 +65,8 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 # 2023 data aren't currently in the database.  Load .RData file instead:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
-load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2023//2024-02-20CAS_VALHALLA.RData")
+#load("Z://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2023//2024-02-20CAS_VALHALLA.RData")
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2023//2024-04-15cas_valhalla.RData")
 valhalla_data <- valhalla  
 
 
@@ -107,8 +108,13 @@ prep_data <- valhalla_data %>%
 #     for this. 
 
 table(prep_data$STRATA)
+# 2/20 counts:
 #EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
 #54647      15020      42929     870057     124702      51260      27793      74078  
+
+# 4/15 counts:
+# EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
+#  55549      14893      42486     870236     125070      51440      28326      73633 
 
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
@@ -121,14 +127,15 @@ prep_data <- prep_data %>%
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 #             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
-# EM_HAL      54647      0               0               0      0      0      0      0      0
-# EM_POT          0  15020               0               0      0      0      0      0      0
-# EM_TRW_EFP      0      0           32313           10616      0      0      0      0      0
-# FULL            0      0               0               0 870057      0      0      0      0
-# HAL             0      0               0               0      0 124702      0      0      0
-# POT             0      0               0               0      0      0  51260      0      0
-# TRW             0      0               0               0      0      0      0  27793      0
-# ZERO            0      0               0               0      0      0      0      0  74078
+# EM_HAL      55549      0               0               0      0      0      0      0      0
+# EM_POT          0  14893               0               0      0      0      0      0      0
+# EM_TRW_EFP      0      0           32212           10274      0      0      0      0      0
+# FULL            0      0               0               0 870236      0      0      0      0
+# HAL             0      0               0               0      0 125070      0      0      0
+# POT             0      0               0               0      0      0  51440      0      0
+# TRW             0      0               0               0      0      0      0  28326      0
+# ZERO            0      0               0               0      0      0      0      0  73633
+
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
@@ -175,7 +182,7 @@ valhalla_run_date <- valhalla_data %>%
   distinct(RUNDATE)
 
 valhalla_run_date
-valhalla_run_date$RUNDATE <- '20-FEB-2024'
+valhalla_run_date$RUNDATE <- '15-APR-2024'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
@@ -368,10 +375,12 @@ export_format <- catch_tables %>%
 # 
 # ------------------------------------------------------------------------------------------------------------------------------ #
 
+# This identifies when video review has been matched to logbooks:
 tem_video_query <- paste0("SELECT
                           ps.year_pk AS year,
                           ps.landing_report_id,
                           'Y' AS video_review,
+                          'Y' AS video_review_logbook,
                           ps.upload_account
                           FROM
                           akfish_report.v_trawl_em_pacstates_received ps
@@ -386,6 +395,7 @@ tem_video_query <- paste0("SELECT
                           sw.year_pk AS year,
                           sw.landing_report_id,
                           'Y' AS video_review,
+                          'Y' AS video_review_logbook,
                           sw.upload_account
                           FROM
                           akfish_report.v_trawl_em_saltwater_received sw
@@ -394,6 +404,39 @@ tem_video_query <- paste0("SELECT
                           AND sw.report_type_code = 'TRIP'")
 tem_video <- dbGetQuery(channel_cas, tem_video_query) 
 
+
+# Identify video review that doesn't match to logbooks:
+tem_video_query2 <- paste0("SELECT distinct 
+                           pso.year_pk AS year,
+                           pso.landing_report_id,
+                           'Y' AS video_review,
+                           'Y' AS video_review_nologbook,
+                           pso.upload_account
+                           FROM
+                           akfish_report.v_trawl_em_pacstates_outstanding pso
+                           WHERE pso.year_pk = 2023
+                           AND pso.expire_date IS NULL
+                           AND pso.status = 'MISSING LOGBOOK'
+                           
+                           UNION ALL
+                           
+                           SELECT distinct 
+                           swo.year_pk AS year,
+                           swo.landing_report_id,
+                           'Y' AS video_review,
+                           'Y' AS video_review_nologbook,
+                           swo.upload_account
+                           FROM
+                           akfish_report.v_trawl_em_saltwater_outstanding swo
+                           WHERE swo.year_pk = 2023
+                           AND swo.expire_date IS NULL
+                           AND swo.status = 'MISSING LOGBOOK'")
+
+tem_video_nologbook <- dbGetQuery(channel_cas, tem_video_query2) 
+
+
+
+# Identifies logbooks that don't have matching video review:
 tem_novideo_query <- paste0("SELECT distinct
                             pso.year_pk AS year,
                             pso.landing_report_id,
@@ -427,23 +470,30 @@ valhalla_tem <- work_data %>%
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
   # Rename the Observed Flag the Shoreside sampling flag:
   rename(SHORESIDE_SAMPLING = OBSERVED_FLAG) %>% 
-  # Append info on hardrives that have been reviewed:
+  # Append info on hard drives that have been reviewed (and have matching logbook data):
   left_join(tem_video, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
+  # Append info on hard drives that have been reviewed (but DON'T have matching logbook data):
+  left_join(tem_video_nologbook, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
   # Append info on video review that is still outstanding:
-  left_join(tem_novideo, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>%
+  #left_join(tem_novideo, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>%
   # Consolidate some of the fields:
-  mutate(VIDEO_REVIEW = ifelse(is.na(VIDEO_REVIEW.x), VIDEO_REVIEW.y, VIDEO_REVIEW.x),
-         VIDEO_REVIEWER = ifelse(is.na(UPLOAD_ACCOUNT.x), UPLOAD_ACCOUNT.y, UPLOAD_ACCOUNT.x)) %>% 
+  mutate(preVIDEO_REVIEW = ifelse(is.na(VIDEO_REVIEW.x), VIDEO_REVIEW.y, VIDEO_REVIEW.x),
+         VIDEO_REVIEW = ifelse(is.na(preVIDEO_REVIEW), 'N', 'Y'),  
+         preVIDEO_REVIEWER = ifelse(is.na(UPLOAD_ACCOUNT.x), UPLOAD_ACCOUNT.y, UPLOAD_ACCOUNT.x),
+         VIDEO_REVIEWER = ifelse(is.na(preVIDEO_REVIEWER), 'n/a', preVIDEO_REVIEWER),
+         VIDEO_REVIEW_LB = ifelse(is.na(VIDEO_REVIEW_LOGBOOK), 'N', VIDEO_REVIEW_LOGBOOK),
+         VIDEO_REVIEW_NOLB = ifelse(is.na(VIDEO_REVIEW_NOLOGBOOK), 'N', VIDEO_REVIEW_NOLOGBOOK)) %>% 
   # drop some fields:
-  select(-c(ends_with(".x"), ends_with(".y")))
+  select(-c(ends_with(".x"), ends_with(".y"))) %>% 
+  data.frame()
 
 
 # Clean up workspace and save RData file --------------------------------------------------------------
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 
-#                             'addl_catch_table', 'catch_tables', 'valhalla_tem'))])
+rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 
+                             'addl_catch_table', 'catch_tables', 'valhalla_tem'))])
 
-#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
+#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, valhalla_tem,
 #     file = paste0("AR_descriptive_", YEAR, "_data.RData"))
