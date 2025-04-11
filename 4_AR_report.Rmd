@@ -135,7 +135,7 @@ In `r year`, NMFS implemented changes to both the stratification definitions and
 \
 Vessels that join the EM programs may log trips in the EM strata. Initiated by the Council in 2018, vessels that join the fixed-gear EM program use EM equipment to capture location and video information followed by human review for species identifications and counts. Weights for catch estimation are supplied from other sources.\
 \
-The Pollock Trawl EM EFP began in 2020, completed in 2024, and applied to trawl vessels fishing with pelagic gear targeting walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”). Vessels participating in this EFP utilized EM equipment to monitor for compliance of maximized retention at-sea and monitoring by observers shoreside during the delivery of catch. Vessels were able to opt-out of the EFP on a trip-by-trip basis and instead log trips in the at-sea observer strata. Pollock Trawl EM became a regulated monitoring program in 2025.\
+The Pollock Trawl EM EFP began in 2020, completed in 2024, and applied to trawl vessels fishing with pelagic gear targeting walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”). Vessels participating in this EFP utilized EM equipment to monitor for compliance of maximized retention at-sea and monitoring by observers shoreside during the delivery of catch. Vessels were able to opt-out of the EFP on a trip-by-trip basis and instead log trips in the at-sea observer strata. Pollock Trawl EM became a regulated monitoring program in 2025. Note that unlike other strata that use the trip as the PSU, the Pollock Trawl EM EFP stratum instead defines the PSU as the shoreside delivery, as that is where the observer applies their sample design.\
 \
 The deployment strata for `r year` (with abbreviation and coverage rate rounded to whole number) were defined as:
 
@@ -152,7 +152,7 @@ strata.rates <- partial %>%
 - Trips by trawl vessels not participating in the Pollock Trawl EM EFP monitored with at-sea observers predominantly fishing in the Gulf of Alaska (`r strata.rates$label[4]`).\
 - Trips by fixed-gear vessels listed under the Fixed Gear EM program monitored at-sea by EM systems and predominantly fishing in the Bering Sea (`r strata.rates$label[5]`).\
 - Trips by fixed-gear vessels listed under the Fixed Gear EM program monitored at-sea by EM systems and predominantly fishing in the Gulf of Alaska (`r strata.rates$label[6]`).\
-- Trips by trawl vessels listed under the Pollock Trawl EM EFP monitored 100% at-sea by EM systems, monitored shoreside by observers, and fishing in the Gulf of Alaska (`r strata.rates$label[7]` shoreside). Note that vessels fishing under this EFP in the Bering Sea are managed within the full coverage category.\
+- Shoreside deliveries by trawl vessels listed under the Pollock Trawl EM EFP monitored 100% at-sea by EM systems, monitored shoreside by observers, and fishing in the Gulf of Alaska (`r strata.rates$label[7]` shoreside). Note that vessels fishing under this EFP in the Bering Sea are managed within the full coverage category.\
 - Fixed-gear vessels less than 40 ft LOA and vessels fishing with handline, jig, troll and dinglebar troll gear (*Zero coverage* - 0%).\
 
 More information on the sampling design used by observers and the relationship between the sample design and catch estimation can be found in Cahalan and Faunce (2020) and the `r `year` Observer Sampling Manual (AFSC `r `year`). Bycatch estimates of Chinook salmon in the GOA are estimated using methods described in Cahalan et al. (2014). In the event that a delivery cannot be monitored (e.g., the case in a tendered delivery or non-pollock delivery), then estimation of bycatch comes by applying salmon bycatch rates to landed catch. Estimates of stock of origin from salmon bycatch are produced by the AFSC’s Auke Bay Laboratory. 
@@ -210,7 +210,7 @@ OB_DOLLARS.ACTUAL <- days_paid %>%
 
 - **Deploy for the planned number of sea days.** This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP.\
 - **Deploy at the coverage rates specified in the `r year` ADP.** For full and zero coverage, either the rate was equal to 100% or 0%. For stratum under partial selection, coverage selection rates are expected to be within a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips).\
-- **Collect tissue samples from Chinook and chum (*Oncorhynchus keta*) salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin.** The sampling protocol established in the 2014 ADP (NMFS 2013, Faunce 2015) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA pollock trawl fishery monitor the delivery to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch.\
+- **Collect tissue samples from Chinook and chum (*Oncorhynchus keta*) salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin.** The sampling protocol established in the 2014 ADP (NMFS 2013, Faunce 2015) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA pollock trawl fishery monitor the delivery to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch [*TODO - WHAT ABOUT EM TRW GOA (EFP)?*].\
 - **Randomize deployment of observers into the partial coverage category of fishing activities.** Evaluation of this objective is focused on the randomization of observer and EM deployments into primary sampling units, and how departures from a random sample affect data quality.      
   
 ## Observer Deployment Performance Metrics  
@@ -231,12 +231,10 @@ The performance metrics used in this evaluation are as follows:
 Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated *p*-values. 
 
 # Changes to this report from last year
-Abbreviated versions of this chapter have been produced for calendar years 2021 and 2022. This chapter represents a return to the original “full” review format. Analysts have performed the full review of `r year - 1` and `r year` data but focus here on `r year`. However, where trends were notable, results from `r year - 1` have been included in an Appendix (A).\
-\
-Changes to our analyses for spatial and spatiotemporal representativeness were adopted following the evolution of these analyses in recent years are described in later sections.
+As mentioned previously, the strata definitions and allocation methods employed in `r year` differed from previous years. However, the evaluations performed in this chapter are largely unchanged. [*TODO - Data timeliness methods were updated?*]\
 
 # Evaluation of Deployment in `r year`  
-The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
+The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the fixed-gear EM strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Deliveries in the *EM TRW GOA (EFP)* stratum were considered successfully monitored if 
 
 ## Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
@@ -1494,6 +1492,7 @@ The cumulative number of fishing trips in each stratum was multiplied by the str
 ## Setup for spatial and spatiotemporal analyses -----------------------------------------------------------------------
 
 # Make FMP-specific polygons
+#' \TODO Maybe add these to 1_AR_data.R  This takes longer than it did before.
 shp_fmp <- rbind(
   shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
     mutate(FMP = "BSAI"),
