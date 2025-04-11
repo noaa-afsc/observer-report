@@ -3,11 +3,11 @@
 #
 # Program:AR_descriptive_data.Rmd                                         
 # Project:Observer Program Annual Report Descriptive Chapter                                      
-# Location: S:\Observer Program Annual Report\2022_Annual_Report\Chapt3-4_Descriptive_Info 
+# Location: S:\Observer Program Annual Report\2023_Annual_Report\Chapt4_Descriptive_Info 
 #      or: H:\Observer Program\Annual Report Local GIT Project\Descriptive Info
 #
 # Objectives:                                                                  
-# - Query and perform some data clean-up for the descriptive chapter (Ch.3/4) of the Observer Program Annual Report
+# - Query and perform some data clean-up for the descriptive chapter (Ch.4) of the Observer Program Annual Report
 # - Generate catch table summaries that are posted to the AKRO website 
 #   (https://www.fisheries.noaa.gov/alaska/fisheries-observers/observed-catch-tables-north-pacific-observer-program)
 #
@@ -24,7 +24,7 @@
 #      - akfish_report.species_group 
 #      - akfish_report.flag 
 #      - akfish_report.mortality_rate 
-#  - S:\Observer Program Annual Report\20122Annual_Report\Chap3-4_Descriptive_Info\2013_2022_catchtables.csv 
+#  - S:\Observer Program Annual Report\2023Annual_Report\Chap4_Descriptive_Info\2013_2023_catchtables.csv 
 #
 # Output:    
 # Normal locations:
@@ -35,7 +35,7 @@
 #     - warehouse_data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #     - addl_catch_table - summary of total catch of groundfish, directed halibut, and PSC halibut as observed or not observed
 #     - work_data - Valhalla dataset following some clean-up and addition of DMRs for halibut PSC
-#  - S:\Observer Program Annual Report\2019_Annual_Report\Chapt4_Descriptive_Info\2013_2019_catchtables.csv
+#  - S:\Observer Program Annual Report\2023_Annual_Report\Chapt4_Descriptive_Info\2013_YEAR_catchtables.csv
 #
 # -------------------------------------------------------------------------------------------------------------------- #
 
@@ -46,7 +46,7 @@
 source("AR_descriptive_helper.r")
 
 #Create a generalized YEAR object that corresponds to the Annual Report year
-YEAR <- 2022
+YEAR <- 2023
 
 # Set up ROracle connection for database calling information from R environment:
 channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
@@ -58,14 +58,16 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 ## Load Valhalla Data ---------------------------------------------------------------------------------------------
 
 # Query Valhalla data directly from the database for the Annual Report:
-valhalla_query <- paste0("select * from akfish_sf.valhalla where adp = ", YEAR)
-valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
+#valhalla_query <- paste0("select * from akfish_sf.valhalla where adp = ", YEAR)
+#valhalla_data <- dbGetQuery(channel_cas, valhalla_query) 
 
 
-# 2021 data aren't currently in the database.  Load .RData file instead:
+# 2023 data aren't currently in the database.  Load .RData file instead:
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-04-05CAS_VALHALLA.RData")
 #load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2021//2022-05-12CAS_VALHALLA.RData")
-#valhalla_data <- VALHALLA  
+#load("Z://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2023//2024-02-20CAS_VALHALLA.RData")
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2023//2024-04-15cas_valhalla.RData")
+valhalla_data <- valhalla  
 
 
 ## Valhalla data transformations  ----------------------------------------------------------------------------------- 
@@ -102,29 +104,18 @@ prep_data <- valhalla_data %>%
 # Corrections to strata ---------------------------------------------------------------------------- 
 
 # Hardcode the following STRATA changes here:
-#  1. The 2022 ADP indicates that NO vessels are participating in the EM Innovation Project in 2022. SO no strata changes
-#     for this. There are 6 vessels participating in the cost effective and mobile EM system project that are doing a 
-#     side-by-side comparison of their existing EM system with a new one. I imagine these would stay as EM_HAL or EM_POT? 
-#     A third project is testing trawl EM systems on fixed gear (pot) vessels. They will take observers to allow for an 
-#     observer vs. EM counts comparison.  Double check with Phil how these last vessels should be treated.  
-
+#  1. The 2023 ADP indicates that NO vessels are participating in the EM Innovation Project in 2023. So no strata changes
+#     for this. 
 
 table(prep_data$STRATA)
+# 2/20 counts:
 #EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
-#58888      20008      33633     866212     127797      58072      29439      74901 
+#54647      15020      42929     870057     124702      51260      27793      74078  
 
-#table(prep_data[prep_data$VESSEL_ID == 5029,]$STRATA)  # HAL and POT
-# HAL  POT 
-# 1198  167
-#table(prep_data[prep_data$VESSEL_ID == 3759,]$STRATA)  # EM_HAL and EM_POT
-# EM_HAL EM_POT 
-# 872     32 
-#table(prep_data[prep_data$VESSEL_ID == 2844,]$STRATA)  # HAL and POT
-# HAL POT 
-# 19 123 
-#table(prep_data[prep_data$VESSEL_ID == 1472,]$STRATA)  # HAL
-# HAL 
-# 613 
+# 4/15 counts:
+# EM_HAL     EM_POT EM_TRW_EFP       FULL        HAL        POT        TRW       ZERO 
+#  55549      14893      42486     870236     125070      51440      28326      73633 
+
 
 # Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
 prep_data <- prep_data %>% 
@@ -135,18 +126,22 @@ prep_data <- prep_data %>%
 
 
 table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-#           EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
-#EM_HAL      58888      0               0               0      0      0      0      0      0
-#EM_POT          0  20008               0               0      0      0      0      0      0
-#EM_TRW_EFP      0      0           21754           11879      0      0      0      0      0
-#FULL            0      0               0               0 866212      0      0      0      0
-#HAL             0      0               0               0      0 127797      0      0      0
+#             EM_HAL EM_POT EM_TRW_EFP_FULL EM_TRW_EFP_PART   FULL    HAL    POT    TRW   ZERO
+# EM_HAL      55549      0               0               0      0      0      0      0      0
+# EM_POT          0  14893               0               0      0      0      0      0      0
+# EM_TRW_EFP      0      0           32212           10274      0      0      0      0      0
+# FULL            0      0               0               0 870236      0      0      0      0
+# HAL             0      0               0               0      0 125070      0      0      0
+# POT             0      0               0               0      0      0  51440      0      0
+# TRW             0      0               0               0      0      0      0  28326      0
+# ZERO            0      0               0               0      0      0      0      0  73633
+
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
 table(prep_data$OBSERVED_FLAG)
-#N      Y 
-#332613 936337  
+#     N      Y 
+#309053 951433 
 
 # Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
 #prep_data <- prep_data %>% 
@@ -187,7 +182,7 @@ valhalla_run_date <- valhalla_data %>%
   distinct(RUNDATE)
 
 valhalla_run_date
-valhalla_run_date$RUNDATE <- '10-APR-2023'
+valhalla_run_date$RUNDATE <- '15-APR-2024'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
@@ -366,12 +361,139 @@ export_format <- catch_tables %>%
 #write.csv(export_format,paste0("2013_", YEAR, "_catchtables_formatted.csv"), row.names = FALSE)
 
 
+# Read in TEM Video Review Data --------------------------------------------------------------
+
+# -------------------------------------------------------------------------------------------------------------------------------#
+# The 2023 Council motion says:
+#   "Future reports include data on the amount of catch monitored by electronic monitoring (EM) similar to data on 
+#     observed catch"
+#
+# My notes from June that says: this is referring to a table that summarizes catch in the TEM strata that was monitored by:
+#   1) sampled shoreside
+#   2) video was on for complaince review
+#   3) video was actually reviewed for complance
+# 
+# ------------------------------------------------------------------------------------------------------------------------------ #
+
+# This identifies when video review has been matched to logbooks:
+tem_video_query <- paste0("SELECT
+                          ps.year_pk AS year,
+                          ps.landing_report_id,
+                          'Y' AS video_review,
+                          'Y' AS video_review_logbook,
+                          ps.upload_account
+                          FROM
+                          akfish_report.v_trawl_em_pacstates_received ps
+                          WHERE
+                          ps.year_pk = 2023
+                          AND ps.expire_date IS NULL -- get current records  
+                          AND ps.report_type_code = 'TRIP' -- means video review?
+                          
+                          UNION ALL
+                          
+                          SELECT
+                          sw.year_pk AS year,
+                          sw.landing_report_id,
+                          'Y' AS video_review,
+                          'Y' AS video_review_logbook,
+                          sw.upload_account
+                          FROM
+                          akfish_report.v_trawl_em_saltwater_received sw
+                          WHERE sw.year_pk = 2023
+                          AND sw.expire_date IS NULL
+                          AND sw.report_type_code = 'TRIP'")
+tem_video <- dbGetQuery(channel_cas, tem_video_query) 
+
+
+# Identify video review that doesn't match to logbooks:
+tem_video_query2 <- paste0("SELECT distinct 
+                           pso.year_pk AS year,
+                           pso.landing_report_id,
+                           'Y' AS video_review,
+                           'Y' AS video_review_nologbook,
+                           pso.upload_account
+                           FROM
+                           akfish_report.v_trawl_em_pacstates_outstanding pso
+                           WHERE pso.year_pk = 2023
+                           AND pso.expire_date IS NULL
+                           AND pso.status = 'MISSING LOGBOOK'
+                           
+                           UNION ALL
+                           
+                           SELECT distinct 
+                           swo.year_pk AS year,
+                           swo.landing_report_id,
+                           'Y' AS video_review,
+                           'Y' AS video_review_nologbook,
+                           swo.upload_account
+                           FROM
+                           akfish_report.v_trawl_em_saltwater_outstanding swo
+                           WHERE swo.year_pk = 2023
+                           AND swo.expire_date IS NULL
+                           AND swo.status = 'MISSING LOGBOOK'")
+
+tem_video_nologbook <- dbGetQuery(channel_cas, tem_video_query2) 
+
+
+
+# Identifies logbooks that don't have matching video review:
+tem_novideo_query <- paste0("SELECT distinct
+                            pso.year_pk AS year,
+                            pso.landing_report_id,
+                            'N' AS video_review,
+                            pso.upload_account
+                            FROM
+                            akfish_report.v_trawl_em_pacstates_outstanding pso
+                            WHERE pso.year_pk = 2023
+                            AND pso.expire_date IS NULL
+                            AND pso.status = 'MISSING VIDEO REVIEW'
+                            
+                            UNION ALL
+                            
+                            SELECT distinct 
+                            swo.year_pk AS year,
+                            swo.landing_report_id,
+                            'N' AS video_review,
+                            swo.upload_account
+                            FROM
+                            akfish_report.v_trawl_em_saltwater_outstanding swo
+                            WHERE swo.year_pk = 2023
+                            AND swo.expire_date IS NULL
+                            AND swo.status = 'MISSING VIDEO REVIEW'")
+tem_novideo <- dbGetQuery(channel_cas, tem_novideo_query) 
+
+
+# Add Video review information to Valhalla dataset:
+valhalla_tem <- work_data %>% 
+  filter(ORIGINAL_STRATA == 'EM_TRW_EFP') %>% 
+  # refine to groundfish (which includes directed halibut) OR psc halibut:
+  filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+  # Rename the Observed Flag the Shoreside sampling flag:
+  rename(SHORESIDE_SAMPLING = OBSERVED_FLAG) %>% 
+  # Append info on hard drives that have been reviewed (and have matching logbook data):
+  left_join(tem_video, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
+  # Append info on hard drives that have been reviewed (but DON'T have matching logbook data):
+  left_join(tem_video_nologbook, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
+  # Append info on video review that is still outstanding:
+  #left_join(tem_novideo, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>%
+  # Consolidate some of the fields:
+  mutate(preVIDEO_REVIEW = ifelse(is.na(VIDEO_REVIEW.x), VIDEO_REVIEW.y, VIDEO_REVIEW.x),
+         VIDEO_REVIEW = ifelse(is.na(preVIDEO_REVIEW), 'N', 'Y'),  
+         preVIDEO_REVIEWER = ifelse(is.na(UPLOAD_ACCOUNT.x), UPLOAD_ACCOUNT.y, UPLOAD_ACCOUNT.x),
+         VIDEO_REVIEWER = ifelse(is.na(preVIDEO_REVIEWER), 'n/a', preVIDEO_REVIEWER),
+         VIDEO_REVIEW_LB = ifelse(is.na(VIDEO_REVIEW_LOGBOOK), 'N', VIDEO_REVIEW_LOGBOOK),
+         VIDEO_REVIEW_NOLB = ifelse(is.na(VIDEO_REVIEW_NOLOGBOOK), 'N', VIDEO_REVIEW_NOLOGBOOK)) %>% 
+  # drop some fields:
+  select(-c(ends_with(".x"), ends_with(".y"))) %>% 
+  data.frame()
+
 
 # Clean up workspace and save RData file --------------------------------------------------------------
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-#rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 'addl_catch_table', 'catch_tables'))])
+rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 
+                             'addl_catch_table', 'catch_tables', 'valhalla_tem'))])
 
-#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
+#save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, valhalla_tem,
 #     file = paste0("AR_descriptive_", YEAR, "_data.RData"))

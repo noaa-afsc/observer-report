@@ -18,8 +18,8 @@ title: "Annual Report Descriptive Data Draft"
 # Inputs:      
 # Normal locations:                                                                   
 #  - S:\Observer Program Annual Report\YYYY_Annual_Report\Chapt4_Descriptive_Info\AR_descriptive_YYYY_data.Rdata
-#     - catch.tables - 2013-2022 catch tables for posting to the AKRO website (NOT USED in this script)
-#     - previous.catch.tables - previous year's version of the catch tables (2013-2021) (NOT USED in this script)
+#     - catch.tables - 2013-2023 catch tables for posting to the AKRO website (NOT USED in this script)
+#     - previous.catch.tables - previous year's version of the catch tables (2013-2022) (NOT USED in this script)
 #     - VALHALLA - the original Valhalla data (NOT USED in this script)
 #     - warehouse.data - the mortality rates that were applied to the PSC data in the CAS run used in Valhalla's creation 
 #                        (NOT USED in this script)
@@ -39,174 +39,44 @@ title: "Annual Report Descriptive Data Draft"
 
 ```
 
-# 3 Descriptive Information
+# 4 Descriptive Information
 
-## 3.1  Deployment Summary
-
-In past years, Chapter 3 (the deployment performance review) was prepared by the Fishery
-Monitoring Science Committee. However, a full evaluation of 2021 deployment (with FMSC
-review) was not completed for this Annual Report, and instead a summary of anticipated and
-realized deployment is provided in this chapter (Table 3-1). Not including a full evaluation of
-deployment is a temporary situation to facilitate work on evaluating sampling design and cost
-efficiencies that may be incorporated into the 2024 ADP. Additionally, changes in sampling
-strata and deployment methods are not anticipated for the 2023 ADP. The NMFS plans to
-publish the full 2021 Deployment Performance Review as a stand-alone tech memo after
-analyses for the 2024 ADP have been completed.
-
-In December 2020, NMFS released the final 2021 ADP (NMFS 2020). Due to limitations on
-transportation and health mandates associated with COVID-19, observers were deployed on
-randomly selected trips according to a port-based trip selection model in 2021. The port-specific
-deployment method excluded trips from observation if they did not depart and land within a port
-that was on the list of observable ports.
-
-The observable ports were identified because travel and lodging conditions allowed observers to
-meet and maintain applicable health mandates and advisories for deployment into the
-commercial fisheries and because there were expected to be enough fishing trips originating and
-ending in these ports to make it cost effective to place observers in these communities. These
-ports included: 1) Akutan, 2) Dutch Harbor/Unalaska, 3) False Pass, 4) Homer, 5) Juneau, 6)
-Ketchikan, 7) King Cove, 8) Kodiak, 9) Nome, 10) Petersburg, 11) Sand Point, 12) Seward, 13)
-Sitka, and 14) Yakutat. In statistical terms, prior to COVID-19, all ports were within the
-sampling frame, whereas only some ports remained in the sampling frame in response to
-COVID-19.
-
-Target deployment rates were as follows:
-• Hook-and-Line - 15.13%.
-• Pot - 15.04%.
-• Trawl vessels not participating in EM - 16.12%.
-
-The programmed rates for the ODDS differed from the ADP target monitoring rates in order to
-account for monitoring waivers (NMFS 2020). Initially, the ‘sample frame adjusted rate’ was
-estimated as the selection rate required of trips within the sample frame in order to achieve the
-target monitoring rate for all trips. The ODDS programmed rates resulted after an additional
-adjustment to the sample frame rate accounted for anticipated waivers due to other logistic
-limitations of deployment under COVID-19 safety protocols. Consequently, the ODDS was
-programmed at the beginning of the year to randomly select logged trips at a rate of 23.35% in 
-the HAL stratum, 29.92% in the POT stratum, 19.29% in the TRW stratum. These programmed
-rates were expected to result in the target monitoring rates listed above.
-In August 2021, NMFS released an Information Bulletin to announce the expansion of observer
-deployment for all ports throughout Alaska beginning on 1 September 2021. This change was
-consistent with the updated NOAA policy on observer waivers, which states that vessels are no
-longer eligible for release from observer coverage under the Emergency Rule if a fully
-vaccinated or quarantined/shelter-in-place observer is available. The ODDS programmed rates
-therefore had to be updated as the sample frame adjustment was no longer required. Combined
-with estimates of the remaining budget, remaining fishing effort, and deployment costs, new
-target deployment rates were assigned to the observer sampling strata with the intention of
-achieving the yearly monitoring rates originally set in the 2021 ADP by the end of the year.
-
-Target deployment rates were adjusted as follows:
-• Hook-and Line - 17.9%.
-• Pot - 17.6%.
-• Trawl vessels not participating in EM - 21.0%.
-
-Other adjustments to the ODDS trip selection rates were required to achieve these monitoring
-rates. Waivers could still be given if the observer provider could not assign an observer who had
-quarantined for 14 days with only 3 days of notice to a trip, or if the provider or observers did
-not feel safe with the vessel’s quarantine status. Beginning 1 September, selection rates in the
-ODDS were programmed to randomly select logged trips at a rate of 19.70% in the HAL stratum,
-19.40% in the POT stratum, and 21.00% in the TRW stratum. These programmed rates were
-expected to result in the second set of target monitoring rates listed above, for trips that occurred
-on or after 1 September.
-
-Following the 2021 ADP, ODDS was programmed to randomly select logged trips at a rate of
-30% in the EM HAL and EM POT strata. Because no waivers were expected in EM, the target
-monitoring rate (and programmed rate) for these strata was constant at 30%.
-
-### 3.1.1 At-Sea Deployments Rate Summary
-
-This section compares the coverage rate achieved against the expected coverage rates. Data used
-in this evaluation are stored within the Catch Accounting System (CAS, managed by the
-AKRO), the Observer Program database (NORPAC, managed by the AFSC), and eLandings
-(under joint management by Alaska Department of Fish and Game - ADF&G; the International
-Pacific Halibut Commission - IPHC; and the NMFS).
-
-The 2021 Observer Program had 13 different deployment strata to be evaluated (Table 3-1).
-There was one full coverage observed stratum (Full) comprised of trips taken both by vessels
-that were required to have full coverage (e.g., AFA catcher/processor vessels) and those fishing
-in the BSAI that opted into full coverage. There was one full coverage trawl EM stratum (EM
-TRW EFP) comprised of trips taken by AFA catcher vessels fishing for pollock under the
-Exempted Fishing Permit (EFP). There were three partial coverage EM strata: EM HAL, EM
-POT, and EM TRW EFP. There were three partial coverage observed strata defined by gear: HAL, POT, and TRW.
-There were also two zero coverage strata: one zero coverage EM research stratum and one zero
-coverage stratum for jig vessels and vessels under 40 ft. length overall.
-
-Evaluations for the full coverage category and zero-selection pool are straightforward - either the
-coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved
-100% coverage in the Full observed stratum, and 100% coverage in the full coverage EM TRW
-EFP stratum (Table 3-1). The program achieved perfect compliance with both zero coverage
-strata (Table 3-1). Under the assumption that deployment was randomized, a 95% confidence
-interval computed from the realized coverage rates (under the assumption of a binomial
-distribution for observed trips) will contain the expected deployment rate 95% of the time. If
-expected coverage levels were within the 95% confidence intervals, then we conclude that
-realized and expected coverage rates were equal. Coverage rates were consistent with expected
-values in seven of the nine partial coverage strata for which they were evaluated. Coverage rates
-were lower than expected for HAL during the first time period. Coverage rates were higher than
-expected for TRW in the second time period (Table 3-1).
-
-In combination across all strata, coverage levels, and fishery monitoring tools, 3,747 trips
-(43.2%) and 423 vessels (44.2%) were successfully monitored among all fishing in federal
-fisheries of Alaska in 2021 (Table 3-1).
-
-### 3.1.2  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
+## 4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
 
 Table 3-1 provides trip and vessel counts based on coverage type and strata. However, the
 Council has previously requested a summary of trip and vessel counts based on criteria that are
 not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel
-length). Table 3-2 and Table 3-3 provide a summary of the number of vessels and trips by FMP
+length). Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP
 area, strata, gear type, and vessel length category within the full and partial coverage categories.
 Trips are summarized as the number of monitored trips and the total number of trips. Monitored
 trips reflect either trips with an observer, EM fixed gear trips if at least some video was
-reviewed, or EM trawl trips where salmon and Pacific halibut were observed at the shoreside
-plant. The rationale for defining monitored trips for EM fixed gear or EM trawl trips this way is
-that it is most similar to the way in which trips in other strata are considered observed (i.e.,
-irrespective of whether or not haul information or usable species composition data were
-collected).
+reviewed, or EM trawl trips where biological samples and census counts of salmon and Pacific halibut
+PSC were collected at shoreside plants. The EM trawl trips are also required to have cameras on for 100%
+of their trips for compliance monitoring, but this form of monitoring is not evaluated in table 4-1 and
+4-2.  
 
-Vessels and trips may be counted more than once in a vessel length category in Table 3-2 and
-Table 3-3 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes
+Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and
+Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes
 more than one gear type on a trip or within the year. The table rows titled “BSAI Subtotal”,
 “GOA Subtotal”, and “Total Unique” include the number of unique vessels and unique trips in
 each vessel length category where each vessel or trip is counted only once, in each of the FMP
 areas or overall, respectively.
 
 
-## 3.2  Total Catch and Discards and Amount of Catch Observed
+## 4.2  Total Catch and Discards and Amount of Catch Monitored
 
-The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS Catch Accounting System (CAS) in Table 3-4 and Table 3-5 for `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. (2014). 
+The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS Catch Accounting System (CAS) in Table 4-3 and Table 4-4 for `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. (2014). 
 
-It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not _a priori_ be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum[^1].  
+It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not _a priori_ be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum.[^1]  
 
-In Table 3-4 and Table 3-5, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where salmon or Pacific halibut were observed for at the shoreside plant.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
+In Table 4-3 and Table 4-4, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where biological samples and census counts of salmon or Pacific halibut PSC were observed at the shoreside plants.  The EM trawl trips are also required to have cameras on for 100% of their trips for compliance monitoring of maximized retention requirements, but this monitoring strategy is not used to define "Monitored" for Table 4-3 and Table 4.4.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
 
 All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction.  
-
-These tables can also be used to compare the proportion of catch that occurred in full coverage or
-the partial coverage categories or the proportion of catch that was monitored for trips in partial
-coverage. For example:
-
-* In the BSAI and GOA combined, 93.4% of pelagic trawl catch was on trips in the full
-coverage category and 6.6% was on trips in partial coverage. All partial coverage trips
-were in the GOA and 27.2% of their catch was monitored;
-* In the BSAI and GOA combined, 94.9% of non-pelagic trawl catch was on trips in full
-coverage category and 5.1% was on trips in partial coverage. Partial coverage trips
-occurred in both the BSAI and GOA with 44.0% and 20.6% of their catch monitored,
-respectively.
-
-Additional retained and discard catch information, broken down by species for the Gulf of Alaska (GOA) and Bering Sea/Aleutian Islands (BSAI), are available online for `r as.numeric(format(Sys.Date(), "%Y"))-1` as well as prior years.[^2] 
-
-#### Discarded Pacific halibut in the IFQ fishery ####
-
-New for the 2021 report were bias-corrected estimates of Pacific halibut discarded in the IFQ halibut
-fishery. In 2022, NMFS published a method to adjust for this bias by adjusting the percentage of
-halibut retained to reflect the differences in mean weight for retained (and discarded) halibut
-(Cahalan and Gasper 2022). This solution was implemented starting in 2021 and continues to be included
-in the estimates of directed halibut fishery discard summarized in this report.
 
 
 ***
  
 [^1]: More trips monitored in one subpopulation (fishery) equates to fewer monitored trips in the other subpopulations since all the trips across the different subpopulations must add to the total number of trips selected.
-
-[^2]: Available online at [link]https://www.fisheries.noaa.gov/alaska/fisheries-observers/observed-catch-tables-north-pacific-observer-program 
 
 ***
 
@@ -218,7 +88,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # LOAD DATA 
 
-YEAR <- 2022
+YEAR <- 2023
 
 #Source helper file (libraries, ggplot themes, etc.)
 source("AR_descriptive_helper.r")
@@ -227,14 +97,12 @@ source("AR_descriptive_helper.r")
 load(paste0("AR_descriptive_", YEAR, "_data.RData"))
 
 #Clean up workspace (Remove everything EXCEPT the objects listed)
-rm(list= ls()[!(ls() %in% c('YEAR', 'work_data', 'addl_catch_table', 'fig.theme'))])
+rm(list= ls()[!(ls() %in% c('YEAR', 'work_data', 'addl_catch_table', 'valhalla_tem'))])
 
 ```
 
 
 ```{r all_trips, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
-
-#detach(package:plyr)
 
 # Summarize ALL trip and vessel counts for three different levels of aggregation:
 total_counts <- work_data %>% 
@@ -315,8 +183,10 @@ counts_wide <- total_counts_wide %>%
   # Combined the trip count and the observed trip count summaries
   left_join(obs_counts_wide, by = c("FMP", "STRATA", "AGENCY_GEAR_CODE")) %>% 
   # Calculate the percent observed:
-  mutate(TRIP_COUNT_OBS_LT40 = as.numeric(NA),
-         LT40_pct    = as.numeric(NA),
+  mutate(#Comment out the next two lines because they overwrite cases where vessels in zero coverage have observers 
+         TRIP_COUNT_OBS_LT40 = as.numeric(NA),
+         #LT40_pct    = as.numeric(NA),
+         LT40_pct    = round((TRIP_COUNT_OBS_LT40/TRIP_COUNT_LT40)*100,1),
          BT40_57_pct = round((TRIP_COUNT_OBS_BT40_57/TRIP_COUNT_BT40_57)*100,1),
          GT58_pct    = round((TRIP_COUNT_OBS_GT58/TRIP_COUNT_GT58)*100,1)) %>% 
   # Reorder the columns:
@@ -342,7 +212,7 @@ counts_wide <- total_counts_wide %>%
 
 ```
 
-Table 3-2. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
+Table 4-1. -- Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
 
 
 ```{r flextable_TABLE4_1, message=FALSE, warning=FALSE, echo=FALSE}
@@ -400,9 +270,9 @@ flextable(bsai) %>%
   # Merge the area labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
-  merge_at(i=18, j=c(2:3)) %>% 
+  merge_at(i=16, j=c(2:3)) %>% 
   # Add dashed horizontal lines before area subtotals:
-  border(i = 17, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = 15, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
@@ -415,7 +285,7 @@ flextable(bsai) %>%
 
 
 
-Table 3-3. Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
+Table 4-2. -- Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
 
 
 ```{r flextable_TABLE4_2, message=FALSE, warning=FALSE, echo=FALSE}
@@ -559,8 +429,9 @@ catch_detail_wide <- catch_detail_wide %>%
                         
 
 # Append the additional columns:
-library(plyr); library(dplyr)
-catch_wide <- rbind.fill(catch_detail_wide, jig_rows)
+#library(plyr); 
+#library(dplyr)
+catch_wide <- plyr::rbind.fill(catch_detail_wide, jig_rows)
 
 # Provide a gear order:
 catch_wide <- catch_wide %>% 
@@ -577,13 +448,13 @@ catch_wide <- catch_wide %>%
 
 **INSERT PAGE BREAK** 
 
-Table 3-4. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
+Table 4-3. -- Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
 
 
-```{r Table3_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+```{r Table4_3_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the GOA data and rearrange the column order:
-table3_4 <- catch_wide %>% 
+table4_3 <- catch_wide %>% 
   filter(FMP=='GOA') %>% 
   select(c(2:3,
            4,9,14, #Catcher/Processors
@@ -595,7 +466,7 @@ table3_4 <- catch_wide %>%
 
 
 # Create a table for the Fee Summaries in All Areas:
-flextable(table3_4) %>% 
+flextable(table4_3) %>% 
   # Adjust column header labels where necessary:
   set_header_labels(AGENCY_GEAR_CODE = "Gear",
                     RETAINED = "Catch",
@@ -641,13 +512,13 @@ flextable(table3_4) %>%
 
 **INSERT PAGE BREAK** 
 
-Table 3-5. Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
+Table 4-4. -- Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
 
 
-```{r Table3_5_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+```{r Table4_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
 # Refine to just the GOA data and rearrange the column order:
-table3_5 <- catch_wide %>% 
+table4_4 <- catch_wide %>% 
   filter(FMP=='BSAI') %>% 
   select(c(2:3,
            4,9,14, #Catcher/Processors
@@ -659,7 +530,7 @@ table3_5 <- catch_wide %>%
 
 
 # Create a table for the Fee Summaries in All Areas:
-flextable(table3_5) %>% 
+flextable(table4_4) %>% 
   # Adjust column header labels where necessary:
   set_header_labels(AGENCY_GEAR_CODE = "Gear",
                     RETAINED = "Catch",
@@ -700,13 +571,558 @@ flextable(table3_5) %>%
 ```
 
 
+```{r ptr_stats, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+
+# What percent of BSAI and GOA PTR catch is in the full coverage category?
+ptr_full <- table4_3 %>% 
+  # Start with GOA PTR info:
+  filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+  select(AGENCY_GEAR_CODE, Total_CP, Total_RPP) %>% 
+  # change from wide to long format:
+  pivot_longer(cols = c("Total_CP", "Total_RPP"), names_to = "TYPE", values_to = "FULL_COVERAGE") %>% 
+  # Append BSAI PTR info: 
+  bind_rows(table4_4 %>% 
+              filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+              select(AGENCY_GEAR_CODE, Total_Total) %>%
+              # change from wide to long format:
+              pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "FULL_COVERAGE")) %>% 
+  # Sum the PTR full coverage catch:
+  group_by(AGENCY_GEAR_CODE) %>% 
+  summarize(FULL_COVERAGE_CATCH = sum(FULL_COVERAGE)) %>% 
+  # JOIN to the PTR total catch summary:
+  full_join(table4_3 %>% 
+         # Start with GOA PTR info:
+         filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+         select(AGENCY_GEAR_CODE, Total_Total) %>% 
+         # change from wide to long format:
+         pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE") %>% 
+         # Append BSAI PTR info: 
+         bind_rows(table4_4 %>% 
+                     filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+                     select(AGENCY_GEAR_CODE, Total_Total) %>%
+                     # change from wide to long format:
+                     pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE")) %>% 
+         # Sum the PTR catch:
+         group_by(AGENCY_GEAR_CODE) %>% 
+         summarize(TOTAL_COVERAGE_CATCH = sum(TOTAL_COVERAGE)), by = "AGENCY_GEAR_CODE") %>% 
+  mutate(PCT_FULL_COVERAGE = (FULL_COVERAGE_CATCH/TOTAL_COVERAGE_CATCH)*100)
+
+
+# What percent of BSAI and GOA PTR catch is in the partial coverage category?
+ptr_partial <- table4_3 %>% 
+  # Start with GOA PTR info:
+  filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+  select(AGENCY_GEAR_CODE, Total_S) %>% 
+  # change from wide to long format:
+  pivot_longer(cols = "Total_S", names_to = "TYPE", values_to = "PARTIAL_COVERAGE") %>% 
+  # Sum the PTR partial coverage catch:
+  group_by(AGENCY_GEAR_CODE) %>% 
+  summarize(PARTIAL_COVERAGE_CATCH = sum(PARTIAL_COVERAGE)) %>% 
+  # JOIN to the PTR total catch summary:
+  full_join(table4_3 %>% 
+         # Start with GOA PTR info:
+         filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+         select(AGENCY_GEAR_CODE, Total_Total) %>% 
+         # change from wide to long format:
+         pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE") %>% 
+         # Append BSAI PTR info: 
+         bind_rows(table4_4 %>% 
+                     filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+                     select(AGENCY_GEAR_CODE, Total_Total) %>%
+                     # change from wide to long format:
+                     pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE")) %>% 
+         # Sum the PTR catch:
+         group_by(AGENCY_GEAR_CODE) %>% 
+         summarize(TOTAL_COVERAGE_CATCH = sum(TOTAL_COVERAGE)), by = "AGENCY_GEAR_CODE") %>% 
+  mutate(PCT_PARTIAL_COVERAGE = (PARTIAL_COVERAGE_CATCH/TOTAL_COVERAGE_CATCH)*100)
+
+
+# What percent of the partial coverage was monitored?
+ptr_partial_mon <- table4_3 %>% 
+  # Start with GOA PTR info:
+  filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+  select(AGENCY_GEAR_CODE, Observed_S) %>% 
+  # change from wide to long format:
+  pivot_longer(cols = "Observed_S", names_to = "TYPE", values_to = "PARTIAL_MONITORED") %>% 
+  # Sum the PTR partial coverage catch:
+  group_by(AGENCY_GEAR_CODE) %>% 
+  summarize(PARTIAL_COVERAGE_MONITORED = sum(PARTIAL_MONITORED)) %>% 
+  # JOIN to the PTR total catch summary:
+  full_join(table4_3 %>% 
+         # Start with GOA PTR info:
+         filter(AGENCY_GEAR_CODE == 'Pelagic Trawl') %>% 
+         select(AGENCY_GEAR_CODE, Total_S) %>% 
+         # change from wide to long format:
+         pivot_longer(cols = "Total_S", names_to = "TYPE", values_to = "TOTAL_PARTIAL") %>% 
+         # Sum the PTR catch:
+         group_by(AGENCY_GEAR_CODE) %>% 
+         summarize(TOTAL_PARTIAL_CATCH = sum(TOTAL_PARTIAL)), by = "AGENCY_GEAR_CODE") %>% 
+  mutate(PCT_PARTIAL_MONITORED = (PARTIAL_COVERAGE_MONITORED/TOTAL_PARTIAL_CATCH)*100)
+
+
+
+```
+
+
+```{r npt_stats, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+
+# What percent of BSAI and GOA NPT catch is in the full coverage category?
+npt_full <- table4_3 %>% 
+  # Start with GOA NPT info:
+  filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+  select(AGENCY_GEAR_CODE, Total_CP, Total_RPP) %>% 
+  # change from wide to long format:
+  pivot_longer(cols = c("Total_CP", "Total_RPP"), names_to = "TYPE", values_to = "FULL_COVERAGE") %>% 
+  # Append BSAI NPT info: 
+  bind_rows(table4_4 %>% 
+              filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+              select(AGENCY_GEAR_CODE, Total_CP, Total_M) %>%
+              # change from wide to long format:
+              pivot_longer(cols = c("Total_CP", "Total_M"), names_to = "TYPE", values_to = "FULL_COVERAGE")) %>% 
+  # Sum the NPT full coverage catch:
+  group_by(AGENCY_GEAR_CODE) %>% 
+  summarize(FULL_COVERAGE_CATCH = sum(FULL_COVERAGE)) %>% 
+  # JOIN to the NPT total catch summary:
+  full_join(table4_3 %>% 
+         # Start with GOA NPT info:
+         filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+         select(AGENCY_GEAR_CODE, Total_Total) %>% 
+         # change from wide to long format:
+         pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE") %>% 
+         # Append BSAI NPT info: 
+         bind_rows(table4_4 %>% 
+                     filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+                     select(AGENCY_GEAR_CODE, Total_Total) %>%
+                     # change from wide to long format:
+                     pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE")) %>% 
+         # Sum the NPT catch:
+         group_by(AGENCY_GEAR_CODE) %>% 
+         summarize(TOTAL_COVERAGE_CATCH = sum(TOTAL_COVERAGE)), by = "AGENCY_GEAR_CODE") %>% 
+  mutate(PCT_FULL_COVERAGE = (FULL_COVERAGE_CATCH/TOTAL_COVERAGE_CATCH)*100)
+
+
+# What percent of BSAI and GOA NPT catch is in the partial coverage category?
+npt_partial <- table4_3 %>% 
+  # Start with GOA NPT info:
+  filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+  select(AGENCY_GEAR_CODE, Total_S) %>% 
+  # change from wide to long format:
+  pivot_longer(cols = "Total_S", names_to = "TYPE", values_to = "PARTIAL_COVERAGE") %>% 
+   # Append BSAI NPT info: 
+  bind_rows(table4_4 %>% 
+              filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+              select(AGENCY_GEAR_CODE, Total_S) %>%
+              # change from wide to long format:
+              pivot_longer(cols = "Total_S", names_to = "TYPE", values_to = "PARTIAL_COVERAGE")) %>% 
+  # Sum the NPT partial coverage catch:
+  group_by(AGENCY_GEAR_CODE) %>% 
+  summarize(PARTIAL_COVERAGE_CATCH = sum(PARTIAL_COVERAGE)) %>% 
+  # JOIN to the NPT total catch summary:
+  full_join(table4_3 %>% 
+         # Start with GOA PTR info:
+         filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+         select(AGENCY_GEAR_CODE, Total_Total) %>% 
+         # change from wide to long format:
+         pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE") %>% 
+         # Append BSAI NPT info: 
+         bind_rows(table4_4 %>% 
+                     filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+                     select(AGENCY_GEAR_CODE, Total_Total) %>%
+                     # change from wide to long format:
+                     pivot_longer(cols = "Total_Total", names_to = "TYPE", values_to = "TOTAL_COVERAGE")) %>% 
+         # Sum the PTR catch:
+         group_by(AGENCY_GEAR_CODE) %>% 
+         summarize(TOTAL_COVERAGE_CATCH = sum(TOTAL_COVERAGE)), by = "AGENCY_GEAR_CODE") %>% 
+  mutate(PCT_PARTIAL_COVERAGE = (PARTIAL_COVERAGE_CATCH/TOTAL_COVERAGE_CATCH)*100)
+
+
+# What percent of the partial coverage was monitored?
+npt_partial_mon <- table4_3 %>% 
+  # Start with GOA NPT info:
+  filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+  select(AGENCY_GEAR_CODE, Observed_S) %>% 
+  mutate(FMP = 'GOA') %>% 
+  # change from wide to long format:
+  pivot_longer(cols = "Observed_S", names_to = "TYPE", values_to = "PARTIAL_MONITORED") %>% 
+  # Append BSAI NPT info: 
+  bind_rows(table4_4 %>% 
+              filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+              select(AGENCY_GEAR_CODE, Observed_S) %>%
+              mutate(FMP = 'BSAI') %>% 
+              # change from wide to long format:
+              pivot_longer(cols = "Observed_S", names_to = "TYPE", values_to = "PARTIAL_MONITORED")) %>% 
+  # Sum the NPT partial coverage catch:
+  group_by(AGENCY_GEAR_CODE, FMP) %>% 
+  summarize(PARTIAL_COVERAGE_MONITORED = sum(PARTIAL_MONITORED)) %>% 
+  # JOIN to the NPT partial catch summary:
+  full_join(table4_3 %>% 
+         # Start with GOA NPT info:
+         filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+         select(AGENCY_GEAR_CODE, Total_S) %>% 
+         mutate(FMP = 'GOA') %>%    
+         # change from wide to long format:
+         pivot_longer(cols = "Total_S", names_to = "TYPE", values_to = "TOTAL_PARTIAL") %>% 
+        # Append BSAI NPT info: 
+          bind_rows(table4_4 %>% 
+              filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
+              select(AGENCY_GEAR_CODE, Total_S) %>%
+              mutate(FMP = 'BSAI') %>% 
+              # change from wide to long format:
+              pivot_longer(cols = "Total_S", names_to = "TYPE", values_to = "TOTAL_PARTIAL")) %>%    
+         # Sum the PTR catch:
+         group_by(AGENCY_GEAR_CODE, FMP) %>% 
+         summarize(TOTAL_PARTIAL_CATCH = sum(TOTAL_PARTIAL)), by = c("AGENCY_GEAR_CODE", "FMP")) %>% 
+  mutate(PCT_PARTIAL_MONITORED = (PARTIAL_COVERAGE_MONITORED/TOTAL_PARTIAL_CATCH)*100)
+
+
+
+```
+
+
+These tables can also be used to compare the proportion of catch that occurred in full coverage or
+the partial coverage categories or the proportion of catch that was monitored for trips in partial
+coverage. For example:
+
+* In the BSAI and GOA combined, `r paste0(round(ptr_full$PCT_FULL_COVERAGE,1),'%')` of pelagic trawl catch was on trips in the full
+coverage category and `r paste0(round(ptr_partial$PCT_PARTIAL_COVERAGE,1),'%')` was on trips in partial coverage. All partial coverage trips were in the GOA and `r paste0(round(ptr_partial_mon$PCT_PARTIAL_MONITORED,1),'%')` of their catch was monitored. This percentage is higher if compliance monitoring for maximized retention requirements on trawl EM trips is considered;
+* In the BSAI and GOA combined, `r paste0(round(npt_full$PCT_FULL_COVERAGE,1),'%')` of non-pelagic trawl catch was on trips in full
+coverage category and `r paste0(round(npt_partial$PCT_PARTIAL_COVERAGE,1),'%')` was on trips in partial coverage. Partial coverage trips occurred in both the BSAI and GOA with `r paste0(round(npt_partial_mon$PCT_PARTIAL_MONITORED[1],1),'%')` and `r paste0(round(npt_partial_mon$PCT_PARTIAL_MONITORED[2],1),'%')` of their catch monitored,
+respectively.
+
+Additional retained and discard catch information, broken down by species for the Gulf of Alaska (GOA) and Bering Sea/Aleutian Islands (BSAI), are available online for `r as.numeric(format(Sys.Date(), "%Y"))-1` as well as prior years.[^2] 
+
+
+
+
+***
+
+[^2]: Available online at [link]https://www.fisheries.noaa.gov/alaska/fisheries-observers/observed-catch-tables-north-pacific-observer-program 
+
+***
+
+
+
+```{r tem_summary, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
+
+
+
+# Explore the data a little:
+tem_trip_counts <- valhalla_tem %>% 
+  group_by(VIDEO_REVIEW) %>% 
+  summarize(trip_count = n_distinct(TRIP_ID))
+
+
+
+# Summarize catch by the different TEM metrics:
+tem_summary <- valhalla_tem %>% 
+  # Shoreside sampling data:
+  filter(SHORESIDE_SAMPLING == 'Y') %>% 
+  group_by (FMP) %>% 
+  summarise(TEM_METRIC = 'Shoreside Sampling',
+            trip_count = n_distinct(TRIP_ID),
+            weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+  bind_rows(valhalla_tem %>% 
+              filter(SHORESIDE_SAMPLING == 'Y') %>%
+              group_by(.) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'Shoreside Sampling',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+  # Video review data:
+  bind_rows(valhalla_tem %>% 
+              filter(VIDEO_REVIEW == 'Y') %>% 
+              group_by (FMP) %>% 
+              summarise(TEM_METRIC = 'Video Reviewed',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+              bind_rows(valhalla_tem %>% 
+                          filter(VIDEO_REVIEW == 'Y') %>% 
+                          group_by(.) %>% 
+                          summarise(FMP = 'All Areas',
+                                    TEM_METRIC = 'Video Reviewed',
+                                    trip_count = n_distinct(TRIP_ID),
+                                    weight = round(sum(catch_table_weight),0), .groups = 'drop'))) %>% 
+  # TEM total catch:
+  bind_rows(valhalla_tem %>% 
+              group_by (FMP) %>% 
+              summarise(TEM_METRIC = 'Total Catch',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+              bind_rows(valhalla_tem %>% 
+                          group_by(.) %>% 
+                          summarise(FMP = 'All Areas',
+                                    TEM_METRIC = 'Total Catch',
+                                    trip_count = n_distinct(TRIP_ID),
+                                    weight = round(sum(catch_table_weight),0), .groups = 'drop'))) %>% 
+  # Add area totals to row so percentages can be calculated:
+  full_join((valhalla_tem %>% 
+              group_by (FMP) %>% 
+              summarise(total_trips = n_distinct(TRIP_ID),
+                        total_weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+              bind_rows(valhalla_tem %>% 
+                          group_by(.) %>% 
+                          summarise(FMP = 'All Areas',
+                                    total_trips = n_distinct(TRIP_ID),
+                                    total_weight = round(sum(catch_table_weight),0), .groups = 'drop'))), by = "FMP") %>% 
+  # Calculate percentages:
+  mutate(WT_PCT = (weight/total_weight)*100,
+         TRIP_PCT = (trip_count/total_trips)*100) %>%
+  # Convert from long format to wide format:
+  pivot_wider(id_cols = TEM_METRIC, names_from = FMP, values_from = c(weight, WT_PCT, trip_count, TRIP_PCT))  %>% 
+  select(TEM_METRIC, trip_count_GOA, TRIP_PCT_GOA, weight_GOA, WT_PCT_GOA, 
+         trip_count_BSAI, TRIP_PCT_BSAI, weight_BSAI, WT_PCT_BSAI, 
+         "trip_count_All Areas", "TRIP_PCT_All Areas", "weight_All Areas", "WT_PCT_All Areas")
+ 
+
+
+
+
+
+### Do something similar for Fixed Gear EM, full coverage, and partial covege?
+work_data2 <- work_data %>% 
+  # refine to groundfish (which includes directed halibut) OR psc halibut:
+  filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+  # refine to Fixed Gear EM, partial coverage, full coverage:
+  filter(!STRATA %in% c('EM_TRW_EFP_FULL', 'EM_TRW_EFP_PART')) %>% 
+  mutate(STRATA_LABEL = ifelse(STRATA %in% c('EM_HAL', 'EM_POT'), 'Fixed Gear EM',
+                               ifelse(STRATA %in% c('HAL', 'POT', 'TRW'), 'Observer Trip Selection',
+                                      ifelse(STRATA == 'ZERO', 'No Selection', 'Full Coverage')))) 
+
+
+# Generate a summary for the non-Trawl EM trips and catch:
+other_summary <- work_data2 %>% 
+  #Fixed Gear EM Video review:
+  filter(OBSERVED_FLAG == 'Y' & STRATA_LABEL == 'Fixed Gear EM') %>% 
+  group_by (STRATA_LABEL, FMP) %>% 
+              summarise(TEM_METRIC = 'Video Reviewed',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+  bind_rows(work_data2 %>%
+              filter(OBSERVED_FLAG == 'Y'& STRATA_LABEL == 'Fixed Gear EM') %>% 
+              group_by(STRATA_LABEL) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'Video Reviewed',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+  # Fixed Gear EM total catch:
+  bind_rows(work_data2 %>% 
+              filter(STRATA_LABEL == 'Fixed Gear EM') %>% 
+              group_by (STRATA_LABEL, FMP) %>% 
+              summarise(TEM_METRIC = 'Total Catch',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%
+  bind_rows(work_data2 %>% 
+              filter(STRATA_LABEL == 'Fixed Gear EM') %>%
+              group_by(STRATA_LABEL) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'Total Catch',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+
+  # At-Sea Observers:
+  bind_rows(work_data2 %>% 
+              filter(OBSERVED_FLAG == 'Y' & STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>% 
+              group_by (STRATA_LABEL, FMP) %>% 
+              summarise(TEM_METRIC = 'At-Sea Observer',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+  bind_rows(work_data2 %>%
+              filter(OBSERVED_FLAG == 'Y'& STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>% 
+              group_by(STRATA_LABEL) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'At-Sea Observer',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+  # Full and Partial total catch:
+  bind_rows(work_data2 %>% 
+              filter(STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>% 
+              group_by (STRATA_LABEL, FMP) %>% 
+              summarise(TEM_METRIC = 'Total Catch',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%
+  bind_rows(work_data2 %>% 
+              filter(STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>%
+              group_by(STRATA_LABEL) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'Total Catch',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%  
+  
+  # No Selection:
+  bind_rows(work_data2 %>% 
+              filter(OBSERVED_FLAG == 'Y' & STRATA_LABEL == 'No Selection') %>% 
+              group_by (STRATA_LABEL, FMP) %>% 
+              summarise(TEM_METRIC = 'No Monitoring',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+  bind_rows(work_data2 %>%
+              filter(OBSERVED_FLAG == 'Y'& STRATA_LABEL == 'No Selection') %>% 
+              group_by(STRATA_LABEL) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'No Monitoring',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+  # No Selection total catch:
+  bind_rows(work_data2 %>% 
+              filter(STRATA_LABEL == 'No Selection') %>% 
+              group_by (STRATA_LABEL, FMP) %>% 
+              summarise(TEM_METRIC = 'No Monitoring',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%
+  bind_rows(work_data2 %>% 
+              filter(STRATA_LABEL == 'No Selection') %>%
+              group_by(STRATA_LABEL) %>% 
+              summarise(FMP = 'All Areas',
+                        TEM_METRIC = 'No Monitoring',
+                        trip_count = n_distinct(TRIP_ID),
+                        weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%  
+
+  # Add area totals to row so percentages can be calculated:
+  full_join((work_data2 %>% 
+              group_by (STRATA_LABEL, FMP) %>% 
+              summarise(total_trips = n_distinct(TRIP_ID),
+                        total_weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+              bind_rows(work_data2 %>% 
+                          group_by(STRATA_LABEL) %>% 
+                          summarise(FMP = 'All Areas',
+                                    total_trips = n_distinct(TRIP_ID),
+                                    total_weight = round(sum(catch_table_weight),0), .groups = 'drop'))), 
+            by = c("FMP", "STRATA_LABEL")) %>% 
+  # Calculate percentages:
+  mutate(WT_PCT = (weight/total_weight)*100,
+         TRIP_PCT = (trip_count/total_trips)*100) %>%
+  # Convert from long format to wide format:
+  pivot_wider(id_cols = c(STRATA_LABEL, TEM_METRIC), 
+              names_from = FMP, values_from = c(weight, WT_PCT, trip_count, TRIP_PCT))  %>% 
+  select(STRATA_LABEL, TEM_METRIC, trip_count_GOA, TRIP_PCT_GOA, weight_GOA, WT_PCT_GOA, 
+         trip_count_BSAI, TRIP_PCT_BSAI, weight_BSAI, WT_PCT_BSAI, 
+         "trip_count_All Areas", "TRIP_PCT_All Areas", "weight_All Areas", "WT_PCT_All Areas") %>% 
+  # Sort
+  arrange(STRATA_LABEL)
+ 
+
+
+new_table_totals <- work_data %>% 
+  # refine to groundfish (which includes directed halibut) OR psc halibut:
+  filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+  # summarise total trips and total catch:
+  group_by(FMP) %>% 
+  summarize(trip_count = n_distinct(TRIP_ID),
+            weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+  bind_rows(work_data %>% 
+              # refine to groundfish (which includes directed halibut) OR psc halibut:
+  filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+    # summarise total trips and total catch:
+    group_by(.) %>% 
+    summarize(FMP = 'All Areas',
+              trip_count = n_distinct(TRIP_ID),
+              weight = round(sum(catch_table_weight),0), .groups = 'drop'))
+
+  
+
+
+```
+
+
+**INSERT PAGE BREAK** 
+
+Table 4-5. -- The number (n) and percent (%) of trips and metric tons (mt) and percent (%) of groundfish and halibut catch in the groundfish fisheries in the Trawl EM sampling strata in `r as.numeric(format(Sys.Date(), "%Y"))-1` by area and type of monitoring. 
+
+
+```{r Table4_5_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+
+
+
+# Create a TEM table for the Fee Summaries in All Areas:
+flextable(tem_summary) %>% 
+  # Add Metric/bottom header row:
+  add_header_row(values = c("", "Trip", "Catch", "Trip", "Catch", "Trip", "Catch"),
+                 colwidths = c(1,2,2,2,2,2,2)) %>% 
+  align(i = 2, align = "center", part = "header") %>% 
+  # Add Area/top header row:
+  add_header_row(values = c("", "GOA", "BSAI", "All Areas"),
+                 colwidths = c(1,4,4,4)) %>% 
+  align(i = 1, align = "center", part = "header") %>% 
+  # Adjust metric column header labels where necessary:
+  set_header_labels(TEM_METRIC = "Monitoring",
+                    trip_count_GOA = "n",
+                    TRIP_PCT_GOA = "%",
+                    weight_GOA = "mt",
+                    WT_PCT_GOA = "%",
+                    trip_count_BSAI = "n",
+                    TRIP_PCT_BSAI = "%",
+                    weight_BSAI = "mt",
+                    WT_PCT_BSAI = "%",
+                    "trip_count_All Areas" = "n",
+                    "TRIP_PCT_All Areas" = "%",
+                    "weight_All Areas" = "mt",
+                    "WT_PCT_All Areas" = "%") %>%  
+  align(i = 3, j = c(1), align = "left", part = "header") %>% 
+  align(i = 3, j = c(2:13), align = "right", part = "header") %>% 
+  # Format the columns:
+  colformat_double(j = c(2,4,6,8,10,12), big.mark = ",", digits = 0) %>% 
+  colformat_double(j = c(3,5,7,9,11,13), big.mark = ",", digits = 1) %>%
+  # Merge the strata labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Add dashed horizontal lines before TEM subtotal:
+  border(i = 2, part = "body", border.bottom = fp_border(style = "dashed"))
+
+
+
+
+# Create a table for the Fee Summaries in All Areas:
+flextable(other_summary) %>% 
+  # Add Metric/bottom header row:
+  add_header_row(values = c("","", "Trip", "Catch", "Trip", "Catch", "Trip", "Catch"),
+                 colwidths = c(1,1,2,2,2,2,2,2)) %>% 
+  align(i = 2, align = "center", part = "header") %>% 
+  # Add Area/top header row:
+  add_header_row(values = c("","", "GOA", "BSAI", "All Areas"),
+                 colwidths = c(1,1,4,4,4)) %>% 
+  align(i = 1, align = "center", part = "header") %>% 
+  # Adjust metric column header labels where necessary:
+  set_header_labels(STRATA_LABEL = "Strata",
+                    TEM_METRIC = "Monitoring",
+                    trip_count_GOA = "n",
+                    TRIP_PCT_GOA = "%",
+                    weight_GOA = "mt",
+                    WT_PCT_GOA = "%",
+                    trip_count_BSAI = "n",
+                    TRIP_PCT_BSAI = "%",
+                    weight_BSAI = "mt",
+                    WT_PCT_BSAI = "%",
+                    "trip_count_All Areas" = "n",
+                    "TRIP_PCT_All Areas" = "%",
+                    "weight_All Areas" = "mt",
+                    "WT_PCT_All Areas" = "%") %>%  
+  align(i = 3, j = c(1), align = "left", part = "header") %>% 
+  align(i = 3, j = c(2:13), align = "right", part = "header") %>% 
+  # Format the columns:
+  colformat_double(j = c(3,5,7,9,11,13), big.mark = ",", digits = 0) %>% 
+  colformat_double(j = c(4,6,8,10,12,14), big.mark = ",", digits = 1) %>%
+  # Add dashed horizontal lines before subtotal:
+  border(i = c(1,3,6), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(2,4,5), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  # Merge the strata labels into a single cell: 
+  merge_v(j = 1, part = "body") 
+
+```
+
+1 insert footnotes here?  About date that this review is as-of? Other?
+
+
+
+
+
 ```{r workspace, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table3_4', 'table3_5'))])
+rm(list= ls()[!(ls() %in% c('YEAR','work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table4_3', 'table4_4', 'tem_summary'))])
 
 
-#save('YEAR', 'work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table3_4', 'table3_5',
+#save('YEAR', 'work_data', 'addl_catch_table', 'counts_wide', 'bsai', 'goa', 'catch_wide', 'table4_3', 'table4_4', 'tem_summary',
 #     file = paste0("AR_descriptive_", YEAR, "_tables.RData"))
 
 ```
