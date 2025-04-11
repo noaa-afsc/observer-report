@@ -1,5 +1,5 @@
 
-####################
+#################### #
 # Annual Report Enforcement chapter: Rate calculations
 # Contact Andy Kingham
 # 206-526-4212
@@ -140,7 +140,7 @@ summ_subcat_units <-
 
 # Units Denom summaries----------
 # Unit summaries for TOTALS that are used for the DENOMINATOR.
-##########
+########## #
 
 # TODO: determine what factors to group by for 2024
 # For now, just grouping by CALENDAR_YEAR
@@ -228,9 +228,9 @@ units_melt <-
        value.name    = 'TOTAL_UNITS',
        variable.name = "INCIDENT_UNIT") 
 
-#########
-# Rates for Units
-#########
+######### #
+# Rates for Units -------------
+######### #
 
 # REG-level rate
 reg_units_rate <-
@@ -588,7 +588,7 @@ summ_subcat_units_for_factors <-
 
 
 
-###########
+########### #
 # Unit summaries for TOTALS that are used for the DENOMINATOR, continued
 # This time, with the factor groups for 2024.
 # Those are:
@@ -672,9 +672,9 @@ units_for_factors_melt <-
                  value.name    = 'TOTAL_UNITS',
                  variable.name = "INCIDENT_UNIT") 
 
-#########
-# Rates for Units
-#########
+######### #
+# Rates for Units ---------------------
+######### #
 
 # REG-level rate
 reg_units_for_factors_rate <-
@@ -745,13 +745,13 @@ subcat_units_rate_for_factors_priority <-
 
 
 
-# ###############
-# # OLD CODE, COMMENTING OUT FOR 2024
-########################
+# ############### #
+# # OLD CODE, COMMENTING OUT FOR 2024 ------------
+######################## #
 
 
-#########################
-# Summarize the DAYS for each factor combination.
+######################### #
+# OLD - Summarize the DAYS for each factor combination. ----------
 
 # Count deployed days.
 # Frst count the SUM TOTAL of days for cruise/permit/all factors.
@@ -806,9 +806,9 @@ subcat_units_rate_for_factors_priority <-
 # 
 
 # 
-# ######################
+# ###################### #
 # # Finally!!!!
-# # Calculate the rates.  
+# # OLD - Calculate the rates.   ------------------
 # # There are FOUR rates that are calculated.
 # #     # The FIRST is for each individual statement subcategory (SUBCAT) and each unique factor grouping
 # #     # The SECOND, is for the higher-level, OLD_OLE_CATEGORY and each unique factor grouping.
@@ -867,8 +867,8 @@ subcat_units_rate_for_factors_priority <-
 # 
 # 
 # 
-# ######################
-# # Second rate: by OLD_OLE_CATEGORY, for each factor combination.
+# ###################### #
+# # OLD - Second rate: by OLD_OLE_CATEGORY, for each factor combination. ------------
 # 
 # rate_all_groupings_ole_category <- 
 #   depl_days_summ_by_factor %>%
@@ -902,8 +902,8 @@ subcat_units_rate_for_factors_priority <-
 # 
 # 
 # 
-# ######################
-# # Third rate: by NEW_OLE_CATEGORY, for each factor combination.
+# ###################### #
+# # OLD - Third rate: by NEW_OLE_CATEGORY, for each factor combination.
 # 
 # rate_all_groupings_new_ole_category <- 
 #   depl_days_summ_by_factor %>%
@@ -1200,7 +1200,7 @@ subcat_units_rate_for_factors_priority <-
 
 
 
-##################
+################## #
 # Save Output -------------------------------------------------------------
 
 file_3_name <- "AR_3_rate_output.Rdata"
