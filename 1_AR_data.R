@@ -638,7 +638,7 @@ work.offload <- tender.link %>%
 
 # Check to make sure all VALHALLA REPORT_IDs have a match in observer data
 if (any(is.na(work.offload$OBS_SALMON_CNT_FLAG))) {
-  cat("\033[31mREPORT_IDs exist that are not in observer data\033[39m\n")
+  stop("\033[31mREPORT_IDs exist that are not in observer data\033[39m\n")
 } else {
   cat("\033[32mAll REPORT_IDs present in observer data\033[39m\n")
 }
