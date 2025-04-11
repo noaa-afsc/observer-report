@@ -78,8 +78,8 @@ spatiotemp_data_prep <- function(valhalla){
     ][, STRATA := gsub(" ", "_", STRATA)] |>
     # Set the order of columns
     setcolorder(neworder = c(
-      "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", "AREA", 
-      "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG")) |>
+      "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", 
+      "AREA", "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG")) |>
     # Order the dataset
     setorder(ADP, POOL, PERMIT, TRIP_TARGET_DATE) |>
     # For some reason, my shapefiles don't include ADFG STAT AREA 515832. Seem like it was merged into 515831. 
