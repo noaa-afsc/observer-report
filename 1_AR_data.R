@@ -179,25 +179,23 @@ salmon.landings.obs <- dbGetQuery(channel_afsc, script)
 # Queries
 script <- paste("
   SELECT 
-    d.percent as ODDS_SELECTION_PCT,     
+    odds.ODDS_RANDOM_NUMBER.getControlPct(a.original_embark_date, b.strata) as ODDS_SELECTION_PCT, 
     a.trip_plan_log_seq, a.trip_status_code, a.vessel_seq, EXTRACT(YEAR FROM a.original_embark_date) AS YEAR,
     a.original_embark_date, a.planned_embark_date, a.tender_trip_flag, a.trip_plan_number,
     b.trip_stratas_seq, b.trip_monitor_code, b.trip_selected,  b.random_number_used, b.strata AS STRATA_CODE, 
-    -- inherit_trip_seq corresponds to the trip_stratas_seq that was cancelled, not trip_plan_log_seq before ODDS 3.0!
-    b.inherit_trip_seq,          
+    b.user_reqst_coverage, b.inherit_trip_seq, 
     c.group_code, c.description AS STRATUM_DESCRIPTION,
     e.release_comment,
     f.description AS RELEASE_STATUS_DESCRIPTION,
     g.akr_vessel_id AS VESSEL_ID,
-    h.gear_type_code
+    h.gear_type_code,
+    i.fish_area_mneum AS FISH_AREA
    
   FROM odds.odds_trip_plan_log a
     LEFT JOIN odds.odds_trip_stratas b
       ON a.trip_plan_log_seq = b.trip_plan_log_seq 
     LEFT JOIN odds.odds_strata c
       ON b.strata = c.strata
-    LEFT JOIN odds.odds_strata_rates d
-      ON b.strata = d.strata
     LEFT JOIN odds.odds_strata_release e
       ON b.trip_stratas_seq = e.trip_stratas_seq
     LEFT JOIN odds.odds_lov_release_status f
@@ -206,8 +204,9 @@ script <- paste("
       ON a.vessel_seq = g.vessel_seq
     LEFT JOIN odds.odds_trip_gear h
       ON a.trip_plan_log_seq = h.trip_plan_log_seq
-  WHERE EXTRACT(YEAR FROM a.original_embark_date) =", year,"
-  AND EXTRACT(YEAR FROM d.effective_date) =", year)
+    LEFT JOIN odds.odds_trip_fish_area i
+      ON a.trip_plan_log_seq = i.trip_plan_log_seq
+  WHERE EXTRACT(YEAR FROM a.original_embark_date) =", year)
 
 odds.dat <- dbGetQuery(channel_afsc, script)
 
@@ -222,17 +221,20 @@ odds.dat <- dbGetQuery(channel_afsc, script)
 #   CR = Cancel Replaced (introduced with ODDS 3.0 in 2023)
 table(odds.dat$TRIP_MONITOR_CODE, odds.dat$TRIP_STATUS_CODE, odds.dat$GROUP_CODE, useNA = 'ifany')
 
-#' The TRIP_SELECTED = "Y" when STRATA_CODE = 96 or 98 means that coverage was requested (due to fishing occurring in 
-#' more than one area) but the random number generated was larger than the programmed rate, and so the video was not 
-#' selected for review. Since these trips aren't truly monitored, make TRIP_SELECTED = "N". 96 is used for at-sea 
-#' observer compliance trips and 98 is used for at-sea fixed gear EM trips.
-odds.dat <- mutate(odds.dat, TRIP_SELECTED = ifelse(STRATA_CODE %in% c(96, 98), "N", TRIP_SELECTED))
+#' STRATA_CODE 96, 97, 196, and 197 is used for at-sea observer compliance trips and 98/198 is used for at-sea fixed 
+#' gear EM trips. Trips are placed in these strata when USER_REQST_COVERAGE = 'Y' only when RANDOM_NUMBER_USED does not
+#' result in selection. We need to recode these trips in their original strata, and we will use the USER_REQST_COVERAGE 
+#' flag to identify which trips did not under truly random selection.
+#' USER_REQST_COVERAGE is 'Y' only when fixed gear trips are logged with MULTIPLE_AREA = 'Y' and either IFQ_FLAG or CDQ_FLAG
+#' = 'Y' AND when the user accepts monitoring when prompted, stating they my plan on catching more tonnage than any of
+#' their area-specific quotas.
 
 # Translate GROUP_CODE, STRATA_CODE, and GEAR_TYPE_CODE into STRATA
-odds.dat <- mutate(odds.dat, STRATA = paste0(
-  # Tag on "compliance" if the trip was a multi-area IFQ trip
-  ifelse(STRATA_CODE %in% c(96, 98), "Compliance ", ""),
-  case_when(
+odds.dat <- mutate(odds.dat, STRATA = case_when(
+    STRATA_CODE %in% c(96, 97, 196, 197) & FISH_AREA == "BSAI" ~ "OB FIXED BSAI",
+    STRATA_CODE %in% c(96, 97, 196, 197) & FISH_AREA == "GOA" ~ "OB FIXED GOA",
+    STRATA_CODE %in% c(98, 198) & FISH_AREA == "BSAI" ~ "EM FIXED BSAI",
+    STRATA_CODE %in% c(98, 198) & FISH_AREA == "GOA" ~ "EM FIXED GOA",
     STRATUM_DESCRIPTION == "EM EFP - Trawl No Tender" ~ "EM TRW GOA (EFP)",
     STRATUM_DESCRIPTION == "EM EFP - Trawl Tender Delivery" ~ "EM TRW GOA (EFP)",
     STRATUM_DESCRIPTION == "EM Fixed Gear - BSAI" ~ "EM FIXED BSAI",
@@ -243,20 +245,24 @@ odds.dat <- mutate(odds.dat, STRATA = paste0(
     STRATUM_DESCRIPTION == "Trawl Gear - GOA" ~ "OB TRW GOA",
     .default = "Unknown"
   )
-))
+)
 odds.dat %>% distinct(STRATA) %>% arrange(STRATA)
-if(any(odds.dat$STRATA == "Unknown")) stop("Some `STRATA` are not yet defined!")
+if(any(odds.dat$STRATA %like% "Unknown")) stop("Some `STRATA` are not yet defined!")
 
 # Create a lookup table for strata in partial coverage category
+#' \TODO from GMM: I don't think we need `GEAR`. 4_AR tends to have to exclude it before joins or else the fixed gear strata 
+#' result in multiple matches
 partial <- odds.dat %>%
-  filter(!(STRATA %like% "Compliance")) %>% 
+  # Exclude the compliance strata
+  filter(is.na(USER_REQST_COVERAGE) | USER_REQST_COVERAGE == "N" ) %>% 
   group_by(YEAR, STRATA, GEAR_TYPE_CODE) %>%
   distinct(Rate = ODDS_SELECTION_PCT / 100 ) %>%
   ungroup() %>%
-  mutate(GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line")) %>%
-  mutate(Rate = ifelse(STRATA == "EM TRW GOA (EFP)", 0.3333, Rate)) %>%
-  distinct(YEAR, STRATA, Rate, GEAR) %>%
-  mutate(formatted_strat = paste0("*", STRATA, "*"))
+  mutate(
+    GEAR = case_match(GEAR_TYPE_CODE, 3 ~ "Trawl", 6 ~ "Pot", 8 ~ "Hook-and-line"),
+    Rate = ifelse(STRATA == "EM TRW GOA (EFP)", 0.3333, Rate),
+    formatted_strat = paste0("*", STRATA, "*")) %>%
+  distinct(YEAR, STRATA, Rate, GEAR, formatted_strat) 
 partial %>% pivot_wider(names_from = YEAR, values_from = Rate)
 
 # * EM ----
@@ -366,19 +372,25 @@ select h.ODDS_TRIP_NUMBER,
 -- sampling strata information
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
 ss.sampling_strata_code as strata,
-trunc(min(r.EFFECTIVE_DATE)) data_available
+s.species_pk,
+trunc(r.EFFECTIVE_DATE) data_available
 from AKFISH_REPORT.CATCH_REPORT_SOURCE r
 join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
 join AKFISH_REPORT.EM_HAUL h on f.EM_HAUL_PK = h.EM_HAUL_PK
+join AKFISH_REPORT.SPECIES s on f.SPECIES_PK = s.SPECIES_PK
 join AKFISH_REPORT.CALENDAR_DATE c on f.REPORT_DATE_PK = c.CALENDAR_DATE_PK
 join akfish_report.sampling_strata ss on ss.sampling_strata_pk = f.sampling_strata_pk
 where r.year_pk >=", year-1, "
 and r.CATCH_REPORT_TYPE_CODE = 'EM'
 and ss.sampling_strata_code != 'N/A'
-group by h.ODDS_TRIP_NUMBER,
-case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end,
-ss.sampling_strata_code
-order by h.ODDS_TRIP_NUMBER"))
+order by h.ODDS_TRIP_NUMBER, trunc(r.EFFECTIVE_DATE)"))
+
+em_data_available <- em_data_available %>% 
+  group_by(ODDS_TRIP_NUMBER, DATA_AVAILABLE) %>% 
+  mutate(SPECIES = n_distinct(SPECIES_PK)) %>% 
+  group_by(ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA) %>% 
+  # Isolate the earliest date at which all species data were available to catch accounting
+  summarise(DATA_AVAILABLE = min(DATA_AVAILABLE[SPECIES == max(SPECIES)]), .groups = 'drop')
 
 ob_trips <- dbGetQuery(channel_afsc, paste("
 select extract(year from t.start_date) as year, t.cruise, t.permit, t.trip_seq, t.end_date as trip_end
@@ -529,7 +541,7 @@ nrow(filter(em_trw_offload, AGENCY_GEAR_CODE == "NPT" | PORT_CODE == "IFP"))
 # Get eLandings data for these fish tickets to add TENDER_OFFLOAD_DATE which is needed to match
 #  observer data so we can determine which landings observers marked as monitored
 script <- paste(
-  "SELECT report_id, vessel_id, tender_vessel_adfg_number, tender_offload_date, processor_name
+  "SELECT report_id, vessel_id, tender_vessel_adfg_number, to_char(tender_offload_date, 'yyyy-mm-dd') as tender_offload_date, processor_name
    FROM norpac_views.atl_landing_id
    WHERE year = ", year
 )
