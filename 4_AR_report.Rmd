@@ -296,10 +296,7 @@ costs.plot <- ggplot(bud_tbl, aes(x = ADP_C)) +
 
 ```{r budget_eval, include=FALSE}
 
-#' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata.*
-#' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
-#' this stratum, and using a 33% of sea days as a proxy for 'plant days' is not a good prediction, nor is adding up
-#' sea days of monitored trips a logical estimate of actuals.
+#' *Table 3-1 : Comparison between predicted and actual at-sea trip days for partial coverage strata.*
 
 # Evaluate why we were off budget
 trip.budget.table <- 
@@ -1849,7 +1846,7 @@ NMFS. 2013. 2014 Annual Deployment Plan for Observers in the Groundfish and Hali
 
 `r if(tech.memo){'# Tables'}`
 
-`r tbl_nums('trip.budget.tbl', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
+`r tbl_nums('trip.budget.tbl', caption = paste0('Comparison between predicted and actual monitored at-sea days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
 ```{r trip.budget.tbl, tab.cap=""}
 
@@ -1863,7 +1860,7 @@ flextable(trip.budget.table) %>%
   bold(bold = TRUE, part = "header") %>%
   hline(i = v_diff(trip.budget.table$STRATA, 1, 2)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
-  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
+  add_header_row(values = c("", "Monitored days", "Difference"), colwidths = c(1, 2, 2)) %>%
   align(j = 2:5, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
   width(j = 1, 1.5, unit = "in") %>%
