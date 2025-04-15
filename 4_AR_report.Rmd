@@ -2067,6 +2067,7 @@ flextable(Pollock.observed.table) %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
+  merge_h_range(i = ~ FMP %like% "total", j1 = 1, j2 = 3) %>%
   flextable::surround(i = ~FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
@@ -2097,7 +2098,7 @@ flextable(Pollock.efp.table) %>%
   align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  merge_h_range(i = ~ FMP %like% "total", j1 = 1, j2 = 2) %>%
+  merge_h_range(i = ~ FMP %like% "total", j1 = 1, j2 = 3) %>%
   flextable::surround(i = ~ FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
