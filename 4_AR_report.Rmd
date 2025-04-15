@@ -1063,7 +1063,7 @@ Coverage.Table.partial <- bind_rows(
            Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") 
 ) %>%
-  arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW"))) %>%
+  arrange(match(STRATA, strata.order)) %>%
   ungroup()
 
 #' *ZERO COVERAGE* 
@@ -1702,9 +1702,22 @@ Six trip metrics were examined in the permutation test. These metrics were as fo
 
 ```{r perm_results, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
 
-dat <- 
-  work.data %>% 
+dat <- work.data %>% 
   filter(ADP == year & STRATA %in% partial$STRATA)
+
+#' *==================*
+#' *2024 ONLY -- Apply the sample unit fix for the EM TRW GOA (EFP) stratum*
+# Count of unique TRIP_IDs and observed TRIP_IDs
+# dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
+em_trw_goa_efp.psid <- work.offload.trw_em |>
+  _[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)] |>
+  unique()
+# # Update the values using REPORT_ID
+dat.em_trw_goa <- dat[STRATA == "EM TRW GOA (EFP)"]
+dat.em_trw_goa[, c("TRIP_ID", "OBSERVED_FLAG") := em_trw_goa_efp.psid [dat.em_trw_goa, .(TRIP_ID, OBSERVED_FLAG), on = .(REPORT_ID)]]
+dat <- rbind(dat[STRATA != "EM TRW GOA (EFP)"], dat.em_trw_goa)
+#dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
+#' *==================*
 
 # Identify the field to permute by
 YN_var = "OBSERVED_FLAG"
@@ -1722,10 +1735,8 @@ assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FA
 assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
 
 names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
-OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA",
-                                                                      "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")))
-OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", 
-                                                                        "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")), variable)
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, strata.order))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, strata.order), variable)
 perm_sum <- filter(OBSERVED_FLAG.summary, STRATA != "EM TRW EFP")
 
 # See helper.r documentation on interpret_trip_metrics() 
@@ -1748,14 +1759,12 @@ OBSERVED_FLAG.results <- rbind(
     mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)),
                                                                    paste0(format(.x, nsmall = 3, digits = 3), "*"), 
                                                                    format(.x, nsmall = 3, digits = 3))))) %>% 
-  arrange(match(Strata, c("OB FIXED BSAI", "OB FIXED GOA",  "OB TRW BSAI", "OB TRW GOA", 
-                          "EM FIXED BSAI", "EM FIXED GOA","EM TRW GOA (EFP)")), Metric)
+  arrange(match(Strata, strata.order), Metric)
 
 # Replace "0" p-values; extra space in character is an artifact of the previous format()
 
 OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
-OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW GOA (EFP)")
 ```
 
 The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
