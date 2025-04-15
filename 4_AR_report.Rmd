@@ -1525,29 +1525,6 @@ The cumulative number of fishing trips in each stratum was multiplied by the str
 
 ## Setup for spatial and spatiotemporal analyses -----------------------------------------------------------------------
 
-# Make FMP-specific polygons
-#' \TODO Maybe add these to 1_AR_data.R  This takes longer than it did before.
-shp_fmp <- rbind(
-  shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
-    mutate(FMP = "BSAI"),
-  shp_nmfs %>% filter(SubArea == "GOA") %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
-    mutate(FMP = "GOA")
-) %>% st_set_crs(st_crs(3467))
-#' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
-shp_land <- shp_land %>% st_set_crs(st_crs(3467))
-ak_low_res <- shp_land %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_land)) %>% select(geometry) %>%
-  st_set_crs(st_crs(3467))
-nmfs_low_res <- shp_nmfs %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_nmfs)) %>% select(geometry) %>% 
-  st_set_crs(st_crs(3467))
-fmp_low_res <- shp_fmp %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_fmp)) %>% select(geometry) %>%
-  st_set_crs(st_crs(3467))
-
-# Load the ADFG statistical area shapefile.
-stat_area_sf <- st_read(
-  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = TRUE) %>%
-  select(STAT_AREA) %>%
-  st_transform(crs = 3467)
-
 # Wrangle the Valhalla data set for spatiotemporal analyses
 # First, re-assign TRIP_ID for the trawl EM strata to properly identify the sample unit as the delivery
 work.data.st.join <- unique(work.offload.trw_em[, .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)])
@@ -1681,7 +1658,7 @@ tbl.percentile.stratum <- percentile.stratum %>%
 
 #' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
 proximity_maps <- plot_interspersion_map(
-  box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed)
+  box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed, ak_map.low_res.lst)
 #' \TODO save `proximity_maps` to outputs folder as a multi-page PDF
 #' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
 
@@ -1691,7 +1668,7 @@ proximity_maps <- plot_interspersion_map(
 # Determine whether the spatial arrangement of monitoring was distributed evenly (as expected by random sampling). 
 # Counts the `number of monitored trips in each HEX_ID` and compares to the simulation outcomes, highlighting any actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more extreme than 80% of outcomes.
 
-spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels)
+spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels, ak_map.low_res.lst)
 plt.spatial <- spatial_plots$plt.spatial.2024
 # Drop unused facet
 # drop_facet(plt.spatial)
