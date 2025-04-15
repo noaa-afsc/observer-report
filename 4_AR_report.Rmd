@@ -966,7 +966,6 @@ The final selection rate after trips were closed, canceled or waived were within
 # Assuming one landing report per delivery
 # Delivery = when fish actually hit the processing plant (e.g., when a tender delivers all CV offloads)
 # Will still summarize V and v by CV, but N and n will be by tender (when applicable) and CV
-#'* This object is also used for pollock offload summaries and spatiotemporal analyses *
 work.offload.trw_em <- work.offload %>%
   # First, use REPORT_ID to replace TRIP_ID
   mutate(TRIP_ID = as.character(REPORT_ID),
@@ -978,6 +977,9 @@ work.offload.trw_em <- work.offload %>%
          OBSERVED_FLAG = OBS_SALMON_CNT_FLAG,
          TENDER = OFFLOAD_TO_TENDER_FLAG,
          FMP, PORT_CODE, REPORT_ID)
+#' Make a joining table for the analyses
+work.data.tem.join <- unique(work.offload.trw_em[, .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)])
+
 
 # Add back to work.data
 work.data.offload <- work.data %>%
@@ -1527,21 +1529,20 @@ The cumulative number of fishing trips in each stratum was multiplied by the str
 
 # Wrangle the Valhalla data set for spatiotemporal analyses
 # First, re-assign TRIP_ID for the trawl EM strata to properly identify the sample unit as the delivery
-work.data.st.join <- unique(work.offload.trw_em[, .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)])
 work.data.st <- copy(work.data) 
 work.data.st |>
   # Merge in new TRIP_ID and OBSERVED_FLAG using REPORT_ID
-  _[, TRIP_ID_NEW := work.data.st.join[work.data.st, TRIP_ID, on = .(REPORT_ID)]
-  ][, OBS_FLAG_NEW := work.data.st.join[work.data.st, OBSERVED_FLAG, on = .(REPORT_ID)]
-  # Need TRIP_ID Too stay numeric, so make a helper column
-  ][, MAX_TRIP_ID := max(TRIP_ID)
+  _[, TRIP_ID_NEW := work.data.tem.join[work.data.st, TRIP_ID, on = .(REPORT_ID)]
+  ][, OBS_FLAG_NEW := work.data.tem.join[work.data.st, OBSERVED_FLAG, on = .(REPORT_ID)]
+  # Need TRIP_ID to stay numeric, so make a helper column
+  ][, MAX_TRIP_ID := as.numeric(max(TRIP_ID))
   ][, TRIP_ID_NEW.int := MAX_TRIP_ID + .GRP, by = .(TRIP_ID_NEW)
   # For trawl EM trips only (those with TRIP_ID_NEW), replace TRIP_ID and OBSERVED_FLAG
   ][!is.na(TRIP_ID_NEW), ':=' (TRIP_ID = TRIP_ID_NEW.int, OBSERVED_FLAG = OBS_FLAG_NEW)
   # Remove helper columns
-  ][, c("MAX_TRIP_ID", "TRIP_ID_NEW", "TRIP_ID_NEW.int", "OBS_FLAG_NEW") := NULL][]
+  ][, c("MAX_TRIP_ID", "TRIP_ID_NEW", "TRIP_ID_NEW.int", "OBS_FLAG_NEW") := NULL]
 pc_effort_st <- spatiotemp_data_prep(work.data.st)
-rm(work.data.st.join, work.data.st)
+rm(work.data.st)
 
 #' Realized Rates *Check that these match up with the realized rates in 4_AR_report*
 realized_rates.val  <- pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)] |>
@@ -1709,14 +1710,11 @@ dat <- work.data %>%
 #' *2024 ONLY -- Apply the sample unit fix for the EM TRW GOA (EFP) stratum*
 # Count of unique TRIP_IDs and observed TRIP_IDs
 # dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
-em_trw_goa_efp.psid <- work.offload.trw_em |>
-  _[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)] |>
-  unique()
-# # Update the values using REPORT_ID
+# Update the values using REPORT_ID
 dat.em_trw_goa <- dat[STRATA == "EM TRW GOA (EFP)"]
-dat.em_trw_goa[, c("TRIP_ID", "OBSERVED_FLAG") := em_trw_goa_efp.psid [dat.em_trw_goa, .(TRIP_ID, OBSERVED_FLAG), on = .(REPORT_ID)]]
+dat.em_trw_goa[, c("TRIP_ID", "OBSERVED_FLAG") := work.data.tem.join[dat.em_trw_goa, .(TRIP_ID, OBSERVED_FLAG), on = .(REPORT_ID)]]
 dat <- rbind(dat[STRATA != "EM TRW GOA (EFP)"], dat.em_trw_goa)
-#dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
+# dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
 #' *==================*
 
 # Identify the field to permute by
