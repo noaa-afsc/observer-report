@@ -552,8 +552,6 @@ stat_area_sf <- st_read(
   select(STAT_AREA) %>%
   st_transform(crs = 3467)
 
-
-
 # * EM trawl offloads ----
 em_trw_offload <- work.data %>%
   filter(STRATA %in% c("EM TRW BSAI (EFP)", "EM TRW GOA (EFP)")) %>%
