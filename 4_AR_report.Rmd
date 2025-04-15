@@ -430,7 +430,7 @@ if(year == 2024) {
   setDT(odds.dat)
   odds.dat[TRIP_PLAN_LOG_SEQ %in% c(202432902, 202427490), 
            ':=' (TRIP_MONITOR_CODE = "RL", RELEASE_COMMENT = "Three-in-a-row", 
-                 RELEASE_STATUS_DESCRIPTION = "Three-in-a-row", random.test.result = "PASS")]
+                 RELEASE_STATUS_DESCRIPTION = "Three-in-a-row", random.test.result = "PASS", released = 1)]
   setDF(odds.dat)
 }
 if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
@@ -456,7 +456,7 @@ disposition <- odds.dat %>%
             Trips.canceled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
             Trips.remaining = Trips.logged.ODDS - Trips.canceled.bysystem,
             Trips.canceled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-            Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1]),
+            Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1 & !(TRIP_STATUS_CODE %in% c("CN", "CC", "CR", "CS"))]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
 
 # Add yearly totals and summary statistics
