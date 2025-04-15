@@ -2080,7 +2080,7 @@ flextable(Pollock.observed.table) %>%
 
 \newpage
 
-`r tbl_nums('Pollock.efp.table', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+`r tbl_nums('Pollock.efp.table', caption = paste0('The number of pollock deliveries made by catcher vessels in the *EM TRW (EFP)* strata during ', year, ', separated by coverage category and port. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
 ```{r Pollock.efp.table, tab.cap=""}
 
@@ -2097,15 +2097,17 @@ flextable(Pollock.efp.table) %>%
   align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  flextable::surround(i = ~FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
+  merge_h_range(i = ~ FMP %like% "total", j1 = 1, j2 = 2) %>%
+  flextable::surround(i = ~ FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 1, 1.00, unit = "in") %>%
   width(j = 2, 1.39, unit = "in") %>%
-  width(j = 3, 1, unit = "in") %>%
+  width(j = 3, 1.00, unit = "in") %>%
   width(j = 4, 1.44, unit = "in") %>%
   width(j = 5, 1.69, unit = "in") %>%
-  width(j = 6, 0.94, unit = "in")
+  width(j = 6, 0.94, unit = "in") 
+  
 ```
 
 \newpage
