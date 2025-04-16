@@ -483,7 +483,7 @@ disposition.table <- disposition %>%
   arrange(YEAR, match(STRATA, strata.order)) %>%
   rename("Strata" = STRATA,
          "Year" = YEAR,
-         "Random number outcomes" = random.assign,
+         "Selection outcomes" = random.assign,
          "Logged (*a*)" = Trips.logged.ODDS,
          "Canceled by system (*b*)" = Trips.canceled.bysystem,
          "Trips remaining (*c* = *a*-*b*)" = Trips.remaining,
@@ -519,7 +519,7 @@ rm(multi_area_ifq, multi_area_ifq_vec, multi_area_ifq_vec.length)
 
 #' Fist, subset the data to exclude trips where random selection is irrelevant, i.e., zero selection, 100% selection, and trips with voluntary monitoring. Ensure 1 row = 1 TRIP_ID
 odds.ts.sub <-  odds.dat %>%
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
+  filter(!ODDS_SELECTION_PCT %in% c(0, 100) & (USER_REQST_COVERAGE %in% c("N", NA))) %>%
   mutate(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
   # Simplify the dataset such that each record is one trip
   select(YEAR, Date, TRIP_PLAN_LOG_SEQ, TRIP_STATUS_CODE, ODDS_SELECTION_PCT, RANDOM_NUMBER_USED, 
@@ -1871,7 +1871,8 @@ flextable(trip.budget.table) %>%
 `r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
 ```{r disposition.table, tab.cap=""}
-# Table 2 from 2019 Annual Report
+# Table 2 from 2019 Annual Report.
+# Note that this table (and table 3) exclude any trips that requested coverage (compliance strata)
 
 disposition.table <- disposition.table %>%
   mutate(Year = as.factor(Year),
@@ -1915,6 +1916,7 @@ flextable(disposition.table) %>%
 
 ```{r logged.table, tab.cap=""}
 # Table 3 from 2019 Annual Report
+# Note that this table (and table 2) exclude any trips that requested coverage (compliance strata)
 
 logged.table <- logged.table %>%
   mutate(`Total completed trips` = as.numeric(`Total completed trips`)) %>%
