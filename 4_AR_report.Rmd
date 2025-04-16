@@ -351,12 +351,15 @@ In `r year`, the FMA paid for `r formatC(round(OB_DAYS.ACTUAL), format = "d", bi
 #' Perform a check on the random number process in ODDS. `random.assign` is a flag for whether a trip's random number 
 #' was less than the trip's selection rate. Since ODDS 3.0 went online in 2023, all trips have `RANDOM_NUMBER_USED` 
 #' assigned and will therefore not have NA values. `PLANNED_EMBARK_DATE` is also changed from POSIX.ct to Date class.
+#' Trips that inherited monitoring are not truly random, so such trips will 
 odds.dat <- odds.dat %>% mutate(
   # Convert to Date class
   PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE),
   # Compare random number to selection rate
   random.assign = case_when(
     is.na(RANDOM_NUMBER_USED) ~ NA,
+    # Flag trips that inherited monitoring and therefore did not undergo random selection
+    !is.na(INHERIT_TRIP_SEQ) ~ 100,
     # Trip was randomly selected to NOT be monitored OR not randomly selected (e.g., 100% compliance)
     (RANDOM_NUMBER_USED >= ODDS_SELECTION_PCT / 100) | (ODDS_SELECTION_PCT == 100) ~ 0,
     # Trip was randomly selected to be monitored
@@ -456,7 +459,6 @@ disposition <- odds.dat %>%
             Trips.canceled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
             Trips.remaining = Trips.logged.ODDS - Trips.canceled.bysystem,
             Trips.canceled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-            Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1 & !(TRIP_STATUS_CODE %in% c("CN", "CC", "CR", "CS"))]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
 
 # Add yearly totals and summary statistics
@@ -467,20 +469,17 @@ disposition <- merge(
     summarise(STRATA = "Total", across(where(is.integer), sum)) %>%
     data.frame(),
   all = TRUE) %>%
-    mutate(Cancellation.Pct = format(round((Trips.canceled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
-           Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) 
-
-# Redefine values in random.assign
-disposition <- disposition %>% mutate(random.assign = case_when(
-  is.na(random.assign) | random.assign == 1 ~ "Selected",
-  random.assign == 0 ~ "Not selected"
-))
+  mutate(Cancellation.Pct = format(round((Trips.canceled.byusers / Trips.remaining) * 100, 1), nsmall = 1)) %>%
+  # Redefine values in random.assign
+  mutate(random.assign = factor(case_when(is.na(random.assign) | random.assign == 1 ~ "Random",
+                                          random.assign == 0 ~ "Not selected",
+                                          random.assign == 100 ~ "Inherited"),
+                                levels = c("Not selected", "Random", "Inherited")))
 
 # Then rename some columns for the table
 # Table 3-2 (2019, cancellation rates AFTER random selection) ---- 
 
-disposition.table <-
-  disposition %>%
+disposition.table <- disposition %>%
   arrange(YEAR, match(STRATA, strata.order)) %>%
   rename("Strata" = STRATA,
          "Year" = YEAR,
@@ -489,10 +488,8 @@ disposition.table <-
          "Canceled by system (*b*)" = Trips.canceled.bysystem,
          "Trips remaining (*c* = *a*-*b*)" = Trips.remaining,
          "Canceled by user (*d*)" = Trips.canceled.byusers,
-         "Waived" = Trips.waived,
          "Paper" = Paper.tickets,
-         "% User cancellation (*d*/*c* x 100)" = Cancellation.Pct,
-         "Waiver (%)" = Waiver.Pct)
+         "% User cancellation (*d*/*c* x 100)" = Cancellation.Pct)
 
 #' So far, the vessels that requested monitoring, i.e., multi-area IFQ/CDQ trips, have been excluded in these counts because these trips are not subject to random selection. Count the number of completed trips that requested monitoring by stratum.
 #' \TODO incorporate the `multi_area_ifq.string` object in the text to list off which trips did not undergo random selection.
@@ -552,7 +549,8 @@ odds.ts.cp <- odds.ts.sub %>%
     # Count trips that inherited selection
     ni = sum(!is.na(INHERIT_TRIP_SEQ)),
     # Count trips that were released
-    nr = sum(released, na.rm = TRUE),
+    n.r = sum(released[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
+    ni.r = sum(released[!is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
     N = n(),
     TYPE = "Adjusted date: Valid trips only") %>% 
   arrange(Date) %>% 
@@ -582,18 +580,28 @@ rm(odds.ts.sub)
 
 #' \TODO 'logged' is perhaps not the best label as all trips are logged, and should instead specify that these are completed/closed trips. The table caption for Table 3-3 could also better describe this.
 #' Summary of ODDS *completed trips* disposition by stratum, with total completed trips, total randomly selected 
-#' trips, total inherited trips, and waived trips, where waived trips are not mutually exclusive from the randomly selected
-#' or inherited trips and should be subtracted.
+#' trips, total inherited trips, waived trips from either group, and the resulting totals.
 
 logged <- odds.ts.cp %>%
   group_by(STRATA) %>%
-  summarize(Total.trips = sum(N), Random.selected = sum(n), Inherit.selected = sum(ni), Waived = sum(nr)) %>%
-  mutate(
-    Total.final.selected = Random.selected + Inherit.selected - Waived,
-    Pct.selected.from.inherit = round(Inherit.selected / Total.final.selected * 100, 1),  # Realized inherits, BEFORE waivers
-    Pct.allselected.from.waiver = round(Waived / (Total.final.selected + Waived) * 100, 1))  
-
-
+  summarize(Total.trips = sum(N), 
+            Random.Selected = sum(n), 
+            Inherit.Selected = sum(ni),
+            Random.Waived = sum(n.r), 
+            Inherit.Waived = sum(ni.r)) %>%
+  melt(id.vars = c("STRATA", "Total.trips")) %>%
+  mutate(GROUP = factor(case_when(variable %like% "Random." ~ "Random",
+                                  variable %like% "Inherit." ~ "Inherit"),
+                        levels = c("Random", "Inherit")),
+         variable = sub("Random.|Inherit.", "", variable)) %>%
+  dcast(STRATA + GROUP + Total.trips ~ variable, value.var = "value", fill = 0) %>%
+  group_by(STRATA) %>%
+  mutate(Total.final.selected = sum(Selected - Waived),
+         Pct.selected.from.inherit  = round(100 * (Selected[GROUP == "Inherit"] - Waived[GROUP == "Inherit"]) / Total.final.selected, 1),
+         Pct.reduced.from.waiver   = round(100 * sum(Waived) / (Total.final.selected + sum(Waived)), 1)) %>%
+  ungroup() %>%
+  arrange(match(STRATA, strata.order))
+  
 # Inherits and release rates AFTER random selection and cancellation) ---- 
 
 # Tells us with more granularity how many selected trips were canceled or waived. 
@@ -603,22 +611,23 @@ logged.table <- logged %>%
   bind_rows(
     logged %>% 
       summarise(STRATA = "Total",
-                Total.trips = sum(Total.trips),
-                Random.selected = sum(Random.selected),
-                Inherit.selected = sum(Inherit.selected),
+                Total.trips = sum(Total.trips)/2,
+                Total.inherited = sum(Selected[GROUP == "Inherit"]),
+                Selected = sum(Selected),
                 Waived = sum(Waived),
-                Total.final.selected = sum(Total.final.selected)) %>% 
-      mutate(Pct.selected.from.inherit = round((Inherit.selected / Total.final.selected) * 100, 1),
-             Pct.allselected.from.waiver = round(((Waived) / (Total.final.selected + Waived)) * 100, 1))) %>% 
+                Total.final.selected = Selected - Waived,
+                Pct.selected.from.inherit = round(100 * Total.inherited / Total.final.selected, 1),  
+                Pct.reduced.from.waiver   = round(100 * Waived / (Total.final.selected - Waived), 1)) %>% 
+      select(-Total.inherited)) %>%
   select("Strata" = STRATA, 
          "Total completed trips" = Total.trips,
-         "Random number selection (*r*)" = Random.selected, 
-         "Inherited selection** (*i*)" = Inherit.selected,
-         "Waived (*w*)" = Waived, 
-         "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
-         "% Selected from inherits ((*i*/*T*) x 100)" = Pct.selected.from.inherit, 
-         "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) x 100)" = Pct.allselected.from.waiver) %>% 
-  arrange(match(Strata, c("OB HAL", "OB POT", "OB TRW", "EM HAL", "EM POT",  "Total")))
+         "Selection type" = GROUP,
+         "Selected" = Selected, 
+         "Waived" = Waived, 
+         "Total final selected" = Total.final.selected,
+         "% Selected from inherits" = Pct.selected.from.inherit, 
+         "% Reduction of selected trips due to waivers" = Pct.reduced.from.waiver) %>% 
+  arrange(match(Strata, strata.order))
 ```
 
 ```{r selection.tbl, warning=FALSE, include=FALSE}
@@ -717,7 +726,7 @@ odds.ts.daily.cuml <- bind_rows(
   # Final after cancellations, inherits, and waivers
   odds.ts.cp %>% 
     group_by(YEAR, STRATA, Date, TYPE) %>%
-    summarise(n = n + ni - nr, N = N)
+    summarise(n = n + ni - n.r - ni.r, N = N)
   ) %>% 
   group_by(YEAR, STRATA, TYPE) %>%
   mutate(
@@ -1868,9 +1877,7 @@ disposition.table <- disposition.table %>%
   mutate(Year = as.factor(Year),
          `Logged (*a*)` = as.numeric(`Logged (*a*)`),
          `Trips remaining (*c* = *a*-*b*)` = as.numeric(`Trips remaining (*c* = *a*-*b*)`)) %>%
-  arrange(factor(Strata, levels = strata.order))
-
-disposition.table <- disposition.table %>%
+  arrange(factor(Strata, levels = strata.order)) %>%
   filter(Year == year) %>%
   select(-Year)
 
@@ -1883,24 +1890,23 @@ flextable(disposition.table) %>%
          value = as_paragraph("Trips remaining (", as_i("c"), " = ", as_i("a"), " - ", as_i("b"), ")")) %>%
   mk_par(j = 6, part = "header",
          value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
-  mk_par(j = 9, part = "header",
+  mk_par(j = 8, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
   italic(j = 1, i = ~Strata != "Total") %>%
-  align(j = 3:10, part = "all", align = "right") %>%
+  align(j = 3:8, part = "all", align = "right") %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = seq(2, nrow(disposition.table), 2)) %>%
+  hline(i = seq(3, nrow(disposition.table), 3)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 1.23, unit = "in") %>%
   width(j = 2, 1.38, unit = "in") %>%
   width(j = 3, 0.88, unit = "in") %>%
   width(j = 4, 1, unit = "in") %>%
-  width(j = c(5:6, 9), 0.94, unit = "in") %>%
-  width(j = 7, 0.69, unit = "in") %>%
-  width(j = 8, 0.56, unit = "in") %>%
-  width(j = 10, 0.63, unit = "in")
+  width(j = c(5:6), 0.94, unit = "in") %>%
+  width(j = 7, 0.56, unit = "in") %>%
+  width(j = 8, 0.63, unit = "in")
 ```
 
 \newpage
@@ -1916,32 +1922,28 @@ logged.table <- logged.table %>%
   ungroup()
 
 flextable(logged.table) %>%
-  mk_par(j = 3, part = "header", 
-         value = as_paragraph("Random number selection (", as_i("r"), ")")) %>%
-  mk_par(j = 4, part = "header", 
-         value = as_paragraph("Inherited selection **(", as_i("i"), ")")) %>%
-  mk_par(j = 5, part = "header", 
-         value = as_paragraph("Waived (", as_i("w"), ")")) %>%
-  mk_par(j = 6, part = "header", 
-         value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", as_i("i"), " - ",
-                              as_i("w"), ")")) %>%
-  mk_par(j = 7, part = "header", 
-         value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
-  mk_par(j = 8, part = "header",
-         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", as_i("T"), " + ",
-                              as_i("w"), ") \U00D7 100)")) %>%
+  mk_par(j = 3, part = "header", value = as_paragraph("Selection type")) %>%
+  mk_par(j = 4, part = "header", value = as_paragraph("Selected trips")) %>%
+  mk_par(j = 5, part = "header", value = as_paragraph("Waived trips")) %>%
+  mk_par(j = 6, part = "header", value = as_paragraph("Total final selected")) %>%
+  mk_par(j = 7, part = "header", value = as_paragraph("% selected from inherits")) %>%
+  mk_par(j = 8, part = "header", value = as_paragraph("% reduction of\n selected trips\n due to waivers")) %>%
   align(j = ~ . - Strata, part = "all", align = "right") %>%
   valign(part = "header", valign = "bottom") %>%
   italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
-  hline(i = v_diff(logged.table$Strata, 1, 2)) %>%
+  #hline(i = seq(from = 2, to = nrow(logged.table), by = 2), border = fp_border(style = "dashed")) %>%
+  hline(i = v_diff(logged.table$Strata)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  # Merge repeated values, grouped by Strata for the columns listed in 'target'
+  merge_v(j = "Strata", target = c("Strata", "Total completed trips", "Total final selected", 
+                                   "% Selected from inherits", "% Reduction of selected trips due to waivers")) %>%
   fix_border_issues() %>%
-  width(j = 1, 1.23, unit = "in") %>%
+  width(j = 1, 1.3, unit = "in") %>%
   width(j = c(2, 5), 0.94, unit = "in") %>%
   width(j = 3, 1.31, unit = "in") %>%
   width(j = c(4, 6:7), 1.06, unit = "in") %>%
-  width(j = 8, 1.69, unit = "in")
+  width(j = 8, 1.2, unit = "in")
 ```
 
 \newpage
