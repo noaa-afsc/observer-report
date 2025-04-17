@@ -93,16 +93,16 @@ total.strat <- nrow(unique(work.data[, .(COVERAGE_TYPE, STRATA)]))
 `r if(tech.memo){'##Fishery Monitoring Science Committee'}`
 `r if(tech.memo){'Each year the Alaska Fisheries Science Center’s (AFSC) Fisheries Monitoring and Analysis (FMA) Division establishes a committee to review the scientific elements of the North Pacific Observer Program. This committee, formerly referred to as the Observer Science Committee (OSC), was renamed in 2020 as the Fishery Monitoring Science Committee (FMSC), in order to reflect the addition of EM as a tool being used to monitor fisheries in the North Pacific. Similarly, we use the term ‘monitoring’ in this chapter when referencing fishing activity that has been monitored either by an observer or with EM.'}`  
 
-The goal of the Observer Program is to achieve a random deployment of observers and electronic monitoring (EM) into fisheries to collect representative data used to estimate catch and bycatch, assess stock status, collect fishery-dependent biological information used in population and ecosystem modeling efforts and make salmon bycatch stock-of-origin determinations, among other objectives. This chapter contains a review of the deployment of observers and EM in 2024 relative to the intended sampling plan and goals of the 2024 Annual Deployment Plan (ADP; NMFS 2023). Consistent with its purpose, this chapter focuses on the randomization of observer and EM deployments into primary sampling units and how departures from a random sample affect data quality. This review identifies where possible biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the `r year + 2` ADP.\
+The goal of the Observer Program is to achieve a random deployment of observers and electronic monitoring (EM) into fisheries to collect representative data used to estimate catch and bycatch, assess stock status, collect fishery-dependent biological information used in population and ecosystem modeling efforts and make salmon bycatch stock-of-origin determinations, among other objectives. This chapter contains a review of the deployment of observers and EM in `r year` relative to the intended sampling plan and goals of the `r year` Annual Deployment Plan (ADP; NMFS `r year - 1`). Consistent with its purpose, this chapter focuses on the randomization of observer and EM deployments into primary sampling units and how departures from a random sample affect data quality. This review identifies where possible biases exist and provides recommendations for further evaluation, including potential improvements to the observer deployment process that should be considered during the development of the `r year + 2` ADP.\
 \
-This review is performed by staff from the Fisheries Monitoring and Analysis / Analytical Services Program (FMA) of the Alaska Fisheries Science Center (AFSC) and the Sustainable Fisheries Division / Catch Analysis and Data Quality Branch of the Alaska Regional Office (AKRO). Catch and monitoring data from the `r year` calendar year as of 15 April 2024 were used in analyses.\
+This review is performed by staff from the Fisheries Monitoring and Analysis / Analytical Services Program (FMA) of the Alaska Fisheries Science Center (AFSC) and the Sustainable Fisheries Division / Catch Analysis and Data Quality Branch of the Alaska Regional Office (AKRO). Catch and monitoring data from the `r year` calendar year as of 15 April `r year` were used in analyses.\
 \
-The analyses in this chapter benefited from review and recommendations from the Fisheries Monitoring Science Committee (FMSC). The FMSC is established annually to provide scientific advice in the areas of regulatory management, natural science, mathematics and statistics as they relate to observer deployment and sampling in the groundfish and halibut fisheries of the Bering Sea and Aleutian Islands (BSAI) and the Gulf of Alaska (GOA). The FMSC members have analytical and scientific expertise relating to observer sampling of groundfish and halibut fisheries of the BSAI and GOA and use of the collected data. If possible, the FMSC is represented by at least one member of the FMA, one member of the AFSC / Stock Assessment and Multispecies Assessments Program, one member of the AKRO and one member of the International Pacific Halibut Commission (IPHC).\
+**[TODO - REMOVE FOR 2024?]** The analyses in this chapter benefited from review and recommendations from the Fisheries Monitoring Science Committee (FMSC). The FMSC is established annually to provide scientific advice in the areas of regulatory management, natural science, mathematics and statistics as they relate to observer deployment and sampling in the groundfish and halibut fisheries of the Bering Sea and Aleutian Islands (BSAI) and the Gulf of Alaska (GOA). The FMSC members have analytical and scientific expertise relating to observer sampling of groundfish and halibut fisheries of the BSAI and GOA and use of the collected data. If possible, the FMSC is represented by at least one member of the FMA, one member of the AFSC / Stock Assessment and Multispecies Assessments Program, one member of the AKRO and one member of the International Pacific Halibut Commission (IPHC).\
 
 ## The Sampling Design of the Observer Program 
 Since 2013, the Observer Program has used a stratified hierarchical sampling design with randomization at all levels (Cahalan and Faunce, 2020). Stratification increases the efficiency of sampling by observers and helps address some logistical issues associated with deployment. By grouping similar fishing activities into strata and sampling those strata appropriately, sampling efficiency increases and the estimated variance decreases relative to unstratified sampling. Sampling strata are defined in the ADP and are designed such that each unit of deployment (e.g., trip) is assigned to only one stratum.\
 \
-Randomization helps ensure that the data collected from a sample will be representative of the entire fishing fleet (observed and monitored trips are equivalent to unobserved and unmonitored trips within a stratum). Within a stratum, observers are deployed randomly to either: (1) vessels for a predetermined period of time (termed vessel-selection) or (2) to individual fishing trips (termed trip-selection). In both cases, this initial deployment to the fishery is the first level of the sampling hierarchy and defines the primary sampling unit (PSU; either vessel-periods or individual trips). The list of all PSUs in a stratum defines the sampling frame and should equate to the population of interest for that sampling stratum (e.g., all trips taken by trawl vessels fishing in the Alaska Exclusive Economic Zone). If the sampling frame does not contain all elements of the stratum, the resulting information may be biased. The magnitude and direction of the bias will depend on how different the fishing activities in the sample frame are from actual fishing activity.\
+Randomization helps ensure that the data collected from a sample will be representative of the entire fishing fleet (observed and monitored trips are equivalent to unobserved and unmonitored trips within a stratum). Within a stratum, observers are deployed randomly to either: (1) vessels for a predetermined period of time (termed vessel-selection) or (2) to individual fishing trips or shoreside deliveries of catch (termed trip-selection). In both cases, this initial deployment to the fishery is the first level of the sampling hierarchy and defines the primary sampling unit (PSU; either vessel-periods or individual trips). The list of all PSUs in a stratum defines the sampling frame and should equate to the population of interest for that sampling stratum (e.g., all trips taken by trawl vessels fishing in the Alaska Exclusive Economic Zone). If the sampling frame does not contain all elements of the stratum, the resulting information may be biased. The magnitude and direction of the bias will depend on how different the fishing activities in the sample frame are from actual fishing activity.\
 \
 Although this chapter evaluates whether monitoring goals were met, we include a brief summary of the full sampling hierarchy here for context. For each observed trip, if all hauls cannot be sampled for logistical reasons, hauls are randomly selected to be sampled. This is the next level in the hierarchy; the secondary sampling units are defined as hauls within a trip. Randomization of haul selection is designed to allow observers to record and transmit data, attend to other non-sampling responsibilities and to allow observers time to sleep and eat. Randomization of haul selection also gives EM video reviewers the ability to optimize the amount of video that can be reviewed from each trip. Haul selection is determined using the random sampling tables and random break tables provided by NMFS. For each haul, fishing location and effort (e.g., number of hooks) are recorded, while marine mammal and seabird interactions are primarily recorded on randomly selected hauls. The ability of EM to capture marine mammal and seabird interactions is less than that of observers due to the fixed location in which EM equipment is placed.\
 \
@@ -126,22 +126,36 @@ At the fourth level of the sampling hierarchy, a predetermined number of individ
 
 `r if(tech.memo){'The *EM TRW EFP* stratum is represented by vessels participating in an Exempted Fishing Permit (EFP) to evaluate the efficacy of EM on pollock catcher vessels using pelagic trawl gear in the Bering Sea and Gulf of Alaska. The EFP allows pollock catcher vessels using pelagic trawl gear to use EM systems *in lieu* of at-sea observers.  While we report some findings on these vessel activities here, we do not evaluate them fully sine the EFP is not part of the regulated fishery monitoring program.'}`
 
-## The 2024 Annual Deployment Plan
-The deployment design for the partial coverage component of the program involves three elements: (1) the selection method to accomplish random sampling; (2) division of the population of partial coverage trips into selection pools or strata; and (3) the allocation of deployment among strata.\
+## The `r year` Annual Deployment Plan
+The deployment design for the partial coverage component of the program involves three elements: (1) the selection method to accomplish random sampling; (2) division of the population of partial coverage trips into selection strata; and (3) the allocation of deployment among strata.\
 \
-In `r year`, observers and EM were to be deployed using the trip selection model in all ports throughout Alaska. Trip-selection refers to the method of selecting fishing trips as the sampling unit. Trip selection was to be facilitated through vessel operators and owners logging their trips into the Observer Deploy and Declare System (ODDS) and being notified if the trip is selected for coverage.
-In 2024, NMFS implemented an observer deployment allocation strategy of an adjusted 15% baseline, plus optimization based on discarded groundfish, Pacific halibut (*Hippoglossus stenolepis*) prohibited species catch (PSC) and Chinook salmon PSC to determine how many trips were to be monitored in each deployment stratum.\
+In `r year`, observers and EM were to be deployed using the trip selection model in all ports throughout Alaska. Trip-selection refers to the method of selecting fishing trips as the sampling unit. Trip selection was to be facilitated through vessel operators and owners logging their trips into the Observer Deploy and Declare System (ODDS) and being notified if the trip is selected for coverage.\
+\
+In `r year`, NMFS implemented changes to both the stratification definitions and the allocation strategy (*CITE* NMFS 2023 for 2024 ADP). In previous years, strata were defined by the monitoring method (at-sea observer, EM, or none) and the gear type (either hook-and-line, pot, or trawl). The new strata definitions combined hook-and-line and/or pot gear trips together into a single fixed-gear type. Additionally, strata were further defined by the FMP the vessel intended to fish predominantly in - either the Bering Sea or the Gulf of Alaska. The Proximity Allocation algorithm was utilized to determine the sampling rates of the partial coverage strata to reduce data gaps and impacts caused by small sample sizes. As an exception, trips participating in the Pollock Trawl EM Exempted Fishing Permit (EFP) were not included in the allocation algorithm due to its external funding sources for monitoring and its status.\
+\
+Vessels that join the EM programs may log trips in the EM strata. Initiated by the Council in 2018, vessels that join the fixed-gear EM program use EM equipment to capture location and video information followed by human review for species identifications and counts. Weights for catch estimation are supplied from other sources.\
+\
+The Pollock Trawl EM EFP began in 2020, completed in 2024, and applied to trawl vessels fishing with pelagic gear targeting walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”). Vessels participating in this EFP utilized EM equipment to monitor for compliance of maximized retention at-sea and monitoring by observers shoreside during the delivery of catch. Vessels were able to opt-out of the EFP on a trip-by-trip basis and instead log trips in the at-sea observer strata. Pollock Trawl EM became a regulated monitoring program in 2025. Note that unlike other strata that use the trip as the PSU, the Pollock Trawl EM EFP stratum instead defines the PSU as the shoreside delivery, as that is where the observer applies their sample design.\
 \
 The deployment strata for `r year` (with abbreviation and coverage rate rounded to whole number) were defined as:
 
-- Hook-and-line vessels greater than or equal to 40 ft length overall (LOA) monitored with observers (*OB HAL* - 18%).\
-- Pot vessels greater than or equal to 40 ft LOA monitored with observers (*OB POT* - 17%).\
-- Trawl vessels making a trip not covered by another stratum (*OB TRW* - 23%).\
-- Fixed-gear EM vessels (evaluated separately as *EM HAL* and *EM POT* - 30%). Initiated by the Council in 2018, trips in this stratum are randomly selected for monitoring through ODDS. Species identifications and counts derive from human review of location and video information captured from EM equipment. Weights for catch estimation are supplied from other sources.\
-- Vessels when fishing under the Trawl EM Exempted Fishing Permit (EFP). An Exempted Fishing Permit was applied for in 2019 and awarded starting in 2020. In June 2021 the Council took action to implement this as a non-EFP program. This EFP applies to trawl vessels fishing with pelagic gear targeting walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”) in the BSAI and GOA. Vessels participating in the EFP do not log trips into ODDS. The EFP aims to gain monitoring efficiency by removing at-sea observers and transferring the responsibilities associated with the at-sea collection of PSC data and biological samples to observers stationed at the shoreside plant. Cameras and location EM systems installed on the vessel monitor for compliance with EFP rules. Participating vessels must retain all catch while fishing under the EFP except for: marine mammals, jellyfish, small amounts of discard that occur while cleaning the deck, large individual marine organisms, including large individual rays or skates, sharks except for Pacific spiny dogfish (*Squalus suckleyi*) and discard of catch resulting from an unforeseen and reasonably unforeseeable event that is beyond the control of the vessel operator or crew . Shore-based observers monitor for halibut, salmon and to collect biological tissues to generate estimates of stock of origin. The 2024 ADP had a dockside selection rate for monitoring in the GOA set at 30%. However, since there was no pre-generated selection frame to identify random samples from ODDS, the FMA directed observers to sample one in three deliveries for logistical efficiency. Therefore, this stratum has a 33% monitoring expectancy for dockside in the GOA (*EM TRW EFP* - 100% dockside observation BSAI, 33% dockside observation GOA).\
+```{r, include = F}
+strata.rates <- partial %>% 
+  arrange(match(STRATA, strata.order)) %>%
+  distinct(formatted_strat, Rate) %>%
+  mutate(label = paste0(formatted_strat, " - ", round(Rate * 100, 0), "%"))
+```
+          
+- Trips by fixed-gear vessels (using hook-and-line and/or pot gear) greater than or equal to 40 ft length overall (LOA) monitored with at-sea observers predominantly fishing in the Bering Sea (`r strata.rates$label[1]`).\
+- Trips by fixed-gear vessels greater than or equal to 40 ft length overall (LOA) monitored with at-sea observers predominantly fishing in the Gulf of Alaska (`r strata.rates$label[2]`).\
+- Trips by trawl vessels not participating in the Pollock Trawl EM EFP monitored with at-sea observers predominantly fishing in the Bering Sea (`r strata.rates$label[3]`).\
+- Trips by trawl vessels not participating in the Pollock Trawl EM EFP monitored with at-sea observers predominantly fishing in the Gulf of Alaska (`r strata.rates$label[4]`).\
+- Trips by fixed-gear vessels listed under the Fixed Gear EM program monitored at-sea by EM systems and predominantly fishing in the Bering Sea (`r strata.rates$label[5]`).\
+- Trips by fixed-gear vessels listed under the Fixed Gear EM program monitored at-sea by EM systems and predominantly fishing in the Gulf of Alaska (`r strata.rates$label[6]`).\
+- Shoreside deliveries by trawl vessels listed under the Pollock Trawl EM EFP monitored 100% at-sea by EM systems, monitored shoreside by observers, and fishing in the Gulf of Alaska (`r strata.rates$label[7]` shoreside). Note that vessels fishing under this EFP in the Bering Sea are managed within the full coverage category.\
 - Fixed-gear vessels less than 40 ft LOA and vessels fishing with handline, jig, troll and dinglebar troll gear (*Zero coverage* - 0%).\
 
-More information on the sampling design used by observers and the relationship between the sample design and catch estimation can be found in Cahalan and Faunce (2020) and the 2024 Observer Sampling Manual (AFSC 2023). Bycatch estimates of Chinook salmon in the GOA are estimated using methods described in Cahalan et al. (2014). In the event that a delivery cannot be monitored (e.g., the case in a tendered delivery or non-pollock delivery), then estimation of bycatch comes by applying salmon bycatch rates to landed catch. Estimates of stock of origin from salmon bycatch are produced by the AFSC’s Auke Bay Laboratory. 
+More information on the sampling design used by observers and the relationship between the sample design and catch estimation can be found in Cahalan and Faunce (2020) and the `r `year` Observer Sampling Manual (AFSC `r `year`). Bycatch estimates of Chinook salmon in the GOA are estimated using methods described in Cahalan et al. (2014). In the event that a delivery cannot be monitored (e.g., the case in a tendered delivery or non-pollock delivery), then estimation of bycatch comes by applying salmon bycatch rates to landed catch. Estimates of stock of origin from salmon bycatch are produced by the AFSC’s Auke Bay Laboratory. 
 Although this chapter is focused on the partial coverage component of the fleet, the majority of the catch taken from the Federal waters off Alaska are completely monitored at the level of the trip (*Full coverage* - 100%). Vessels and processors in the full observer coverage category must comply with observer coverage requirements at all times when fish are harvested or processed. Specific requirements are defined in regulation at *50 CFR § 679.51(a)(2)*. The full coverage category includes the following:
 
 - Catcher / processors (with limited exceptions).\
@@ -196,7 +210,7 @@ OB_DOLLARS.ACTUAL <- days_paid %>%
 
 - **Deploy for the planned number of sea days.** This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling provided in the `r year` ADP.\
 - **Deploy at the coverage rates specified in the `r year` ADP.** For full and zero coverage, either the rate was equal to 100% or 0%. For stratum under partial selection, coverage selection rates are expected to be within a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for observed trips).\
-- **Collect tissue samples from Chinook and chum (*Oncorhynchus keta*) salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin.** The sampling protocol established in the 2014 ADP (NMFS 2013, Faunce 2015) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA pollock trawl fishery monitor the delivery to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch.\
+- **Collect tissue samples from Chinook and chum (*Oncorhynchus keta*) salmon as specified in the `r year` Observer Sampling Manual to support the goal of collecting genetic samples from salmon caught as bycatch in groundfish fisheries to identify stock of origin.** The sampling protocol established in the 2014 ADP (NMFS 2013, Faunce 2015) was used in `r year`. Under this protocol, observers on vessels delivering to shoreside processors in the GOA pollock trawl fishery monitor the delivery to enumerate salmon bycatch and obtain tissues for genetic analysis from the salmon bycatch. For trips that are delivered to tender vessels and trips outside of the pollock fishery, observers obtain salmon counts and tissue samples from all salmon found within at-sea samples of the total catch [*TODO - WHAT ABOUT EM TRW GOA (EFP)?*].\
 - **Randomize deployment of observers into the partial coverage category of fishing activities.** Evaluation of this objective is focused on the randomization of observer and EM deployments into primary sampling units, and how departures from a random sample affect data quality.      
   
 ## Observer Deployment Performance Metrics  
@@ -217,12 +231,10 @@ The performance metrics used in this evaluation are as follows:
 Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated *p*-values. 
 
 # Changes to this report from last year
-Abbreviated versions of this chapter have been produced for calendar years 2021 and 2022. This chapter represents a return to the original “full” review format. Analysts have performed the full review of `r year - 1` and `r year` data but focus here on `r year`. However, where trends were notable, results from `r year - 1` have been included in an Appendix (A).\
-\
-Changes to our analyses for spatial and spatiotemporal representativeness were adopted following the evolution of these analyses in recent years are described in later sections.
+As mentioned previously, the strata definitions and allocation methods employed in `r year` differed from previous years. However, the evaluations performed in this chapter are largely unchanged. [*TODO - Data timeliness methods were updated?*]\
 
 # Evaluation of Deployment in `r year`  
-The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the *EM HAL* and *EM POT* strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected).
+The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the fixed-gear EM strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Deliveries in the *EM TRW GOA (EFP)* stratum were considered successfully monitored if an observer was able to collect salmon information.
 
 ## Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
@@ -284,10 +296,7 @@ costs.plot <- ggplot(bud_tbl, aes(x = ADP_C)) +
 
 ```{r budget_eval, include=FALSE}
 
-#' *Table 3-1 : Comparison between predicted and actual trip days for partial coverage strata.*
-#' [Note] we should consider removing `EM TRW EFP` from this table. We haven't quantified actual observer days for 
-#' this stratum, and using a 33% of sea days as a proxy for 'plant days' is not a good prediction, nor is adding up
-#' sea days of monitored trips a logical estimate of actuals.
+#' *Table 3-1 : Comparison between predicted and actual at-sea trip days for partial coverage strata.*
 
 # Evaluate why we were off budget
 trip.budget.table <- 
@@ -342,12 +351,15 @@ In `r year`, the FMA paid for `r formatC(round(OB_DAYS.ACTUAL), format = "d", bi
 #' Perform a check on the random number process in ODDS. `random.assign` is a flag for whether a trip's random number 
 #' was less than the trip's selection rate. Since ODDS 3.0 went online in 2023, all trips have `RANDOM_NUMBER_USED` 
 #' assigned and will therefore not have NA values. `PLANNED_EMBARK_DATE` is also changed from POSIX.ct to Date class.
+#' Trips that inherited monitoring are not truly random, so such trips will 
 odds.dat <- odds.dat %>% mutate(
   # Convert to Date class
   PLANNED_EMBARK_DATE = as.Date(PLANNED_EMBARK_DATE),
   # Compare random number to selection rate
   random.assign = case_when(
     is.na(RANDOM_NUMBER_USED) ~ NA,
+    # Flag trips that inherited monitoring and therefore did not undergo random selection
+    !is.na(INHERIT_TRIP_SEQ) ~ 100,
     # Trip was randomly selected to NOT be monitored OR not randomly selected (e.g., 100% compliance)
     (RANDOM_NUMBER_USED >= ODDS_SELECTION_PCT / 100) | (ODDS_SELECTION_PCT == 100) ~ 0,
     # Trip was randomly selected to be monitored
@@ -421,7 +433,7 @@ if(year == 2024) {
   setDT(odds.dat)
   odds.dat[TRIP_PLAN_LOG_SEQ %in% c(202432902, 202427490), 
            ':=' (TRIP_MONITOR_CODE = "RL", RELEASE_COMMENT = "Three-in-a-row", 
-                 RELEASE_STATUS_DESCRIPTION = "Three-in-a-row", random.test.result = "PASS")]
+                 RELEASE_STATUS_DESCRIPTION = "Three-in-a-row", random.test.result = "PASS", released = 1)]
   setDF(odds.dat)
 }
 if(nrow(filter(odds.dat, random.test.result == "FAIL"))) {
@@ -447,7 +459,6 @@ disposition <- odds.dat %>%
             Trips.canceled.bysystem = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE == "CS"]),
             Trips.remaining = Trips.logged.ODDS - Trips.canceled.bysystem,
             Trips.canceled.byusers = length(TRIP_PLAN_LOG_SEQ[TRIP_STATUS_CODE %in% c("CN", "CC", "CR")]),
-            Trips.waived = length(TRIP_PLAN_LOG_SEQ[released == 1]),
             Paper.tickets = length(TRIP_PLAN_LOG_SEQ[!is.na(TRIP_PLAN_NUMBER)])) 
 
 # Add yearly totals and summary statistics
@@ -458,32 +469,27 @@ disposition <- merge(
     summarise(STRATA = "Total", across(where(is.integer), sum)) %>%
     data.frame(),
   all = TRUE) %>%
-    mutate(Cancellation.Pct = format(round((Trips.canceled.byusers / Trips.remaining) * 100, 1), nsmall = 1),
-           Waiver.Pct = format(round((Trips.waived / Trips.remaining) * 100, 1), nsmall = 1)) 
-
-# Redefine values in random.assign
-disposition <- disposition %>% mutate(random.assign = case_when(
-  is.na(random.assign) | random.assign == 1 ~ "Selected",
-  random.assign == 0 ~ "Not selected"
-))
+  mutate(Cancellation.Pct = format(round((Trips.canceled.byusers / Trips.remaining) * 100, 1), nsmall = 1)) %>%
+  # Redefine values in random.assign
+  mutate(random.assign = factor(case_when(is.na(random.assign) | random.assign == 1 ~ "Random",
+                                          random.assign == 0 ~ "Not selected",
+                                          random.assign == 100 ~ "Inherited"),
+                                levels = c("Not selected", "Random", "Inherited")))
 
 # Then rename some columns for the table
 # Table 3-2 (2019, cancellation rates AFTER random selection) ---- 
 
-disposition.table <-
-  disposition %>%
+disposition.table <- disposition %>%
   arrange(YEAR, match(STRATA, strata.order)) %>%
   rename("Strata" = STRATA,
          "Year" = YEAR,
-         "Random number outcomes" = random.assign,
+         "Selection outcomes" = random.assign,
          "Logged (*a*)" = Trips.logged.ODDS,
          "Canceled by system (*b*)" = Trips.canceled.bysystem,
          "Trips remaining (*c* = *a*-*b*)" = Trips.remaining,
          "Canceled by user (*d*)" = Trips.canceled.byusers,
-         "Waived" = Trips.waived,
          "Paper" = Paper.tickets,
-         "% User cancellation (*d*/*c* × 100)" = Cancellation.Pct,
-         "Waiver (%)" = Waiver.Pct)
+         "% User cancellation (*d*/*c* x 100)" = Cancellation.Pct)
 
 #' So far, the vessels that requested monitoring, i.e., multi-area IFQ/CDQ trips, have been excluded in these counts because these trips are not subject to random selection. Count the number of completed trips that requested monitoring by stratum.
 #' \TODO incorporate the `multi_area_ifq.string` object in the text to list off which trips did not undergo random selection.
@@ -513,7 +519,7 @@ rm(multi_area_ifq, multi_area_ifq_vec, multi_area_ifq_vec.length)
 
 #' Fist, subset the data to exclude trips where random selection is irrelevant, i.e., zero selection, 100% selection, and trips with voluntary monitoring. Ensure 1 row = 1 TRIP_ID
 odds.ts.sub <-  odds.dat %>%
-  filter(!ODDS_SELECTION_PCT %in% c(0, 100)) %>%
+  filter(!ODDS_SELECTION_PCT %in% c(0, 100) & (USER_REQST_COVERAGE %in% c("N", NA))) %>%
   mutate(Date = as.Date(PLANNED_EMBARK_DATE, format = "%Y-%m-%d")) %>% 
   # Simplify the dataset such that each record is one trip
   select(YEAR, Date, TRIP_PLAN_LOG_SEQ, TRIP_STATUS_CODE, ODDS_SELECTION_PCT, RANDOM_NUMBER_USED, 
@@ -543,7 +549,8 @@ odds.ts.cp <- odds.ts.sub %>%
     # Count trips that inherited selection
     ni = sum(!is.na(INHERIT_TRIP_SEQ)),
     # Count trips that were released
-    nr = sum(released, na.rm = TRUE),
+    n.r = sum(released[is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
+    ni.r = sum(released[!is.na(INHERIT_TRIP_SEQ)], na.rm = TRUE),
     N = n(),
     TYPE = "Adjusted date: Valid trips only") %>% 
   arrange(Date) %>% 
@@ -573,87 +580,92 @@ rm(odds.ts.sub)
 
 #' \TODO 'logged' is perhaps not the best label as all trips are logged, and should instead specify that these are completed/closed trips. The table caption for Table 3-3 could also better describe this.
 #' Summary of ODDS *completed trips* disposition by stratum, with total completed trips, total randomly selected 
-#' trips, total inherited trips, and waived trips, where waived trips are not mutually exclusive from the randomly selected
-#' or inherited trips and should be subtracted.
+#' trips, total inherited trips, waived trips from either group, and the resulting totals.
 
 logged <- odds.ts.cp %>%
-  group_by(YEAR, STRATA) %>%
-  summarize(Total.trips = sum(N),
-            Random.selected = sum(n),
-            Inherit.selected = sum(ni),
-            Waived = sum(nr)) %>%
-  mutate(
-    Total.final.selected = Random.selected + Inherit.selected - Waived,
-    Pct.selected.from.inherit = round(Inherit.selected / Total.final.selected * 100, 1),  # Realized inherits, BEFORE waivers
-    Pct.allselected.from.waiver = round(Waived / (Total.final.selected + Waived) * 100, 1))  
-
-
+  group_by(STRATA) %>%
+  summarize(Total.trips = sum(N), 
+            Random.Selected = sum(n), 
+            Inherit.Selected = sum(ni),
+            Random.Waived = sum(n.r), 
+            Inherit.Waived = sum(ni.r)) %>%
+  melt(id.vars = c("STRATA", "Total.trips")) %>%
+  mutate(GROUP = factor(case_when(variable %like% "Random." ~ "Random",
+                                  variable %like% "Inherit." ~ "Inherit"),
+                        levels = c("Random", "Inherit")),
+         variable = sub("Random.|Inherit.", "", variable)) %>%
+  dcast(STRATA + GROUP + Total.trips ~ variable, value.var = "value", fill = 0) %>%
+  group_by(STRATA) %>%
+  mutate(Total.final.selected = sum(Selected - Waived),
+         Pct.selected.from.inherit  = round(100 * (Selected[GROUP == "Inherit"] - Waived[GROUP == "Inherit"]) / Total.final.selected, 1),
+         Pct.reduced.from.waiver   = round(100 * sum(Waived) / (Total.final.selected + sum(Waived)), 1)) %>%
+  ungroup() %>%
+  arrange(match(STRATA, strata.order))
+  
 # Inherits and release rates AFTER random selection and cancellation) ---- 
 
 # Tells us with more granularity how many selected trips were canceled or waived. 
 
 # Disposition of trips - showing only valid trips and categories are exclusive
-logged.table <- bind_rows(
-  logged, 
-  # Calculate totals
-  logged %>% 
-    group_by(YEAR) %>%          
-    summarise(STRATA = "Total",
-              Total.trips = sum(Total.trips),
-              Random.selected = sum(Random.selected),
-              Inherit.selected = sum(Inherit.selected),
-              Waived = sum(Waived),
-              Total.final.selected = sum(Total.final.selected)) %>% 
-    mutate(
-      Pct.selected.from.inherit = round((Inherit.selected / Total.final.selected) * 100, 1),
-      Pct.allselected.from.waiver = round(((Waived) / (Total.final.selected + Waived)) * 100, 1))
-) %>% 
-  select("Year" = YEAR, 
-         "Strata" = STRATA, 
-         "Total Trips" = Total.trips,
-         "Random number selection (*r*)" = Random.selected, 
-         "Inherited selection** (*i*)" = Inherit.selected,
-         "Waived (*w*)" = Waived, 
-         "Total final selected (*T*=*r*+*i*-*w*)" = Total.final.selected,
-         "% Selected from inherits ((*i*/*T*) × 100)" = Pct.selected.from.inherit, 
-         "% Reduction of selected trips due to waivers (*w*/(*T*+*w*) × 100)" = Pct.allselected.from.waiver) %>% 
-  arrange(Year, match(Strata, strata.order))
+logged.table <- logged %>%
+  bind_rows(
+    logged %>% 
+      summarise(STRATA = "Total",
+                Total.trips = sum(Total.trips)/2,
+                Total.inherited = sum(Selected[GROUP == "Inherit"]),
+                Selected = sum(Selected),
+                Waived = sum(Waived),
+                Total.final.selected = Selected - Waived,
+                Pct.selected.from.inherit = round(100 * Total.inherited / Total.final.selected, 1),  
+                Pct.reduced.from.waiver   = round(100 * Waived / (Total.final.selected - Waived), 1)) %>% 
+      select(-Total.inherited)) %>%
+  select("Strata" = STRATA, 
+         "Total completed trips" = Total.trips,
+         "Selection type" = GROUP,
+         "Selected" = Selected, 
+         "Waived" = Waived, 
+         "Total final selected" = Total.final.selected,
+         "% Selected from inherits" = Pct.selected.from.inherit, 
+         "% Reduction of selected trips due to waivers" = Pct.reduced.from.waiver) %>% 
+  arrange(match(Strata, strata.order))
 ```
 
 ```{r selection.tbl, warning=FALSE, include=FALSE}
 # Table 3-4 (2019) or Table 3-2 (2020) (Full ODDS summary, realized versus expected rates) ----
 # This table will show probabilities that selection rates = programmed rates under various assumptions
 
-for.p.wide <- logged %>% 
+for.p.wide <- merge(
   # Completed non-100% monitored trips only (after cancellations)
-  group_by(YEAR, STRATA) %>%
-  summarize(random.n = Random.selected,
-            # after inherits
-            inherit.n = Total.final.selected,
-            #'total before waivers*
-            inherit.butnowaiver.n = (Total.final.selected + Waived),
-            Total.n = Total.trips,
-            Source = "Valid trips only") %>%
+  logged %>% 
+    group_by(STRATA) %>%
+    summarize(random.n = Selected[GROUP == "Random"],
+              # after inherits
+              inherit.n = sum(Selected - Waived),
+              #'total before waivers*
+              inherit.butnowaiver.n = sum(Selected),
+              Total.n = unique(Total.trips),
+              Source = "Valid trips only"),
   #' Now add in the total trips for the random number only. This includes every trip logged in ODDS (excluding those in 
   #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
   #' inherits, cancellations, and waivers
-  merge(
-    odds.ts.all %>%
-      group_by(YEAR, STRATA) %>%
-      summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
-    all = TRUE
-  ) %>%
-  arrange(YEAR, Source, STRATA) %>%
-  # Merge in the selection rates of each stratum for calculating p-values later
+  odds.ts.all %>%
+    select(-YEAR) %>%
+    group_by(STRATA) %>%
+    summarise(random.n = sum(n), Total.n = sum(N), Source = "ODDS random number"),
+  all = TRUE) %>%
+  arrange(Source, STRATA)
+
+# Merge in the selection rates of each stratum for calculating p-values later
+for.p.wide <- for.p.wide %>%
   left_join(
-    partial %>% select(-GEAR) %>% distinct(), 
-    by = c("STRATA", "YEAR")) %>%
+    partial %>% select(-GEAR, -YEAR) %>% distinct(), 
+    by = c("STRATA")) %>%
   mutate(ODDS_SELECTION_PCT = Rate * 100) %>%
   select(!c(formatted_strat, Rate))
 
 # Put into long format
 p.table <- for.p.wide %>%
-  pivot_longer(cols = c(-STRATA, -YEAR, -Total.n, -ODDS_SELECTION_PCT, -Source), names_to = "key", values_to = "value")
+  pivot_longer(cols = c(-STRATA, -Total.n, -ODDS_SELECTION_PCT, -Source), names_to = "key", values_to = "value")
 
 # Omit records with missing values
 p.table <- p.table[!is.na(p.table$value), ]
@@ -686,22 +698,22 @@ p.table$key[p.table$key == "inherit.butnowaiver.n"] <- "Expected if no waivers"
 # Create table
 Selection.table <- p.table %>%
   mutate(p = ifelse(p < 0.05, paste0(p, "*"), p)) %>%
-  arrange(YEAR, STRATA, Source, desc(key)) %>%
-  arrange(match(STRATA, strata.order)) %>% 
-  mutate(new_trip_type = mosaic::derivedFactor(
-    "Initial Random Selection, *a*"= Source == "ODDS random number",
-    "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
-    "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
-    "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
-    .ordered = TRUE, .method = "unique")) %>% 
-  select("Year" = YEAR,
-         "Strata" = STRATA, 
+  arrange(STRATA, Source, desc(key)) %>%
+  arrange(match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW"))) %>% 
+  mutate(new_trip_type = 
+        derivedFactor("Initial Random Selection, *a*"= Source == "ODDS random number",
+                      "After Cancellations, *b* (*a*-*b*)" = key == "Random Selection Only" & Source == "Valid trips only",
+                      "With Inherits, *c* (*a*-*b*+*c*)" = key == "Expected if no waivers",
+                      "After Waivers, *d* (*a*-*b*+*c*-*d*)" = key == "Expected",
+                      .ordered = TRUE, .method = "unique")) %>% 
+  select("Strata" = STRATA, 
          "Trip disposition" = new_trip_type,   # UPDATE THESE NAMES
          "n" = value,  # "Selected trips"
          "N" = Total.n,   # "Total trips"
          "Actu" = pct,   # "Actual selection (%)"
          "Prog" = ODDS_SELECTION_PCT,  # "Programmed selection (%)"
-         "*p*" = p)    # "*p*-value (H0: Actual = Programmed)"
+         "*p*" = p) %>%    # "*p*-value (H0: Actual = Programmed)"
+  arrange(factor(Strata, levels = strata.order))
 ```
 
 ```{r odds.ts.daily.cuml.fig, warning=FALSE, include=FALSE}
@@ -714,7 +726,7 @@ odds.ts.daily.cuml <- bind_rows(
   # Final after cancellations, inherits, and waivers
   odds.ts.cp %>% 
     group_by(YEAR, STRATA, Date, TYPE) %>%
-    summarise(n = n + ni - nr, N = N)
+    summarise(n = n + ni - n.r - ni.r, N = N)
   ) %>% 
   group_by(YEAR, STRATA, TYPE) %>%
   mutate(
@@ -871,33 +883,23 @@ sel.max.canc <- disposition %>%
 #' \TODO Not currently used but could/should be?
  
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
-inherit.min <- logged %>%
-               group_by(YEAR, STRATA) %>% 
-               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
-               slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
-               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(YEAR, STRATA, Pct.selected.from.inherit)
+inherit_waiver.smry <- logged %>% distinct(STRATA, Pct.selected.from.inherit, Pct.reduced.from.waiver)
 
-inherit.max <- logged %>%
-               group_by(YEAR, STRATA) %>%  
-               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
-               slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
-               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(YEAR, STRATA, Pct.selected.from.inherit)
+inherit.min <- inherit_waiver.smry %>% 
+  slice_min(as.numeric(Pct.selected.from.inherit))  %>% 
+  select(-Pct.reduced.from.waiver) 
 
-waiver.min <- logged %>% 
-              group_by(YEAR, STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
-              slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
-              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(YEAR, STRATA, Pct.allselected.from.waiver)
+inherit.max <- inherit_waiver.smry %>% 
+  slice_max(as.numeric(Pct.selected.from.inherit))  %>% 
+  select(-Pct.reduced.from.waiver) 
 
-waiver.max <- logged %>% 
-              group_by(YEAR, STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
-              slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
-              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(YEAR, STRATA, Pct.allselected.from.waiver)
+waiver.min <- inherit_waiver.smry %>% 
+  slice_min(as.numeric(Pct.reduced.from.waiver))  %>% 
+  select(-Pct.selected.from.inherit) 
+
+waiver.max <- inherit_waiver.smry %>% 
+  slice_max(as.numeric(Pct.reduced.from.waiver))  %>% 
+  select(-Pct.selected.from.inherit) 
 ```
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
@@ -907,7 +909,7 @@ waiver.max <- logged %>%
 # Text strings for reporting on the observer initial selection rates by strata
 pct_txt <- p.table %>% 
            filter(Source == "ODDS random number") %>% 
-           mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum in ", YEAR)) %>%
+           mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>%
            distinct(pct_txt) 
 
 # Extract p-values associated with random selection (H0: observed = expected
@@ -916,15 +918,14 @@ random_pvals <- merge(
   p.table, 
   partial %>% 
     filter(STRATA != "EM TRW EFP") %>% 
-    distinct(STRATA, formatted_strat)
-) %>% 
+    distinct(STRATA, formatted_strat)) %>% 
   filter(Source == "ODDS random number") %>% 
-  select(YEAR, p, formatted_strat)
+  select(p, formatted_strat)
  
 # Text strings for reporting on the observer FINAL selection rates by strata
 final_pct_txt <- p.table %>% 
                  filter(key == "Expected") %>% 
-                 mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum in ", YEAR)) %>% 
+                 mutate(pct_txt = paste0(pct, "% for the *", STRATA, "* stratum")) %>% 
                  distinct(pct_txt) 
 
 # Extract p-values associated with FINAL selection (H0: final observed = expected
@@ -933,10 +934,9 @@ final_pvals <- merge(
   p.table, 
   partial %>% 
     filter(STRATA != "EM TRW EFP") %>% 
-    distinct(STRATA, formatted_strat)
-) %>% 
+    distinct(STRATA, formatted_strat)) %>% 
   filter(key == "Expected") %>% 
-  select(YEAR, p, formatted_strat)
+  select(p, formatted_strat)
 ```
 
 The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW EFP* stratum.\
@@ -965,17 +965,20 @@ The final selection rate after trips were closed, canceled or waived were within
 # Assuming one landing report per delivery
 # Delivery = when fish actually hit the processing plant (e.g., when a tender delivers all CV offloads)
 # Will still summarize V and v by CV, but N and n will be by tender (when applicable) and CV
-#'* This object is also used for pollock offload summaries *
 work.offload.trw_em <- work.offload %>%
+  # First, use REPORT_ID to replace TRIP_ID
   mutate(TRIP_ID = as.character(REPORT_ID),
          VESSEL_ID = as.integer(CV_ID),
          COVERAGE_TYPE = if_else(STRATA == "EM TRW GOA (EFP)", "PARTIAL", "FULL")) %>%
-  # Replace TRIP_ID with T_REPORT_ID
+  # Replace TRIP_ID with T_REPORT_ID if present to group up shoreside tender deliveries
   mutate(TRIP_ID = ifelse(!is.na(T_REPORT_ID), T_REPORT_ID, TRIP_ID)) %>%
   select(COVERAGE_TYPE, STRATA, TRIP_ID, VESSEL_ID,
          OBSERVED_FLAG = OBS_SALMON_CNT_FLAG,
          TENDER = OFFLOAD_TO_TENDER_FLAG,
-         FMP, PORT_CODE)
+         FMP, PORT_CODE, REPORT_ID)
+#' Make a joining table for the analyses
+work.data.tem.join <- unique(work.offload.trw_em[, .(TRIP_ID, REPORT_ID, OBSERVED_FLAG)])
+
 
 # Add back to work.data
 work.data.offload <- work.data %>%
@@ -1036,12 +1039,12 @@ Coverage.Table.partial <- bind_rows(
         stats::binom.test(x = n, 
                           n = N, 
                           p = Rate, 
-                          alternative = "two.sided")$conf.int[1], digits = 3) * 100,
+                          alternative = "two.sided")$conf.int[1], digits = 4) * 100,
       max.expected = round(
         stats::binom.test(x = n, 
                           n = N, 
                           p = Rate,
-                          alternative = "two.sided")$conf.int[2], digits = 3) * 100,
+                          alternative = "two.sided")$conf.int[2], digits = 4) * 100,
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                  Rate * 100 < min.expected ~ "No - higher than expected",
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
@@ -1061,7 +1064,7 @@ Coverage.Table.partial <- bind_rows(
            Pct.obs = (n/N) * 100,
            deployment.method = "Trip-Selection") 
 ) %>%
-  arrange(match(STRATA, c("EM HAL", "EM POT", "EM TRW EFP", "OBS HAL", "OBS POT", "OBS TRW"))) %>%
+  arrange(match(STRATA, strata.order)) %>%
   ungroup()
 
 #' *ZERO COVERAGE* 
@@ -1092,8 +1095,8 @@ Coverage.Table.TOTALS <- work.data.offload %>%
   ) %>%
   mutate(COVERAGE_TYPE = "Total",
          STRATA = "Total",
-         Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
-         Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
+         Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 2),
+         Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 2),
          Pct.obs = paste0(Pct.obs.trips, "% trips/deliveries; ", Pct.obs.vessels, "% vessels")) %>%
   ungroup()
 
@@ -1102,7 +1105,7 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                             Coverage.Table.partial,
                             Coverage.Table.zero,
                             ) %>%
-  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 2)) %>%
   bind_rows(Coverage.Table.TOTALS) %>%
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
@@ -1115,15 +1118,15 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
          #' *FLAG* qbinom method
          Rate = ifelse(is.na(Rate), NA, 
                        ifelse(deployment.method == "Trip-Selection", 
-                              format(Rate * 100, digits = 1, nsmall = 1),
+                              format(Rate * 100, digits = 1, nsmall = 2),
                               format(Rate, digits = 0, nsmall = 0))),
          min.expected = ifelse(is.na(min.expected), NA, 
                                ifelse(deployment.method == "Trip-Selection", 
-                                      format(min.expected, digits = 1, nsmall = 1),
+                                      format(min.expected, digits = 1, nsmall = 2),
                                       format(min.expected, digits = 0, nsmall = 0))),
          max.expected = ifelse(is.na(max.expected), NA, 
                                ifelse(deployment.method == "Trip-Selection", 
-                                      format(max.expected, digits = 1, nsmall = 1),
+                                      format(max.expected, digits = 1, nsmall = 2),
                                       format(max.expected, digits = 0, nsmall = 0))),
          STRATA = case_when(STRATA == "FULL" ~ "Full", 
                             STRATA == "EM TRW GOA (EFP)" ~ "EM TRW GOA (EFP)*",
@@ -1179,20 +1182,34 @@ perc_vessels_obs <- Coverage.Table %>%
   as.numeric()
 ```
 
-```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=FALSE}
+```{r data_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=TRUE}
+data_timeliness.strata_order <- c(
+  "OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", 
+  "EM FIXED BSAI", "EM FIXED GOA", "EM TRW BSAI (EFP)", "EM TRW GOA (EFP)"
+)
+
+# Set the ordering of the strata and calculate summary statistics
+data_timeliness <- data_timeliness %>% 
+  mutate(STRATA = factor(STRATA, levels = data_timeliness.strata_order))
+
 times_smry <- data_timeliness %>%
               group_by(YEAR, COVERAGE_TYPE, STRATA) %>%
               summarise(median = round(median(data_timeliness), 2), 
                         mean = round(mean(data_timeliness), 2), 
-                        .groups = "drop")
+                        .groups = "drop") %>%
+  mutate(STRATA = factor(STRATA, levels = data_timeliness.strata_order))
 
 times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
-                facet_wrap(STRATA ~ ., scales="free_y", ncol = 2) +
-                geom_histogram(bins = 20, fill="gray70") +
+                facet_wrap(STRATA ~ ., scales = "free_y", ncol = 2) +
+                geom_histogram(bins = 20, fill = "gray70") +
                 geom_vline(data = times_smry, aes(xintercept = median), color = "black") +
                 geom_vline(data = times_smry, aes(xintercept = mean), color = "red", lty = 2) +
-                geom_text(data = times_smry, aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), angle = 90, hjust = 1.2, vjust = -0.55) +
-                geom_text(data = times_smry, aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))), angle = 90, hjust = 1.2, vjust = 1.35) +
+                geom_text(data = times_smry,
+                          aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), 
+                          angle = 90, hjust = 1.2, vjust = -0.3) +
+                geom_text(data = times_smry, 
+                          aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))),
+                          angle = 90, hjust = 1.2, vjust = 1.1) +
                 labs(x = "Data timeliness (days)", y = "Count") +
                 theme_bw()
 
@@ -1208,7 +1225,7 @@ Evaluations for the full coverage category and zero-selection pool are straightf
 \
 Under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (under the assumption of a binomial distribution for monitored trips) will contain the actual deployment rate 95% percent of the time. If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal.\
 \
-Coverage rates were consistent with expected values in only half of the six partial coverage strata. Coverage rates were higher than expected for the *EM HAL* and *EM POT* strata (`r tbl_nums('Coverage.Table', display = "cite")`). The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('em.times.figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
+Coverage rates were consistent with expected values in only half of the six partial coverage strata. Coverage rates were higher than expected for the *EM HAL* and *EM POT* strata (`r tbl_nums('Coverage.Table', display = "cite")`). The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('times_figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
 \
 Note that there are several reasons why the total number of trips and the final monitoring rates presented in this section differ with what was presented earlier within the ODDS. The *OB HAL* stratum had a higher than expected monitoring rate in ODDS (`r tbl_nums('Selection.table', display = "cite")`), but was within the expected range (although elevated) according to the dataset using eLandings and CAS (`r tbl_nums('Coverage.Table', display = "cite")`). There is no robust link between the ODDS database and eLandings, and therefore, trips in ODDS cannot be linked directly to realized landings in eLandings, which inform the trip identification numbers created by CAS. The FMSC has recommended in past reports that this linkage be established. Moreover, ODDS trips are sometimes not logged as required (see Chapter 5, section 1.5.2, Figure 5.5) and records are not created in ODDS after-the-fact.   
 
@@ -1289,7 +1306,7 @@ Pollock.landing.data <- work.data %>%
 
 # Summarize offloads by FMP, coverage type, port, and observed status
 Pollock.monitored <- rbind(
-  # Straum and Port
+  # Stratum and Port
   Pollock.landing.data %>%
     group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
     summarize(N.pollock = n(),
@@ -1509,30 +1526,22 @@ The cumulative number of fishing trips in each stratum was multiplied by the str
 
 ## Setup for spatial and spatiotemporal analyses -----------------------------------------------------------------------
 
-# Make FMP-specific polygons
-shp_fmp <- rbind(
-  shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
-    mutate(FMP = "BSAI"),
-  shp_nmfs %>% filter(SubArea == "GOA") %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
-    mutate(FMP = "GOA")
-) %>% st_set_crs(st_crs(3467))
-#' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
-shp_land <- shp_land %>% st_set_crs(st_crs(3467))
-ak_low_res <- shp_land %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_land)) %>% select(geometry) %>%
-  st_set_crs(st_crs(3467))
-nmfs_low_res <- shp_nmfs %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_nmfs)) %>% select(geometry) %>% 
-  st_set_crs(st_crs(3467))
-fmp_low_res <- shp_fmp %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_fmp)) %>% select(geometry) %>%
-  st_set_crs(st_crs(3467))
-
-# Load the ADFG statistical area shapefile.
-stat_area_sf <- st_read(
-  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = TRUE) %>%
-  select(STAT_AREA) %>%
-  st_transform(crs = 3467)
-
 # Wrangle the Valhalla data set for spatiotemporal analyses
-pc_effort_st <- spatiotemp_data_prep(work.data)
+# First, re-assign TRIP_ID for the trawl EM strata to properly identify the sample unit as the delivery
+work.data.st <- copy(work.data) 
+work.data.st |>
+  # Merge in new TRIP_ID and OBSERVED_FLAG using REPORT_ID
+  _[, TRIP_ID_NEW := work.data.tem.join[work.data.st, TRIP_ID, on = .(REPORT_ID)]
+  ][, OBS_FLAG_NEW := work.data.tem.join[work.data.st, OBSERVED_FLAG, on = .(REPORT_ID)]
+  # Need TRIP_ID to stay numeric, so make a helper column
+  ][, MAX_TRIP_ID := as.numeric(max(TRIP_ID))
+  ][, TRIP_ID_NEW.int := MAX_TRIP_ID + .GRP, by = .(TRIP_ID_NEW)
+  # For trawl EM trips only (those with TRIP_ID_NEW), replace TRIP_ID and OBSERVED_FLAG
+  ][!is.na(TRIP_ID_NEW), ':=' (TRIP_ID = TRIP_ID_NEW.int, OBSERVED_FLAG = OBS_FLAG_NEW)
+  # Remove helper columns
+  ][, c("MAX_TRIP_ID", "TRIP_ID_NEW", "TRIP_ID_NEW.int", "OBS_FLAG_NEW") := NULL]
+pc_effort_st <- spatiotemp_data_prep(work.data.st)
+rm(work.data.st)
 
 #' Realized Rates *Check that these match up with the realized rates in 4_AR_report*
 realized_rates.val  <- pc_effort_st[, .(ADP, STRATA, TRIP_ID, OBSERVED_FLAG)] |>
@@ -1570,8 +1579,6 @@ strata_levels <- c(
 )
 
 #' Define boxes using the 2024 stratum definitions, post-stratifying the fixed gear strata by Gear type. Exclude the ZERO stratum as we don't need to simulate interspersion for a stratum with a 0% selection rate.
-
-#' \TODO For the `EM_TRW_EFP_(GOA)` stratum, need to redefine TRIP_ID by shoreside deliveries!
 
 box_def <- define_boxes(
   data = pc_effort_st[STRATA != "ZERO"], space = c(2e5, 2e5), time = c("week", 1, "TRIP_TARGET_DATE", "LANDING_DATE"),
@@ -1651,7 +1658,7 @@ tbl.percentile.stratum <- percentile.stratum %>%
 
 #' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
 proximity_maps <- plot_interspersion_map(
-  box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed)
+  box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed, ak_map.low_res.lst)
 #' \TODO save `proximity_maps` to outputs folder as a multi-page PDF
 #' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
 
@@ -1661,16 +1668,11 @@ proximity_maps <- plot_interspersion_map(
 # Determine whether the spatial arrangement of monitoring was distributed evenly (as expected by random sampling). 
 # Counts the `number of monitored trips in each HEX_ID` and compares to the simulation outcomes, highlighting any actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more extreme than 80% of outcomes.
 
-spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels)
+spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels, ak_map.low_res.lst)
 plt.spatial <- spatial_plots$plt.spatial.2024
 # Drop unused facet
 # drop_facet(plt.spatial)
 plt.spatial <- drop_facet(plt.spatial, drop = list(c(24, 7), c(25, 7)))
-
-#' \TODO Note that EM TRW GOA EFP has a noticeable spatial bias. Double-check once we verify the valhalla dataset is
-#' correct, but there really shouldn't be a spatial bias with 1/3 offloads monitored, right? In any case, in the 2025
-#' ADP, we shouldn't have any bias if all offloads are monitored.
-
 
 ```
 
@@ -1700,9 +1702,19 @@ Six trip metrics were examined in the permutation test. These metrics were as fo
 
 ```{r perm_results, set.seed(49), message=FALSE, warning=FALSE, include=FALSE}
 
-dat <- 
-  work.data %>% 
+dat <- work.data %>% 
   filter(ADP == year & STRATA %in% partial$STRATA)
+
+#' *==================*
+#' *2024 ONLY -- Apply the sample unit fix for the EM TRW GOA (EFP) stratum*
+# Count of unique TRIP_IDs and observed TRIP_IDs
+# dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
+# Update the values using REPORT_ID
+dat.em_trw_goa <- dat[STRATA == "EM TRW GOA (EFP)"]
+dat.em_trw_goa[, c("TRIP_ID", "OBSERVED_FLAG") := work.data.tem.join[dat.em_trw_goa, .(TRIP_ID, OBSERVED_FLAG), on = .(REPORT_ID)]]
+dat <- rbind(dat[STRATA != "EM TRW GOA (EFP)"], dat.em_trw_goa)
+# dat[STRATA == "EM TRW GOA (EFP)", .(TRIP_ID = uniqueN(TRIP_ID), OBSERVED_Y = uniqueN(TRIP_ID[OBSERVED_FLAG == "Y"]))]
+#' *==================*
 
 # Identify the field to permute by
 YN_var = "OBSERVED_FLAG"
@@ -1711,6 +1723,14 @@ YN_var = "OBSERVED_FLAG"
 gp_vec = c("STRATA")
 
 # Run permutation tests
+# TODO: ℹ Please use `all_of()` or `any_of()` instead.
+  # Was:
+#  data %>% select(YN_var)
+
+  # Now:
+#  data %>% select(all_of(YN_var))
+
+#See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
 perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
 
 # Decompose the output
@@ -1720,10 +1740,8 @@ assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FA
 assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
 
 names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
-OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA",
-                                                                      "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")))
-OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB FIXED BSAI", "OB FIXED GOA", "OB TRW BSAI", "OB TRW GOA", 
-                                                                        "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")), variable)
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, strata.order))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, strata.order), variable)
 perm_sum <- filter(OBSERVED_FLAG.summary, STRATA != "EM TRW EFP")
 
 # See helper.r documentation on interpret_trip_metrics() 
@@ -1746,14 +1764,12 @@ OBSERVED_FLAG.results <- rbind(
     mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)),
                                                                    paste0(format(.x, nsmall = 3, digits = 3), "*"), 
                                                                    format(.x, nsmall = 3, digits = 3))))) %>% 
-  arrange(match(Strata, c("OB FIXED BSAI", "OB FIXED GOA",  "OB TRW BSAI", "OB TRW GOA", 
-                          "EM FIXED BSAI", "EM FIXED GOA","EM TRW GOA (EFP)")), Metric)
+  arrange(match(Strata, strata.order), Metric)
 
 # Replace "0" p-values; extra space in character is an artifact of the previous format()
 
 OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
-OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW GOA (EFP)")
 ```
 
 The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
@@ -1821,7 +1837,7 @@ NMFS. 2013. 2014 Annual Deployment Plan for Observers in the Groundfish and Hali
 
 `r if(tech.memo){'# Tables'}`
 
-`r tbl_nums('trip.budget.tbl', caption = paste0('Comparison between predicted and actual trip days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
+`r tbl_nums('trip.budget.tbl', caption = paste0('Comparison between predicted and actual monitored at-sea days for partial coverage strata in ', year,'.  Predicted values come from the ', year,' Annual Deployment Plan (ADP).'))`  
 
 ```{r trip.budget.tbl, tab.cap=""}
 
@@ -1835,7 +1851,7 @@ flextable(trip.budget.table) %>%
   bold(bold = TRUE, part = "header") %>%
   hline(i = v_diff(trip.budget.table$STRATA, 1, 2)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
-  add_header_row(values = c("", "Trip days", "Difference"), colwidths = c(1, 2, 2)) %>%
+  add_header_row(values = c("", "Monitored days", "Difference"), colwidths = c(1, 2, 2)) %>%
   align(j = 2:5, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
   width(j = 1, 1.5, unit = "in") %>%
@@ -1853,15 +1869,14 @@ flextable(trip.budget.table) %>%
 `r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the ODDS for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
   
 ```{r disposition.table, tab.cap=""}
-# Table 2 from 2019 Annual Report
+# Table 2 from 2019 Annual Report.
+# Note that this table (and table 3) exclude any trips that requested coverage (compliance strata)
 
 disposition.table <- disposition.table %>%
   mutate(Year = as.factor(Year),
          `Logged (*a*)` = as.numeric(`Logged (*a*)`),
          `Trips remaining (*c* = *a*-*b*)` = as.numeric(`Trips remaining (*c* = *a*-*b*)`)) %>%
-  arrange(factor(Strata, levels = strata.order))
-
-disposition.table <- disposition.table %>%
+  arrange(factor(Strata, levels = strata.order)) %>%
   filter(Year == year) %>%
   select(-Year)
 
@@ -1874,24 +1889,23 @@ flextable(disposition.table) %>%
          value = as_paragraph("Trips remaining (", as_i("c"), " = ", as_i("a"), " - ", as_i("b"), ")")) %>%
   mk_par(j = 6, part = "header",
          value = as_paragraph("Canceled by user (", as_i("d"), ")")) %>%
-  mk_par(j = 9, part = "header",
+  mk_par(j = 8, part = "header",
          value = as_paragraph("% user cancellation (", as_i("d"), "/", as_i("c"), " \U00D7 100)")) %>%
-  italic(j = 1, i = 1:10) %>%
-  align(j = 3:10, part = "all", align = "right") %>%
+  italic(j = 1, i = ~Strata != "Total") %>%
+  align(j = 3:8, part = "all", align = "right") %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = 1) %>%
-  hline(i = seq(2, nrow(disposition.table), 2)) %>%
+  hline(i = seq(3, nrow(disposition.table), 3)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
   width(j = 1, 1.23, unit = "in") %>%
   width(j = 2, 1.38, unit = "in") %>%
   width(j = 3, 0.88, unit = "in") %>%
   width(j = 4, 1, unit = "in") %>%
-  width(j = c(5:6, 9), 0.94, unit = "in") %>%
-  width(j = 7, 0.69, unit = "in") %>%
-  width(j = 8, 0.56, unit = "in") %>%
-  width(j = 10, 0.63, unit = "in")
+  width(j = c(5:6), 0.94, unit = "in") %>%
+  width(j = 7, 0.56, unit = "in") %>%
+  width(j = 8, 0.63, unit = "in")
 ```
 
 \newpage
@@ -1900,44 +1914,36 @@ flextable(disposition.table) %>%
 
 ```{r logged.table, tab.cap=""}
 # Table 3 from 2019 Annual Report
+# Note that this table (and table 2) exclude any trips that requested coverage (compliance strata)
 
 logged.table <- logged.table %>%
-  mutate(Year = as.factor(Year),
-         `Total Trips` = as.numeric(`Total Trips`)) %>%
+  mutate(`Total completed trips` = as.numeric(`Total completed trips`)) %>%
   arrange(factor(Strata, levels = strata.order)) %>%
-  ungroup() #' *SHOULD PROBABLY DEAL WITH THIS GROUPING EARLIER*
-
-logged.table <- logged.table %>%
-  filter(Year == year) %>%
-  select(-Year)
+  ungroup()
 
 flextable(logged.table) %>%
-  mk_par(j = 3, part = "header", 
-         value = as_paragraph("Random number selection (", as_i("r"), ")")) %>%
-  mk_par(j = 4, part = "header", 
-         value = as_paragraph("Inherited selection **(", as_i("i"), ")")) %>%
-  mk_par(j = 5, part = "header", 
-         value = as_paragraph("Waived (", as_i("w"), ")")) %>%
-  mk_par(j = 6, part = "header", 
-         value = as_paragraph("Total final selected\n (", as_i("T"), " = ", as_i("r"), " + ", as_i("i"), " - ",
-                              as_i("w"), ")")) %>%
-  mk_par(j = 7, part = "header", 
-         value = as_paragraph("% selected from inherits ((", as_i("i"), "/", as_i("T"), ") \U00D7 100)")) %>%
-  mk_par(j = 8, part = "header",
-         value = as_paragraph("% reduction of selected trips due to waivers\n (", as_i("w"), "/(", as_i("T"), " + ",
-                              as_i("w"), ") \U00D7 100)")) %>%
+  mk_par(j = 3, part = "header", value = as_paragraph("Selection type")) %>%
+  mk_par(j = 4, part = "header", value = as_paragraph("Selected trips")) %>%
+  mk_par(j = 5, part = "header", value = as_paragraph("Waived trips")) %>%
+  mk_par(j = 6, part = "header", value = as_paragraph("Total final selected")) %>%
+  mk_par(j = 7, part = "header", value = as_paragraph("% selected from inherits")) %>%
+  mk_par(j = 8, part = "header", value = as_paragraph("% reduction of\n selected trips\n due to waivers")) %>%
   align(j = ~ . - Strata, part = "all", align = "right") %>%
   valign(part = "header", valign = "bottom") %>%
   italic(j = 1, i = 1:6) %>%
   bold(bold = TRUE, part = "header") %>%
-  hline(i = v_diff(logged.table$Strata, 1, 2)) %>%
+  #hline(i = seq(from = 2, to = nrow(logged.table), by = 2), border = fp_border(style = "dashed")) %>%
+  hline(i = v_diff(logged.table$Strata)) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
+  # Merge repeated values, grouped by Strata for the columns listed in 'target'
+  merge_v(j = "Strata", target = c("Strata", "Total completed trips", "Total final selected", 
+                                   "% Selected from inherits", "% Reduction of selected trips due to waivers")) %>%
   fix_border_issues() %>%
-  width(j = 1, 1.23, unit = "in") %>%
+  width(j = 1, 1.3, unit = "in") %>%
   width(j = c(2, 5), 0.94, unit = "in") %>%
   width(j = 3, 1.31, unit = "in") %>%
   width(j = c(4, 6:7), 1.06, unit = "in") %>%
-  width(j = 8, 1.69, unit = "in")
+  width(j = 8, 1.2, unit = "in")
 ```
 
 \newpage
@@ -1945,14 +1951,6 @@ flextable(logged.table) %>%
 `r tbl_nums('Selection.table', caption = paste0('Number of logged trips in each partial coverage stratum in ', year, ' that were selected using the initial random number generator ("Initial random selection") and those that remained after user manipulation ("After cancellations"). The relative impact of inherits and waivers in trip-selection is also shown ("With inherits", "After waivers").'))`  
 
 ```{r Selection.table, tab.cap=""}
-
-Selection.table <- Selection.table %>%
-  mutate(Year = as.factor(Year)) %>%
-  arrange(factor(Strata, levels = strata.order))
-
-Selection.table <- Selection.table %>%
-  filter(Year == year) %>%
-  select(-Year)
 
 flextable(Selection.table) %>%
   set_header_labels(values = list(
@@ -1996,7 +1994,6 @@ flextable(Selection.table) %>%
 
 Coverage.Table <- Coverage.Table %>% 
   mutate(Strata = as.character(Strata),
-         Year = as.factor(Year),
          V = as.numeric(V),
          v = as.numeric(v),
          N = as.numeric(N),
@@ -2008,10 +2005,6 @@ Coverage.Table <- Coverage.Table %>%
                               TRUE ~ Coverage)) %>%
   arrange(factor(Strata, levels = strata.order)) %>%
   arrange(factor(Coverage, levels = c("Full coverage", "Partial coverage", "Zero coverage")))
- 
-Coverage.Table <- Coverage.Table %>%
-  filter(Year == year) %>%
-  select(-Year)
 
 as_grouped_data(Coverage.Table, groups = "Coverage") %>%
   as_flextable(hide_grouplabel = TRUE) %>%
@@ -2025,33 +2018,28 @@ as_grouped_data(Coverage.Table, groups = "Coverage") %>%
                       border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   flextable::surround(i = ~ Strata %like% "total", border.top = fp_border(width = 1, style = "dashed")) %>%
   add_header_row(values = c("", "Coverage", "95% confidence interval", ""), colwidths = c(5, 2, 2, 1)) %>%
-  width(j = 1, 1.5, unit = "in") %>%
+  width(j = 1, 1.6, unit = "in") %>%
   width(j = 2:3, 0.38, unit = "in") %>%
   width(j = 4:5, 0.5, unit = "in") %>%
   width(j = 6:7, 0.75, unit = "in") %>%
   width(j = 8:9, 0.58, unit = "in") %>%
   width(j = 10, 1.77, unit = "in") %>%
   align(j = 2:10, part = "all", align = "right") %>%
-  align(j = 7, i = 15, align = "left") %>%
   align(i = 1, part = "header", align = "center") %>%
-  valign(part = "header", valign = "bottom") %>%
-  merge_at(j = 7:10, i = 15) %>%
-  padding(j = 7, i = 15, part = "body", padding.left = 35)
+  merge_h_range(i = 15, j1 = 7, j2 = 7) %>%
+  valign(part = "header", valign = "bottom") 
 ```
 
 \newpage
 
-`r tbl_nums('Pollock.observed.table', caption = paste0('The number of pollock deliveries made by vessels in the *OB TRW* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+`r tbl_nums('Pollock.observed.table', caption = paste0('The number of shoreside pollock deliveries made by catcher vessels in the trawl strata during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
 ```{r Pollock.observed.table, tab.cap=""}
 
 Pollock.observed.table <- 
   Pollock.observed.table %>%
-  mutate(Year = as.factor(Year),
-         `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
+  mutate(`Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
-
-Pollock.observed.table <- Pollock.observed.table %>% filter(Year == year) %>% select(-Year)
 
 flextable(Pollock.observed.table) %>%
   mk_par(j = 4, part = "header",
@@ -2063,6 +2051,7 @@ flextable(Pollock.observed.table) %>%
   valign(part = "header", valign = "bottom") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
+  merge_h_range(i = ~ FMP %like% "total", j1 = 1, j2 = 3) %>%
   flextable::surround(i = ~FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
@@ -2076,17 +2065,14 @@ flextable(Pollock.observed.table) %>%
 
 \newpage
 
-`r tbl_nums('Pollock.efp.table', caption = paste0('The number of pollock deliveries made by vessels in the *EM TRW EFP* stratum during ', year, ', separated by port and coverage category. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
+`r tbl_nums('Pollock.efp.table', caption = paste0('The number of pollock deliveries made by catcher vessels in the *EM TRW (EFP)* strata during ', year, ', separated by coverage category and port. Trips that made a delivery to a tender have been excluded. Observed deliveries denote deliveries that were observed shoreside for salmon.'))`  
 
 ```{r Pollock.efp.table, tab.cap=""}
 
 Pollock.efp.table <-
   Pollock.efp.table %>%
-    mutate(Year = as.factor(Year),
-         `Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
+    mutate(`Total deliveries (*N*)` = as.numeric(`Total deliveries (*N*)`),
          `Observed deliveries (*n*)` = as.numeric(`Observed deliveries (*n*)`))
-
-Pollock.efp.table <- Pollock.efp.table %>% filter(Year == year) %>% select(-Year)
 
 flextable(Pollock.efp.table) %>%
   mk_par(j = 4, part = "header",
@@ -2096,20 +2082,22 @@ flextable(Pollock.efp.table) %>%
   align(j = 4:6, part = "all", align = "right") %>%
   bold(bold = TRUE, part = "header") %>%
   merge_v(j = c("FMP", "Coverage category")) %>%
-  flextable::surround(i = ~FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
+  merge_h_range(i = ~ FMP %like% "total", j1 = 1, j2 = 3) %>%
+  flextable::surround(i = ~ FMP %like% "total", border.bottom = fp_border(width = 1), border.top = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   fix_border_issues() %>%
-  width(j = 1, 0.81, unit = "in") %>%
+  width(j = 1, 1.00, unit = "in") %>%
   width(j = 2, 1.39, unit = "in") %>%
-  width(j = 3, 1, unit = "in") %>%
+  width(j = 3, 1.00, unit = "in") %>%
   width(j = 4, 1.44, unit = "in") %>%
   width(j = 5, 1.69, unit = "in") %>%
-  width(j = 6, 0.94, unit = "in")
+  width(j = 6, 0.94, unit = "in") 
+  
 ```
 
 \newpage
 
-`r tbl_nums('perm.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips. Statistically significant results are in bold italics.'))`  
+`r tbl_nums('perm.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips [EDIT WHEN EM TWR GOA IS ADDED]. Statistically significant results are in bold italics. The Bonferroni correction was applied to the significance tests.'))`  
 
 ```{r perm.summary.table, tab.cap=""}
 
@@ -2130,7 +2118,7 @@ flextable(OBSERVED_FLAG.results) %>%
   valign(j = 1:3, part = "body", valign = "top") %>%
   valign(part = "header", valign = "bottom") %>%
   fix_border_issues() %>%
-  width(j = 1, 1.23, unit = "in") %>%
+  width(j = 1, 1.6, unit = "in") %>%
   width(j = 2, 0.81, unit = "in") %>%
   width(j = c(3, 6), 0.94, unit = "in") %>%
   width(j = 4, 0.69, unit = "in") %>%
@@ -2180,7 +2168,8 @@ suppressWarnings(print(odds.by.date.plot))
 
 \newpage
 
-```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=FALSE}
+```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=TRUE}
+#' \TODO MOVE THIS FIGURE - IT should be last, after permutation tests?
 suppressMessages(print(times_figure))
 ```
 
@@ -2223,26 +2212,29 @@ OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA =
                     ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0("italic(p) == '", p, "*'"), paste0("italic(p) == '", p, "'"))))
 
 # Filter out EM TRW EFP stratum
-OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
-OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
+# OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
+# OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
+
+OBSERVED_FLAG.YN_perm_plot$STRATA <- factor(OBSERVED_FLAG.YN_perm_plot$STRATA, levels = strata.order)
+OBSERVED_FLAG.summary_plot$STRATA <- factor(OBSERVED_FLAG.summary_plot$STRATA, levels = strata.order)
 
 # Generate permutation plot 
 Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
-  geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
+  geom_histogram(aes(y = after_stat(density)), col = "white", fill = "gray", bins = 30) +
   geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
   geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
   geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
-  facet_wrap(factor(STRATA, levels = c("OB FIXED BSAI", "OB FIXED GOA", 
-  "OB TRW BSAI", "OB TRW GOA", "EM FIXED BSAI", "EM FIXED GOA", "EM TRW GOA (EFP)")) ~ variable, scales = "free", 
+  facet_nested_wrap(. ~ STRATA + variable, scales = "free", 
              # Make number of cols in facet_wrap = to number of strata
-             ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
+             nrow = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA))) +
   geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
              x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
-  scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
+  scale_fill_manual(values = c("pink", "white"), guide = "none") + 
   fig.theme +
   xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
   ylab("Density of outcomes\n") + 
-  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
+  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines"))) + 
+  theme(axis.text.y = element_blank(), axis.ticks = element_blank(), panel.grid = element_blank())
 
 Obs.perm.plot
 ```
