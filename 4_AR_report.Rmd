@@ -231,10 +231,13 @@ The performance metrics used in this evaluation are as follows:
 Although these metrics can identify places where observed results differ from expectations, it is ultimately a subjective decision as to whether or not these differences are substantial enough to have management implications. This holds true even for tests that have associated *p*-values. 
 
 # Changes to this report from last year
-As mentioned previously, the strata definitions and allocation methods employed in `r year` differed from previous years. However, the evaluations performed in this chapter are largely unchanged. [*TODO - Data timeliness methods were updated?*]\
+As mentioned previously, the strata definitions and allocation methods employed in `r year` differed from previous years. However, the evaluations performed in this chapter are largely unchanged.\
+
+- [*TODO - Data timeliness methods were updated?*]
+- Improvements to the evaluation of the ODDS, additionally separating trips selected via inheritance from those randomly selected or not selected for monitoring.
 
 # Evaluation of Deployment in `r year`  
-The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the fixed-gear EM strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Deliveries in the *EM TRW GOA (EFP)* stratum were considered successfully monitored if 
+[*TODO - explain that we evaluate ODDS before realized trips (valhalla). Most of this paragraph is only relevant to the latter*] The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the fixed-gear EM strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Deliveries in the *EM TRW GOA (EFP)* stratum were considered successfully monitored if... [*TODO*]
 
 ## Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
