@@ -571,7 +571,7 @@ hauls_with_factors <-
 
 # OFFLOADS unit
 offloads_with_factors <-
-  # have to join to assignments to get coverage_type for the DEPLOYED_DATE, then can match that to the LANDING_DATE
+  # have to join to assignments to get observer_seq, coverage_type for the DEPLOYED_DATE, then can match that to the LANDING_DATE
   assignments_dates_cr_perm %>%
     distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
              CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_OR_PLANT) %>%
