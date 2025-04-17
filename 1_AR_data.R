@@ -94,11 +94,32 @@ rm(valhalla)
 table(work.data$COVERAGE_TYPE, work.data$STRATA, work.data$PROCESSING_SECTOR, useNA = 'always')
 
 # Data check for observed vessels under 40 ft., should be zero rows
-work.data %>% 
-filter(LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y") %>% 
-select(VESSEL_ID, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, OBSERVED_FLAG, TRIP_TARGET_CODE, REPORTING_AREA_CODE, LANDING_DATE, LENGTH_OVERALL) %>% 
-distinct() %>% 
-arrange(VESSEL_ID)
+under_forties <- work.data %>% 
+  filter(LENGTH_OVERALL < 40 & OBSERVED_FLAG == "Y") %>% 
+  distinct(VESSEL_ID, LENGTH_OVERALL, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, FMP, AGENCY_GEAR_CODE, OBSERVED_FLAG, TRIP_TARGET_CODE, TRIP_TARGET_DATE, LANDING_DATE) %>% 
+  arrange(VESSEL_ID, TRIP_TARGET_DATE, LANDING_DATE)
+
+under_forties
+
+# View ODDS entries to discern what strata any observed vessels under 40 ft. should be in
+dbGetQuery(channel_afsc, paste0(
+"select distinct d.akr_vessel_id vessel_id, d.length, a.trip_plan_log_seq, c.description strata, a.planned_embark_date, a.disembark_date 
+FROM odds.odds_trip_plan_log a
+LEFT JOIN odds.odds_trip_stratas b ON a.trip_plan_log_seq = b.trip_plan_log_seq
+LEFT JOIN odds.odds_strata c ON b.strata = c.strata
+LEFT JOIN norpac.atl_lov_vessel d ON a.vessel_seq = d.vessel_seq
+WHERE d.akr_vessel_id IN (", paste(unique(under_forties$VESSEL_ID), collapse = ", "), ")
+AND extract(year from a.planned_embark_date) = ", year, "
+ORDER BY d.akr_vessel_id, a.planned_embark_date, a.disembark_date"
+))
+
+# Make any necessary changes
+if(year == 2024){
+  work.data[VESSEL_ID %in% unique(under_forties$VESSEL_ID), ":=" (LENGTH_OVERALL = 45, STRATA = "OB_FIXED_GOA")] %>%
+    filter(VESSEL_ID %in% unique(under_forties$VESSEL_ID)) %>% 
+    distinct(VESSEL_ID, LENGTH_OVERALL, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, FMP, AGENCY_GEAR_CODE, OBSERVED_FLAG, TRIP_TARGET_CODE, TRIP_TARGET_DATE, LANDING_DATE) %>% 
+    arrange(VESSEL_ID, TRIP_TARGET_DATE, LANDING_DATE)
+}
 
 # Change date format to eliminate times and match what is in the database
 work.data <- mutate(work.data, TRIP_TARGET_DATE = as.Date(TRIP_TARGET_DATE), LANDING_DATE = as.Date(LANDING_DATE))
