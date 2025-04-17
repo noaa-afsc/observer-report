@@ -38,7 +38,7 @@ permutation.fxn <- function(data.in, YN_var, gp_vec, n_rep){
   suppressMessages(require(lazyeval))
   
   #Relabel the permute field as YN
-  data.in <- rename(data.in, 'YN' = YN_var)
+  data.in <- rename(data.in, 'YN' = all_of(YN_var))
   
   #Assign the grouping variables to data:
   #Groups will always implicitly include TRIP_ID,

@@ -521,6 +521,37 @@ if(FALSE) gdrive_upload("source_data/ak_shp.rdata", data_dribble)
 gdrive_download("source_data/ak_shp.rdata", data_dribble)
 (load(("source_data/ak_shp.rdata")))
 
+# Make FMP-specific polygons
+#' \TODO Maybe add these to 1_AR_data.R  This takes longer than it did before.
+shp_fmp <- rbind(
+  shp_nmfs %>% filter(SubArea %in% c("BS", "AI")) %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
+    mutate(FMP = "BSAI"),
+  shp_nmfs %>% filter(SubArea == "GOA") %>% st_buffer(1) %>% st_union() %>% st_sf() %>% sf_remove_holes() %>% 
+    mutate(FMP = "GOA")
+) %>% st_set_crs(st_crs(3467))
+#' Make a list of the high-resolution shape files
+ak_map.hi_res.lst <- list(
+  AK = shp_land, NMFS = shp_nmfs, FMP = shp_fmp
+)
+
+#' Make lower-res versions that are faster to draw, especially repeatedly for faceted figures
+shp_land <- shp_land %>% st_set_crs(st_crs(3467))
+ak_low_res <- shp_land %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_land)) %>% select(geometry) %>%
+  st_set_crs(st_crs(3467))
+nmfs_low_res <- shp_nmfs %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_nmfs)) %>% select(geometry) %>% 
+  st_set_crs(st_crs(3467))
+fmp_low_res <- shp_fmp %>% st_simplify(dTolerance = 1e4) %>% filter(!st_is_empty(shp_fmp)) %>% select(geometry) %>%
+  st_set_crs(st_crs(3467))
+ak_map.low_res.lst <- list(
+  AK = ak_low_res, NMFS = nmfs_low_res, FMP = fmp_low_res
+)
+
+# Load the ADFG statistical area shapefile.
+stat_area_sf <- st_read(
+  dsn = "source_data/ADFG_Stat_Area_shapefile/PVG_Statewide_2001_Present_GCS_WGS1984.shp", quiet = TRUE) %>%
+  select(STAT_AREA) %>%
+  st_transform(crs = 3467)
+
 # * EM trawl offloads ----
 em_trw_offload <- work.data %>%
   filter(STRATA %in% c("EM TRW BSAI (EFP)", "EM TRW GOA (EFP)")) %>%
@@ -753,6 +784,6 @@ rm(work.obs.cv, cv.dups, work.obs.tender, tender.dups, work.dups.cv, work.dups.t
 # Save --------------------------------------------------------------------
 
 save(year, days_paid, obs_act_days, predicted, bud_scen_lst, bud_tbl, work.data, partial, salmon.landings.obs, 
-     odds.dat, EM.data, data_timeliness, shp_centroids, shp_land, shp_nmfs, work.offload,
+     odds.dat, EM.data, data_timeliness, ak_map.hi_res.lst, ak_map.low_res.lst, stat_area_sf, work.offload,
      file = "2_AR_data.Rdata")
 gdrive_upload("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deployment-Chapter"))

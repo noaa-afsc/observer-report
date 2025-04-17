@@ -78,8 +78,8 @@ spatiotemp_data_prep <- function(valhalla){
     ][, STRATA := gsub(" ", "_", STRATA)] |>
     # Set the order of columns
     setcolorder(neworder = c(
-      "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", "AREA", 
-      "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG")) |>
+      "ADP", "POOL", "PERMIT", "TRIP_ID", "STRATA", "AGENCY_GEAR_CODE", "GEAR", "TRIP_TARGET_DATE", "LANDING_DATE", 
+      "AREA", "ADFG_STAT_AREA_CODE", "BSAI_GOA", "BS_AI_GOA", "TARGET", "wd_TRIP_ID", "OBSERVED_FLAG")) |>
     # Order the dataset
     setorder(ADP, POOL, PERMIT, TRIP_TARGET_DATE) |>
     # For some reason, my shapefiles don't include ADFG STAT AREA 515832. Seem like it was merged into 515831. 
@@ -1304,8 +1304,8 @@ plot_interspersion_density <- function(den, real_interspersion, strata_levels){
 
 #' \TODO *real_interspersion needs `sampled_boxes` attribute. what did this look like?*
 
-plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersion.realized, exp_interspersion.programmed){
-  # box_def <- copy(box_def.stratum_fmp); real_interspersion <- copy(real_interspersion.stratum_fmp);  exp_interspersion.realized <- copy(exp_interspersion.realized.stratum_fmp)
+plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersion.realized, exp_interspersion.programmed, map.lst){
+  # box_def <- copy(box_def.stratum_fmp); real_interspersion <- copy(real_interspersion.stratum_fmp);  exp_interspersion.realized <- copy(exp_interspersion.realized.stratum_fmp); map.lst <- ak_map.low_res.lst
   # real_interspersion <- copy(real_interspersion.stratum)
 
   # Make a dt of all year * strata
@@ -1342,8 +1342,8 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     # when/where monitoring/gaps occured. 
     stratum_map_lst[["BOX"]] <- ggplot(stratum_sub) + 
       #geom_sf(data = shp_nmfs %>% sf::st_set_crs(st_crs(3467))) + 
-      geom_sf(data = ak_low_res %>% sf::st_set_crs(st_crs(3467)), fill = "gray80") +
-      geom_sf(data = nmfs_low_res %>% sf::st_set_crs(st_crs(3467)), fill = NA) +
+      geom_sf(data = map.lst$AK, fill = "gray80") +
+      geom_sf(data = map.lst$NMFS, fill = NA) +
       geom_sf(aes(fill = BOX_w)) + 
       facet_wrap(~TIME) + 
       geom_sf(data = stratum_sub.gaps, color = "red", alpha = 0, linewidth = 1) + 
@@ -1379,8 +1379,8 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
     # Plot by HEX_ID (across WEEK)
     stratum_map_lst[["HEX_ID.realized"]] <- ggplot(stratum_hex) + 
       facet_grid(ADP ~ STRATA, labeller = labeller(STRATA = function(x) gsub("_", " ", x))) +
-      geom_sf(data = ak_low_res, fill = "gray80") +
-      geom_sf(data = fmp_low_res, color = "black", fill = NA) +
+      geom_sf(data = map.lst$AK, fill = "gray80") +
+      geom_sf(data = map.lst$FMP, color = "black", fill = NA) +
       geom_sf(aes(fill = DIFF), alpha = 0.8) + 
       scale_fill_gradient2() + 
       coord_sf(xlim = stratum_sub.bbox[c(1, 3)], ylim = stratum_sub.bbox[c(2, 4)]) +
@@ -1417,8 +1417,8 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
       facet_grid(ADP ~ STRATA, labeller = labeller(
         STRATA = function(x) paste0("Stratum : ", gsub("_", " ", x)),
         ADP = function(x) paste0("Year : ", x))) + 
-      geom_sf(data = ak_low_res, fill = "gray80") +
-      geom_sf(data = fmp_low_res, color = "black", fill = NA) +
+      geom_sf(data = map.lst$AK, fill = "gray80") +
+      geom_sf(data = map.lst$FMP, color = "black", fill = NA) +
       geom_sf(aes(fill = DIFF), alpha = 0.8) + 
       scale_fill_gradient2() + 
       coord_sf(xlim = stratum_sub.bbox[c(1, 3)], ylim = stratum_sub.bbox[c(2, 4)]) +
@@ -1444,7 +1444,7 @@ plot_interspersion_map <- function(box_def, real_interspersion, exp_interspersio
   
 }
 
-plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_levels){
+plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_levels, map.lst){
   # box_def <- copy(box_def); sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum);
   
   year_strata <- unname(unlist(box_def$params[c("year_col", "stratum_cols")]))
@@ -1524,8 +1524,8 @@ plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_leve
     dat_sub <- hex_trips_n_sim.smry %>% filter(ADP == map_years[i]) 
     
     map_years.list[[i]] <- ggplot() + 
-      geom_sf(data = ak_low_res, fill = "gray80") + 
-      geom_sf(data = fmp_low_res, fill  = NA, linetype = 2) + 
+      geom_sf(data = map.lst$AK, fill = "gray80") + 
+      geom_sf(data = map.lst$FMP, fill  = NA, linetype = 2) + 
       geom_sf(data = dat_sub %>% filter(TAIL == F), aes(fill = DIR * (MORE_EXTREME / sim_iter))) + 
       facet_wrap(~ STRATA, dir = "h", ncol = 2, drop = F) + 
       geom_sf_text(data = dat_sub %>% filter(TAIL == F), aes(label = label), size = 3, na.rm = T) + 
@@ -1546,7 +1546,7 @@ plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_leve
 }
 
 # For spatial analyses, summarize the coverage achieved in each HEX_ID
-plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, strata_levels){
+plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, strata_levels, map.lst){
   # box_def <- copy(box_def.stratum);  sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum)
   # sim.real <- copy(sim.realized.stratum); sim.prog <- copy(sim.programmed.stratum)
 
@@ -1608,8 +1608,8 @@ plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, str
   year <- unique(sim.real.perc$ADP)
   spatial <- ggplot(sim.real.perc) + 
     facet_nested_wrap(. ~ STRATA, ncol = 2, dir = "h", drop = F, labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x)))) + 
-    geom_sf(data = ak_low_res, fill = "gray80") + 
-    geom_sf(data = fmp_low_res, fill = NA, linetype = 2) + 
+    geom_sf(data = map.lst$AK, fill = "gray80") + 
+    geom_sf(data = map.lst$FMP, fill = NA, linetype = 2) + 
     geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
     stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == year & TAIL == T), shape = 21) + 
     scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
