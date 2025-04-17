@@ -1723,6 +1723,14 @@ YN_var = "OBSERVED_FLAG"
 gp_vec = c("STRATA")
 
 # Run permutation tests
+# TODO: ℹ Please use `all_of()` or `any_of()` instead.
+  # Was:
+#  data %>% select(YN_var)
+
+  # Now:
+#  data %>% select(all_of(YN_var))
+
+#See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
 perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
 
 # Decompose the output
