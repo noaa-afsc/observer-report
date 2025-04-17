@@ -638,12 +638,12 @@ for.p.wide <- merge(
   # Completed non-100% monitored trips only (after cancellations)
   logged %>% 
     group_by(STRATA) %>%
-    summarize(random.n = Random.selected,
+    summarize(random.n = Selected[GROUP == "Random"],
               # after inherits
-              inherit.n = Total.final.selected,
+              inherit.n = sum(Selected - Waived),
               #'total before waivers*
-              inherit.butnowaiver.n = (Total.final.selected + Waived),
-              Total.n = Total.trips,
+              inherit.butnowaiver.n = sum(Selected),
+              Total.n = unique(Total.trips),
               Source = "Valid trips only"),
   #' Now add in the total trips for the random number only. This includes every trip logged in ODDS (excluding those in 
   #' 100% selection) and counts how many were selected based on the random number and selection rate, `before`
@@ -883,33 +883,23 @@ sel.max.canc <- disposition %>%
 #' \TODO Not currently used but could/should be?
  
 # Lowest and highest percentages of valid trips that were selected from the inherit process.
-inherit.min <- logged %>%
-               group_by(STRATA) %>% 
-               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
-               slice_min(as.numeric(Pct.selected.from.inherit)) %>% 
-               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(STRATA, Pct.selected.from.inherit)
+inherit_waiver.smry <- logged %>% distinct(STRATA, Pct.selected.from.inherit, Pct.reduced.from.waiver)
 
-inherit.max <- logged %>%
-               group_by(STRATA) %>%  
-               summarize(Pct.selected.from.inherit = (sum(Inherit.selected) / sum(Total.final.selected)) * 100) %>% 
-               slice_max(as.numeric(Pct.selected.from.inherit)) %>% 
-               mutate(Pct.selected.from.inherit = format(round(Pct.selected.from.inherit, 1), nsmall = 1)) %>% 
-               select(STRATA, Pct.selected.from.inherit)
+inherit.min <- inherit_waiver.smry %>% 
+  slice_min(as.numeric(Pct.selected.from.inherit))  %>% 
+  select(-Pct.reduced.from.waiver) 
 
-waiver.min <- logged %>% 
-              group_by(STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
-              slice_min(as.numeric(Pct.allselected.from.waiver)) %>% 
-              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(STRATA, Pct.allselected.from.waiver)
+inherit.max <- inherit_waiver.smry %>% 
+  slice_max(as.numeric(Pct.selected.from.inherit))  %>% 
+  select(-Pct.reduced.from.waiver) 
 
-waiver.max <- logged %>% 
-              group_by(STRATA) %>% 
-              summarize(Pct.allselected.from.waiver = (sum(Waived) / (sum(Total.final.selected) + sum(Waived))) * 100) %>% 
-              slice_max(as.numeric(Pct.allselected.from.waiver)) %>% 
-              mutate(Pct.allselected.from.waiver = format(round(Pct.allselected.from.waiver, 1), nsmall = 1)) %>% 
-              select(STRATA, Pct.allselected.from.waiver)
+waiver.min <- inherit_waiver.smry %>% 
+  slice_min(as.numeric(Pct.reduced.from.waiver))  %>% 
+  select(-Pct.selected.from.inherit) 
+
+waiver.max <- inherit_waiver.smry %>% 
+  slice_max(as.numeric(Pct.reduced.from.waiver))  %>% 
+  select(-Pct.selected.from.inherit) 
 ```
 
 ```{r odds_paragraph3, warning=FALSE, include=FALSE}
@@ -2231,7 +2221,7 @@ Obs.perm.plot <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
              nrow = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA))) +
   geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
              x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
-  scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
+  scale_fill_manual(values = c("pink", "white"), guide = "none") + 
   fig.theme +
   xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
   ylab("Density of outcomes\n") + 
