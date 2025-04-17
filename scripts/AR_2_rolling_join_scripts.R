@@ -1,4 +1,4 @@
-####################
+#################### #
 # Annual Report Enforcement chapter: rolling Joins and Rate Calculations
 # Contact Andy Kingham
 # 206-526-4212
@@ -44,8 +44,8 @@ load(file = file_1_name)
 # Other unit type denominators (e.g., HAULS, TRIPS, OFFLOADS, DEPLOYMENTS, etc) will be calculated separately, at the END of this script.
 # ADK 20250311
 
-#################
-# COMBINE factors, so each COMBINATION is unique.
+################# #
+# COMBINE factors, so each COMBINATION is unique. ------------
 
 #First, get all the factors by joining the ASSIGNMENTS data to the haul data for vessel observers and the offload data for plant observers.
 # This gets each factor for every date that has a value in haul data or offload data for that date.
@@ -110,9 +110,9 @@ table(assnmts_days_all_groupings$VESSEL_TYPE, exclude = FALSE)
 
 
 
-######################################
+###################################### #
 
-# Get missing dates: Non-fishing days, etc.  
+# Get missing dates: Non-fishing days, etc. ----------  
 # Use data.table's ROLLING JOIN feature to get the 'nearest-neighbor' of date match within the permit. 
 # This effectively fills in the dates with no value for the factor, by getting the value from the closest date within the cruise/permit.
 
@@ -179,7 +179,7 @@ assnmts_days_all_groupings <-
 test_df <- 
   sqldf('SELECT * FROM assnmts_days_all_groupings WHERE VESSEL_TYPE is null')
 
-#############################
+############################# #
 
 
 
@@ -199,10 +199,10 @@ test_df <-
 
 
 
-#############################
-#############################
+############################# #
+############################# #
 
-# Next, for GEAR_TYPE.
+# Next, for GEAR_TYPE. -----------------
 # First, using HAULS
 dt_t <- copy(assnmts_days_all_groupings )
 setDT(dt_t)
@@ -259,9 +259,9 @@ test_df <-
 
 
 
-#######################
+####################### #
 
-# Next, for NMFS_REGION.
+# Next, for NMFS_REGION. --------------
 # For VESSELS, from the HAUL data
 dt_t <- copy(assnmts_days_all_groupings )
 setDT(dt_t)
@@ -366,9 +366,9 @@ test_df <-
 
 
 
-#######################
+####################### #
 
-# Next, MANAGEMENT_PROGRAM_CODE.
+# Next, MANAGEMENT_PROGRAM_CODE. ---------------
 # First, using HAULS
 dt_t <- copy(assnmts_days_all_groupings )
 setDT(dt_t)
@@ -499,7 +499,7 @@ rm(assnmts_days_all_groupings_plant_temp,
 
 
 
-#####################
+##################### #
 
 
 # Check for NA's in any other column.  Because, there shouldn't be any if the rolling join worked correctly.
@@ -522,9 +522,10 @@ nvl_test_df <-
 
 
 
-#####################
+#####################  #
 
-# Get FISHERY DATA DAYS and stick a 'Y/N' flag onto each deployed date (Y if fishery data exist for the date; N if no fishery data for date)
+# Get FISHERY DATA DAYS ----------
+# and stick a 'Y/N' flag onto each deployed date (Y if fishery data exist for the date; N if no fishery data for date)
 assnmts_days_all_groupings <-
   assnmts_days_all_groupings %>%
   left_join(df_fishery_dates %>%
@@ -536,21 +537,21 @@ assnmts_days_all_groupings <-
   ) %>%
   mutate(FISHERY_DATA_BOOL = ifelse(is.na(FISHERY_DATA_BOOL), 'N', FISHERY_DATA_BOOL))
 
-#####################
 
 
 
 
-##################
-# remove unneeded temporary objects.
+
+################## #
+# remove unneeded temporary objects. ---------
 rm(dt_offloads_m, dt_offloads_n, dt_offloads_g, dt_offloads_v, dt_offloads, dt_hauls, dt_hauls_g, dt_hauls_m,
    dt_hauls_n, dt_hauls_v, nvl_test_df, test_df, dt_t)
 
 
 
 
-############################
-# Calculate the same factor summaries for the other UNIT types.
+############################ #
+# Calculate the same factor summaries for the other UNIT types. ----------
 # ADK 20250311
 
 # HAULS unit
@@ -576,7 +577,9 @@ offloads_with_factors <-
     distinct(OBSERVER_NAME, OBSERVER_SEQ, CRUISE, PERMIT, DEPLOYED_DATE,
              CALENDAR_YEAR, COVERAGE_TYPE, VESSEL_OR_PLANT) %>%
     inner_join(df_obs_offloads %>%
-                 mutate(PERMIT = as.numeric(PERMIT)) %>%
+                 mutate(PERMIT = as.numeric(PERMIT),
+                        PLANT_PERMIT = as.numeric(PLANT_PERMIT)
+                        ) %>%
                  inner_join(rbind(df_elandings_raw %>%
                                    mutate(PERMIT = VESSEL_ID,
                                           VESSEL_OR_PLANT = 'V'),
@@ -753,8 +756,8 @@ table(trips_with_factors$CALENDAR_YEAR, trips_with_factors$NMFS_REGION, exclude 
 
 
 
-##################
-# remove unneeded temporary objects.
+################## #
+# remove unneeded temporary objects. ----------
 rm(dt_t, dt_assnmts, dt_assnmts_t)
 
 
@@ -771,7 +774,7 @@ rm(dt_t, dt_assnmts, dt_assnmts_t)
 
    
 
-#####################
+#####################  #
 # SAMPLES
 samp_with_factors <-
   df_obs_samples %>%
@@ -821,7 +824,7 @@ marm_with_factors <-
 
 
 
-##################
+################## #
 # Save Output and upload to G-drive -------------------------------------------------------------
 
 file_2_name  <- "AR_2_rolling_join_output.Rdata"

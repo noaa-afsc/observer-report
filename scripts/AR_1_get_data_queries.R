@@ -237,46 +237,7 @@ df_obs_statements <-
 
 
 
-
-# UPDATED 20250414 To add HARD-CODED units for statements that are missing them
-# but we are able to tell what they are from the UNIT_ISSUE text and/or the STATEMENT_BODY text.
-  # 1. If exact number of occurrences is able to be discerned from text, use that as the UNIT_ROW_MULTIPLIER
-  # 2. If exact number of occurrences can NOT be discerned from the text, use either 1 or 2.
-    # a. use 2 if it is obvious from the text that it is more than one occurrence.
-    # b. use 1 if it is not obvious from the text that it is more than one occurrence.
-    #    this method ensure we are only ever biasing the data LOW, while still ensuring the NA's are being counted; 
-    #    which yes, is problematic but more defensible in public IMO (ADK)
-
-  # 3. Get the INCIDENT_UNIT that is used for the regulation type from the LOV, and hardcode it.
-  # 4. Leave the ANSWER null; this is important because
-  #    we can use this later to identify if the statement had an actual unit, vs if the unit was imputed in this step.
-df_impute_missing_units_step_1 <-  
-  df_obs_statements %>%
-  filter(!is.na(UNIT_ISSUE) & is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
-         FIRST_VIOL_YEAR == adp_yr) %>%
-  distinct(CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ, UNIT_ISSUE) %>%
-  mutate(UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 719, 838, 1052, 1265, 1000, 1036, 1144, 1145, 1170, 1260, 1313), 1, 
-                                      ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(665, 880, 1080, 1134, 1316), 2, 
-                                             ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879), 24, NA))
-                                      ),
-         INCIDENT_UNIT = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 665, 1265, 1313), 'OFFL', 
-                                ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(), 'DEPL',
-                                       ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(719, 838, 880, 1052, 1080, 1134, 1144, 1170), 'HAUL', 
-                                              ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879, 1000, 1036, 1145, 1260, 1316), 'DAYS', 
-                                                     NA))))
-                                )
-
-
-df_impute_missing_units_step_2 <-  
-  df_impute_missing_units_step_1 %>%
-  filter(!is.na(UNIT_ROW_MULTIPLIER)) %>%
-  group_by(OLE_OBS_STATEMENT_DETAIL_SEQ, INCIDENT_UNIT, ANSWER = NA) %>%
-  expand(OLE_OBS_STATEMENT_UNIT_SEQ = 1:UNIT_ROW_MULTIPLIER) %>%
-  mutate(OLE_OBS_STATEMENT_UNIT_SEQ = OLE_OBS_STATEMENT_DETAIL_SEQ*1000+OLE_OBS_STATEMENT_UNIT_SEQ)
-    
-
-
-
+  
 ###################
 # deployed_dates for each cruise/permit SQL query
 
@@ -435,13 +396,15 @@ df_obs_offloads <-
     channel,
     paste0("SELECT cruise, permit, offload_seq, landing_report_id AS report_id, trunc(delivery_end_date) AS landing_date,
                    CASE WHEN cruise_plant_seq is null THEN 'V' ELSE 'P' END AS vessel_or_plant,
+                   (SELECT permit FROM norpac.atl_lov_plant 
+                     WHERE plant_seq = o.plant_seq) AS plant_permit,
                    norpac.ole_statement_pkg.get_unit_description(
                              p_data_cruise   => cruise,
                              p_permit        => permit,
                              p_answer        => to_char(offload_seq),
                              p_incident_unit => 'OFFL'
                              )  AS offload_description         
-              FROM norpac.atl_offload
+              FROM norpac.atl_offload o
              WHERE cruise >= ", first_cruise,
              " AND trunc(delivery_end_date) BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR')
            "))

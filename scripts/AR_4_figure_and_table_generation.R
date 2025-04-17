@@ -4,6 +4,7 @@
 
 #TODO - source data has RATE == NA!
 #TODO - Generate summary of number of regulations at the category level for Table
+# DONE ADK 20250411
 
 library(tidyverse)
 library(ggplot2)
@@ -308,9 +309,8 @@ T_statement_totals
 # attempt to quantify the NAs in units ---------------
 ###################### #
 
-# first see what the heck we even have for NAs
+# first see what the heck we even have units
 table(df_obs_statements$INCIDENT_UNIT, df_obs_statements$FIRST_VIOL_YEAR, exclude = FALSE)
-table(df_obs_statements$UNIT_ISSUE,    df_obs_statements$FIRST_VIOL_YEAR, exclude = FALSE)
 
 
 # Calculate missing units.
@@ -318,11 +318,12 @@ table(df_obs_statements$UNIT_ISSUE,    df_obs_statements$FIRST_VIOL_YEAR, exclud
 # First collapse these so they don't get double-counted
 # if not units exist for ole_obs_statement_seq, give it N
 # if they exist, give it a Y.  Then collapse these together to use for the n_distinct in the next step
+# UPDATE ADK 20250417: these were imputed wherever we could, so only a few are missing now.
 summ_stmts_with_missing_units <-
   df_obs_statements %>%
   filter(FIRST_VIOL_YEAR == adp_yr) %>%
   distinct(CATEGORY, OLE_OBS_STATEMENT_SEQ,
-           UNITS = ifelse(is.na(INCIDENT_UNIT), 'N', 'Y')) %>%
+           UNITS = ifelse(is.na(ANSWER), 'N', 'Y')) %>%
   group_by(CATEGORY, OLE_OBS_STATEMENT_SEQ) %>%
   summarise(UNITS_EXIST = paste(UNITS, collapse = ','),
             .groups= "drop") %>%
