@@ -239,6 +239,7 @@ As mentioned previously, the strata definitions and allocation methods employed 
 # Evaluation of Deployment in `r year`  
 [*TODO - explain that we evaluate ODDS before realized trips (valhalla). Most of this paragraph is only relevant to the latter*] The deployment of observers into the `r year` Federal fisheries of Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers and EM). In this document, trips in the fixed-gear EM strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Deliveries in the *EM TRW GOA (EFP)* stratum were considered successfully monitored if... [*TODO*]
 
+
 ## Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
 
@@ -1042,12 +1043,12 @@ Coverage.Table.partial <- bind_rows(
         stats::binom.test(x = n, 
                           n = N, 
                           p = Rate, 
-                          alternative = "two.sided")$conf.int[1], digits = 3) * 100,
+                          alternative = "two.sided")$conf.int[1], digits = 4) * 100,
       max.expected = round(
         stats::binom.test(x = n, 
                           n = N, 
                           p = Rate,
-                          alternative = "two.sided")$conf.int[2], digits = 3) * 100,
+                          alternative = "two.sided")$conf.int[2], digits = 4) * 100,
       meets.expected = case_when(Rate * 100 > min.expected & Rate * 100 < max.expected ~ "Yes",
                                  Rate * 100 < min.expected ~ "No - higher than expected",
                                  Rate * 100 > max.expected ~ "No - lower than expected")) %>%
@@ -1098,8 +1099,8 @@ Coverage.Table.TOTALS <- work.data.offload %>%
   ) %>%
   mutate(COVERAGE_TYPE = "Total",
          STRATA = "Total",
-         Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 1),
-         Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 1),
+         Pct.obs.trips = format((n/N) * 100, digits = 1, nsmall = 2),
+         Pct.obs.vessels = format((v/V) * 100, digits = 1, nsmall = 2),
          Pct.obs = paste0(Pct.obs.trips, "% trips/deliveries; ", Pct.obs.vessels, "% vessels")) %>%
   ungroup()
 
@@ -1108,7 +1109,7 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
                             Coverage.Table.partial,
                             Coverage.Table.zero,
                             ) %>%
-  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 1)) %>%
+  mutate(Pct.obs = format(Pct.obs, digits = 1, nsmall = 2)) %>%
   bind_rows(Coverage.Table.TOTALS) %>%
   # Formatting (change things to characters so they knit to Word without weird
   # formatting issues)
@@ -1121,15 +1122,15 @@ Coverage.Table <- bind_rows(Coverage.Table.full,
          #' *FLAG* qbinom method
          Rate = ifelse(is.na(Rate), NA, 
                        ifelse(deployment.method == "Trip-Selection", 
-                              format(Rate * 100, digits = 1, nsmall = 1),
+                              format(Rate * 100, digits = 1, nsmall = 2),
                               format(Rate, digits = 0, nsmall = 0))),
          min.expected = ifelse(is.na(min.expected), NA, 
                                ifelse(deployment.method == "Trip-Selection", 
-                                      format(min.expected, digits = 1, nsmall = 1),
+                                      format(min.expected, digits = 1, nsmall = 2),
                                       format(min.expected, digits = 0, nsmall = 0))),
          max.expected = ifelse(is.na(max.expected), NA, 
                                ifelse(deployment.method == "Trip-Selection", 
-                                      format(max.expected, digits = 1, nsmall = 1),
+                                      format(max.expected, digits = 1, nsmall = 2),
                                       format(max.expected, digits = 0, nsmall = 0))),
          STRATA = case_when(STRATA == "FULL" ~ "Full", 
                             STRATA == "EM TRW GOA (EFP)" ~ "EM TRW GOA (EFP)*",
@@ -1726,6 +1727,14 @@ YN_var = "OBSERVED_FLAG"
 gp_vec = c("STRATA")
 
 # Run permutation tests
+# TODO: ℹ Please use `all_of()` or `any_of()` instead.
+  # Was:
+#  data %>% select(YN_var)
+
+  # Now:
+#  data %>% select(all_of(YN_var))
+
+#See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
 perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
 
 # Decompose the output
