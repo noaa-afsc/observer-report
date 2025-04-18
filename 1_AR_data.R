@@ -63,7 +63,7 @@ predicted <- table_b3_flex$body$dataset[15:29,] %>%
                             Pool == "Fixed-gear EM" & Stratum == "Fixed-gear GOA" ~ "EM FIXED GOA",
                             Pool == "Trawl EM (EFP)" & Stratum == "Trawl GOA" ~ "EM TRW GOA (EFP)")) %>%
   rename(pred_days = d) %>%
-  select(STRATA, pred_days)
+  select(STRATA, N, pred_days)
 
 # Budget(s) used in the ADP
 bud_scen_lst <- unlist(budget_lst)
