@@ -115,7 +115,7 @@ ORDER BY d.akr_vessel_id, a.planned_embark_date, a.disembark_date"
 
 # Make any necessary changes
 if(year == 2024){
-  work.data[VESSEL_ID %in% unique(under_forties$VESSEL_ID), ":=" (LENGTH_OVERALL = 45, STRATA = "OB_FIXED_GOA")] %>%
+  work.data[VESSEL_ID %in% unique(under_forties$VESSEL_ID) & TRIP_TARGET_DATE >= as.Date("2024-07-19"), ":=" (LENGTH_OVERALL = 45, STRATA = "OB_FIXED_GOA")] %>%
     filter(VESSEL_ID %in% unique(under_forties$VESSEL_ID)) %>% 
     distinct(VESSEL_ID, LENGTH_OVERALL, TRIP_ID, REPORT_ID, COVERAGE_TYPE, STRATA, FMP, AGENCY_GEAR_CODE, OBSERVED_FLAG, TRIP_TARGET_CODE, TRIP_TARGET_DATE, LANDING_DATE) %>% 
     arrange(VESSEL_ID, TRIP_TARGET_DATE, LANDING_DATE)
