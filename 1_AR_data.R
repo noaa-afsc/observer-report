@@ -394,7 +394,7 @@ select h.ODDS_TRIP_NUMBER,
 case when ss.sampling_strata_code in ('F', 'EM_TrawlFullCoverage') then 'FULL' else 'PARTIAL' end as coverage_type,
 ss.sampling_strata_code as strata,
 s.species_pk,
-trunc(r.EFFECTIVE_DATE) data_available
+trunc(r.EFFECTIVE_DATE) effective_date
 from AKFISH_REPORT.CATCH_REPORT_SOURCE r
 join AKFISH_REPORT.CATCH_REPORT_SPECIES_FACT f on r.CATCH_REPORT_SOURCE_PK = f.CATCH_REPORT_SOURCE_PK
 join AKFISH_REPORT.EM_HAUL h on f.EM_HAUL_PK = h.EM_HAUL_PK
@@ -407,11 +407,19 @@ and ss.sampling_strata_code != 'N/A'
 order by h.ODDS_TRIP_NUMBER, trunc(r.EFFECTIVE_DATE)"))
 
 em_data_available <- em_data_available %>% 
-  group_by(ODDS_TRIP_NUMBER, DATA_AVAILABLE) %>% 
+  group_by(ODDS_TRIP_NUMBER, EFFECTIVE_DATE) %>% 
   mutate(SPECIES = n_distinct(SPECIES_PK)) %>% 
-  group_by(ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA) %>% 
+  group_by(ODDS_TRIP_NUMBER) %>% 
   # Isolate the earliest date at which all species data were available to catch accounting
-  summarise(DATA_AVAILABLE = min(DATA_AVAILABLE[SPECIES == max(SPECIES)]), .groups = 'drop')
+  summarise(DATA_AVAILABLE = min(EFFECTIVE_DATE[SPECIES == max(SPECIES)]), 
+            # Isolate the earliest date at which the trip was known to catch accounting
+            TRIP_REVIEWED = min(EFFECTIVE_DATE), .groups = 'drop') %>% 
+  left_join(
+    em_data_available %>% 
+      filter(grepl("EM_", STRATA)) %>% 
+      distinct(ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA),
+    by = "ODDS_TRIP_NUMBER"
+  )
 
 ob_trips <- dbGetQuery(channel_afsc, paste("
 select extract(year from t.start_date) as year, t.cruise, t.permit, t.trip_seq, t.end_date as trip_end
@@ -472,10 +480,12 @@ em_data_timeliness <- em_trip_end %>%
     em_data_available, 
     by = "ODDS_TRIP_NUMBER"
   ) %>% 
-  select(YEAR, TRIP_NUMBER = ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA, TRIP_END, DATA_AVAILABLE) %>% 
+  select(YEAR, TRIP_NUMBER = ODDS_TRIP_NUMBER, COVERAGE_TYPE, STRATA, TRIP_END, DATA_AVAILABLE, TRIP_REVIEWED) %>% 
   mutate(TRIP_END = as.Date(TRIP_END),
          DATA_AVAILABLE = as.Date(DATA_AVAILABLE),
-         data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")))
+         TRIP_REVIEWED = as.Date(TRIP_REVIEWED),
+         data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")),
+         review_timeliness = as.numeric(difftime(TRIP_REVIEWED, TRIP_END, units = "days")))
 
 ob_data_timeliness <- ob_trips %>% 
   inner_join(
@@ -498,7 +508,7 @@ offload_data_timeliness <- afsc_offloads %>%
          DATA_AVAILABLE = as.Date(DATA_AVAILABLE),
          data_timeliness = as.numeric(difftime(DATA_AVAILABLE, TRIP_END, units = "days")) + 1)
 
-data_timeliness <- rbind(em_data_timeliness, ob_data_timeliness, offload_data_timeliness) %>% 
+data_timeliness <- plyr::rbind.fill(em_data_timeliness, ob_data_timeliness, offload_data_timeliness) %>% 
   mutate(STRATA = recode(STRATA, 
                          'EM_H' = 'EM HAL',
                          'EM_P' = 'EM POT',
