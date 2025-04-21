@@ -1218,7 +1218,31 @@ times_figure <- ggplot(data_timeliness, aes(x = data_timeliness)) +
 
 ```
 
-This section compares the coverage rates achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS; managed by the AKRO), the Observer Program database (NORPAC; managed by the AFSC) and eLandings (under joint management by the Alaska Department of Fish and Game, the IPHC and NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.\
+```{r review_timeliness, message=FALSE, warning=FALSE, include=FALSE, eval=TRUE}
+review_times_smry <- data_timeliness %>%
+              filter(STRATA %like% c("EM FIXED")) %>% 
+              group_by(YEAR, COVERAGE_TYPE, STRATA) %>%
+              summarise(median = round(median(review_timeliness), 2), 
+                        mean = round(mean(review_timeliness), 2), 
+                        .groups = "drop") %>%
+  mutate(STRATA = factor(STRATA, levels = data_timeliness.strata_order))
+
+review_times_figure <- ggplot(filter(data_timeliness, STRATA %like% c("EM FIXED")), aes(x = review_timeliness)) +
+                facet_wrap(STRATA ~ ., scales = "free_y", ncol = 2) +
+                geom_histogram(bins = 20, fill = "gray70") +
+                geom_vline(data = review_times_smry, aes(xintercept = median), color = "black") +
+                geom_vline(data = review_times_smry, aes(xintercept = mean), color = "red", lty = 2) +
+                geom_text(data = review_times_smry,
+                          aes(x = median, y = Inf, label = paste(format(median, nsmall = 2))), 
+                          angle = 90, hjust = 1.2, vjust = -0.3) +
+                geom_text(data = review_times_smry, 
+                          aes(x = mean, y = Inf, label = paste(format(mean, nsmall = 2))),
+                          angle = 90, hjust = 1.2, vjust = 1.1) +
+                labs(x = "Review timeliness (days)", y = "Count") +
+                theme_bw()
+
+```
+This section compares the coverage rate achieved against the expected coverage rates. Data used in this evaluation are stored within the Catch Accounting System (CAS; managed by the AKRO), the Observer Program database (NORPAC; managed by the AFSC) and eLandings (under joint management by the Alaska Department of Fish and Game, the IPHC and the NMFS). Separate rate evaluations are conducted depending on whether the unit of observer deployment was at-sea fishing trips or dockside deliveries of pollock.\
 \
 In this document, trips in the fixed-gear EM strata are considered successfully monitored if at least some video was reviewed. The rationale for defining monitored trips this way is that it is most similar to the way in which trips in other strata are considered observed (i.e., irrespective of whether or not haul information or usable species composition data were collected). Deliveries in the *EM TRW (EFP)* strata were considered successfully monitored if an observer was able to collect salmon information from a delivery.
 \
@@ -2179,11 +2203,20 @@ suppressWarnings(print(odds.by.date.plot))
 \newpage
 
 ```{r times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=TRUE}
-#' \TODO MOVE THIS FIGURE - IT should be last, after permutation tests?
+#' \TODO MOVE THIS FIGURE - IT should be second to last, after permutation tests?
 suppressMessages(print(times_figure))
 ```
 
 `r fig_nums('times_figure', caption = "Distributions of data timeliness (the time between a trip or delivery ending and those monitoring data being available for catch accounting) by stratum. Solid black lines and annotations to the left show median data timeliness. Dashed red lines and annotations to the right show mean data timeliness.")`  
+
+\newpage
+
+```{r review_times_figure, warning=FALSE, fig.width=7.5, fig.height=6, dpi=600, eval=TRUE}
+#' \TODO MOVE THIS FIGURE - IT should be last, after data timeliness?
+suppressMessages(print(review_times_figure))
+```
+
+`r fig_nums('review_times_figure', caption = "Distributions of review timeliness (the time between a trip or delivery ending and those trips being reviewed and known to catch accounting) by stratum. Solid black lines and annotations to the left show median review timeliness. Dashed red lines and annotations to the right show mean review timeliness.")`  
 
 \newpage
 
