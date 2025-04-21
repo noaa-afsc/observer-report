@@ -34,15 +34,17 @@ load(file = file_2_name)
 ###################### #
 # Impute missing units ------------
 
+# first look at them
+na_units <-
+  df_obs_statements %>%
+   filter(is.na(ANSWER) | is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+          FIRST_VIOL_YEAR == adp_yr) %>%
+   select(OLE_OBS_STATEMENT_DETAIL_SEQ, OLE_REGULATION_SEQ, UNIT_ISSUE, STATEMENT_BODY)
+
 # UPDATED 20250414 To add HARD-CODED units for statements that are missing them
 # but we are able to tell what they are from the UNIT_ISSUE text and/or the STATEMENT_BODY text.
 # 1. If exact number of occurrences is able to be discerned from text, use that as the UNIT_ROW_MULTIPLIER
-# 2. If exact number of occurrences can NOT be discerned from the text, use either 1 or 2.
-# a. use 2 if it is obvious from the text that it is more than one occurrence.
-# b. use 1 if it is not obvious from the text that it is more than one occurrence.
-#    this method ensure we are only ever biasing the data LOW, while still ensuring the NA's are being counted; 
-#    which yes, is problematic but more defensible in public IMO (ADK)
-
+# 2. If exact number of occurrences can NOT be discerned from the text, use the MEAN for that OLE_REGULATION_SEQ as the UNIT_ROW_MULTIPLIER.
 # 3. Get the INCIDENT_UNIT that is used for the regulation type from the LOV, and hardcode it.
 # 4. Leave the ANSWER null; this is important because
 #    we can use this later to identify if the statement had an actual unit, vs if the unit was imputed in this step.
@@ -51,16 +53,31 @@ df_impute_missing_units_step_1 <-
   filter(!is.na(UNIT_ISSUE) & is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
          FIRST_VIOL_YEAR == adp_yr) %>%
   distinct(CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ, UNIT_ISSUE) %>%
-  mutate(UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 719, 838, 1052, 1265, 1000, 1036, 1144, 1145, 1170, 1260, 1313), 1, 
-                                      ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(665, 880, 1080, 1134, 1316), 2, 
-                                             ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879), 24, NA))
-  ),
-  IMP_INCIDENT_UNIT = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 665, 1265, 1313), 'OFFL', 
-                             ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(), 'DEPL',
+  
+  # hardcode the UNIT_ROW_MULTIPLIER from the ones we can ACTUALLY TELL from the text
+  mutate(UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 719, 838, 1052, 1265, 1260), 1,   # these are all clearly ONE OCCURRENCE
+                                      ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(880), 2,   # these are all clearly TWO occurrences
+                                             ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879), 24, NA)) # 3 times a week for 8 weeks = 24 occurrences, per the unit issue text.
+                                      ),
+         # hardcode the INCIDENT_UNIT (as separate column, this is important for future joins)
+         IMP_INCIDENT_UNIT = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 665, 1265, 1313), 'OFFL', 
                                     ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(719, 838, 880, 1052, 1080, 1134, 1144, 1170), 'HAUL', 
                                            ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879, 1000, 1036, 1145, 1260, 1316), 'DAYS', 
-                                                  NA))))
-  )
+                                                  NA))),
+         # use the MEAN for those that we can't tell how many there were from the text.
+         # MUST UPDATE THIS EACH YEAR
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 665, 35,  UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 486; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1036, 4,  UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 469; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1000, 10, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 145; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1170, 66, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 517; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1080, 10, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 278; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1144, 21, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 486; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1134, 35, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 283; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1316, 1,  UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 138; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1313, 1,  UNIT_ROW_MULTIPLIER),  #  there is no mean for this OLE_REGULATION_SEQ = 43;  see df "na_units" that was made in previous step.  USING ONE IN THIS CASE to ensure we are not OVER-counting..
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1145, 25, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 480; see df "na_units" that was made in previous step.
+          )
+
 
 
 df_impute_missing_units_step_2 <-  
@@ -409,8 +426,8 @@ chosen_days_with_factors <-
             )
 
 # check for NAs
-# There are 81 NAs after this join, I believe the observer may have selected units that were OUTSIDE of their deployment logistics data?
-# UPDATE: confirmed from text of statements, yes this definitely happens.
+# There are 116 NAs after this join, I believe the observer may have selected units that were OUTSIDE of their deployment logistics data?
+# UPDATE: confirmed from text of statements, yes this definitely happens. In fact some of these were imputed in the IMPUTE step.
 table(chosen_days_with_factors$CALENDAR_YEAR, chosen_days_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
 
@@ -441,9 +458,9 @@ chosen_hauls_with_factors <-
   )
 
 # check for NAs
-# There are 112 NAs after this join
+# There are 238 NAs after this join
 # I believe the observers may have selected units that were deleted from their data later???
-# TODO: figure this out ????
+# UPDATE: there are also some NA's now that we IMPUTED the missing units, so of course they don't join.
 table(chosen_hauls_with_factors$CALENDAR_YEAR, chosen_hauls_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
 
@@ -547,7 +564,7 @@ chosen_offloads_with_factors <-
   )
 
 # check for NAs
-# There are 59 NAs after this join
+# There are 92 NAs after this join
 # Some of this is from observers that may have selected units that were deleted from their data later?..
 # BUT for offloads, this is also because of VESSEL_OBSERVERs writing statements against a PLANT. So the PERMIT 
 # in the statement is the plant, but there is NO data for the PLANT for the observer (offloads for 
@@ -580,7 +597,6 @@ chosen_marm_with_factors <-
 # check for NAs
 # There is 1 NA after this join
 # I believe the observers may have selected units that were deleted from their data later???
-# TODO: figure this out ????
 table(chosen_marm_with_factors$CALENDAR_YEAR, chosen_marm_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
 

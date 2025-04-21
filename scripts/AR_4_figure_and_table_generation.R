@@ -309,8 +309,16 @@ T_statement_totals
 # attempt to quantify the NAs in units ---------------
 ###################### #
 
-# first see what the heck we even have units
-table(df_obs_statements$INCIDENT_UNIT, df_obs_statements$FIRST_VIOL_YEAR, exclude = FALSE)
+
+# Unit issues---------
+unit_issues <-
+  df_obs_statements %>%
+  filter(FIRST_VIOL_YEAR == adp_yr,
+         ! is.na(UNIT_ISSUE)
+  ) %>%
+  distinct(OLE_OBS_STATEMENT_SEQ, CATEGORY, SUBCATEGORY, UNIT_ISSUE,
+           SOME_UNITS_WERE_SELECTED_FLAG = ifelse(is.na(OLE_OBS_STATEMENT_UNIT_SEQ), 'N', 'Y'))
+
 
 
 # Calculate missing units.
@@ -396,17 +404,6 @@ doc2 <- read_docx()
 #doc <- body_add_par(doc, "Two Tables Stacked on One Page", style = "heading 1")
 
 doc2 <- body_add_flextable(doc2, value = summ_stmts_with_missing_units) 
-
-
-
-# Unit issues---------
-unit_issues <-
-  df_obs_statements %>%
-  filter(FIRST_VIOL_YEAR == adp_yr,
-         ! is.na(UNIT_ISSUE)
-  ) %>%
-  distinct(OLE_OBS_STATEMENT_SEQ, CATEGORY, SUBCATEGORY, UNIT_ISSUE,
-           SOME_UNITS_WERE_SELECTED_FLAG = ifelse(is.na(OLE_OBS_STATEMENT_UNIT_SEQ), 'N', 'Y'))
 
 
 
@@ -613,8 +610,10 @@ plot_format_fxn <- function(
 # p <- plot_format_fxn(df = subcat_priority, rate_x = rate_x)
 #
 priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
+priority_plot
 
 other_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "OTHER"), rate_x = rate_x, start_color = start_color, end_color = end_color)
+other_plot
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
 #For factors, we want to use coverage type, FMP, and Vessel Type.
@@ -664,6 +663,8 @@ factor_plot <- plot_format_fxn(df = for_factor_figures %>% filter(SUPER_CAT == c
 #Give it a name
 assign(paste0(tolower(gsub("-", "_", super_levels$SUPER_FACT[i])), "_plot"), factor_plot)
 }
+
+factor_plot
 
 #cleanup
 rm(df, df_SASH, i, df_super, df_out, df_highest, super_levels)
