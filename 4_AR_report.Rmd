@@ -1311,7 +1311,7 @@ Pollock.monitored <- rbind(
     group_by(FMP, COVERAGE_TYPE, STRATA, PORT_CODE) %>%
     summarize(N.pollock = n(),
               N.pollock.obs = sum(Observed.type == "Observed")) %>%
-    mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 1)) %>% 
+    mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 2)) %>% 
     select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.pollock, N.pollock.obs, pct.obs) %>%
     ungroup(),
   # Stratum-specific totals
@@ -1321,7 +1321,7 @@ Pollock.monitored <- rbind(
               PORT_CODE = as.factor(""),
               N.pollock = n(),
               N.pollock.obs = sum(Observed.type == "Observed")) %>%
-    mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 1)) %>%
+    mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 2)) %>%
     select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.pollock, N.pollock.obs, pct.obs) %>% 
     ungroup(),
   
@@ -1333,7 +1333,7 @@ Pollock.monitored <- rbind(
               PORT_CODE = as.factor(""),
               N.pollock = n(),
               N.pollock.obs = sum(Observed.type == "Observed")) %>%
-    mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 1)) %>%
+    mutate(pct.obs = format((N.pollock.obs / N.pollock) * 100, digits = 1, nsmall = 2)) %>%
     select(FMP, COVERAGE_TYPE, STRATA, PORT_CODE, N.pollock, N.pollock.obs, pct.obs) %>% 
     ungroup())
 
@@ -1374,8 +1374,8 @@ Pollock.efp.table <- Pollock.efp %>%
          FMP = case_when(FMP == "Bering Sea" ~ "BSAI",
                          COVERAGE_TYPE == "Full" ~ "BSAI total",
                          FMP == "Gulf of Alaska" ~ "GOA",
-                         COVERAGE_TYPE == "Partial (non-tender)" ~ "GOA non-tender total",
-                         COVERAGE_TYPE == "Partial (tender)" ~ "GOA tender total",
+                         COVERAGE_TYPE == "Partial (non-tender)" ~ "GOA (non-tender) total",
+                         COVERAGE_TYPE == "Partial (tender)" ~ "GOA (tender) total",
                          COVERAGE_TYPE == "Partial" ~ "GOA total",
                          TRUE ~ FMP)) %>% 
   mutate(COVERAGE_TYPE = if_else(FMP %like% "total", "", COVERAGE_TYPE)) %>%
@@ -2011,7 +2011,7 @@ as_grouped_data(Coverage.Table, groups = "Coverage") %>%
   bold(bold = TRUE, part = "header") %>%
   bold(i = ~ !is.na(Coverage)) %>%
   bold(j = 1, i = ~ Strata == "Total") %>%
-  italic(j = 1, i = ~ !is.na(Strata) & !(Strata %like% "total")) %>%
+  italic(j = 1, i = ~ !is.na(Strata) & !(Strata %like% "total") & Strata != "Total") %>%
   italic(j = c("V", "v", "N", "n"), part = "header") %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   flextable::surround(i = ~ !is.na(Coverage) | Strata == "Total",
@@ -2026,8 +2026,13 @@ as_grouped_data(Coverage.Table, groups = "Coverage") %>%
   width(j = 10, 1.77, unit = "in") %>%
   align(j = 2:10, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
-  merge_h_range(i = 15, j1 = 7, j2 = 7) %>%
-  valign(part = "header", valign = "bottom") 
+  # NOTE: this breaks if you try and run it here, but knits correctly
+  #  - These 3 lines ensure the long text in the "Total" row aligns correctly
+  merge_h_range(i = 16, j1 = 7, j2 = 10) %>%
+  align(i = 16, j = 7, align = "left", part = "body") %>%
+  padding(i = 16, j = 7, padding.left = 25, part = "body") %>%
+  
+  valign(part = "header", valign = "bottom")
 ```
 
 \newpage
