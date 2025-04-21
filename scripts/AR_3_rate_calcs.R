@@ -14,7 +14,7 @@ if(!require("data.table"))  install.packages("data.table",  repos='http://cran.u
 if(!require("sqldf"))       install.packages("sqldf",       repos='http://cran.us.r-project.org')
 if(!require("devtools"))    install.packages("devtools",    repos='http://cran.us.r-project.org')
 if(!require("FMAtools"))    devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
-
+if (!require("plotrix"))    install.packages("plotrix", repos='http://cran.us.r-project.org')
 # load the data files.----------------------------------------------------------
 rm(list = ls())
 
@@ -34,13 +34,6 @@ load(file = file_2_name)
 ###################### #
 # Impute missing units ------------
 
-# first look at them
-na_units <-
-  df_obs_statements %>%
-   filter(is.na(ANSWER) | is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
-          FIRST_VIOL_YEAR == adp_yr) %>%
-   select(OLE_OBS_STATEMENT_DETAIL_SEQ, OLE_REGULATION_SEQ, UNIT_ISSUE, STATEMENT_BODY)
-
 # UPDATED 20250414 To add HARD-CODED units for statements that are missing them
 # but we are able to tell what they are from the UNIT_ISSUE text and/or the STATEMENT_BODY text.
 # 1. If exact number of occurrences is able to be discerned from text, use that as the UNIT_ROW_MULTIPLIER
@@ -48,6 +41,27 @@ na_units <-
 # 3. Get the INCIDENT_UNIT that is used for the regulation type from the LOV, and hardcode it.
 # 4. Leave the ANSWER null; this is important because
 #    we can use this later to identify if the statement had an actual unit, vs if the unit was imputed in this step.
+
+# first look at them
+na_units <-
+  df_obs_statements %>%
+  filter(is.na(ANSWER) | is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         FIRST_VIOL_YEAR == adp_yr) %>%
+  select(OLE_OBS_STATEMENT_DETAIL_SEQ, OLE_REGULATION_SEQ, UNIT_ISSUE, STATEMENT_BODY)
+
+
+mean_units_for_reg <-
+  df_obs_statements %>%
+    group_by(OLE_OBS_STATEMENT_DETAIL_SEQ, OLE_REGULATION_SEQ) %>%
+    summarise(N_UNITS = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ, na.rm =TRUE),
+              .groups = "drop") %>%
+    group_by(OLE_REGULATION_SEQ) %>%
+    summarise(MEAN_UNITS = mean(N_UNITS),
+              MEAN_SE = plotrix::std.error(N_UNITS),
+              N_STATEMENTS_SELECTED_IT = n_distinct(OLE_OBS_STATEMENT_DETAIL_SEQ),
+              .groups = "drop")
+  
+
 df_impute_missing_units_step_1 <-  
   df_obs_statements %>%
   filter(!is.na(UNIT_ISSUE) & is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
@@ -1085,7 +1099,7 @@ subcat_units_rate_for_factors_priority <-
 #   ungroup() %>% 
 #   filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
 #                                  'OLE PRIORITY: INTER-PERSONAL')
-#          | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
+#         # | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
 #                                                                       'MARINE CASUALTY') 
 #   ) %>%
 #   mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
