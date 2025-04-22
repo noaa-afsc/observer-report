@@ -10,7 +10,7 @@ This will be the first "full" Annual Report since 2020, so that year's source co
 
 Project notes can be found [here](https://docs.google.com/document/d/1vXnxoBBBVOyBCfgSpFihf4-vyA_Edab62KjLO3y42ow/edit?usp=sharing).
 
-(Planned) - (Craig) A comparison between the *status quo* permutation tests (6 univariate) and a new single multivariate version. This will be an appendix. Work Plan and Notes can be found [here](https://drive.google.com/drive/folders/14ifzSPKsSMXzWXcesRYq-13ObBWM84-1?usp=drive_link).
+NEW! - A new single multivariate version of the permutation tests of observer effects based on catch is on the branch mvglm_obs. This will be an appendix. Work Plan and Notes can be found [here](https://drive.google.com/drive/folders/14ifzSPKsSMXzWXcesRYq-13ObBWM84-1?usp=drive_link).  [Archive code](https://github.com/Alaska-Fisheries-Monitoring-Analytics/mvglm_obs)
 
 ### Coding Practices
 
