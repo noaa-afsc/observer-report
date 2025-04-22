@@ -25,6 +25,7 @@
 #      - akfish_report.flag 
 #      - akfish_report.mortality_rate 
 #  - S:\Observer Program Annual Report\2024Annual_Report\Chap4_Descriptive_Info\2013_2023_catchtables.csv 
+#  - H:\Observer Program\Annual Report Local GIT Project\Descriptive Info\Files for 2024 Annual Report\work.offload.rdata
 #
 # Output:    
 # Normal locations:
@@ -55,7 +56,7 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
                          dbname = Sys.getenv("myCASConnStr"))
 
 
-## Load Valhalla Data ---------------------------------------------------------------------------------------------
+## Load Data --------------------------------------------------------------------------------------------------------
 
 # Query Valhalla data directly from the database for the Annual Report:
 #valhalla_query <- paste0("select * from akfish_sf.valhalla where adp = ", YEAR)
@@ -65,6 +66,9 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 # When Valhalla data aren't currently in the database.  Load .RData file instead:
 load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2024//2025-04-03cas_valhalla.RData")
 valhalla_data <- valhalla  
+
+# A specialized dataset of Trawl EM tendered trips that identifies which deliveries (by REPORT_ID) had salmon counts done shoreside:
+load("H://Observer Program//Annual Report Local GIT Project//Descriptive Info//Files for 2024 Annual Report//work.offload.rdata")
 
 
 ## Valhalla data transformations  ----------------------------------------------------------------------------------- 
@@ -91,10 +95,7 @@ prep_data <- valhalla_data %>%
   # Add a vessel length category for Ch.4 Table 4-1:
   mutate(VESSEL_LENGTH_CATEGORY = ifelse(as.numeric(LENGTH_OVERALL) <40, 'LT40', NA)) %>% 
   mutate(VESSEL_LENGTH_CATEGORY = ifelse((as.numeric(LENGTH_OVERALL) >= 40 & as.numeric(LENGTH_OVERALL) <57.5), 'BT40_57', VESSEL_LENGTH_CATEGORY)) %>% 
-  mutate(VESSEL_LENGTH_CATEGORY = ifelse(as.numeric(LENGTH_OVERALL) >= 57.5, 'GT58', VESSEL_LENGTH_CATEGORY)) %>% 
-  # Add a flag indicating if the observed data are used in CAS for estimation or not:
-  #    (In the past, this flag would have distinguished the EM_POT data from other observed trips)
-  mutate(OBS_FOR_EST = ifelse(OBSERVED_FLAG == 'Y', 'Observed', 'Not Observed'))
+  mutate(VESSEL_LENGTH_CATEGORY = ifelse(as.numeric(LENGTH_OVERALL) >= 57.5, 'GT58', VESSEL_LENGTH_CATEGORY)) 
 
 
 
@@ -119,24 +120,6 @@ table(prep_data$STRATA)
 
 
 #table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-
-
-
-# Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
-
-table(prep_data$OBSERVED_FLAG)
-#     N      Y 
-#280161 926959
-
-# Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021):
-#prep_data <- prep_data %>% 
-#  rename(ORIGINAL_OBSERVED_FLAG = OBSERVED_FLAG) %>% 
-#  mutate(OBSERVED_FLAG = ifelse(TRIP_ID %in% c('28207362.0', '28207273.0', '28207833.0') & ORIGINAL_OBSERVED_FLAG == 'N', 'Y', ORIGINAL_OBSERVED_FLAG))
-
-#table(prep_data$OBSERVED_FLAG)
-
-
-#table(prep_data$ORIGINAL_OBSERVED_FLAG, prep_data$OBSERVED_FLAG)
 
 
 
@@ -254,27 +237,82 @@ work_data <- apply_dmr
 
 
 
+
+
+# Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
+
+table(prep_data$OBSERVED_FLAG)
+#     N      Y 
+#280161 926959
+
+# Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021, 2022, or 2023):
+#prep_data <- prep_data %>% 
+#  rename(ORIGINAL_OBSERVED_FLAG = OBSERVED_FLAG) %>% 
+#  mutate(OBSERVED_FLAG = ifelse(TRIP_ID %in% c('28207362.0', '28207273.0', '28207833.0') & ORIGINAL_OBSERVED_FLAG == 'N', 'Y', ORIGINAL_OBSERVED_FLAG))
+
+
+# Address how deployment occurs for Trawl EM -- by delivery -- for shoreside sampling.  This is new code for 2024, drafted based on 
+# code provided by Geoff Mayhew (trawl_em_report_id_obs_fix.R)
+
+#' `work.offload` has a column, `OBS_SALMON_CNT_FLAG`, which we create from the shoreside observer data to determine
+#' whether the REPORT_ID was monitored by a shoreside observer. We want to use this to replace the existing 
+#' `OBSERVED_FLAG`, which we understand will be flipped to 'Y' if ANY REPORT_ID within a CV's tender trip was monitored.
+#' We also have the `T_REPORT_ID` column, which we use as an identifier that groups up all REPORT_IDs in the same
+#' shoreside delivery by a tender vessel. That is, `OBS_SALMON_CNT` is either 'Y' or 'N' for each T_REPORT_ID to tell us
+#' which tender delivery was monitored, and then `OBSERVED_FLAG` is fine to use for any other remaining records which 
+#' were non-tendered trips.
+
+# Keep the original column order
+val.col <- colnames(work_data)
+
+# Get unique REPORT_ID, T_REPORT_ID, and OBS_SALMON_CNT_FLAG
+report_id.obs <- work.offload %>% 
+  distinct(REPORT_ID, T_REPORT_ID, OBS_SALMON_CNT_FLAG)
+
+# Merge then into Valhalla (currently as work_data). I made a new object called valhalla.new for the sake of comparison, but is not needed
+valhalla.new <- merge(work_data, report_id.obs, by = "REPORT_ID", all = T)
+
+valhalla.new %>% filter(OBS_SALMON_CNT_FLAG != OBSERVED_FLAG)
+
+# Now, if you want to re-code `TRIP_ID` and `OBSERVED_FLAG` to make your existing code run off of Valhalla, run:
+revised_work_data <- valhalla.new %>%
+  mutate(TRIP_ID = case_when(is.na(T_REPORT_ID) ~ as.character(TRIP_ID),
+                             !is.na(T_REPORT_ID) ~ T_REPORT_ID),  # this replaces the Valhalla trip ID with an Offload ID instead
+         OBSERVED_FLAG = case_when(is.na(OBS_SALMON_CNT_FLAG) ~ OBSERVED_FLAG,
+                                   !is.na(OBS_SALMON_CNT_FLAG) ~ OBS_SALMON_CNT_FLAG)) %>%  # this replaces the Valhalla observed flag with the Observed salmon count flag
+  select(all_of(val.col)) 
+
+# Had 690 'TRIP_IDs' before, now at 763. That is, we have 690 CV trips and 763 shoreside deliveries
+work_data %>% filter(STRATA == "EM_TRW_GOA") %>% summarize(length(unique(TRIP_ID)))
+revised_work_data %>% filter(STRATA == "EM_TRW_GOA") %>% summarize(length(unique(TRIP_ID)))
+
+# By monitoring status: 33.7% of trips, 36.0% of deliveries.
+work_data %>% filter(STRATA == "EM_TRW_GOA") %>% group_by(OBSERVED_FLAG) %>% summarize(Trips = length(unique(TRIP_ID))) 
+revised_work_data %>% filter(STRATA == "EM_TRW_GOA") %>% group_by(OBSERVED_FLAG) %>% summarize(Deliveries = length(unique(TRIP_ID)))
+
+
+
+
 # Summarize Catch for Catch Tables --------------------------------------------------------------------------------
 
 
 # ------- Summarize Total Catch of Groundfish, Directed Halibut, and PSC halibut (observed + not observed): --------- #
-calc_total <- work_data %>% 
+calc_total <- revised_work_data %>% 
   # refine to groundfish (which includes directed halibut) OR psc halibut:
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
   group_by(FMP, PROCESSING_SECTOR, RPP, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
   summarise(TONS = sum(catch_table_weight), .groups = 'drop') %>% 
   # add 'Total' as a filler value in the used for estimation flag:
-  mutate(OBS_FOR_EST = 'Total') %>% 
-  #mutate(OBSERVED_FLAG = 'Total') %>% 
+  mutate(OBSERVED_FLAG = 'Total') %>% 
   data.frame()
 
 # ------- Summarize Catch of Groundfish, Directed Halibut, and PSC halibut as observed or not observed --------- #
-#           in the context of whether or not the observer data would be used for catch estimation                #
-observed <- work_data %>% 
+observed <- revised_work_data %>% 
   # refine to groundfish (which includes directed halibut) OR psc halibut:
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
-  group_by(FMP, PROCESSING_SECTOR, RPP, OBS_FOR_EST, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
-  #group_by(FMP, PROCESSING_SECTOR, RPP, OBSERVED_FLAG, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
+  mutate(OBSERVED_FLAG = case_when(OBSERVED_FLAG == 'Y' ~ 'Observed',
+                                   OBSERVED_FLAG == 'N' ~ 'Unobserved')) %>% 
+  group_by(FMP, PROCESSING_SECTOR, RPP, OBSERVED_FLAG, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
   summarise(TONS = sum(catch_table_weight), .groups = 'drop') %>% 
   data.frame()
 
@@ -288,14 +326,17 @@ with_totals <- rbind(observed, calc_total[,c(1,2,3,5,6,7,8,4)])
 # Read in previous catch table:
 previous_catch_table <- read.csv(paste0("2013_", YEAR-1, "_catchtables.csv"))
 
+previous_catch_table <- previous_catch_table %>% 
+  rename(OBSERVED_FLAG = OBS_FOR_EST)
+
 # Format the new year's catch table data:
 addl_catch_table <- with_totals %>% 
   # Remove unobserved catch:
-  filter(OBS_FOR_EST %in% c('Observed', 'Total')) %>% 
+  filter(OBSERVED_FLAG %in% c('Observed', 'Total')) %>% 
   # Add a year column:
   mutate(YEAR = YEAR) %>%
   # Arrange the columns so it matches previous catch tables:
-  select(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, RPP, SPECIES_GROUP, RETAINED, OBS_FOR_EST, TONS)
+  select(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, RPP, SPECIES_GROUP, RETAINED, OBSERVED_FLAG, TONS)
 
 
 # Combine the previous catch table with the new year's catch table:
@@ -316,7 +357,7 @@ export_format <- catch_tables %>%
   mutate(GEAR = ifelse(AGENCY_GEAR_CODE %in% c('JIG', 'POT'), str_to_sentence(AGENCY_GEAR_CODE), GEAR)) %>% 
   mutate(DISPOSITION = ifelse(RETAINED == 'R', 'Retained', NA)) %>% 
   mutate(DISPOSITION = ifelse(RETAINED == 'D', 'Discarded', DISPOSITION)) %>% 
-  mutate(MONITORED_OR_TOTAL = ifelse(YEAR > 2017 & OBS_FOR_EST == 'Observed', 'Monitored', OBS_FOR_EST)) %>%
+  mutate(MONITORED_OR_TOTAL = ifelse(YEAR > 2017 & OBSERVED_FLAG == 'Observed', 'Monitored', OBSERVED_FLAG)) %>%
   mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'AMCK', 'Atka Mackerel', NA)) %>% 
   mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'DFL4', 'Deep-water Flatfish (GOA)', SPECIES_GROUP_NAME)) %>% 
   mutate(SPECIES_GROUP_NAME = ifelse(SPECIES_GROUP == 'FLAT', 'Flatfish (BSAI)', SPECIES_GROUP_NAME)) %>% 
@@ -353,8 +394,8 @@ export_format <- catch_tables %>%
 #
 # My notes from June that says: this is referring to a table that summarizes catch in the TEM strata that was monitored by:
 #   1) sampled shoreside
-#   2) video was on for complaince review
-#   3) video was actually reviewed for complance
+#   2) video was on for compliance review
+#   3) video was actually reviewed for compliance
 # 
 # ------------------------------------------------------------------------------------------------------------------------------ #
 
@@ -475,8 +516,8 @@ export_format <- catch_tables %>%
 
 
 # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
-rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'previous_catch_table', 
+rm(list= ls()[!(ls() %in% c('YEAR', 'valhalla_data', 'warehouse_data', 'work_data', 'revised_work_data', 'previous_catch_table', 
                              'addl_catch_table', 'catch_tables'))])
 
-save(YEAR, valhalla_data, warehouse_data, work_data, previous_catch_table, addl_catch_table, catch_tables, 
+save(YEAR, valhalla_data, warehouse_data, work_data, revised_work_data, previous_catch_table, addl_catch_table, catch_tables, 
      file = paste0("AR_descriptive_", YEAR, "_data.RData"))
