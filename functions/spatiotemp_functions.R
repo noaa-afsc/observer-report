@@ -1527,7 +1527,8 @@ plot_monitoring_spatial <- function(box_def, realized_mon, sim.real, strata_leve
       geom_sf(data = map.lst$AK, fill = "gray80") + 
       geom_sf(data = map.lst$FMP, fill  = NA, linetype = 2) + 
       geom_sf(data = dat_sub %>% filter(TAIL == F), aes(fill = DIR * (MORE_EXTREME / sim_iter))) + 
-      facet_wrap(~ STRATA, dir = "h", ncol = 2, drop = F) + 
+      facet_wrap(~ STRATA, dir = "h", ncol = 2, drop = F,
+                 labeller = labeller(STRATA = function(x) gsub("_", " ", x))) + 
       geom_sf_text(data = dat_sub %>% filter(TAIL == F), aes(label = label), size = 3, na.rm = T) + 
       # Outline trips with unusual outcomes
       geom_sf(data = dat_sub %>% filter(TAIL == T), aes(fill = DIR * (MORE_EXTREME / sim_iter)), linewidth = 1, color = "dodgerblue") + 
