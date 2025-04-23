@@ -1611,15 +1611,14 @@ plot_spatial_coverage <- function(box_def, realized_mon, sim.real, sim.prog, str
     facet_nested_wrap(. ~ STRATA, ncol = 2, dir = "h", drop = F, labeller = labeller(STRATA = function(x) paste0(year, " : ", gsub("_", " ", x)))) + 
     geom_sf(data = map.lst$AK, fill = "gray80") + 
     geom_sf(data = map.lst$FMP, fill = NA, linetype = 2) + 
-    geom_sf(aes(fill = MED_DIFF / HEX_w_total)) + 
+    geom_sf(aes(fill = MORE_EXTREME)) +
     stat_sf_coordinates(data = sim.real.perc %>% filter(ADP == year & TAIL == T), shape = 21) + 
-    scale_fill_gradient2(midpoint = 0, low = "purple", high = "green") +
+    scale_fill_gradientn(colours = c("violet", "white", "white", "green"), values = c(0, 0.1, 0.9, 1)) +
     coord_sf(xlim = hex_bbox[c(1, 3)], ylim = hex_bbox[c(2, 4)]) +
     theme(
       legend.position = "bottom", legend.key.width = unit(0.5, "in"), legend.frame = element_rect(color = "black"), legend.ticks = element_line(color = "black"),
       axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) + 
     labs(fill = "Difference in coverage\nrelative to expectation")
-  
   
   list(
     coverage = spatial
