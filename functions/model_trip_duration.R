@@ -150,7 +150,9 @@ model_trip_duration <- function(val_data, use_mod = "DAYS ~ RAW", channel) {
     # if I have multiple odds_seq for the same trip_id that both have overlap, simplify the dates, sum the days, and store the odds_seq that is higher
     third_join <- test3[O != 0]
     third_join[, VAL_N := .N, by = .(TRIP_ID)]  # recalculate VAL_N after excluding the matches with zero overlap
-    third_join[, CHK := ifelse(ODDS_SEQ == min(ODDS_SEQ), TRUE, FALSE), by = TRIP_ID]   # Flag the secondary odds_seq
+    
+    # Flag the secondary odds_seq
+    if(nrow(third_join)) third_join[, CHK := ifelse(ODDS_SEQ == min(ODDS_SEQ, na.rm = T), TRUE, FALSE), by = TRIP_ID]  
     odds_seq_keep <- third_join[CHK == FALSE, ODDS_SEQ]                               # Store this odds_seq that is being combined with another
     third_join[VAL_N > 1, ':=' (ODDS_START = min(ODDS_START), ODDS_END = max(ODDS_END), DAYS = sum(DAYS)), by = .(TRIP_ID, CRUISE)]   # If obs_seq for the same trip_id and cruise, simplify
     
@@ -175,7 +177,7 @@ model_trip_duration <- function(val_data, use_mod = "DAYS ~ RAW", channel) {
     test4 <- exis[tack, roll = -3, nomatch=NULL]
     test4[, VAL_N := .N, by = TRIP_ID]  # some of these might have multiple joins that can be simplified
     if(nrow(test4[VAL_N > 1]) >0) {message("Multiple TRIP_ID in the fifth level - must deal with this because this was not an issue before, so no code exists to handle this!")}
-    test4[, ':=' (ODDS_START = min(ODDS_START, A_ODDS_START), ODDS_END = max(ODDS_END, A_ODDS_END), DAYS = sum(DAYS, A_DAYS)), keyby = .(ODDS_SEQ, TRIP_ID)]  # Replace existing data
+    if(nrow(test4)) test4[, ':=' (ODDS_START = min(ODDS_START, A_ODDS_START), ODDS_END = max(ODDS_END, A_ODDS_END), DAYS = sum(DAYS, A_DAYS)), keyby = .(ODDS_SEQ, TRIP_ID)]  # Replace existing data
     
     setkey(keepers, ODDS_SEQ, TRIP_ID)  # reorder keepers by odds_seq and trip_id so that replaced values will merge in the correct order
     keepers[ODDS_SEQ %in% test4$ODDS_SEQ, ':=' (ODDS_START = test4$ODDS_START, ODDS_END = test4$ODDS_END, DAYS = test4$DAYS)]
@@ -255,7 +257,10 @@ model_trip_duration <- function(val_data, use_mod = "DAYS ~ RAW", channel) {
     n_val1 <- n_val[odds_r5, roll = "nearest", nomatch = NULL]   
     n_val1[, ':=' (O = dc(.SD, "o"), M = dc(.SD, "m")), .SDcols = cols, by = .(TRIP_ID, ODDS_SEQ)]  # count up overlapping and mismatching days for each join
     n_val1 <- n_val1[O != 0]                                                         # Retain only matches with some overlap
-    n_val1 <- n_val1[!n_val1[, .SD[.N > 1], by = ODDS_SEQ][, .SD[O == min(O) & M == max(M)], by = .(TRIP_ID)], on = .(TRIP_ID, ODDS_SEQ)] # For ODDS_SEQs with more than one matched TRIP_ID, exclude the match with the least overlap and most mismatch
+    
+    n_val1.n <- n_val1[, .SD[.N > 1], by = ODDS_SEQ]
+    if(nrow(n_val1.n)) n_val1 <- n_val1[!n_val1.n[, .SD[O == min(O) & M == max(M)], by = .(TRIP_ID)], on = .(TRIP_ID, ODDS_SEQ)] # For ODDS_SEQs with more than one matched TRIP_ID, exclude the match with the least overlap and most mismatch
+    
     n_val1[, ODDS_N := .N, by = ODDS_SEQ]
     n_val1[, CHK := TRUE]
     n_val1[, VAL_N := .N, by = TRIP_ID]
@@ -274,7 +279,7 @@ model_trip_duration <- function(val_data, use_mod = "DAYS ~ RAW", channel) {
     mod_dat <- copy(keepers)
     
     match_prop <- round(100 * (nrow(mod_dat) - nrow(odds_r6)) / nrow(mod_dat), 3)
-    message(paste("Matched ", match_prop, " percent of ODDS and Valhalla trips."))
+    cat(paste("Matched ", match_prop, " percent of ODDS and Valhalla trips.\n"))
   }
   
   #==========#

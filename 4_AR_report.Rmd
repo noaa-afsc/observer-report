@@ -131,7 +131,7 @@ The deployment design for the partial coverage component of the program involves
 \
 In `r year`, observers and EM were to be deployed using the trip selection model in all ports throughout Alaska. Trip-selection refers to the method of selecting fishing trips as the sampling unit. Trip selection was to be facilitated through vessel operators and owners logging their trips into the Observer Deploy and Declare System (ODDS) and being notified if the trip was selected for coverage.\
 \
-In 2024, NMFS implemented changes to both the stratification definitions and the allocation strategy (NMFS `r year - 1`b). In previous years, strata were defined by the monitoring method (at-sea observer, EM, or none) and the gear type (either hook-and-line, pot, or trawl). The new strata definitions combined hook-and-line and/or pot gear trips together into a single fixed-gear type. Additionally, strata were further defined by the Fisheries Management Plan (FMP) the vessel intended to fish predominantly in — either the Bering Sea and Aleutian Islands or the Gulf of Alaska. The Proximity Allocation algorithm was utilized to determine the sampling rates of the partial coverage strata to reduce data gaps and impacts caused by small sample sizes. As an exception, trips by vessels participating in the walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”) Trawl EM Exempted Fishing Permit (EFP) program were not included in the allocation algorithm due to external funding sources for monitoring and status as an experimental fishery.\
+In 2024, NMFS implemented changes to both the stratification definitions and the allocation strategy (NMFS 2023). In previous years, strata were defined by the monitoring method (at-sea observer, EM, or none) and the gear type (either hook-and-line, pot, or trawl). The new strata definitions combined hook-and-line and/or pot gear trips together into a single fixed-gear type. Additionally, strata were further defined by the Fisheries Management Plan (FMP) the vessel intended to fish predominantly in — either the Bering Sea and Aleutian Islands or the Gulf of Alaska. The Proximity Allocation algorithm was utilized to determine the sampling rates of the partial coverage strata to reduce data gaps and impacts caused by small sample sizes. As an exception, trips by vessels participating in the walleye pollock (*Gadus chalcogrammus*, hereafter referred to as “pollock”) Trawl EM Exempted Fishing Permit (EFP) program were not included in the allocation algorithm due to external funding sources for monitoring and status as an experimental fishery.\
 \
 Vessels that join the fixed-gear EM programs may log trips in the fixed-gear EM strata. Initiated by the Council in 2018, vessels that join the fixed-gear EM program use EM equipment to capture location and video information followed by human review for species identifications and counts. Weights for catch estimation are supplied from other sources.\
 \
@@ -184,18 +184,6 @@ OB_DAYS.ACTUAL <- days_paid %>%
   unlist() %>% 
   as.vector()
 
-# Percent of budget predicted to be spent
-eval <- data.frame(OB_DAYS.ACTUAL, OB_DAYS.BUDGET) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
-  mutate(
-    # Percent of the budget used
-    pct.budget.spent = round(OB_DAYS.ACTUAL/OB_DAYS.BUDGET, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
-    # Percent of budget remaining
-    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
-    # Was it more, less, or equal to the predicted budget?
-    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
-                          ifelse(pct.budget.remain == 0, "equal to",
-                                 " greater than ")))
-
 # Get total costs
 OB_DOLLARS.ACTUAL <- days_paid %>% 
   summarise(Total.Base.Dollars = sum(Base_Dollars, na.rm = TRUE),
@@ -204,6 +192,23 @@ OB_DOLLARS.ACTUAL <- days_paid %>%
             Total.Quarantine.Dollars = sum(Quarantine_Dollars, na.rm = TRUE),
             Total.Plant.Dollars = sum(Plant_Dollars, na.rm = TRUE)) %>% 
   mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
+
+# Percent of budget predicted to be spent
+eval <- data.frame(OB_DAYS.ACTUAL, OB_DAYS.BUDGET) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
+  mutate(
+    # Percent of the day budget used
+    pct.budget.spent = round(OB_DAYS.ACTUAL/OB_DAYS.BUDGET, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
+    # Percent of day budget remaining
+    pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
+    # Was it more, less, or equal to the predicted budget?
+    more.or.less = ifelse(pct.budget.remain > 0, " lower than ",
+                          ifelse(pct.budget.remain == 0, "equal to",
+                                 " greater than ")),
+    quant.day = 100 * sum(OB_DAYS.ACTUAL >= bud_tbl$ADP_D) / length(bud_tbl$ADP_D),
+    quant.dollars = 100 * sum(OB_DOLLARS.ACTUAL >= bud_tbl$ADP_C) / length(bud_tbl$ADP_C),
+    dollars.perc = round(100 * (OB_DOLLARS.ACTUAL$Total.Dollars - OB_DOLLARS.BUDGET) / OB_DOLLARS.BUDGET, 1)
+    )
+
 
 
 ```
@@ -239,6 +244,7 @@ As mentioned previously, the strata definitions and allocation methods employed 
 
 # Evaluation of Deployment in `r year`  
 The deployment of observers into the `r year` Federal fisheries off Alaska is primarily evaluated at the level of the deployment stratum because each stratum is defined by a different sampling rate or by a different monitoring method (e.g., observers versus EM).The ODDS is used to determine the strata of logged trips and randomly select trips for monitoring at the rates prescribed by the `r year` ADP. Combined with predictions of fishing effort and monitoring costs, the ADP aims to maximize monitoring within budgetary constraints. However, the monitoring expenditures and number of monitored trips in each stratum that are actually realized may differ from the ADP's projections as a result of discrepancies between the expected and realized fishing effort in each stratum and/or the random nature of the ODDS. This section compares the ADP's expectations with the realized outcomes.\
+
 
 ## Evaluating Effort Predictions  
 ```{r outcomes.plot, include=FALSE}
@@ -309,46 +315,87 @@ trip.budget.table <-
     predicted %>%
       group_by(STRATA),
     # Actual trip days by strata
-    rbind(
-      # EM strata
-      work.data %>%
-        filter(
-          ADP == year & COVERAGE_TYPE == "PARTIAL" & STRATA %in% c("EM TRW GOA (EFP)", "EM FIXED BSAI", "EM FIXED GOA") & 
-          OBSERVED_FLAG == "Y") %>%
-        group_by(ADP, TRIP_ID, STRATA) %>%
-        summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
-                  dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
-        mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
-        group_by(ADP, STRATA) %>% 
-        summarise(act_days = sum(days)),
-      # Observer strata
-      filter(obs_act_days, ADP == year)), 
+    merge(
+      rbind(
+        # EM strata
+        work.data %>%
+          filter(
+            ADP == year & COVERAGE_TYPE == "PARTIAL" & STRATA %in% c("EM TRW GOA (EFP)", "EM FIXED BSAI", "EM FIXED GOA") & 
+            OBSERVED_FLAG == "Y") %>%
+          group_by(ADP, TRIP_ID, STRATA) %>%
+          summarise(dmin = min(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE),
+                    dmax = max(TRIP_TARGET_DATE, LANDING_DATE, na.rm = TRUE)) %>%
+          mutate(days = ceiling(as.numeric(difftime(dmax, dmin, units = "days"))) + 1) %>%
+          group_by(ADP, STRATA) %>% 
+          summarise(act_days = sum(days)),
+        # Observer strata
+        filter(obs_act_days, ADP == year)), 
+      work.data[ADP == year & COVERAGE_TYPE == "PARTIAL" & STRATA != "ZERO", .(act_N = uniqueN(TRIP_ID)), by = .(STRATA)],
+      by = "STRATA"),
     all = TRUE) %>% 
   # Change NAs to 0 for actual days      
   mutate(act_days = ifelse(is.na(act_days), 0, act_days)) %>% 
   # Percent difference between predicted and actual
   mutate(diff = act_days -  pred_days,
-         perc = (diff)/pred_days * 100) %>%
-  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1))) %>%
-  select(!c(ADP))
+         perc = (diff)/pred_days * 100,
+         diff.N = act_N - pred_N,
+         perc.N = diff.N / pred_N * 100) %>%
+  mutate(perc = ifelse(is.infinite(perc), "-", format(perc, digits = 1, nsmall = 1)),
+         perc.N = ifelse(is.infinite(perc.N), "-", format(perc.N, digits = 1, nsmall = 1))) %>%
+  select(!c(ADP)) %>%
+  arrange(factor(STRATA, levels = strata.order))
+
+trip.budget.ob_total <- trip.budget.table %>%
+  filter(STRATA %like% "OB") %>%
+  group_by(STRATA = "At-sea observer total") %>%
+  summarise(
+    across(c(pred_N, pred_days, act_days, act_N, diff, diff.N), sum),
+    perc.N = round(100 * sum(diff.N) / sum(pred_N), 1),
+    perc = round(100 * sum(diff) / sum(pred_days), 1))
+trip.budget.emfg_total <- trip.budget.table %>%
+  filter(STRATA %like% "EM FIXED") %>%
+  group_by(STRATA = "EM fixed-gear total") %>%
+  summarise(
+    across(c(pred_N, pred_days, act_days, act_N, diff, diff.N), sum),
+    perc.N = round(100 * sum(diff.N) / sum(pred_N), 1),
+    perc = round(100 * sum(diff) / sum(pred_days), 1))
 
 # Append total
 trip.budget.table <- 
-  rbind(trip.budget.table,
+  rbind(trip.budget.table %>% filter(STRATA %like% "OB"),
+        trip.budget.ob_total,
+        trip.budget.table  %>% filter(STRATA %like% "EM FIXED"),
+        trip.budget.emfg_total,
         trip.budget.table %>% 
           summarise(STRATA = "Total", 
-                    pred_days = sum(pred_days), 
+                    pred_N = sum(pred_N),
+                    act_N = sum(act_N),
+                    diff.N = sum(diff.N),
+                    perc.N = format(sum(diff.N)/sum(pred_N) * 100, digits = 1, nsmall = 1),
                     act_days = format(sum(act_days), digits = 1, nsmall = 0), 
+                    pred_days = sum(pred_days), 
                     diff = sum(diff), 
                     perc = format(sum(diff)/sum(pred_days) * 100, digits = 1, nsmall = 1))) %>%
   mutate(pred_days = format(pred_days, digits = 1, nsmall = 0),
-         diff = format(diff, digits = 1, nsmall = 0))
+         diff = format(diff, digits = 1, nsmall = 0)) %>%
+  select(STRATA, pred_N, act_N, diff.N, perc.N, pred_days, act_days, diff, perc)
+
+# Cost per day comparison
+# Expected CPD
+cpd.budget <- OB_DOLLARS.BUDGET /  OB_DAYS.BUDGET
+# Realized CPD
+cpd.actual <- OB_DOLLARS.ACTUAL$Total.Dollars /  OB_DAYS.ACTUAL
+# PERC DIFF - 
+cpd.perc <- round((cpd.actual - cpd.budget) / cpd.budget * 100, 1)
 
 ```
 
-Each year, NMFS sets an annual budget in the ADP for the deployment of partial coverage at-sea observers in terms of cost and observer days. The partial coverage observer budget for `r year` was set at \$`r formatC(bud_scen_lst, format = "d", big.mark = ",")` and `r formatC(OB_DAYS.BUDGET, format = "d", big.mark = ",")` days.\
+
+Each year, the NMFS sets an annual budget in the ADP for the deployment of partial coverage at-sea observers in terms of cost and observer days. The partial coverage observer budget for `r year` was set at \$`r formatC(bud_scen_lst, format = "d", big.mark = ",")` and `r formatC(OB_DAYS.BUDGET, format = "d", big.mark = ",")` days.\
 \
-In `r year`, FMA paid for `r formatC(round(OB_DAYS.ACTUAL), format = "d", big.mark = ",")` at-sea observer days, which was `r ifelse(eval$pct.budget.remain != 0, abs(eval$pct.budget.remain), " ")``r ifelse(eval$pct.budget.remain != 0, "%", "")` `r eval$more.or.less` predicted by the average simulation and within the range of possibilities predicted in the `r year` ADP (`r fig_nums('outcomes.costs.plot', display = "cite")`, top panel). Although there was 16.6% less effort in *OB POT* than predicted, *OB HAL* and *OB TRW* both had higher than predicted effort (`r tbl_nums('trip.budget.tbl', display = "cite")`). Despite observing the number of days predicted, expenditures for partial observer coverage were under budget (`r fig_nums('outcomes.costs.plot', display = "cite")`, bottom panel). Cost savings resulted because the cost of a partial coverage observer day in `r year` was less than the expected cost that was estimated in the `r year` ADP.     
+In `r year`, the FMA paid for `r formatC(round(OB_DAYS.ACTUAL), format = "d", big.mark = ",")` at-sea observer days, which was `r ifelse(eval$pct.budget.remain != 0, abs(eval$pct.budget.remain), " ")` `r ifelse(eval$pct.budget.remain != 0, "%", "")` `r eval$more.or.less` the budgeted value and in `r round(eval$quant.day, 2)`th percentile of the simulated outcomes in the `r year` ADP (`r fig_nums('outcomes.costs.plot', display = "cite")`, top panel). However, the total number of fishing trips in the observed strata was only `r abs(trip.budget.ob_total$perc.N)`% lower than predicted, indicating that the lower-than-expected number of observed days was not due to fishing effort that was lower than anticipated `r tbl_nums('trip.budget.tbl', display = "cite")`. Unsurprisingly, with fewer days observed than expected, the expenditures for partial coverage at-sea observers were also under budget by `r eval$dollars.perc`% (`r fig_nums('outcomes.costs.plot', display = "cite")`, bottom panel). The average cost of a partial coverage observer day in `r year` was only `r abs(cpd.perc)`% less than the cost that was estimated in the `r year` ADP.
+
+In the fixed-gear EM fixed-gear strata, fishing effort by number of trips was `r trip.budget.emfg_total$perc.N`% higher than anticipated but the number of sea days reviewed was `r abs(trip.budget.emfg_total$perc)`% lower than predicted. 
 
 ## Performance of the Observer Declare and Deploy System in Trip-Selection  
 ```{r odds.performance, warning=FALSE, include=FALSE}
@@ -513,6 +560,28 @@ if(multi_area_ifq_vec.length > 2) {
   multi_area_ifq.string <- paste0(multi_area_ifq_vec[1], " and ", multi_area_ifq_vec[2])
 } else multi_area_ifq.string <- multi_area_ifq_vec
 rm(multi_area_ifq, multi_area_ifq_vec, multi_area_ifq_vec.length)
+
+# Logged trip summaries
+odds.logged <- disposition.table %>% filter(Strata == "Total") %>% 
+  summarize(total = sum(`Logged (*a*)`),
+            sel.n = `Logged (*a*)`[`Selection outcomes` == "Not selected"],
+            sel.r = `Logged (*a*)`[`Selection outcomes` == "Random"],
+            sel.i = `Logged (*a*)`[`Selection outcomes` == "Inherited"],
+            can.sys = sum(`Canceled by system (*b*)`),
+            can.sys.p = round(100 * can.sys / total, 1),
+            can.usr = sum(`Canceled by system (*b*)`),
+            can.usr.p = round(100 * can.usr / total, 1),
+            can.total = can.sys + can.usr,
+            can.total.p = round(100 * can.total / total, 1),
+            ) %>% 
+  prettyNum(big.mark = ",")
+odds.can.usr.prop <- disposition.table %>% filter(Strata != "Total") %>%
+  group_by(Strata) %>%
+  reframe(r_n_prop = as.numeric(`% User cancellation (*d*/*c* x 100)`)[`Selection outcomes` == "Random"] /
+            as.numeric(`% User cancellation (*d*/*c* x 100)`)[`Selection outcomes` == "Not selected"] ) %>%
+  filter(!is.infinite(r_n_prop)) %>%
+  slice_max(r_n_prop)
+
 ```
 
 ```{r odds.time_series, warning=FALSE, include=FALSE}
@@ -943,15 +1012,16 @@ final_pvals <- merge(
   select(p, formatted_strat)
 ```
 
-The ODDS facilitates the random selection for monitoring in each stratum and fishers are required to log anticipated fishing trips into this system. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. However, ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW GOA (EFP)* stratum which is excluded from the following summaries. In addition, trips that requested monitoring to fulfill monitoring requirements when fishing IFQ/CDQ in multiple reporting areas were excluded from this analysis as such trips are not subject to random sampling by the ODDS.\
+
+The ODDS facilitates the random selection for monitoring in strata and fishers are required to log anticipated fishing trips. The ODDS generates a random number according to the programmed rates from the ADP and assigns each logged trip to either “selected to be monitored” (selected) or “not selected to be monitored” (not selected) categories. The ODDS is not used to select which deliveries are to be monitored by shoreside observers for the *EM TRW GOA (EFP)* stratum which is excluded from the following summaries. In addition, trips that requested monitoring to to fulfill monitoring requirements when fishing IFQ/CDQ in multiple reporting areas were excluded from this analysis as such trips are not subject to random sampling by the ODDS.\
 \
-Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or canceled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically canceled by the ODDS to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP. Trips that were selected to be monitored by ODDS and are subsequently canceled trigger the next newly-logged trip (for at-sea observers) or next logged trip (for fixed-gear EM) to automatically inherit the selected status. These trips are termed "inherited trips".\
+Logged trips have different dispositions. When initially logged, trips are considered pending, and subsequently have two dispositions: closed or canceled. A trip can be closed by (1) selecting landing reports from a menu or (2) manually entering the end of trip information for observed trips. The vessel operator may change the dates of a logged trip regardless of selection status prior to, or in lieu of, cancellation. However, trips that have not been closed at the end of the calendar year are automatically canceled by the ODDS ('canceled by system') to prevent `r year` ODDS trips from affecting the deployment rates set for the `r year + 1` ADP year. Trips that were selected to be monitored by ODDS that are subsequently canceled trigger the next newly-logged trip (for at-sea observers) or next logged trip (for fixed-gear EM) to automatically inherit the selected status. These trips are termed inherited trips. Note than beginning in 2025, vessel operators in the observed strata are no longer able to cancel logged trips.\
 \
-The number of trips logged in the ODDS in `r year` and their dispositions are summarized in `r tbl_nums('disposition.table', display = "cite")`. Of the 4,482 total trips logged, 987 were selected, and 155 were canceled: five by ODDS (0.5%) and 150 by users (15.2%). The user cancellation rate for selected trips among strata ranged from 6.9% for *EM POT* to 21.2% for *OB HAL* in `r year`. These two strata also had the least and greatest cancellation rates in `r year - 1` (2.6% and 41.7% respectively, (Appendix A, Table A-2).\
+The number of trips logged in the ODDS in `r year` and their dispositions is summarized in `r tbl_nums('disposition.table', display = "cite")`. Of the `r odds.logged[["total"]]` total trips logged, `r odds.logged[["sel.r"]]` were randomly selected and `r odds.logged[["sel.i"]]` inherited monitoring from a previously canceled selected trip. In total, `r odds.logged[["can.total"]]`, (`r odds.logged[["can.total.p"]]%`) were canceled: `r odds.logged[["can.sys"]]` by ODDS (`r odds.logged[["can.sys.p"]]`%) and `r odds.logged[["can.usr"]]` by users (`r odds.logged[["can.usr.p"]]%`). Note that the user cancellation rates between the not selected, random, and inherited trips differed greatly between strata. The randomly selected trips in the *`r odds.can.usr.prop$Strata`* stratum were cancelled by users at a rate `r round(odds.can.usr.prop$r_n_prop, 1)` times higher than trips that were randomly not selected. 
 \
-The number of completed trips that were randomly selected for monitoring or from inherited monitoring as well as the number of trips that were waived are summarized in `r tbl_nums('logged.table', display = "cite")`. It is notable that 29% of monitoried trips in the *OB HAL* stratum and 22.2% of monitored trips in the *OB POT* stratum were inherited. This was a continuation of what was seen in 2022 in which 35.9% of *OB HAL*, 28.2% of *OB POT* and 17.8% of *OB TRW* trips were monitored via the inherit system (Appendix A, Table A-3). This is in contrast to the fixed-gear EM strata where fewer than 10% of monitored trips were inherited in either year.\
+The number of completed trips that were randomly selected for monitoring or from inherited monitoring as well as the number of trips that were waived are summarized in `r tbl_nums('logged.table', display = "cite")`. It is notable that `r logged.table %>% filter(Strata == "OB FIXED GOA") %>% pull(-2) %>% unique()`% of monitored trips in the *OB FIXED GOA* stratum and `r logged.table %>% filter(Strata == "OB TRW GOA") %>% pull(-2) %>% unique()`% of monitored trips in the *OB TRW GOA* stratum were inherited. This is in contrast to the EM fixed-gear strata where fewer than `r logged.table %>% filter(Strata %like% "EM FIXED") %>% pull(-2) %>% max() %>% ceiling()` % of monitored trips were inherited. The monitoring inheritance system is necessary to compensate for trip cancellations to achieve the monitoring rates prescribed by the ADP. However, the monitoring program was designed with the intention of employing a randomized sampling design, and trips with inherited monitoring are not selected randomly. \
 \
-The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip monitoring expected from (1) random selection of all logged trips (initial random selection) and (2) random selection of remaining trips after cancellations, inherits and waivers. In any case, the proportion of trips selected to be monitored should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated *p*-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exception --- the initial selection rate was 26.50% (*p*-value = 0.012) for the *OB TRW BSAI* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *OB TRW BSAI* stratum was being over-selected in ODDS. A time series of ODDS initial selection rates and final realized rates is presented in `r fig_nums('odds.by.date.plot', display = "cite")`.\ *UPDATE THIS*
+The extent to which trip-selections are changed from the time they are entered can be determined by comparing the rate of trip monitoring expected from (1) random selection of all logged trips (initial random selection) and (2) random selection of remaining trips after cancellations, inherits and waivers. In any case, the proportion of trips selected to be monitored should fall within what would be expected given the binomial distribution (since each trip is either selected or not selected). The rates obtained (%, with associated *p*-value based on the binomial distribution) in the initial selection process were within expected ranges with the following exception --- the initial selection rate was 26.50% (*p*-value = 0.012) for the *OB TRW BSAI* stratum (`r tbl_nums('Selection.table', display = "cite")`). This means that the *OB TRW BSAI* stratum was being over-selected in ODDS. A time series of ODDS initial selection rates and final realized rates is presented in `r fig_nums('odds.by.date.plot', display = "cite")`.[**UPDATE THIS**]\
 \
 The final selection rate after trips were closed, canceled or waived were within expected bounds with the exception of the *OB HAL* and *OB TRW* strata (`r tbl_nums('Selection.table', display = "cite")`). The *OB HAL* stratum had a programmed rate of 17.87% but through the result of cancellations, inherits and waivers ended up being selected at 21.38% (*p*-value = 0.002). The *OB TRW* stratum had an original selection rate of 22.68% but was selected at 26.50%, and through the process of cancellations, inherits and waivers was selected at 29.26% (*p*-value < 0.001; `r tbl_nums('Selection.table', display = "cite")`). While both strata exhibited an increase in monitoring because of inherits, the impact that inherits had to elevate monitoring rates was greater for *OB HAL* than it was for *OB TRW*. The impact of waivers was small, averaging a 1.4% reduction in monitoring rate among strata with the most waived trips within the *OB POT* stratum (`r tbl_nums('logged.table', display = "cite")`).
 
@@ -1886,25 +1956,26 @@ NMFS. 2013. 2014 Annual Deployment Plan for Observers in the Groundfish and Hali
 
 trip.budget.table <- trip.budget.table %>%
   mutate(pred_days = as.numeric(pred_days),
-         act_days = as.numeric(act_days)) %>%
-  arrange(factor(STRATA, levels = strata.order))
+         act_days = as.numeric(act_days),
+         pred_N = as.numeric(pred_N),
+         act_N = as.numeric(act_N)) 
 
 flextable(trip.budget.table) %>%
-  italic(j = 1, i = 1:(nrow(trip.budget.table) - 1)) %>%
+  italic(j = 1, i = ~ !(STRATA %like% "total|Total")) %>%
   bold(bold = TRUE, part = "header") %>%
   hline(i = v_diff(trip.budget.table$STRATA, 1, 2)) %>%
+  hline(i = which(trip.budget.table[-1, "STRATA"] %like% "total"), border = fp_border(style = "dashed")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
-  add_header_row(values = c("", "Monitored days", "Difference"), colwidths = c(1, 2, 2)) %>%
-  align(j = 2:5, part = "all", align = "right") %>%
+  add_header_row(values = c("", "Total trips",   "Monitored/reviewed days"), colwidths = c(1, 4, 4)) %>%
+  align(j = 2:8, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
   width(j = 1, 1.5, unit = "in") %>%
   set_header_labels(values = list(
     STRATA = "Strata",
-    pred_days = "Predicted",
-    act_days = "Actual",
-    diff = "Actual",
-    perc = "Percent")) %>%
-  width(j = 2, 0.8, unit = "in")
+    pred_N = "Predicted", act_N = "Actual", diff.N = "Difference", perc.N = "Percent",
+    pred_days = "Predicted", act_days = "Actual", diff = "Difference", perc = "Percent")) %>%
+  width(j = 2, 0.8, unit = "in") %>%
+  width(j = 6, 1.1, unit = "in")
 ```
 
 \endLandscape
