@@ -1689,26 +1689,39 @@ tbl.percentile.stratum <- percentile.stratum %>%
 #' [NOTE] *These maps are for internal use to get more granularity of the patterns that led to the resulting proximity
 proximity_maps <- plot_interspersion_map(
   box_def, real_interspersion.stratum, exp_interspersion.realized, exp_interspersion.programmed, ak_map.low_res.lst)
-#' \TODO save `proximity_maps` to outputs folder as a multi-page PDF
 #' \TODO Add trip count text labels to $HEX_ID.realized plot cells 
 
+# Save the plots as a multi-page PDF
+if(F) {
+  library(gridExtra)
+  proximity_maps.box <- lapply(proximity_maps, "[[", "BOX")
+  ggsave(filename = "figures/prox_maps.pdf", plot = marrangeGrob(proximity_maps.box, nrow = 1, ncol = 1),
+         width = 11, height = 8.5)
+}
 
 ## Spatial Maps, trips by spatial cell ----
 
 # Determine whether the spatial arrangement of monitoring was distributed evenly (as expected by random sampling). 
 # Counts the `number of monitored trips in each HEX_ID` and compares to the simulation outcomes, highlighting any actual outcomes that were more extreme than 95% of simulated outcomes. Cells start to get color if they are more extreme than 80% of outcomes.
-
+#' *replaced by plt.coverage for 2024 AR*
 spatial_plots <- plot_monitoring_spatial(box_def, realized_mon, sim.realized.stratum, strata_levels, ak_map.low_res.lst)
 plt.spatial <- spatial_plots$plt.spatial.2024
 # Drop unused facet
 # drop_facet(plt.spatial)
 plt.spatial <- drop_facet(plt.spatial, drop = list(c(24, 7), c(25, 7)))
 
+## Coverage maps by spatial cell ----
+# These maps use the results of the proximity analyses and summarizes them spatially so they match more closely with the results of the spatiotemporal analyses. Cells that are colored have realized proximity indices in the most extreme 10% of simulation outcomes and those in the most extreme 2.5% are marked with a circle.
+plt.coverage <- plot_spatial_coverage(
+  box_def, realized_mon, sim.realized.stratum, sim.programmed.stratum, strata_levels, ak_map.low_res.lst)$coverage
+plt.coverage <- drop_facet(plt.coverage, drop = list(c(24, 7), c(25, 7)))
 ```
 
-Under a random selection of trips and deliveries the spatial distribution of monitored trips should reflect the spatial distribution of all trips. To evaluate whether the actual spatial distribution of monitoring matched what would be expected from random selection or exhibited unlikely spatial patterns, the sample units of each stratum were divided into 200 km wide hexagonal spatial cells (“cells”). The total count of trips actually monitored in each cell was compared to results of 10,000 simulations of randomized trip selection using the actual monitored rate. The difference in the count of actually monitored trips versus the median count was calculated for each simulation. Cells where the count of actually monitored trips in a spatial cell were more extreme than 95% of simulations were identified to represent unlikely outcomes under the assumption of random sampling. By graphically viewing where the spatial distribution of actual monitoring deviated from the distribution provided by the simulations, regional patterns in the over- or under-representation by monitoring could be identified. Maps summarizing these patterns are provided in `r fig_nums('plt.spatial', display = "cite")`.\
+Under a random selection of trips and deliveries the spatial distribution of monitored trips should reflect the spatial distribution of all trips. To evaluate whether the actual spatial distribution of monitoring matched what would be expected from random selection or exhibited unlikely spatial patterns, the sample units of each stratum were divided into 200 km wide hexagonal spatial cells (“cells”). 
+
+The total count of trips actually monitored in each cell was compared to results of 10,000 simulations of randomized trip selection using the actual monitored rate. The difference in the count of actually monitored trips versus the median count was calculated for each simulation. Cells where the count of actually monitored trips in a spatial cell were more extreme than 95% of simulations were identified to represent unlikely outcomes under the assumption of random sampling. By graphically viewing where the spatial distribution of actual monitoring deviated from the distribution provided by the simulations, regional patterns in the over- or under-representation by monitoring could be identified. Maps summarizing these patterns are provided in `r fig_nums('plt.spatial', display = "cite")`.\
 \
-[**UPDATE THIS**] The only obvious spatial bias in the distribution of monitored trips was in the *OB HAL* stratum, where an unexpectedly high number of trips were monitored in the central GOA near Kodiak and fewer trips were monitored in the western and eastern GOA. Other strata exhibited spatial patterns that were not as pronounced or unexpected. In the *OB POT* stratum, the western GOA was overrepresented in the sample. In the *OB TRW* stratum, there were some slight localized biases in the central GOA, but no spatial cells had an unlikely number of monitored trips. In the *EM HAL* stratum, the central GOA was underrepresented and the eastern GOA was overrepresented. The spatial distribution of monitoring was as expected in the *EM POT* and *EM TRW GOA (EFP)* strata, with no spatial cells with an unlikely number of monitored trips/deliveries (`r fig_nums('plt.spatial', display = "cite")`).
+[**UPDATE THIS**] The only obvious spatial bias in the distribution of monitored trips was in the *EM FIXED GOA* stratum which had more reviewed trips in the eastern GOA and fewer reviewed trips in parts of the central GOA. . Other strata exhibited spatial patterns that were not as pronounced or unexpected. In the *OB POT* stratum, the western GOA was overrepresented in the sample. In the *OB TRW* stratum, there were some slight localized biases in the central GOA, but no spatial cells had an unlikely number of monitored trips. In the *EM HAL* stratum, the central GOA was underrepresented and the eastern GOA was overrepresented. The spatial distribution of monitoring was as expected in the *EM POT* and *EM TRW GOA (EFP)* strata, with no spatial cells with an unlikely number of monitored trips/deliveries (`r fig_nums('plt.spatial', display = "cite")`).
 
 ## Spatiotemporal Distribution of Monitoring Coverage
 Under a random selection of trips and deliveries the spatiotemporal distribution of monitoring in a stratum should reflect the spatiotemporal distribution of all trips in the stratum. The evaluation methods here are adapted from the proximity index described in the `r year` Draft ADP (NMFS 2023b). The proximity index was defined as the proportion of sample units in a stratum that were either monitored or near a monitored sample unit in space or time. By considering sample units that were neither monitored nor neighboring a monitored trip as a gap in monitoring, the proximity index quantifies the spatiotemporal extent of monitoring coverage.\
@@ -2230,10 +2243,10 @@ print(Temporal.plot)
 \newpage
 
 ```{r plt.spatial, warning=FALSE, fig.width=7.5, fig.height=8, dpi=600}
-print(plt.spatial)
+print(plt.coverage)
 ```
 
-`r fig_nums('plt.spatial', caption = paste0('Spatial patterns of the distribution of monitoring in partial coverage strata in ', year, '. Each hexagonal spatial cell is 200 km wide. The numbers in the cells represent the difference in the number of trips/deliveries actually monitored relative to the median of 10,000 simulations of random sampling using the stratum’s realized monitoring rate. Cells without a number had the same number of monitored trips/deliveries as the median of the simulations (difference of zero). Cells where the actual number of monitored trips/deliveries was more extreme than 80% of simulated outcomes are colored pink (fewer trips/deliveries than expected) or green (more), and those cells with a more extreme outcome than 95% of simulated outcomes are outlined in blue with bold text.'))`
+`r fig_nums('plt.spatial', caption = paste0('Spatial patterns of the distribution of monitoring in partial coverage strata in ', year, ' relative to the distriubtion created from 10,000 simulations of random sampling at each stratum's realized monitoring rate. Each hexagonal spatial cell is 200 km wide. The degree of monitoring in each cell was quantified as the proportion of trips that were monitored or neighboring a monitored trip in both space and time. Cells where the degree of monitoring was more extreme than 90% of simulated outcomes are filled violet (less) or green (more), and those cells with a more extreme outcome than 97.5% of simulated outcomes are additionally marked with a circle.')`
 
 \newpage
 
