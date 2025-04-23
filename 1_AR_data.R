@@ -419,6 +419,9 @@ em_data_available <- em_data_available %>%
     by = "ODDS_TRIP_NUMBER"
   )
 
+#' *2024 AR* Using PSMFC review times due to a CAS bug that causes a delay in the visibility of reviewed data. Download
+#' spreadsheet from Courtney Paiva save to the /source_data folder.
+#' [https://docs.google.com/spreadsheets/d/1bFg4yuUyRQ3vszXy8fxuiBl1qW9Irt6M/edit?usp=drive_link&ouid=112928343270640187258&rtpof=true&sd=true]
 em_data_reviewed <- readxl::read_excel("source_data/AlaskaFixedGearEM_2024_ReviewDatesODDS_2025-04-18.xlsx")
 em_data_reviewed <- em_data_reviewed %>% 
   mutate(TRIP_NUMBER = as.integer(ODDSTripID), TRIP_REVIEWED = as.Date(`EM Review Completion Date`)) %>% 
