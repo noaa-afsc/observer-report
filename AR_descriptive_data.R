@@ -121,6 +121,25 @@ table(prep_data$STRATA)
 #table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
 
 
+# Corrections to LENGTH_OVERALL and VESSEL_LENGTH_CATEGORY  ------------------------------------------------ 
+
+# In recent years, a comparisons of the total vessel counts from Table 4-2 to Table 3-5 have identified discrepancies.  They have been a 
+# result of vessel length changes mid-year on our side and where fishing occurred when the vessel was attributed to the different 
+# vessel lengths and categories.  That's fine... it is just nice to footnote it in Table 4-2. 
+
+# Make 2 changes here:
+#    1) do a preemptive check for if there are vessels with fishing under different length categories
+#    2) in 2024 there is a vessel (33391) where a vessel length change was made (36 ft to 43 ft) but a typo was entered (343 ft instead of 43 ft) 
+#       and fishing occurred before 343 ft was corrected to 43 ft. In Valhalla, the vessel is attributed to 3 different length categories over the course
+#       of the year.  Correct 343 to 43 so it is only in 2 categories.
+
+prep_data <- prep_data %>% 
+  mutate(LENGTH_OVERALL = case_when((VESSEL_ID == 33391 & LENGTH_OVERALL == 343) ~ 43,
+                                    !(VESSEL_ID == 33391 & LENGTH_OVERALL == 343) ~ LENGTH_OVERALL),
+         VESSEL_LENGTH_CATEGORY = case_when((VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ 'BT40_57',
+                                            !(VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ VESSEL_LENGTH_CATEGORY))
+
+
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
