@@ -133,12 +133,32 @@ table(prep_data$STRATA)
 #       and fishing occurred before 343 ft was corrected to 43 ft. In Valhalla, the vessel is attributed to 3 different length categories over the course
 #       of the year.  Correct 343 to 43 so it is only in 2 categories.
 
+# Make a vessel length and vessel length category correction for 2024:
 prep_data <- prep_data %>% 
   mutate(LENGTH_OVERALL = case_when((VESSEL_ID == 33391 & LENGTH_OVERALL == 343) ~ 43,
                                     !(VESSEL_ID == 33391 & LENGTH_OVERALL == 343) ~ LENGTH_OVERALL),
          VESSEL_LENGTH_CATEGORY = case_when((VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ 'BT40_57',
                                             !(VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ VESSEL_LENGTH_CATEGORY))
 
+      # Identify vessels with more than 1 vessel length category:
+      vessel_length_counts <- prep_data %>% 
+        group_by(VESSEL_ID) %>% 
+        summarize(length_count = n_distinct(VESSEL_LENGTH_CATEGORY)) %>%  # this dataset has 870 records... this is the same as Geoff's count
+        filter(length_count > 1)
+      
+      vessel_length_counts
+      
+      # Look to see When those vessel length categories valid:
+      length_changes <- prep_data %>% 
+        filter(VESSEL_ID %in% vessel_length_counts$VESSEL_ID) %>% 
+        group_by(VESSEL_ID, LENGTH_OVERALL, VESSEL_LENGTH_CATEGORY) %>% 
+        summarize(start = min(TRIP_TARGET_DATE),
+                  end = max(TRIP_TARGET_DATE), .groups = 'drop') %>% 
+        arrange(VESSEL_ID, start)
+      
+      length_changes
+
+      # Evaluate if these changes are valid or if corrections are needed.
 
 
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
