@@ -235,8 +235,8 @@ Although these metrics can identify places where observed results differ from ex
 # Changes to this report from last year
 As mentioned previously, the strata definitions and allocation methods employed in `r year` differed from previous years. However, the evaluations performed in this chapter are largely unchanged.\
 
-- [*TODO - Data timeliness methods were updated?*]
-- Updates to Trawl EM calculations?
+- Review timeliness for the *EM FIXED strata* is calculated in addition to data timeliness in order to account for the time between review and data availability that has been attributed to a NMFS database coding error.
+- Monitoring rates for the *EM TRW (EFP)* strata are now performed at the level of the delivery, instead of at the level of the trip, as this more accurately represents how these strata are monitored. Trips that delivered their catch to tenders are also now accounted for and summarized as these deliveries are subject to monitoring by observers at shoreside processors. 
 - More information added to to summary tables (e.g., fishing effort predictions and ODDS)
 
 # Evaluation of Deployment in `r year`  
@@ -1320,7 +1320,7 @@ In `r year`, the Observer Program had `r total.strat` different deployment strat
 \
 Evaluations for the full coverage category and zero-selection pool are straightforward --- either the coverage achieved was equal to 100% or 0%, respectively, or it was not. The program achieved `r Coverage.Table %>% filter(Strata == "Full") %>% pull(Realized) %>% trimws()`% coverage in its *Full coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`). One trip was not monitored in the *Full coverage* stratum (**add explanation here**). The program achieved compliance with the *Zero coverage* stratum (`r tbl_nums('Coverage.Table', display = "cite")`).\
 \
-For the partial coverage strata, under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (assuming a binomial distribution for monitored trips) will contain the actual deployment rate 95% percent of the time. If expected coverage levels were within the 95% confidence intervals, then we conclude that realized and expected coverage rates were equal. Trips in the *EM FIXED* strata were considered covered only if the catch data from monitored trips were reviewed by the Pacific States Marine Fisheries Commission (PSMFC).\
+For the partial coverage strata, under the assumption that the deployment was randomized, a 95% confidence interval computed from the realized coverage rates (assuming a binomial distribution for monitored trips) will contain the actual deployment rate 95% percent of the time. If expected coverage levels were within the 95% confidence intervals, then we conclude that realized coverage rates did not deviate from expected coverage rates.  Trips in the *EM FIXED* strata were considered covered only if the catch data from monitored trips were reviewed by the Pacific States Marine Fisheries Commission (PSMFC).\
 \
 Coverage rates were consistent with expected values in six of the seven partial coverage strata that are subject to monitoring, indicating that the deployment of monitoring as intended by the `r year` ADP was largely successful. Coverage rates were lower than expected in the *EM FIXED BSAI* stratum (`r tbl_nums('Coverage.Table', display = "cite")`) due to a temporary understaffing of EM video reviewers. The high rate in *OB TRW* is again explained by the unexpectedly high selection of trips by the ODDS. However, the low coverage rates in the *EM HAL* and *EM POT* strata can be explained by a lack of reviewed EM data. Unlike observed trips, the coverage rate for EM is based on information provided from the Pacific States Marine Fisheries Commission (PSFMC) that is available to analysts in the NORPAC database at the time of writing. In `r year`, the average time between receipt and completion of review was 167 days for *EM HAL* and 184 days for *EM POT* (`r fig_nums('times_figure', display = "cite")`). This was a slight improvement over the average review time of 227 days for the *EM HAL* stratum and 213 days for the *EM POT* stratum in `r year - 1` (Appendix A, Figure A-3).\
 \
@@ -1878,7 +1878,7 @@ OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
 ```
 
-The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB FIXED GOA* stratum were 10.4% (0.6 days) shorter in duration and were on vessels 4.9% (2.8 feet) longer than unmonitored trips. Monitored trips in the EM FIXED BSAI stratum were on vessels 16.2% (14.0 feet) shorter than unmonitored trips. Monitored trips in the EM FIXED GOA stratum landed catch that was 24.3% (0.9 species) more diverse than unmonitored trips.
+The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB FIXED GOA* stratum were 10.4% (0.6 days) shorter in duration and were on vessels 4.9% (2.8 feet) longer than unmonitored trips. Monitored trips in the EM FIXED BSAI stratum were on vessels 16.2% (14.0 feet) shorter than unmonitored trips. Monitored trips in the EM FIXED GOA stratum landed 24.3% (0.9 species) more species than unmonitored trips. While not directly comparable, the previous hook-and-line observer and EM strata showed similar patterns in 2023, with shorter trips in the observer stratum and more species landed in the EM stratum during monitored trips (AFSC and AKRO 2024).
 
 # Response to Council and SSC Comments
 
@@ -1898,19 +1898,6 @@ In January 2022, the SSC reviewed a presentation made by industry and the AKRO o
 6. An illustrative example of how salmon PSC calculations would be different under this program would be helpful, including a GOA and BSAI example.
 
 The data used in this and prior Annual Reports are available to answer items 2, 3, 5 and 6 should staff resources at the AKRO and FMA be allocated to this task.
-
-# FMSC Recommendations to Improve Data Quality
-  
-## Recommendations from the `r year` Annual Deployment Review
-
-The Fisheries Monitoring Science Committee (formerly the Observer Science Committee) reviewed the results off ODDS and EM data timeliness from this report on 30 April 2024, and made the following recommendations to be considered in developing the `r year + 2` ADP.  
-
-- ODDS\
-**Work with the Partial Coverage Fishery Monitoring Advisory Committee to find an ODDS trip cancellation policy that will not significantly impede industry, affords the observer provider adequate time, and reduces impacts to coverage rates and non-random monitoring. This new policy should be decided on in time for implementation as part of the 2025 Annual Deployment Plan.**\
-- Fixed-gear EM review times:\
-**The NMFS should work with the EM review agency PSMFC to find a selection rate that provides timely data that achieves the goals of the monitoring program in a cost-effective manner.** The FMA needs all data reviewed by April of the following year for annual reports (a three month delay maximum) while stock assessors need data from the prior year by September (a eight month delay maximum).\
-\
-The FMSC recognizes that EM review times are not fast enough for the purposes of in-season management and suggests that **the NMFS perform an analysis of impacts of missing EM data and risks to management and the stocks of not having these data available (e.g., risk of exceeding Total Allowable Catch and PSC, risk of premature or late fishery closures, etc.)**
 
 \newpage
 
@@ -2297,7 +2284,7 @@ suppressMessages(print(times_figure))
 suppressMessages(print(review_times_figure))
 ```
 
-`r fig_nums('review_times_figure', caption = "Distributions of review timeliness (the time between a trip or delivery ending and those trips being reviewed and known to catch accounting) by stratum. Solid black lines and annotations to the left show median review timeliness. Dashed red lines and annotations to the right show mean review timeliness.")`  
+`r fig_nums('review_times_figure', caption = "Distributions of review timeliness (the time between a trip or delivery ending and those trips being reviewed by stratum). Solid black lines and annotations to the left show median review timeliness. Dashed red lines and annotations to the right show mean review timeliness.")`  
 
 \newpage
 
@@ -2325,7 +2312,7 @@ print(plt.proximity.stratum)
 
 \newpage
 
-```{r Obs.perm.plot, fig.height=11, fig.width=8, message=FALSE, warning=FALSE, dpi=600}
+```{r Obs.perm.plot, fig.height=8, fig.width=8, message=FALSE, warning=FALSE, dpi=600}
 # Plot results
 OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA = as.character(STRATA)) 
 OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA = as.character(STRATA)) %>% 
