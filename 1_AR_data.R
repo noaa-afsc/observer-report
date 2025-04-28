@@ -158,13 +158,17 @@ td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = chan
 
 #' Yearly totals
 mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
-#' It appears some observers were assigned to non-observer strata
-mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
-
+#' Check if any observers were assigned to non-observer strata
+if(nrow(mod_dat[!(STRATA %like% "OB")])) {
+  warning("Observers were assigned to non-observed strata?")
+  mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
+}
+  
 #' Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
-mod_dat_copy[STRATA == "ZERO", STRATA := "OB FIXED GOA"]
+#' Typically observing ZERO means it's a fixed gear issue, so if you need to hard-code a fix, do it here.
+#mod_dat_copy[STRATA == "ZERO", STRATA := "OB FIXED GOA"]
 mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
