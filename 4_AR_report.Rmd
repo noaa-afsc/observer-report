@@ -1976,7 +1976,7 @@ flextable(trip.budget.table) %>%
 
 \endLandscape
 
-`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the Observer Declare and Deploy System (ODDS) for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when the ODDS was not available.'))` 
+`r tbl_nums('disposition.table' , caption = paste0('Trip cancellation rates in the Observer Declare and Deploy System (ODDS) for ', year, '. A trip is canceled by the system if the user did not identify whether fishing had occurred by the end of the year. “Paper” indicates that a trip was logged when ODDS was not available.'))` 
   
 ```{r disposition.table, tab.cap=""}
 # Table 2 from 2019 Annual Report.
@@ -2212,7 +2212,7 @@ flextable(Pollock.efp.table) %>%
 
 \newpage
 
-`r tbl_nums('perm.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips [EDIT WHEN EM TWR GOA IS ADDED]. Statistically significant results are in bold italics. The Bonferroni correction was applied to the significance tests.'))`  
+`r tbl_nums('perm.summary.table', caption = paste0('Results of permutation tests between monitored and unmonitored trips in the ', year, ' trip-selection strata. OD: Observed difference (monitored - unmonitored). Observed and unobserved columns are in units of trips (or shoreside deliveries for the *EM TRW GOA [EFP]* stratum). Statistically significant results are in bold italics. The Bonferroni correction was applied to the significance tests.'))`  
 
 ```{r perm.summary.table, tab.cap=""}
 
