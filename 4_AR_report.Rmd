@@ -194,10 +194,10 @@ OB_DOLLARS.ACTUAL <- days_paid %>%
   mutate(Total.Dollars = Total.Base.Dollars + Total.Option.Dollars + Total.Travel.Dollars + Total.Quarantine.Dollars + Total.Plant.Dollars)
 
 # Percent of budget predicted to be spent
-eval <- data.frame(OB_DAYS.ACTUAL, OB_DAYS.BUDGET) %>% #' *CHANGED TO AVAILABLE FROM PREDICTED*
+eval <- data.frame(OB_DAYS.ACTUAL, OB_DAYS.BUDGET) %>%
   mutate(
     # Percent of the day budget used
-    pct.budget.spent = round(OB_DAYS.ACTUAL/OB_DAYS.BUDGET, digits = 3) * 100, #' *CHANGED TO AVAILABLE FROM PREDICTED*
+    pct.budget.spent = round(OB_DAYS.ACTUAL/OB_DAYS.BUDGET, digits = 3) * 100,
     # Percent of day budget remaining
     pct.budget.remain = round(100 - pct.budget.spent, digits = 3),
     # Was it more, less, or equal to the predicted budget?
@@ -207,10 +207,7 @@ eval <- data.frame(OB_DAYS.ACTUAL, OB_DAYS.BUDGET) %>% #' *CHANGED TO AVAILABLE 
     quant.day = 100 * sum(OB_DAYS.ACTUAL >= bud_tbl$ADP_D) / length(bud_tbl$ADP_D),
     quant.dollars = 100 * sum(OB_DOLLARS.ACTUAL >= bud_tbl$ADP_C) / length(bud_tbl$ADP_C),
     dollars.perc = round(100 * (OB_DOLLARS.ACTUAL$Total.Dollars - OB_DOLLARS.BUDGET) / OB_DOLLARS.BUDGET, 1)
-    )
-
-
-
+  )
 ```
 
 - **Deploy for the planned number of sea days specified in the `r year` ADP.** This objective will be considered to be met if the actual number of sea days expended falls within the range of values from simulated sampling.\
@@ -366,6 +363,7 @@ trip.budget.table <-
         trip.budget.ob_total,
         trip.budget.table  %>% filter(STRATA %like% "EM FIXED"),
         trip.budget.emfg_total,
+        trip.budget.table  %>% filter(STRATA == "EM TRW GOA (EFP)"),
         trip.budget.table %>% 
           summarise(STRATA = "Total", 
                     pred_N = sum(pred_N),
@@ -1129,7 +1127,6 @@ Coverage.Table.partial <- bind_rows(
   # Totals for partial coverage category
   Coverage.Table.partial.total <- work.data.offload %>%
     filter(COVERAGE_TYPE == "PARTIAL" & STRATA %in% partial$STRATA) %>%
-    filter(STRATA != "EM TRW GOA (EFP)") %>%                            #' \TODO * 2024 AR only (until VALHALLA fixed) *
     summarize(V = length(unique(VESSEL_ID)),
               v = length(unique(VESSEL_ID[OBSERVED_FLAG == "Y"])),
               N = length(unique(TRIP_ID)),
@@ -1883,7 +1880,7 @@ OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
 OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
 ```
 
-The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB HAL* stratum were 16.1% (0.94 days) shorter in duration and landed catch that weighed 22.4% (1.56 metric tons) less than unobserved trips. This pattern was also evident in 2022 (Appendix A, Table A-8). Observed trips in the *EM HAL* stratum landed 12.9% (0.53) more species than unobserved trips. Observed trips in the *OB TRW* stratum landed catch that was 2.3% more diverse than unobserved trips.
+The sample sizes available and the results of permutation tests are presented in `r tbl_nums('perm.summary.table', display = "cite")`. A visual depiction of individual results of this permutation test is given in `r fig_nums('Obs.perm.plot', display = "cite")` for illustration purposes. Observed trips in the *OB FIXED GOA* stratum were 10.4% (0.6 days) shorter in duration and were on vessels 4.9% (2.8 feet) longer than unmonitored trips. Monitored trips in the EM FIXED BSAI stratum were on vessels 16.2% (14.0 feet) shorter than unmonitored trips. Monitored trips in the EM FIXED GOA stratum landed catch that was 24.3% (0.9 species) more diverse than unmonitored trips.
 
 # Response to Council and SSC Comments
 
@@ -1963,9 +1960,12 @@ flextable(trip.budget.table) %>%
   bold(bold = TRUE, part = "header") %>%
   hline(i = v_diff(trip.budget.table$STRATA, 1, 2)) %>%
   hline(i = which(trip.budget.table[-1, "STRATA"] %like% "total"), border = fp_border(style = "dashed")) %>%
+  hline(i = which(trip.budget.table[, "STRATA"] %like% "total")) %>%
   flextable::surround(part = "header", border.top = fp_border(width = 1), border.bottom = fp_border(width = 1)) %>%
   add_header_row(values = c("", "Total trips",   "Monitored/reviewed days"), colwidths = c(1, 4, 4)) %>%
-  align(j = 2:8, part = "all", align = "right") %>%
+  mk_par(part = "header", i = 1, j = 2, value = as_paragraph("Total trips (", as_i("N"), ")")) %>%
+  mk_par(part = "header", i = 1, j = 6, value = as_paragraph("Monitored/reviewed days (", as_i("d"), ")")) %>%
+  align(j = 2:9, part = "all", align = "right") %>%
   align(i = 1, part = "header", align = "center") %>%
   width(j = 1, 1.5, unit = "in") %>%
   set_header_labels(values = list(
