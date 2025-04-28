@@ -214,7 +214,7 @@ counts_wide <- total_counts_wide %>%
 
 ```
 
-Table 4-1. -- Number of vessels (V), total trips (N), monitored trips (n), and percent of trips monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
+Table 4-1. -- Number of vessels (V), total trips/deliveries (N), monitored trips/deliveries (n), and percent of trips/deliveries monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
 
 
 ```{r flextable_TABLE4_1, message=FALSE, warning=FALSE, echo=FALSE}
@@ -290,7 +290,7 @@ flextable(bsai) %>%
 
 
 
-Table 4-2. -- Number of vessels (V), total trips or deliveries (N), monitored trips or deliveries (n), and percent of trips or deliveries monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
+Table 4-2. -- Number of vessels (V), total trips/deliveries (N), monitored trips/deliveries (n), and percent of trips/deliveries monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the GOA and overall by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories. 
 
 
 ```{r flextable_TABLE4_2, message=FALSE, warning=FALSE, echo=FALSE}

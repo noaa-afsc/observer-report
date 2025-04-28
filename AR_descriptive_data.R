@@ -274,17 +274,25 @@ valhalla.new <- merge(work_data, report_id.obs, by = "REPORT_ID", all = T)
 
 valhalla.new %>% filter(OBS_SALMON_CNT_FLAG != OBSERVED_FLAG)
 
-# Now, if you want to re-code `TRIP_ID` and `OBSERVED_FLAG` to make your existing code run off of Valhalla, run:
+
+# Re-code `TRIP_ID` and `OBSERVED_FLAG` to take into account deliveries in the TEM strata: 
 revised_work_data <- valhalla.new %>%
-  mutate(TRIP_ID = case_when(is.na(T_REPORT_ID) ~ as.character(TRIP_ID),
-                             !is.na(T_REPORT_ID) ~ T_REPORT_ID),  # this replaces the Valhalla trip ID with an Offload ID instead
+  mutate(TRIP_ID = case_when(!STRATA %in% c('EM_TRW_BSAI', 'EM_TRW_GOA') ~ as.character(TRIP_ID),
+                              STRATA %in% c('EM_TRW_BSAI', 'EM_TRW_GOA') & is.na(T_REPORT_ID) ~ as.character(REPORT_ID),   # When there isn't an Offload ID, use the Report ID instead of the Trip ID
+                              STRATA %in% c('EM_TRW_BSAI', 'EM_TRW_GOA') & !is.na(T_REPORT_ID) ~ T_REPORT_ID),             # When there IS an Offload ID use it.   
          OBSERVED_FLAG = case_when(is.na(OBS_SALMON_CNT_FLAG) ~ OBSERVED_FLAG,
-                                   !is.na(OBS_SALMON_CNT_FLAG) ~ OBS_SALMON_CNT_FLAG)) %>%  # this replaces the Valhalla observed flag with the Observed salmon count flag
+                                  !is.na(OBS_SALMON_CNT_FLAG) ~ OBS_SALMON_CNT_FLAG)) %>%
   select(all_of(val.col)) 
 
-# Had 690 'TRIP_IDs' before, now at 763. That is, we have 690 CV trips and 763 shoreside deliveries
+
+# Had 690 'TRIP_IDs' before, now at 806. That is, we have 690 CV trips and 806 shoreside deliveries
 work_data %>% filter(STRATA == "EM_TRW_GOA") %>% summarize(length(unique(TRIP_ID)))
 revised_work_data %>% filter(STRATA == "EM_TRW_GOA") %>% summarize(length(unique(TRIP_ID)))
+
+# Had 1,712 'TRIP_IDs' before, now at 1,725. That is, we have 1,712 CV trips and 1,725 shoreside deliveries
+work_data %>% filter(STRATA == "EM_TRW_BSAI") %>% summarize(length(unique(TRIP_ID)))
+revised_work_data %>% filter(STRATA == "EM_TRW_BSAI") %>% summarize(length(unique(TRIP_ID)))
+
 
 # By monitoring status: 33.7% of trips, 36.0% of deliveries.
 work_data %>% filter(STRATA == "EM_TRW_GOA") %>% group_by(OBSERVED_FLAG) %>% summarize(Trips = length(unique(TRIP_ID))) 
