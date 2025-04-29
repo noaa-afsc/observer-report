@@ -379,15 +379,16 @@ flextable(goa) %>%
 
 # Summarize catch by two different aggregations:
 catch_detail <- addl_catch_table %>%
-  # Define sector using the RPP flag or the processing sector:
-  mutate(SECTOR = ifelse(RPP=="RPP", "RPP", PROCESSING_SECTOR)) %>% 
+  # Define sector using the CV_FULL flag or the processing sector:
+  mutate(SECTOR = case_when(CV_FULL %in% c('AFA', 'PCTC') ~ 'CV_FULL',
+                            CV_FULL == 'RPP' ~ 'RPP',  .default = PROCESSING_SECTOR)) %>% 
   # Summarize by FMP area, sector, gear, and retained flag:
   group_by(FMP, SECTOR, OBSERVED_FLAG, AGENCY_GEAR_CODE, RETAINED) %>% 
   summarise(WEIGHT = sum(as.numeric(TONS)), .groups = 'drop') %>%
   # Summarize by FMP area, gear, and retained flag:
   bind_rows(addl_catch_table %>% group_by(FMP, OBSERVED_FLAG, AGENCY_GEAR_CODE, RETAINED) %>% 
              summarize(SECTOR = 'Total',
-                       WEIGHT = sum(as.numeric(TONS)))) %>% 
+                       WEIGHT = sum(as.numeric(TONS)), .groups = 'drop')) %>% 
   data.frame()
 
 
@@ -466,6 +467,7 @@ Table 4-3. -- Monitored catch^1^ (metric tons), total catch, and percent monitor
 # Refine to just the GOA data and rearrange the column order:
 table4_3 <- catch_wide %>% 
   filter(FMP=='GOA') %>% 
+  select(-ends_with('CV_FULL')) %>%  # exclude BSAI PCTC and AFA CVs 
   select(c(2:3,
            4,9,14, #Catcher/Processors
            6,11,16, #Catcher Vessels (PROCESSING_SECTOR=='S')
@@ -493,7 +495,7 @@ flextable(table4_3) %>%
                     Total_Total = "Total",
                     PCT_OBS_Total = "%")  %>% 
   # Add lower header row:
-  add_header_row(values = c("", "", "Catcher/Processor", "Catcher vessel", "Catcher vessel: Rockfish program", "Gear total"),
+  add_header_row(values = c("", "", "Catcher/Processor", "Catcher vessel: Partial", "Catcher vessel: Rockfish program", "Gear total"),
                  colwidths = c(1,1,3,3,3,3)) %>% 
   align(align = "center", part = "header") %>% 
   # Add border between length categories and header row:
@@ -527,14 +529,15 @@ Table 4-4. -- Monitored catch^1^ (metric tons), total catch, and percent monitor
 
 ```{r Table4_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
 
-# Refine to just the GOA data and rearrange the column order:
+# Refine to just the BSAI data and rearrange the column order:
 table4_4 <- catch_wide %>% 
   filter(FMP=='BSAI') %>% 
+  select(-ends_with('RPP')) %>% 
   select(c(2:3,
            4,9,14, #Catcher/Processors
-           5,10,15, #Mothership (BSAI only)
-           6,11,16, #Catcher Vessels (PROCESSING_SECTOR=='S')
-           #7,12,17, #Catcher Vessels: Rockfish Program (GOA only)
+           6,11,16, #Mothership (BSAI only)
+           7,12,17, #Catcher Vessels: Partial Coverage (PROCESSING_SECTOR=='S')
+           5,10,15, #Catcher Vessels: Full Coverage (BSAI only; AFA and PCTC)
            8,13,18  # Gear Totals
            )) 
 
@@ -553,23 +556,26 @@ flextable(table4_4) %>%
                     Observed_S = "Monitored",
                     Total_S = "Total",
                     PCT_OBS_S = "%",
+                    Observed_CV_FULL = "Monitored",
+                    Total_CV_FULL = "Total",
+                    PCT_OBS_CV_FULL = "%",
                     Observed_Total = "Monitored",
                     Total_Total = "Total",
                     PCT_OBS_Total = "%")  %>% 
   # Add lower header row:
-  add_header_row(values = c("", "", "Catcher/Processor", "Mothership", "Catcher vessel", "Gear total"),
-                 colwidths = c(1,1,3,3,3,3)) %>% 
+  add_header_row(values = c("", "", "Catcher/Processor", "Mothership", "Catcher vessel: Partial", "Catcher vessel: Full", "Gear total"),
+                 colwidths = c(1,1,3,3,3,3,3)) %>% 
   align(align = "center", part = "header") %>% 
   # Add border between length categories and header row:
   hline_top(j = c(3:14), border = fp_border(color="black", width = 2), part = "header") %>% 
   # Format the header rows:
   bold(bold = TRUE, part = "header") %>% 
   align(i = 2, j = c(1:2), align = "left", part = "header") %>% 
-  align(i = 2, j = c(3:14), align = "right", part = "header") %>% 
+  align(i = 2, j = c(3:17), align = "right", part = "header") %>% 
   # Format the columns:
-  colformat_double(j = c(3,4,6,7,9,10,12,13), big.mark = ",", digits = 0) %>% 
-  colformat_num(j = c(5,8,11,14), big.mark = ",", digits = 0, suffix = "%" ) %>% 
-  bold(j=c(1,2,5,8,11,14), part = "body") %>% 
+  colformat_double(j = c(3,4,6,7,9,10,12,13,15,16), big.mark = ",", digits = 0) %>% 
+  colformat_num(j = c(5,8,11,14,17), big.mark = ",", digits = 0, suffix = "%" ) %>% 
+  bold(j=c(1,2,5,8,11,14,17), part = "body") %>% 
   # Merge the gear labels into a single cell: 
   merge_v(j = 1, part = "body") %>% 
   # Add solid horizontal line after each gear:
@@ -688,9 +694,9 @@ npt_full <- table4_3 %>%
   # Append BSAI NPT info: 
   bind_rows(table4_4 %>% 
               filter(AGENCY_GEAR_CODE == 'Non-Pelagic Trawl') %>% 
-              select(AGENCY_GEAR_CODE, Total_CP, Total_M) %>%
+              select(AGENCY_GEAR_CODE, Total_CP, Total_M, Total_CV_FULL) %>%
               # change from wide to long format:
-              pivot_longer(cols = c("Total_CP", "Total_M"), names_to = "TYPE", values_to = "FULL_COVERAGE")) %>% 
+              pivot_longer(cols = c("Total_CP", "Total_M", "Total_CV_FULL"), names_to = "TYPE", values_to = "FULL_COVERAGE")) %>% 
   # Sum the NPT full coverage catch:
   group_by(AGENCY_GEAR_CODE) %>% 
   summarize(FULL_COVERAGE_CATCH = sum(FULL_COVERAGE)) %>% 
