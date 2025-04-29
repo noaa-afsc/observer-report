@@ -76,9 +76,13 @@ load("H://Observer Program//Annual Report Local GIT Project//Descriptive Info//F
 
 # Perform some data transformations:
 prep_data <- valhalla_data %>% 
-  # Create an RPP management program flag for the CVs:
-  # (as they are in full coverage as opposed to other CVs that are in partial coverage)
-  mutate(RPP = ifelse(MANAGEMENT_PROGRAM_CODE=='RPP' & PROCESSING_SECTOR=='S', 'RPP', ' ')) %>% 
+  # Create an CV_FULL flag for the CVs in full coverage (formerly called RPP):
+  # (as they are in full coverage as opposed to other CVs that are in partial coverage
+  #  previously only used for RPP... now use for PCTC and AFA CVs)
+  mutate(CV_FULL = case_when((MANAGEMENT_PROGRAM_CODE == 'RPP'  & PROCESSING_SECTOR == 'S') ~ 'RPP',
+                             (MANAGEMENT_PROGRAM_CODE == 'PCTC' & PROCESSING_SECTOR == 'S') ~ 'PCTC', 
+                             (MANAGEMENT_PROGRAM_CODE == 'AFA'  & PROCESSING_SECTOR == 'S') ~ 'AFA', 
+                              .default = '  ')) %>%
   # Identify the retained catch (source table = 'Y') as R and discards (source table = 'N') as D:
   mutate(RETAINED = ifelse(SOURCE_TABLE == 'Y', 'R', 'D')) %>% 
   # Aggregate the NPT and PTR trawl gears:
@@ -355,7 +359,7 @@ revised_work_data %>% filter(STRATA == "EM_TRW_GOA") %>% group_by(OBSERVED_FLAG)
 calc_total <- revised_work_data %>% 
   # refine to groundfish (which includes directed halibut) OR psc halibut:
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
-  group_by(FMP, PROCESSING_SECTOR, RPP, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
+  group_by(FMP, PROCESSING_SECTOR, CV_FULL, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
   summarise(TONS = sum(catch_table_weight), .groups = 'drop') %>% 
   # add 'Total' as a filler value in the used for estimation flag:
   mutate(OBSERVED_FLAG = 'Total') %>% 
@@ -367,7 +371,7 @@ observed <- revised_work_data %>%
   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
   mutate(OBSERVED_FLAG = case_when(OBSERVED_FLAG == 'Y' ~ 'Observed',
                                    OBSERVED_FLAG == 'N' ~ 'Unobserved')) %>% 
-  group_by(FMP, PROCESSING_SECTOR, RPP, OBSERVED_FLAG, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
+  group_by(FMP, PROCESSING_SECTOR, CV_FULL, OBSERVED_FLAG, AGENCY_GEAR_CODE, SPECIES_GROUP, RETAINED) %>% 
   summarise(TONS = sum(catch_table_weight), .groups = 'drop') %>% 
   data.frame()
 
@@ -382,7 +386,8 @@ with_totals <- rbind(observed, calc_total[,c(1,2,3,5,6,7,8,4)])
 previous_catch_table <- read.csv(paste0("2013_", YEAR-1, "_catchtables.csv"))
 
 previous_catch_table <- previous_catch_table %>% 
-  rename(OBSERVED_FLAG = OBS_FOR_EST)
+  rename(OBSERVED_FLAG = OBS_FOR_EST,
+         CV_FULL = RPP)
 
 # Format the new year's catch table data:
 addl_catch_table <- with_totals %>% 
@@ -391,7 +396,7 @@ addl_catch_table <- with_totals %>%
   # Add a year column:
   mutate(YEAR = YEAR) %>%
   # Arrange the columns so it matches previous catch tables:
-  select(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, RPP, SPECIES_GROUP, RETAINED, OBSERVED_FLAG, TONS)
+  select(YEAR, FMP, PROCESSING_SECTOR, AGENCY_GEAR_CODE, CV_FULL, SPECIES_GROUP, RETAINED, OBSERVED_FLAG, TONS)
 
 
 # Combine the previous catch table with the new year's catch table:
@@ -402,10 +407,12 @@ catch_tables <- rbind(previous_catch_table, addl_catch_table)
 
 export_format <- catch_tables %>% 
   # Provide some 'pretty' translations:
-  mutate(SECTOR = ifelse(RPP == 'RPP' & PROCESSING_SECTOR == 'S', 'Catcher Vessel: Rockfish Program', NA)) %>% 
-  mutate(SECTOR = ifelse(RPP != 'RPP' & PROCESSING_SECTOR == 'S', 'Catcher Vessel', SECTOR)) %>% 
-  mutate(SECTOR = ifelse(PROCESSING_SECTOR == 'CP', 'Catcher/Processor', SECTOR)) %>% 
-  mutate(SECTOR = ifelse(PROCESSING_SECTOR == 'M', 'Mothership', SECTOR)) %>% 
+  mutate(SECTOR = case_when((CV_FULL == 'RPP' & PROCESSING_SECTOR == 'S') ~ 'Catcher Vessel: Rockfish Program',
+                            (CV_FULL == 'AFA' & PROCESSING_SECTOR == 'S') ~ 'Catcher Vessel: AFA',
+                            (CV_FULL == 'PCTC'& PROCESSING_SECTOR == 'S') ~ 'Catcher Vessel: PCTC',
+                             PROCESSING_SECTOR == 'CP' ~ 'Catcher/Processor',
+                             PROCESSING_SECTOR == 'M' ~ 'Mothership', 
+                             .default = 'Catcher Vessel')) %>%
   mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'HAL', 'Hook and Line', NA)) %>% 
   mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'NPT', 'Nonpelagic Trawl', GEAR)) %>% 
   mutate(GEAR = ifelse(AGENCY_GEAR_CODE == 'PTR', 'Pelagic Trawl', GEAR)) %>% 
