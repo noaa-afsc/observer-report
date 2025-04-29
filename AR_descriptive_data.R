@@ -64,7 +64,7 @@ channel_cas <- dbConnect(drv = dbDriver('Oracle'),
 
 
 # When Valhalla data aren't currently in the database.  Load .RData file instead:
-load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2024//2025-04-03cas_valhalla.RData")
+load("G://FMGROUP//CADQ_library//observer_annual_reports_code//Valhalla Data//2024//2025-04-15cas_valhalla.RData")
 valhalla_data <- valhalla  
 
 # A specialized dataset of Trawl EM tendered trips that identifies which deliveries (by REPORT_ID) had salmon counts done shoreside:
@@ -99,55 +99,38 @@ prep_data <- valhalla_data %>%
 
 
 
-# Corrections to strata ---------------------------------------------------------------------------- 
-
-# Hardcode the following STRATA changes here:
-#  1. The 2024 ADP indicates that NO vessels are participating in the EM Innovation Project in 2024. So no strata changes
-#     for this. (https://www.fisheries.noaa.gov/s3//2023-11/Final-2024-ADP.pdf) 
-#  2. The Trawl EM EFP strata are already split into BSAI and GOA strata... so this code no longer needed in 2024
-
-table(prep_data$STRATA)
-# 4/11 counts:
-#EM_FIXED_BSAI  EM_FIXED_GOA   EM_TRW_BSAI    EM_TRW_GOA          FULL OB_FIXED_BSAI  OB_FIXED_GOA   OB_TRW_BSAI    OB_TRW_GOA          ZERO 
-#         4595         66181         49177         15067        834396         19186        127110          1187         13666         76555 
-
-# Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
-#prep_data <- prep_data %>% 
-#  rename(ORIGINAL_STRATA = STRATA) %>% 
-#  mutate(STRATA = #ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
-#                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
-#                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA)))#)
-
-
-#table(prep_data$ORIGINAL_STRATA, prep_data$STRATA)
-
-
 # Corrections to LENGTH_OVERALL and VESSEL_LENGTH_CATEGORY  ------------------------------------------------ 
 
 # In recent years, a comparisons of the total vessel counts from Table 4-2 to Table 3-5 have identified discrepancies.  They have been a 
 # result of vessel length changes mid-year on our side and where fishing occurred when the vessel was attributed to the different 
 # vessel lengths and categories.  That's fine... it is just nice to footnote it in Table 4-2. 
 
-# Make 2 changes here:
+# Make 3 changes here:
 #    1) do a preemptive check for if there are vessels with fishing under different length categories
 #    2) in 2024 there is a vessel (33391) where a vessel length change was made (36 ft to 43 ft) but a typo was entered (343 ft instead of 43 ft) 
 #       and fishing occurred before 343 ft was corrected to 43 ft. In Valhalla, the vessel is attributed to 3 different length categories over the course
 #       of the year.  Correct 343 to 43 so it is only in 2 categories.
+#    3) in 2024 these is a vessel (33881) that changed length on 7/19/2024.  Trips before that date are ZERO coverage and after that date are OB_FIXED_GOA
 
 # Make a vessel length and vessel length category correction for 2024:
 prep_data <- prep_data %>% 
   mutate(LENGTH_OVERALL = case_when((VESSEL_ID == 33391 & LENGTH_OVERALL == 343) ~ 43,
                                     !(VESSEL_ID == 33391 & LENGTH_OVERALL == 343) ~ LENGTH_OVERALL),
+         LENGTH_OVERALL = case_when((VESSEL_ID == 33881 & TRIP_TARGET_DATE >= as.Date("2024-07-19")) ~ 45,
+                                    !(VESSEL_ID == 33881 & TRIP_TARGET_DATE >= as.Date("2024-07-19")) ~ LENGTH_OVERALL), 
          VESSEL_LENGTH_CATEGORY = case_when((VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ 'BT40_57',
-                                            !(VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ VESSEL_LENGTH_CATEGORY))
+                                            !(VESSEL_ID == 33391 & VESSEL_LENGTH_CATEGORY == 'GT58') ~ VESSEL_LENGTH_CATEGORY),
+         VESSEL_LENGTH_CATEGORY = case_when((VESSEL_ID == 33881 & TRIP_TARGET_DATE >= as.Date("2024-07-19")) ~ 'BT40_57',
+                                            !(VESSEL_ID == 33881 & TRIP_TARGET_DATE >= as.Date("2024-07-19")) ~ VESSEL_LENGTH_CATEGORY))  
+  
 
       # Identify vessels with more than 1 vessel length category:
       vessel_length_counts <- prep_data %>% 
         group_by(VESSEL_ID) %>% 
-        summarize(length_count = n_distinct(VESSEL_LENGTH_CATEGORY)) %>%  # this dataset has 870 records... this is the same as Geoff's count
+        summarize(length_count = n_distinct(VESSEL_LENGTH_CATEGORY)) %>%  
         filter(length_count > 1)
       
-      vessel_length_counts
+      vessel_length_counts   # NOTE: This count of vessels will need to be referenced in a footnote to Table 4-2.  Not currently coded.  Will have to be hand edited.
       
       # Look to see When those vessel length categories valid:
       length_changes <- prep_data %>% 
@@ -161,7 +144,35 @@ prep_data <- prep_data %>%
 
       # Evaluate if these changes are valid or if corrections are needed.
 
+      
+# Corrections to strata ---------------------------------------------------------------------------- 
 
+# Hardcode the following STRATA changes here:
+#  1. The 2024 ADP indicates that NO vessels are participating in the EM Innovation Project in 2024. So no strata changes
+#     for this. (https://www.fisheries.noaa.gov/s3//2023-11/Final-2024-ADP.pdf) 
+#  2. The Trawl EM EFP strata are already split into BSAI and GOA strata... so this code no longer needed in 2024
+#  3. In 2024, vessel 33881 changed from ZERO (<40) to OBS_FIXED_GOA mid-year
+
+table(prep_data$STRATA)
+# 4/28 counts:
+#EM_FIXED_BSAI  EM_FIXED_GOA   EM_TRW_BSAI    EM_TRW_GOA          FULL OB_FIXED_BSAI  OB_FIXED_GOA   OB_TRW_BSAI    OB_TRW_GOA          ZERO 
+#         4584         66192         49177         15067        834396         19207        127089          1187         13666         76310 
+
+# Create an ORIGINAL_STRATA value and changes some of the STRATA values for the EM Research Zero pool and EM TRW EFP:
+prep_data <- prep_data %>% 
+#  rename(ORIGINAL_STRATA = STRATA) %>% 
+#  mutate(STRATA = #ifelse(VESSEL_ID %in% c('5029', '1472'), 'ZERO_EM_RESEARCH',  # removed for 2021: , '3759' ,'2844'
+#                         ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'BSAI', 'EM_TRW_EFP_FULL', 
+#                                ifelse(ORIGINAL_STRATA == 'EM_TRW_EFP' & FMP == 'GOA',  'EM_TRW_EFP_PART', ORIGINAL_STRATA)))#)
+   mutate(STRATA = case_when((VESSEL_ID == 33881 & TRIP_TARGET_DATE >= as.Date("2024-07-19")) ~ 'OB_FIXED_GOA',
+                             !(VESSEL_ID == 33881 & TRIP_TARGET_DATE >= as.Date("2024-07-19")) ~ STRATA))
+
+table(prep_data$STRATA)
+# EM_FIXED_BSAI  EM_FIXED_GOA   EM_TRW_BSAI    EM_TRW_GOA          FULL OB_FIXED_BSAI  OB_FIXED_GOA   OB_TRW_BSAI    OB_TRW_GOA          ZERO 
+#          4584         66192         49177         15067        834396         19207        127182          1187         13666         76217 
+
+      
+      
 
 # Back calculate halibut PSC estimates using mortality rates -------------------------------------------------------------
 
@@ -189,7 +200,7 @@ valhalla_run_date <- valhalla_data %>%
   distinct(RUNDATE)
 
 valhalla_run_date
-valhalla_run_date$RUNDATE <- '04-APR-2025'
+valhalla_run_date$RUNDATE <- '15-APR-2025'
   
   
 # Using the run date from Valhalla, query the data warehouse to get the CAS run used in Valhalla's creation 
@@ -275,14 +286,11 @@ apply_dmr <- apply_dmr %>%
 work_data <- apply_dmr         
 
 
-
-
-
 # Corrections to OBSERVED_FLAG  ---------------------------------------------------------------------------- 
 
-table(prep_data$OBSERVED_FLAG)
+table(work_data$OBSERVED_FLAG)
 #     N      Y 
-#280161 926959
+#279916 926959 
 
 # Hardcode the following changes to 3 trips here (2020 remnant... none so far for 2021, 2022, or 2023):
 #prep_data <- prep_data %>% 

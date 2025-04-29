@@ -277,11 +277,12 @@ flextable(bsai) %>%
   # Merge 'FMP AREA Subtotal' label across 2 cells (strata and gear):
   merge_at(i=15, j=c(2:3)) %>% 
   # Add dashed horizontal lines before area subtotals:
-  border(i = 14, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = 15, part = "body", border.bottom = fp_border(style = "dashed")) %>% 
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl trips where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
-                              "2 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata."))
+                              "2 For the EM trawl stratum, shoreside sampling occurs at the delivery level, so the values in the table for N, n, and % reflect deliveries rather than trips.",
+                              "3 Full coverage in this table includes vessels in both the Regulatory and Voluntary Full Coverage strata."))
 
 
 
@@ -361,7 +362,9 @@ flextable(goa) %>%
   # Add "fix" needed because of cell merges:
   fix_border_issues(part = "body") %>% 
   # Add footer:
-  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl deliveries where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table."))
+  add_footer_lines(values = c("1 Monitored reflect either trips with an observer, EM fixed gear trips for which some video was reviewed, or EM trawl deliveries where observers sampled shoreside to collect biological samples and census counts of salmon and halibut PSC. EM trawl trips also require 100% at-sea video monitoring for compliance with maximized retention requirements, but that monitoring is not reflected in this table.",
+                              "2 For the EM trawl stratum, shoreside sampling occurs at the delivery level, so the values in the table for N, n, and % reflect deliveries rather than trips.",
+                              "3 The sum of total unique vessels in the three vessel length categories is two greater than is seen in Table 3-5.  This is due to fishing vessels changing their length on file with NMFS mid-year and making landings under two different lengths and vessel length categories."))
 
 
 
