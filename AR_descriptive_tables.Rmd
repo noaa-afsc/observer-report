@@ -41,46 +41,7 @@ title: "Annual Report Descriptive Data Draft"
 
 ```
 
-# 4 Descriptive Information
 
-## 4.1  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
-
-Table 3-1 provides trip and vessel counts based on coverage type and strata. However, the
-Council has previously requested a summary of trip and vessel counts based on criteria that are
-not, or are no longer, considered when deploying observers on trips (e.g., FMP area and vessel
-length). Table 4-1 and Table 4-2 provide a summary of the number of vessels and trips by FMP
-area, strata, gear type, and vessel length category within the full and partial coverage categories.
-Trips are summarized as the number of monitored trips and the total number of trips. Monitored
-trips reflect either trips with an observer, EM fixed gear trips if at least some video was
-reviewed, or EM trawl trips where biological samples and census counts of salmon and Pacific halibut
-PSC were collected at shoreside plants. The EM trawl trips are also required to have cameras on for 100%
-of their trips for compliance monitoring, but this form of monitoring is not evaluated in table 4-1 and
-4-2.  
-
-Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and
-Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes
-more than one gear type on a trip or within the year. The table rows titled “BSAI Subtotal”,
-“GOA Subtotal”, and “Total Unique” include the number of unique vessels and unique trips in
-each vessel length category where each vessel or trip is counted only once, in each of the FMP
-areas or overall, respectively.
-
-
-## 4.2  Total Catch and Discards and Amount of Catch Monitored
-
-The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs), instead observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) was summarized from the NMFS Catch Accounting System (CAS) in Table 4-3 and Table 4-4 for `r as.numeric(format(Sys.Date(), "%Y"))-1`. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. (2014). 
-
-It is important to note that the proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not _a priori_ be expected to equal the deployment rates (proportion of trips selected for observer or EM coverage) specified in the ADP.  In particular, if there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum.[^1]  
-
-In Table 4-3 and Table 4-4, the table columns titled “Monitored” indicate catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl trips where biological samples and census counts of salmon or Pacific halibut PSC were observed at the shoreside plants.  The EM trawl trips are also required to have cameras on for 100% of their trips for compliance monitoring of maximized retention requirements, but this monitoring strategy is not used to define "Monitored" for Table 4-3 and Table 4.4.  The columns titled “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Retained” indicate catch that was offloaded (minus dockside discard). The rows titled “Discard” are estimated at-sea discard.
-
-All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction.  
-
-
-***
- 
-[^1]: More trips monitored in one subpopulation (fishery) equates to fewer monitored trips in the other subpopulations since all the trips across the different subpopulations must add to the total number of trips selected.
-
-***
 
 ```{r data_inputs, message=FALSE, warning=FALSE, include=FALSE, results='asis'}
 
@@ -213,6 +174,49 @@ counts_wide <- total_counts_wide %>%
 
 
 ```
+
+
+# 4 Descriptive Information
+
+## 4.2  Number of Trips and Vessels by FMP Area, Strata, Gear and Vessel Length
+
+In Chapter 3, Table 3-5 provides trip or delivery and vessel counts based on coverage type and strata. The
+Council has previously requested a summary of trip and vessel counts based on criteria that are
+not, or are no longer, considered when deploying observers on trips (e.g., vessel
+length). Table 4-1 and Table 4-2 summarize the number of vessels, totals trips or deliveries, and monitored trips or deliveries by FMP
+area, strata, gear type, and vessel length category within the full and partial coverage categories.
+Monitored indicates trips with an observer, EM fixed gear trips if at least some video was
+reviewed, or EM trawl deliveries where biological samples and census counts of salmon and Pacific halibut
+PSC were collected at shoreside plants. All trawl EM category trips are required to have cameras on for 100%
+of their trips for compliance monitoring (not shown in Tables 4-1 and 4-2). Table 4-1 summarizes trips or deliveries in the Bering Sea/Aleutian Islands (BSAI) and Table 4-2 summarizes trips or deliveries in the Gulf of Alaska (GOA). Both tables contain BSAI and GOA observer and EM fixed-gear trip selection strata, however. Vessel owners or captains declare in ODDS where they intend to harvest the majority of catch on the trip, which determines the FMP area of the strata, but they may fish in both FMP areas. 
+
+Vessels and trips may be counted more than once in a vessel length category in Table 4-1 and
+Table 4-2 if a vessel is in more than one stratum, fishes in more than one FMP area, or utilizes
+more than one gear type on a trip or within the year. The table rows titled “BSAI Subtotal”,
+“GOA Subtotal”, and “Total Unique” include the number of unique vessels and unique trips in
+each vessel length category where each vessel or trip is counted only once, in each of the FMP
+areas or overall, respectively.
+
+
+## 4.3  Total Catch and Discards and Amount of Catch Monitored
+
+The ADP does not assign observers or EM coverage by fisheries (because the fishery is not able to be defined before fishing occurs). Instead, observers or EM are deployed to trips and vessels across all fisheries.  However, there has been interest in comparing observer and EM coverage across resulting fisheries, so this section includes summaries of monitored and total catch by area, gear type, and sector. The total catch of groundfish and halibut (retained and discarded) for `r as.numeric(format(Sys.Date(), "%Y"))-1` was summarized from the NMFS Catch Accounting System (CAS) in Table 4-3 and Table 4-4. These tables allow for comparisons of the metric of catch weight derived from CAS.  Catch estimation methods are described in detail in Cahalan et al. (2014). 
+
+The proportion of catch weight monitored for a subset of fishing activity (i.e., a fishery) should not _a priori_ be expected to equal the deployment rates specified in the ADP (i.e., proportion of trips selected for observer or EM coverage). If there are differences in fishing characteristics between the subsets of fishing activity, specifically differences in catch weights (or discard rates) per trip, those differences will be reflected in the relative proportions of catch monitored. For example, within the partial coverage trawl stratum, trips in the Pollock fishery will have very different total catch weights and discard characteristics than trips in flatfish fisheries. In addition, there are several other factors that will contribute to the apparent inconsistencies between proportion of catch monitored, the proportion of trips monitored, and the deployment rate specified in the ADP. These include the actual number of trips selected (sample size), variability in deployment due to random chance, the ratio of number of trips in each of the fisheries, and lack of independence between the coverage rates within a sampling stratum.[^1]  
+
+In Table 4-3 and Table 4-4, the table columns titled “Mon” indicate monitored catch that occurred on trips where an observer was present, on EM fixed gear trips for which some video was reviewed, or on EM trawl deliveries where biological samples and census counts of salmon or Pacific halibut PSC were observed at the shoreside plants.  The EM trawl trips are also required to have cameras on for 100% of their trips for compliance monitoring of maximized retention requirements, but this monitoring strategy is not used to define monitored catch in Table 4-3 and Table 4.4.  In Table 4-3 and Table 4-4, “Total” represents estimates of all catch from all trips regardless of whether it was monitored. The rows title “Ret” indicates retained catch that was offloaded (minus dockside discard). The rows titled “Disc” are estimates of at-sea discards.
+
+All catch and discard information, including halibut, summarized in these tables are in round weight metric tons. If species were landed in a condition other than round weight, then standard product recovery rates (PRRs) were used to obtain round weight. Halibut that were landed in ice and slime were additionally corrected for ice and slime using a standard 2% correction. 
+
+In Table 4-3 the catch of full coverage catcher vessels participating in the Central Gulf of Alaska Rockfish program is distinguished from the catch of catcher vessels in partial coverage.  With the implementation of the Pacific Cod Trawl Cooperative (PCTC) program in 2024, Table 4-4 has been modified to differentiate the catch of catcher vessels in full coverage from those in partial coverage. The full coverage catcher vessels fishing non-pelagic trawl gear participated in PCTC and those fishing pelagic trawl gear participated in the American Fisheries Act (AFA) pollock fishery.
+
+
+***
+ 
+[^1]: More trips monitored in one subpopulation (fishery) equates to fewer monitored trips in the other subpopulations since all the trips across the different subpopulations must add to the total number of trips selected.
+
+***
+
 
 Table 4-1. -- Number of vessels (V), total trips/deliveries (N), monitored trips/deliveries (n), and percent of trips/deliveries monitored (%) in `r as.numeric(format(Sys.Date(), "%Y"))-1`  in the BSAI by strata, gear type (hook-and-line (HAL), non-pelagic trawl (NPT), pelagic trawl (PTR), pot, and jig), and vessel length category (based on length overall, in feet) for the full and partial coverage categories.     
 
@@ -459,7 +463,7 @@ catch_wide <- catch_wide %>%
 
 **INSERT PAGE BREAK** 
 
-Table 4-3. -- Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Gulf of Alaska*. Empty cells indicate that no catch occurred.
+Table 4-3. -- Monitored catch^1^ (Mon; in metric tons), total catch, and percent monitored (%) of groundfish and halibut retained (Ret) and discarded (Disc) in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the Gulf of Alaska. Empty cells indicate that no catch occurred.
 
 
 ```{r Table4_3_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
@@ -524,7 +528,7 @@ flextable(table4_3) %>%
 
 **INSERT PAGE BREAK** 
 
-Table 4-4. -- Monitored catch^1^ (metric tons), total catch, and percent monitored (%) of groundfish and halibut retained and discarded in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the *Bering Sea/Aleutian Islands*.  Empty cells indicate that no catch occurred.
+Table 4-4. -- Monitored catch^1^ (Mon; in metric tons), total catch, and percent monitored (%) of groundfish and halibut retained (Ret) and discarded (Disc) in the groundfish and halibut fisheries in `r as.numeric(format(Sys.Date(), "%Y"))-1` in the Bering Sea/Aleutian Islands.  Empty cells indicate that no catch occurred.
 
 
 ```{r Table4_4_flextable, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
@@ -797,7 +801,7 @@ npt_partial_mon <- table4_3 %>%
 ```
 
 
-These tables can also be used to compare the proportion of catch that occurred in full coverage or
+These tables can be used to compare the proportion of catch that occurred in full coverage or
 the partial coverage categories or the proportion of catch that was monitored for trips or EM trawl deliveries in partial
 coverage. For example:
 
