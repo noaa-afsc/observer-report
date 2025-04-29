@@ -31,6 +31,14 @@ rm(list = ls())
 # Define odbc connection to NORPAC
 channel  <- eval(parse(text = Sys.getenv('channel_afsc')))
 
+
+# If you need to change the AFSC database PW, uncomment the "usethis" command in the next line, 
+# edit the .Renviron file with the new PW, and then you will need to restart R
+
+# usethis::edit_r_environ()
+
+
+
 # Assign the address of the Annual Report Project in the Shared Gdrive
 AnnRpt_EnfChp_dribble <- gdrive_set_dribble("Projects/Annual Report OLE chapter 5/2024_data")
 
@@ -147,6 +155,8 @@ df_obs_statement_units <-
       ")
 
 
+
+
 #################
 # First violation date for the statements
   # We DO need this in 2024, because this is how we determine if a statement belongs in the report for the year or not.
@@ -212,7 +222,7 @@ df_first_viol_date <-
   # remove extra rows NOT from the last 2 years
   filter(FIRST_VIOL_YEAR >= adp_yr-1,
          FIRST_VIOL_YEAR <= adp_yr)
-
+        
 
 
 
@@ -225,10 +235,9 @@ df_obs_statements <-
   left_join(df_obs_statement_units) # outer_join ensures we still include any that do NOT have unit record (there are several of these)
 
 
- 
+
+
   
-
-
 ###################
 # deployed_dates for each cruise/permit SQL query
 
@@ -387,13 +396,15 @@ df_obs_offloads <-
     channel,
     paste0("SELECT cruise, permit, offload_seq, landing_report_id AS report_id, trunc(delivery_end_date) AS landing_date,
                    CASE WHEN cruise_plant_seq is null THEN 'V' ELSE 'P' END AS vessel_or_plant,
+                   (SELECT permit FROM norpac.atl_lov_plant 
+                     WHERE plant_seq = o.plant_seq) AS plant_permit,
                    norpac.ole_statement_pkg.get_unit_description(
                              p_data_cruise   => cruise,
                              p_permit        => permit,
                              p_answer        => to_char(offload_seq),
                              p_incident_unit => 'OFFL'
                              )  AS offload_description         
-              FROM norpac.atl_offload
+              FROM norpac.atl_offload o
              WHERE cruise >= ", first_cruise,
              " AND trunc(delivery_end_date) BETWEEN to_date('", first_date, "', 'DD-MON-RR') AND to_date('", last_date, "', 'DD-MON-RR')
            "))

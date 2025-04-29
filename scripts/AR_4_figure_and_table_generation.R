@@ -4,6 +4,7 @@
 
 #TODO - source data has RATE == NA!
 #TODO - Generate summary of number of regulations at the category level for Table
+# DONE ADK 20250411
 
 library(tidyverse)
 library(ggplot2)
@@ -296,6 +297,124 @@ T_statement_totals <-
 
 T_statement_totals
 
+
+
+
+
+
+
+
+
+###################### #
+# attempt to quantify the NAs in units ---------------
+###################### #
+
+
+# Unit issues---------
+unit_issues <-
+  df_obs_statements %>%
+  filter(FIRST_VIOL_YEAR == adp_yr,
+         ! is.na(UNIT_ISSUE)
+  ) %>%
+  distinct(OLE_OBS_STATEMENT_SEQ, CATEGORY, SUBCATEGORY, UNIT_ISSUE,
+           SOME_UNITS_WERE_SELECTED_FLAG = ifelse(is.na(OLE_OBS_STATEMENT_UNIT_SEQ), 'N', 'Y'))
+
+
+
+# Calculate missing units.
+# Some satements are missing SOME but have some.  Other statements are missing all.
+# First collapse these so they don't get double-counted
+# if not units exist for ole_obs_statement_seq, give it N
+# if they exist, give it a Y.  Then collapse these together to use for the n_distinct in the next step
+# UPDATE ADK 20250417: these were imputed wherever we could, so only a few are missing now.
+summ_stmts_with_missing_units <-
+  df_obs_statements %>%
+  filter(FIRST_VIOL_YEAR == adp_yr) %>%
+  distinct(CATEGORY, OLE_OBS_STATEMENT_SEQ,
+           UNITS = ifelse(is.na(ANSWER), 'N', 'Y')) %>%
+  group_by(CATEGORY, OLE_OBS_STATEMENT_SEQ) %>%
+  summarise(UNITS_EXIST = paste(UNITS, collapse = ','),
+            .groups= "drop") %>%
+  # end collapse section; next just summarize them
+  group_by(CATEGORY) %>%
+  summarise(N_STMTS_TOTAL                       = n_distinct(OLE_OBS_STATEMENT_SEQ),
+            N_STMTS_NO_UNITS                    = n_distinct(OLE_OBS_STATEMENT_SEQ[ UNITS_EXIST == 'N']),
+            N_STMTS_ALL_UNITS                   = n_distinct(OLE_OBS_STATEMENT_SEQ[ UNITS_EXIST == 'Y']),
+            N_STMTS_WITH_SOME_BUT_NOT_ALL_UNITS = n_distinct(OLE_OBS_STATEMENT_SEQ[ UNITS_EXIST == 'N,Y' | UNITS_EXIST == 'Y,N']),
+            .groups= "drop") %>%
+  mutate(PERCENT_MISSING_UNITS = ((N_STMTS_WITH_SOME_BUT_NOT_ALL_UNITS + N_STMTS_NO_UNITS)/N_STMTS_TOTAL)*100)%>% 
+  arrange(desc(PERCENT_MISSING_UNITS))
+  
+
+missing_units_totals <-colSums(summ_stmts_with_missing_units[sapply(summ_stmts_with_missing_units, is.numeric)], na.rm = TRUE) #only numeric columns
+
+missing_units_total_row <- c(Name = "All Categories", missing_units_totals)# add a descriptor
+
+summ_stmts_with_missing_units <- 
+  rbind(summ_stmts_with_missing_units,
+        missing_units_total_row) %>% # add row to table
+  # calculate proportion missing for TOTAL - this is incorrect as a sum from above, need to correct.
+  mutate( PERCENT_MISSING_UNITS               = as.numeric(PERCENT_MISSING_UNITS),
+          PERCENT_MISSING_UNITS = ifelse(CATEGORY == 'All Categories', 
+                                         ((as.numeric(N_STMTS_WITH_SOME_BUT_NOT_ALL_UNITS) + as.numeric(N_STMTS_NO_UNITS))/as.numeric(N_STMTS_TOTAL ))*100,
+                                         PERCENT_MISSING_UNITS),
+          CATEGORY = str_to_title(CATEGORY),
+          CATEGORY = case_when(str_detect(CATEGORY, "Uscg-Equipment") ~
+                                 "Safety-USCG: Equipment",
+                               str_detect(CATEGORY, "Uscg-Fail") ~
+                                 "Safety-USCG: Fail to Conduct Drills and/or Safety Orientation",
+                               str_detect(CATEGORY, "Uscg-Marine") ~
+                                 "Safety-USCG: Marine Casualty",
+                               str_detect(CATEGORY, "Observer Safety") ~
+                                 "Observer Safety and Work Environment",
+                               str_detect(CATEGORY, "Permits") ~
+                                 "Permits/Documents/Record Keeping and Reporting",
+                               str_detect(CATEGORY, "Marpol") ~
+                                 "MARPOL/Oil Spill",
+                               str_detect(CATEGORY, "Interference") ~
+                                 "Interference with Duties",
+                               TRUE ~ CATEGORY)) %>%
+ 
+  # rename_cols 
+  rename("Category" = CATEGORY,
+         `Total Statements (#)`                   = N_STMTS_TOTAL,
+         `Statements with ALL units (#)`          = N_STMTS_ALL_UNITS,
+         `Stmts with SOME but not all units (#)`  = N_STMTS_WITH_SOME_BUT_NOT_ALL_UNITS,
+         `Statements with NO units (#)`           = N_STMTS_NO_UNITS,
+         `Statements Missing units (%)`           = PERCENT_MISSING_UNITS 
+          )
+
+
+summ_stmts_with_missing_units <- autofit(flextable(summ_stmts_with_missing_units))
+
+# make bold headers
+summ_stmts_with_missing_units <- bold(summ_stmts_with_missing_units, bold = TRUE, part = "header")
+
+summ_stmts_with_missing_units <- bold(summ_stmts_with_missing_units, bold = TRUE,  i= ~ `Category` == "All Categories"  )
+
+summ_stmts_with_missing_units <- #Add pretty line above totals as in prior tables
+  summ_stmts_with_missing_units %>% colformat_double() %>% 
+  hline(i = ~ before(`Category`, "All Categories"), border = fp_border_default())
+
+summ_stmts_with_missing_units
+
+# Create a new Word document (portrait by default)
+doc2 <- read_docx()
+# Optionally, add a heading or title
+#doc <- body_add_par(doc, "Two Tables Stacked on One Page", style = "heading 1")
+
+doc2 <- body_add_flextable(doc2, value = summ_stmts_with_missing_units) 
+
+
+
+
+
+
+
+
+
+
+
 #ODDS
 odds_table <- 
   merge(odds_dat %>% group_by(Port = `Trip Ending Port`, 
@@ -491,8 +610,10 @@ plot_format_fxn <- function(
 # p <- plot_format_fxn(df = subcat_priority, rate_x = rate_x)
 #
 priority_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "PRIORITY"), rate_x = rate_x, start_color = start_color, end_color = end_color)
+priority_plot
 
 other_plot <- plot_format_fxn(df = for_figures %>% filter(SUPER_CAT == "OTHER"), rate_x = rate_x, start_color = start_color, end_color = end_color)
+other_plot
 
 # Detailed dive into high rates with factors ---------------------------------------------------------------------------
 #For factors, we want to use coverage type, FMP, and Vessel Type.
@@ -543,6 +664,8 @@ factor_plot <- plot_format_fxn(df = for_factor_figures %>% filter(SUPER_CAT == c
 assign(paste0(tolower(gsub("-", "_", super_levels$SUPER_FACT[i])), "_plot"), factor_plot)
 }
 
+factor_plot
+
 #cleanup
 rm(df, df_SASH, i, df_super, df_out, df_highest, super_levels)
 
@@ -552,8 +675,9 @@ ggsave("other_plot.pdf", plot = other_plot, width = 12, height = 6, units = "in"
 ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, height = 6, units = "in", path = "Plots/")
 ggsave("other_factors_plot.pdf", plot = other_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
 
-#Save the Word document
+#Save the Word documents
 print(doc, target = "tables/tables.docx")
+print(doc2, target = "tables/table_missing_units.docx")
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
 # 

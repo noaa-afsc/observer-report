@@ -1,5 +1,5 @@
 
-####################
+#################### #
 # Annual Report Enforcement chapter: Rate calculations
 # Contact Andy Kingham
 # 206-526-4212
@@ -14,7 +14,7 @@ if(!require("data.table"))  install.packages("data.table",  repos='http://cran.u
 if(!require("sqldf"))       install.packages("sqldf",       repos='http://cran.us.r-project.org')
 if(!require("devtools"))    install.packages("devtools",    repos='http://cran.us.r-project.org')
 if(!require("FMAtools"))    devtools::install_github("Alaska-Fisheries-Monitoring-Analytics/FMAtools")
-
+if (!require("plotrix"))    install.packages("plotrix", repos='http://cran.us.r-project.org')
 # load the data files.----------------------------------------------------------
 rm(list = ls())
 
@@ -31,7 +31,92 @@ gdrive_download(file_2_name, AnnRpt_EnfChp_dribble)
 load(file = file_2_name)
 
 
+###################### #
+# Impute missing units ------------
 
+# UPDATED 20250414 To add HARD-CODED units for statements that are missing them
+# but we are able to tell what they are from the UNIT_ISSUE text and/or the STATEMENT_BODY text.
+# 1. If exact number of occurrences is able to be discerned from text, use that as the UNIT_ROW_MULTIPLIER
+# 2. If exact number of occurrences can NOT be discerned from the text, use the MEAN for that OLE_REGULATION_SEQ as the UNIT_ROW_MULTIPLIER.
+# 3. Get the INCIDENT_UNIT that is used for the regulation type from the LOV, and hardcode it.
+# 4. Leave the ANSWER null; this is important because
+#    we can use this later to identify if the statement had an actual unit, vs if the unit was imputed in this step.
+
+# first look at them
+na_units <-
+  df_obs_statements %>%
+  filter(is.na(ANSWER) | is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         FIRST_VIOL_YEAR == adp_yr) %>%
+  select(OLE_OBS_STATEMENT_DETAIL_SEQ, OLE_REGULATION_SEQ, UNIT_ISSUE, STATEMENT_BODY)
+
+
+mean_units_for_reg <-
+  df_obs_statements %>%
+    group_by(OLE_OBS_STATEMENT_DETAIL_SEQ, OLE_REGULATION_SEQ) %>%
+    summarise(N_UNITS = n_distinct(OLE_OBS_STATEMENT_UNIT_SEQ, na.rm =TRUE),
+              .groups = "drop") %>%
+    group_by(OLE_REGULATION_SEQ) %>%
+    summarise(MEAN_UNITS = mean(N_UNITS),
+              MEAN_SE = plotrix::std.error(N_UNITS),
+              N_STATEMENTS_SELECTED_IT = n_distinct(OLE_OBS_STATEMENT_DETAIL_SEQ),
+              .groups = "drop")
+  
+
+df_impute_missing_units_step_1 <-  
+  df_obs_statements %>%
+  filter(!is.na(UNIT_ISSUE) & is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
+         FIRST_VIOL_YEAR == adp_yr) %>%
+  distinct(CRUISE, PERMIT, OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ, UNIT_ISSUE) %>%
+  
+  # hardcode the UNIT_ROW_MULTIPLIER from the ones we can ACTUALLY TELL from the text
+  mutate(UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 719, 838, 1052, 1265, 1260), 1,   # these are all clearly ONE OCCURRENCE
+                                      ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(880), 2,   # these are all clearly TWO occurrences
+                                             ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879), 24, NA)) # 3 times a week for 8 weeks = 24 occurrences, per the unit issue text.
+                                      ),
+         # hardcode the INCIDENT_UNIT (as separate column, this is important for future joins)
+         IMP_INCIDENT_UNIT = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c( 665, 1265, 1313), 'OFFL', 
+                                    ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(719, 838, 880, 1052, 1080, 1134, 1144, 1170), 'HAUL', 
+                                           ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ %in% c(879, 1000, 1036, 1145, 1260, 1316), 'DAYS', 
+                                                  NA))),
+         # use the MEAN for those that we can't tell how many there were from the text.
+         # MUST UPDATE THIS EACH YEAR
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 665, 35,  UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 486; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1036, 4,  UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 469; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1000, 10, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 145; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1170, 66, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 517; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1080, 10, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 278; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1144, 21, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 486; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1134, 35, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 283; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1316, 1,  UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 138; see df "na_units" that was made in previous step.
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1313, 1,  UNIT_ROW_MULTIPLIER),  #  there is no mean for this OLE_REGULATION_SEQ = 43;  see df "na_units" that was made in previous step.  USING ONE IN THIS CASE to ensure we are not OVER-counting..
+         UNIT_ROW_MULTIPLIER = ifelse(OLE_OBS_STATEMENT_DETAIL_SEQ == 1145, 25, UNIT_ROW_MULTIPLIER),  # using the rounded mean for OLE_REGULATION_SEQ = 480; see df "na_units" that was made in previous step.
+          )
+
+
+
+df_impute_missing_units_step_2 <-  
+  df_impute_missing_units_step_1 %>%
+  filter(!is.na(UNIT_ROW_MULTIPLIER)) %>%
+  group_by(OLE_OBS_STATEMENT_SEQ, OLE_OBS_STATEMENT_DETAIL_SEQ, 
+           IMP_INCIDENT_UNIT, ANSWER = NA) %>%
+  expand(IMP_OLE_OBS_STATEMENT_UNIT_SEQ = 1:UNIT_ROW_MULTIPLIER) %>%
+  mutate(IMP_OLE_OBS_STATEMENT_UNIT_SEQ = OLE_OBS_STATEMENT_DETAIL_SEQ*1000+IMP_OLE_OBS_STATEMENT_UNIT_SEQ) 
+
+# Add these back to the main statements df
+df_obs_statements <-
+  df_obs_statements %>%
+  left_join(df_impute_missing_units_step_2) %>%
+  mutate(OLE_OBS_STATEMENT_UNIT_SEQ = ifelse(is.na(OLE_OBS_STATEMENT_UNIT_SEQ), IMP_OLE_OBS_STATEMENT_UNIT_SEQ, OLE_OBS_STATEMENT_UNIT_SEQ),
+         INCIDENT_UNIT = ifelse(is.na(INCIDENT_UNIT), IMP_INCIDENT_UNIT, INCIDENT_UNIT)
+  ) %>%
+  select(-IMP_OLE_OBS_STATEMENT_UNIT_SEQ, -IMP_INCIDENT_UNIT)
+
+
+
+
+
+
+################ #
 # Statements summaries------------------------
 # Some high-level summary tables of the new statements data.
 
@@ -109,6 +194,7 @@ summ_subcat_units <-
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ)) %>% 
   # TODO: do something about these. 
   # Possibly find them from the unit_issue and update the units data???? For now, just filtering them out.
+  # UPDATE 20250411: handled them all for 2024.  Only 2023 is not handled and we don't care because we aren't doing YOY.
   group_by(CALENDAR_YEAR = FIRST_VIOL_YEAR, CATEGORY, SUBCATEGORY, INCIDENT_UNIT) %>%
   summarise(N_STATEMENTS = n_distinct(OLE_OBS_STATEMENT_SEQ),
             DISTINCT_REGS_SELECTED = n_distinct(OLE_REGULATION_SEQ),
@@ -140,7 +226,7 @@ summ_subcat_units <-
 
 # Units Denom summaries----------
 # Unit summaries for TOTALS that are used for the DENOMINATOR.
-##########
+########## #
 
 # TODO: determine what factors to group by for 2024
 # For now, just grouping by CALENDAR_YEAR
@@ -228,9 +314,16 @@ units_melt <-
        value.name    = 'TOTAL_UNITS',
        variable.name = "INCIDENT_UNIT") 
 
-#########
-# Rates for Units
-#########
+
+
+
+
+
+
+
+######### #
+# Rates for Units -------------
+######### #
 
 # REG-level rate
 reg_units_rate <-
@@ -302,14 +395,6 @@ subcat_units_rate_priority <-
 
 
 
-
-
-
-
-
-
-
-
 # Get factors for each selected unit in statements----------------------
 
 # Deployments
@@ -355,8 +440,8 @@ chosen_days_with_factors <-
             )
 
 # check for NAs
-# There are 46 NAs after this join, I believe the observer may have selected units that were deleted from their data later?
-# TODO: figure this out????
+# There are 116 NAs after this join, I believe the observer may have selected units that were OUTSIDE of their deployment logistics data?
+# UPDATE: confirmed from text of statements, yes this definitely happens. In fact some of these were imputed in the IMPUTE step.
 table(chosen_days_with_factors$CALENDAR_YEAR, chosen_days_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
 
@@ -387,9 +472,9 @@ chosen_hauls_with_factors <-
   )
 
 # check for NAs
-# There are 101 NAs after this join
+# There are 238 NAs after this join
 # I believe the observers may have selected units that were deleted from their data later???
-# TODO: figure this out ????
+# UPDATE: there are also some NA's now that we IMPUTED the missing units, so of course they don't join.
 table(chosen_hauls_with_factors$CALENDAR_YEAR, chosen_hauls_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
 
@@ -399,7 +484,7 @@ table(chosen_hauls_with_factors$CALENDAR_YEAR, chosen_hauls_with_factors$COVERAG
 
 
 
-# Hauls
+# Trips
 chosen_trips_with_factors <-
   df_obs_statements %>% 
   filter(!is.na(OLE_OBS_STATEMENT_UNIT_SEQ),
@@ -470,21 +555,35 @@ chosen_offloads_with_factors <-
          CRUISE = DATA_CRUISE) %>%
   left_join(rbind(offloads_with_factors %>%
                     # accounting for 0s and NA in the permit column
-                    distinct(CRUISE, PERMIT = 0,  OFFLOAD_SEQ, COVERAGE_TYPE, 
+                    distinct(CRUISE, PERMIT = 0, 
+                             OFFLOAD_SEQ, COVERAGE_TYPE, 
                              VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
                   offloads_with_factors %>%
-                    distinct(CRUISE, PERMIT = NA, OFFLOAD_SEQ, COVERAGE_TYPE, 
+                    distinct(CRUISE, PERMIT = NA,
+                             OFFLOAD_SEQ, COVERAGE_TYPE, 
                              VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
                   offloads_with_factors %>%
-                    distinct(CRUISE, PERMIT,      OFFLOAD_SEQ, COVERAGE_TYPE,
+                    distinct(CRUISE, PERMIT,     
+                             OFFLOAD_SEQ, COVERAGE_TYPE,
+                             VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION),
+                  # for offloads we also need to joint the statements that were written against the PLANT by the VESSEL observer,
+                  # these statements are written with the PLANT permit, but the data are recorded at the vessel permit.
+                  # this next snippet handles that case.
+                  offloads_with_factors %>%
+                    distinct(CRUISE, PERMIT = as.numeric(PLANT_PERMIT), 
+                             OFFLOAD_SEQ, COVERAGE_TYPE,
                              VESSEL_TYPE, GEAR_TYPE, MANAGEMENT_PROGRAM_CODE, TRAWL_EM, NMFS_REGION)
-  ),
+             ),
   relationship = "many-to-many"
   )
 
 # check for NAs
-# There are 53 NAs after this join
-# I believe the observers may have selected units that were deleted from their data later???
+# There are 92 NAs after this join
+# Some of this is from observers that may have selected units that were deleted from their data later?..
+# BUT for offloads, this is also because of VESSEL_OBSERVERs writing statements against a PLANT. So the PERMIT 
+# in the statement is the plant, but there is NO data for the PLANT for the observer (offloads for 
+# vessel observers are reported at the vessel permit).
+#TODO: get the DATA_PERMIT for these and add it as a column.
 # TODO: figure this out ????
 table(chosen_offloads_with_factors$CALENDAR_YEAR, chosen_offloads_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
@@ -512,7 +611,6 @@ chosen_marm_with_factors <-
 # check for NAs
 # There is 1 NA after this join
 # I believe the observers may have selected units that were deleted from their data later???
-# TODO: figure this out ????
 table(chosen_marm_with_factors$CALENDAR_YEAR, chosen_marm_with_factors$COVERAGE_TYPE, exclude = FALSE)
 
 
@@ -588,7 +686,7 @@ summ_subcat_units_for_factors <-
 
 
 
-###########
+########### #
 # Unit summaries for TOTALS that are used for the DENOMINATOR, continued
 # This time, with the factor groups for 2024.
 # Those are:
@@ -672,9 +770,9 @@ units_for_factors_melt <-
                  value.name    = 'TOTAL_UNITS',
                  variable.name = "INCIDENT_UNIT") 
 
-#########
-# Rates for Units
-#########
+######### #
+# Rates for Units ---------------------
+######### #
 
 # REG-level rate
 reg_units_for_factors_rate <-
@@ -745,13 +843,13 @@ subcat_units_rate_for_factors_priority <-
 
 
 
-# ###############
-# # OLD CODE, COMMENTING OUT FOR 2024
-########################
+# ############### #
+# # OLD CODE, COMMENTING OUT FOR 2024 ------------
+######################## #
 
 
-#########################
-# Summarize the DAYS for each factor combination.
+######################### #
+# OLD - Summarize the DAYS for each factor combination. ----------
 
 # Count deployed days.
 # Frst count the SUM TOTAL of days for cruise/permit/all factors.
@@ -806,9 +904,9 @@ subcat_units_rate_for_factors_priority <-
 # 
 
 # 
-# ######################
+# ###################### #
 # # Finally!!!!
-# # Calculate the rates.  
+# # OLD - Calculate the rates.   ------------------
 # # There are FOUR rates that are calculated.
 # #     # The FIRST is for each individual statement subcategory (SUBCAT) and each unique factor grouping
 # #     # The SECOND, is for the higher-level, OLD_OLE_CATEGORY and each unique factor grouping.
@@ -867,8 +965,8 @@ subcat_units_rate_for_factors_priority <-
 # 
 # 
 # 
-# ######################
-# # Second rate: by OLD_OLE_CATEGORY, for each factor combination.
+# ###################### #
+# # OLD - Second rate: by OLD_OLE_CATEGORY, for each factor combination. ------------
 # 
 # rate_all_groupings_ole_category <- 
 #   depl_days_summ_by_factor %>%
@@ -902,8 +1000,8 @@ subcat_units_rate_for_factors_priority <-
 # 
 # 
 # 
-# ######################
-# # Third rate: by NEW_OLE_CATEGORY, for each factor combination.
+# ###################### #
+# # OLD - Third rate: by NEW_OLE_CATEGORY, for each factor combination.
 # 
 # rate_all_groupings_new_ole_category <- 
 #   depl_days_summ_by_factor %>%
@@ -1001,7 +1099,7 @@ subcat_units_rate_for_factors_priority <-
 #   ungroup() %>% 
 #   filter(OLD_OLE_CATEGORY %in% c('OLE PRIORITY: SAFETY AND DUTIES',
 #                                  'OLE PRIORITY: INTER-PERSONAL')
-#          | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
+#         # | OLD_OLE_CATEGORY ==  'COAST GUARD' & STATEMENT_TYPE %in% c('Safety-USCG-Marine Casualty',
 #                                                                       'MARINE CASUALTY') 
 #   ) %>%
 #   mutate(OLE_SYSTEM       = factor(OLE_SYSTEM, levels = c('OLD', 'NEW')),
@@ -1200,7 +1298,7 @@ subcat_units_rate_for_factors_priority <-
 
 
 
-##################
+################## #
 # Save Output -------------------------------------------------------------
 
 file_3_name <- "AR_3_rate_output.Rdata"
