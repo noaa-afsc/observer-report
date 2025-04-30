@@ -400,14 +400,62 @@ summ_stmts_with_missing_units
 
 # Create a new Word document (portrait by default)
 doc2 <- read_docx()
-# Optionally, add a heading or title
-#doc <- body_add_par(doc, "Two Tables Stacked on One Page", style = "heading 1")
 
 doc2 <- body_add_flextable(doc2, value = summ_stmts_with_missing_units) 
 
 
 
 
+
+
+
+summ_case_statuses <- 
+  df_obs_statements %>%
+  filter(FIRST_VIOL_YEAR == adp_yr,
+         !is.na(CASE_NUMBER)  ) %>%
+  group_by(CATEGORY, SUBCATEGORY, CASE_STATUS) %>%
+  summarise(N_CASES = n_distinct(CASE_NUMBER),
+            .groups = "drop")
+
+cast_summ_case_statuses <-
+  reshape2::dcast(data      = summ_case_statuses,
+                  formula   = CATEGORY + SUBCATEGORY ~ CASE_STATUS,
+                  value.var = "N_CASES") %>%
+  # Number of unique vessels/plants that were observed
+  bind_rows(reshape2::dcast(data = df_obs_statements %>%
+                              filter(FIRST_VIOL_YEAR == adp_yr, 
+                                     !is.na(CASE_NUMBER)  ) %>%
+                              group_by(CATEGORY = 'ALL', SUBCATEGORY = 'ALL', CASE_STATUS) %>%
+                              summarise(N_CASES = n_distinct(CASE_NUMBER), .groups = "drop"),
+                            formula   = CATEGORY + SUBCATEGORY ~ CASE_STATUS,
+                            value.var = "N_CASES")
+  )
+
+
+
+T_summ_case_status <- autofit(flextable(cast_summ_case_statuses))
+T_summ_case_status <- bold(T_summ_case_status, bold = TRUE, part = "header")
+T_summ_case_status <-
+  T_summ_case_status %>% 
+  colformat_double() %>% 
+  hline(i      = ~ before(`SUBCATEGORY`, "ALL"),
+        border = fp_border_default())
+
+T_summ_case_status <- bold(T_summ_case_status, bold = TRUE, 
+                           i= ~ CATEGORY == "ALL",
+                           j= ~ `CATEGORY` + `SUBCATEGORY` + `Closed` + `Closed - Compliance Assistance Provided`
+                           + `Closed - Lack of Evidence` + `Closed - Lack of Resources` + `Closed - No Violations Documented` + `Closed - Noelle Prosse`
+                           + `Closed - Prosecution/Declined-Civil/Administrative` + `Closed - Referred to State/Tribe for Prosecution` + `Closed - SS Paid` + `Closed - Transferred to Another Agency`
+                           + `Closed - WW Final` + `Do Not Enter Into NEIS` + `Open - Cited by OLE` + `Open - Civil Prosecution Referral Request Pending`
+                           + `Open - Criminal Referral Approved` + `Open - GC Attorney Assigned` + `Open - Investigation Ongoing` + `Open - Pending GC Attorney Assignment` + `Open - WW Served`
+) 
+
+T_summ_case_status
+
+# Create a new Word document (portrait by default)
+doc3 <- read_docx()
+
+doc3 <- body_add_flextable(doc3, value = T_summ_case_status) 
 
 
 
@@ -676,8 +724,9 @@ ggsave("priority_factors_plot.pdf", plot = priority_factors_plot, width = 12, he
 ggsave("other_factors_plot.pdf", plot = other_factors_plot, width = 6, height = 6, units = "in", path = "Plots/")
 
 #Save the Word documents
-print(doc, target = "tables/tables.docx")
+print(doc,  target = "tables/tables.docx")
 print(doc2, target = "tables/table_missing_units.docx")
+print(doc3, target = "tables/table_case_statuses.docx")
 
 save.image(file = "AR_4_summary_tables_output.Rdata")
 # 
