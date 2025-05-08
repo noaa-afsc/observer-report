@@ -1,0 +1,484 @@
+---
+output: word_document
+title: "FMAC Presentation - TEM proposed table"
+---
+
+
+```{r background_info, include=FALSE}
+
+# -------------------------------------------------------------------------------------------------------------------------------#
+# The 2023 Council motion says:
+#   "Future reports include data on the amount of catch monitored by electronic monitoring (EM) similar to data on 
+#     observed catch"
+#
+# My notes from June that says: this is referring to a table that summarizes catch in the TEM strata that was monitored by:
+#   1) sampled shoreside
+#   2) video was on for compliance review
+#   3) video was actually reviewed for compliance
+# 
+# ------------------------------------------------------------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------------------------------------------------------------ #
+# The 2024 Council motion says:
+#   "Continue efforts to attempt to include data on the amount of catch monitored by electronic monitoring (EM) similarly 
+#    to data on observed catch."                                                              
+# ------------------------------------------------------------------------------------------------------------------------------ #
+
+```
+
+
+```{r load_data, include=FALSE}
+
+#Source helper file (libraries, ggplot themes, etc.)
+source("AR_descriptive_helper.r")
+
+# Load current Annual Report working data:
+load("H://Observer Program//Annual Report Local GIT Project//Descriptive Info//AR_descriptive_2024_data.RData")
+
+# Set up ROracle connection for database calling information from R environment:
+channel_cas <- dbConnect(drv = dbDriver('Oracle'), 
+                         username =paste(Sys.getenv('CASid')), 
+                         password =paste(Sys.getenv('CASpw')), 
+                         dbname = Sys.getenv("myCASConnStr"))
+
+
+```
+
+
+```{r query_data, include=FALSE}
+
+# This identifies when video review has been matched to logbooks:
+ tem_video_query <- paste0("SELECT DISTINCT 
+                           ps.year_pk AS year,
+                           ps.landing_report_id,
+                           'Y' AS video_review,
+                           'Y' AS video_review_logbook,
+                           ps.upload_account
+                           FROM
+                           akfish_report.v_trawl_em_pacstates_received ps
+                           WHERE
+                           ps.year_pk = 2024
+                           AND ps.expire_date IS NULL -- get current records  
+                           AND ps.report_type_code = 'TRIP' -- means video review?
+                           
+                           UNION ALL
+                           
+                           SELECT DISTINCT 
+                           sw.year_pk AS year,
+                           sw.landing_report_id,
+                           'Y' AS video_review,
+                           'Y' AS video_review_logbook,
+                           sw.upload_account
+                           FROM
+                           akfish_report.v_trawl_em_saltwater_received sw
+                           WHERE sw.year_pk = 2024
+                           AND sw.expire_date IS NULL
+                           AND sw.report_type_code = 'TRIP'")
+ tem_video <- dbGetQuery(channel_cas, tem_video_query) 
+ 
+ 
+ # Are there landing reports with more than one record?
+ multiples <- tem_video %>% 
+   group_by(LANDING_REPORT_ID) %>% 
+   summarize(record_count = n())
+ 
+ 
+ 
+ # Identify video review that doesn't match to logbooks:
+ tem_video_query2 <- paste0("SELECT distinct 
+                            pso.year_pk AS year,
+                            pso.landing_report_id,
+                            'Y' AS video_review,
+                            'Y' AS video_review_nologbook,
+                            pso.upload_account
+                            FROM
+                            akfish_report.v_trawl_em_pacstates_outstanding pso
+                            WHERE pso.year_pk = 2024
+                            AND pso.expire_date IS NULL
+                            AND pso.status = 'MISSING LOGBOOK'
+                            
+                            UNION ALL
+                            
+                            SELECT distinct 
+                            swo.year_pk AS year,
+                            swo.landing_report_id,
+                            'Y' AS video_review,
+                            'Y' AS video_review_nologbook,
+                            swo.upload_account
+                            FROM
+                            akfish_report.v_trawl_em_saltwater_outstanding swo
+                            WHERE swo.year_pk = 2024
+                            AND swo.expire_date IS NULL
+                            AND swo.status = 'MISSING LOGBOOK'")
+ 
+ tem_video_nologbook <- dbGetQuery(channel_cas, tem_video_query2) 
+ 
+ 
+ 
+
+ 
+# Identifies logbooks that don't have matching video review:
+ tem_novideo_query <- paste0("SELECT distinct
+                             pso.year_pk AS year,
+                             pso.landing_report_id,
+                             'N' AS video_review,
+                             pso.upload_account
+                             FROM
+                             akfish_report.v_trawl_em_pacstates_outstanding pso
+                             WHERE pso.year_pk = 2024
+                             AND pso.expire_date IS NULL
+                             AND pso.status = 'MISSING VIDEO REVIEW'
+                             
+                             UNION ALL
+                             
+                             SELECT distinct 
+                             swo.year_pk AS year,
+                             swo.landing_report_id,
+                             'N' AS video_review,
+                             swo.upload_account
+                             FROM
+                             akfish_report.v_trawl_em_saltwater_outstanding swo
+                             WHERE swo.year_pk = 2024
+                             AND swo.expire_date IS NULL
+                             AND swo.status = 'MISSING VIDEO REVIEW'")
+ tem_novideo <- dbGetQuery(channel_cas, tem_novideo_query) 
+ 
+```
+
+
+```{r compile_data, include=FALSE}
+ 
+# Add Video review information to Valhalla dataset:
+ valhalla_tem <- revised_work_data %>% 
+   filter(STRATA %in% c('EM_TRW_GOA', 'EM_TRW_BSAI')) %>% 
+   # refine to groundfish (which includes directed halibut) OR psc halibut:
+   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+   # Rename the Observed Flag the Shoreside sampling flag:
+   rename(SHORESIDE_SAMPLING = OBSERVED_FLAG) %>% 
+   # Append info on hard drives that have been reviewed (and have matching logbook data):
+   left_join(tem_video, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
+   # Append info on hard drives that have been reviewed (but DON'T have matching logbook data):
+   left_join(tem_video_nologbook, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>% 
+   # Append info on video review that is still outstanding:
+   #left_join(tem_novideo, by = c("REPORT_ID" = "LANDING_REPORT_ID")) %>%
+   # Consolidate some of the fields:  preferentially use video review info when there's matching logbook data, otherwise when there's no logbook
+   mutate(preVIDEO_REVIEW = ifelse(is.na(VIDEO_REVIEW.x), VIDEO_REVIEW.y, VIDEO_REVIEW.x),
+          VIDEO_REVIEW = ifelse(is.na(preVIDEO_REVIEW), 'N', preVIDEO_REVIEW),  
+          preVIDEO_REVIEWER = ifelse(is.na(UPLOAD_ACCOUNT.x), UPLOAD_ACCOUNT.y, UPLOAD_ACCOUNT.x),
+          VIDEO_REVIEWER = ifelse(is.na(preVIDEO_REVIEWER), 'n/a', preVIDEO_REVIEWER),
+          #VIDEO_REVIEW_LB = ifelse(is.na(VIDEO_REVIEW_LOGBOOK), 'N', VIDEO_REVIEW_LOGBOOK),
+          #VIDEO_REVIEW_NOLB = ifelse(is.na(VIDEO_REVIEW_NOLOGBOOK), 'N', VIDEO_REVIEW_NOLOGBOOK)) %>% 
+          VIDEO_REVIEW_LB = case_when(VIDEO_REVIEW_LOGBOOK == 'Y' ~ 'Y',
+                                      VIDEO_REVIEW_NOLOGBOOK == 'Y' ~ 'N', .default = 'n/a')) %>% 
+   # drop some fields:
+   select(-c(ends_with(".x"), ends_with(".y"), starts_with("pre"), VIDEO_REVIEW_LOGBOOK, VIDEO_REVIEW_NOLOGBOOK)) %>% 
+   data.frame()
+ 
+``` 
+ 
+ 
+```{r summarize_data, include=FALSE}
+ 
+ # Explore the data a little:
+ tem_delivery_counts <- valhalla_tem %>% 
+   group_by(STRATA, VIDEO_REVIEW) %>% 
+   summarize(trip_count = n_distinct(TRIP_ID), .groups = 'drop')
+ 
+ 
+ 
+ # Summarize catch by the different TEM metrics:
+ tem_summary <- valhalla_tem %>% 
+   # Shoreside sampling data:
+   filter(SHORESIDE_SAMPLING == 'Y') %>% 
+   group_by (FMP) %>% 
+   summarise(TEM_METRIC = 'Shoreside Sampling',
+             trip_count = n_distinct(TRIP_ID),  # note: this is deliveries
+             weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+   bind_rows(valhalla_tem %>% 
+               filter(SHORESIDE_SAMPLING == 'Y') %>%
+               group_by(.) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'Shoreside Sampling',
+                         trip_count = n_distinct(TRIP_ID), # note: this is deliveries
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   # Video review data:
+   bind_rows(valhalla_tem %>% 
+               filter(VIDEO_REVIEW == 'Y') %>% 
+               group_by (FMP) %>% 
+               summarise(TEM_METRIC = 'Video Reviewed',
+                         trip_count = n_distinct(TRIP_ID), # note: this is deliveries
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+               bind_rows(valhalla_tem %>% 
+                           filter(VIDEO_REVIEW == 'Y') %>% 
+                           group_by(.) %>% 
+                           summarise(FMP = 'All Areas',
+                                     TEM_METRIC = 'Video Reviewed',
+                                     trip_count = n_distinct(TRIP_ID), # note: this is deliveries
+                                     weight = round(sum(catch_table_weight),0), .groups = 'drop'))) %>% 
+   # TEM total catch:
+   bind_rows(valhalla_tem %>% 
+               group_by (FMP) %>% 
+               summarise(TEM_METRIC = 'Total Catch',
+                         trip_count = n_distinct(TRIP_ID), # note: this is deliveries
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+               bind_rows(valhalla_tem %>% 
+                           group_by(.) %>% 
+                           summarise(FMP = 'All Areas',
+                                     TEM_METRIC = 'Total Catch',
+                                     trip_count = n_distinct(TRIP_ID),  # note: this is deliveries
+                                     weight = round(sum(catch_table_weight),0), .groups = 'drop'))) %>% 
+   # Add area totals to row so percentages can be calculated:
+   full_join((valhalla_tem %>% 
+                group_by (FMP) %>% 
+                summarise(total_trips = n_distinct(TRIP_ID),  # note: this is deliveries
+                          total_weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+                bind_rows(valhalla_tem %>% 
+                            group_by(.) %>% 
+                            summarise(FMP = 'All Areas',
+                                      total_trips = n_distinct(TRIP_ID),  # note: this is deliveries
+                                      total_weight = round(sum(catch_table_weight),0), .groups = 'drop'))), by = "FMP") %>% 
+   # Calculate percentages:
+   mutate(WT_PCT = (weight/total_weight)*100,
+          TRIP_PCT = (trip_count/total_trips)*100) %>%  # note: this is deliveries
+   # Convert from long format to wide format:
+   pivot_wider(id_cols = TEM_METRIC, names_from = FMP, values_from = c(weight, WT_PCT, trip_count, TRIP_PCT))  %>% 
+   select(TEM_METRIC, trip_count_GOA, TRIP_PCT_GOA, weight_GOA, WT_PCT_GOA, 
+          trip_count_BSAI, TRIP_PCT_BSAI, weight_BSAI, WT_PCT_BSAI, 
+          "trip_count_All Areas", "TRIP_PCT_All Areas", "weight_All Areas", "WT_PCT_All Areas")
+ 
+
+ 
+ ### Do something similar for Fixed Gear EM, full coverage, and partial covege?
+ work_data2 <- revised_work_data %>% 
+   # refine to groundfish (which includes directed halibut) OR psc halibut:
+   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+   # refine to Fixed Gear EM, partial coverage, full coverage:
+   filter(!STRATA %in% c('EM_TRW_BSAI', 'EM_TRW_GOA')) %>% 
+   mutate(STRATA_LABEL = ifelse(STRATA %in% c('EM_FIXED_BSAI', 'EM_FIXED_GOA'), 'Fixed Gear EM',
+                                ifelse(STRATA %in% c('OB_FIXED_GOA', 'OB_FIXED_BSAI', 'OB_TRW_GOA', 'OB_TRW_BSAI'), 'Observer Trip Selection',
+                                       ifelse(STRATA == 'ZERO', 'No Selection', 'Full Coverage')))) 
+ 
+ 
+ # Generate a summary for the non-Trawl EM trips and catch:
+ other_summary <- work_data2 %>% 
+   #Fixed Gear EM Video review:
+   filter(OBSERVED_FLAG == 'Y' & STRATA_LABEL == 'Fixed Gear EM') %>% 
+   group_by (STRATA_LABEL, FMP) %>% 
+   summarise(TEM_METRIC = 'Video Reviewed',
+             trip_count = n_distinct(TRIP_ID),
+             weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+   bind_rows(work_data2 %>%
+               filter(OBSERVED_FLAG == 'Y'& STRATA_LABEL == 'Fixed Gear EM') %>% 
+               group_by(STRATA_LABEL) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'Video Reviewed',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   # Fixed Gear EM total catch:
+   bind_rows(work_data2 %>% 
+               filter(STRATA_LABEL == 'Fixed Gear EM') %>% 
+               group_by (STRATA_LABEL, FMP) %>% 
+               summarise(TEM_METRIC = 'Total Catch',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%
+   bind_rows(work_data2 %>% 
+               filter(STRATA_LABEL == 'Fixed Gear EM') %>%
+               group_by(STRATA_LABEL) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'Total Catch',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   
+   # At-Sea Observers:
+   bind_rows(work_data2 %>% 
+               filter(OBSERVED_FLAG == 'Y' & STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>% 
+               group_by (STRATA_LABEL, FMP) %>% 
+               summarise(TEM_METRIC = 'At-Sea Observer',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   bind_rows(work_data2 %>%
+               filter(OBSERVED_FLAG == 'Y'& STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>% 
+               group_by(STRATA_LABEL) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'At-Sea Observer',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   # Full and Partial total catch:
+   bind_rows(work_data2 %>% 
+               filter(STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>% 
+               group_by (STRATA_LABEL, FMP) %>% 
+               summarise(TEM_METRIC = 'Total Catch',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%
+   bind_rows(work_data2 %>% 
+               filter(STRATA_LABEL %in% c('Observer Trip Selection', 'Full Coverage')) %>%
+               group_by(STRATA_LABEL) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'Total Catch',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%  
+   
+   # No Selection:
+   bind_rows(work_data2 %>% 
+               filter(OBSERVED_FLAG == 'Y' & STRATA_LABEL == 'No Selection') %>% 
+               group_by (STRATA_LABEL, FMP) %>% 
+               summarise(TEM_METRIC = 'No Monitoring',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   bind_rows(work_data2 %>%
+               filter(OBSERVED_FLAG == 'Y'& STRATA_LABEL == 'No Selection') %>% 
+               group_by(STRATA_LABEL) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'No Monitoring',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>% 
+   # No Selection total catch:
+   bind_rows(work_data2 %>% 
+               filter(STRATA_LABEL == 'No Selection') %>% 
+               group_by (STRATA_LABEL, FMP) %>% 
+               summarise(TEM_METRIC = 'No Monitoring',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%
+   bind_rows(work_data2 %>% 
+               filter(STRATA_LABEL == 'No Selection') %>%
+               group_by(STRATA_LABEL) %>% 
+               summarise(FMP = 'All Areas',
+                         TEM_METRIC = 'No Monitoring',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop')) %>%  
+   
+   # Add area totals to row so percentages can be calculated:
+   full_join((work_data2 %>% 
+                group_by (STRATA_LABEL, FMP) %>% 
+                summarise(total_trips = n_distinct(TRIP_ID),
+                          total_weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+                bind_rows(work_data2 %>% 
+                            group_by(STRATA_LABEL) %>% 
+                            summarise(FMP = 'All Areas',
+                                      total_trips = n_distinct(TRIP_ID),
+                                      total_weight = round(sum(catch_table_weight),0), .groups = 'drop'))), 
+             by = c("FMP", "STRATA_LABEL")) %>% 
+   # Calculate percentages:
+   mutate(WT_PCT = (weight/total_weight)*100,
+          TRIP_PCT = (trip_count/total_trips)*100) %>%
+   # Convert from long format to wide format:
+   pivot_wider(id_cols = c(STRATA_LABEL, TEM_METRIC), 
+               names_from = FMP, values_from = c(weight, WT_PCT, trip_count, TRIP_PCT))  %>% 
+   select(STRATA_LABEL, TEM_METRIC, trip_count_GOA, TRIP_PCT_GOA, weight_GOA, WT_PCT_GOA, 
+          trip_count_BSAI, TRIP_PCT_BSAI, weight_BSAI, WT_PCT_BSAI, 
+          "trip_count_All Areas", "TRIP_PCT_All Areas", "weight_All Areas", "WT_PCT_All Areas") %>% 
+   # Sort
+   arrange(STRATA_LABEL)
+ 
+ 
+ 
+ new_table_totals <- revised_work_data %>% 
+   # refine to groundfish (which includes directed halibut) OR psc halibut:
+   filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+   # summarise total trips and total catch:
+   group_by(FMP) %>% 
+   summarize(trip_count = n_distinct(TRIP_ID),
+             weight = round(sum(catch_table_weight),0), .groups = 'drop') %>% 
+   bind_rows(revised_work_data %>% 
+               # refine to groundfish (which includes directed halibut) OR psc halibut:
+               filter(GROUNDFISH_FLAG == 'Y' | (PSC_FLAG == 'Y' & SPECIES_GROUP_CODE == 'HLBT')) %>% 
+               # summarise total trips and total catch:
+               group_by(.) %>% 
+               summarize(FMP = 'All Areas',
+                         trip_count = n_distinct(TRIP_ID),
+                         weight = round(sum(catch_table_weight),0), .groups = 'drop'))
+ 
+ 
+```
+
+
+```{r create_table, echo=FALSE}
+ 
+ 
+ # Create a TEM table for the Fee Summaries in All Areas:
+ flextable(tem_summary) %>% 
+   # Add Metric/bottom header row:
+   add_header_row(values = c("", "Delivery", "Catch", "Delivery", "Catch", "Delivery", "Catch"),
+                  colwidths = c(1,2,2,2,2,2,2)) %>% 
+   align(i = 2, align = "center", part = "header") %>% 
+   # Add Area/top header row:
+   add_header_row(values = c("", "GOA", "BSAI", "All Areas"),
+                  colwidths = c(1,4,4,4)) %>% 
+   align(i = 1, align = "center", part = "header") %>% 
+   # Adjust metric column header labels where necessary:
+   set_header_labels(TEM_METRIC = "Monitoring",
+                     trip_count_GOA = "n",
+                     TRIP_PCT_GOA = "%",
+                     weight_GOA = "mt",
+                     WT_PCT_GOA = "%",
+                     trip_count_BSAI = "n",
+                     TRIP_PCT_BSAI = "%",
+                     weight_BSAI = "mt",
+                     WT_PCT_BSAI = "%",
+                     "trip_count_All Areas" = "n",
+                     "TRIP_PCT_All Areas" = "%",
+                     "weight_All Areas" = "mt",
+                     "WT_PCT_All Areas" = "%") %>%  
+   align(i = 3, j = c(1), align = "left", part = "header") %>% 
+   align(i = 3, j = c(2:13), align = "right", part = "header") %>% 
+   # Format the columns:
+   colformat_double(j = c(2,4,6,8,10,12), big.mark = ",", digits = 0) %>% 
+   colformat_double(j = c(3,5,7,9,11,13), big.mark = ",", digits = 1) %>%
+   # Merge the strata labels into a single cell: 
+   merge_v(j = 1, part = "body") %>% 
+   # Add dashed horizontal lines before TEM subtotal:
+   border(i = 2, part = "body", border.bottom = fp_border(style = "dashed"))
+ 
+
+
+ # Create a table for the Fee Summaries in All Areas:
+ flextable(other_summary) %>% 
+   # Add Metric/bottom header row:
+   add_header_row(values = c("","", "Trip", "Catch", "Trip", "Catch", "Trip", "Catch"),
+                  colwidths = c(1,1,2,2,2,2,2,2)) %>% 
+   align(i = 2, align = "center", part = "header") %>% 
+   # Add Area/top header row:
+   add_header_row(values = c("","", "GOA", "BSAI", "All Areas"),
+                  colwidths = c(1,1,4,4,4)) %>% 
+   align(i = 1, align = "center", part = "header") %>% 
+   # Adjust metric column header labels where necessary:
+   set_header_labels(STRATA_LABEL = "Strata",
+                     TEM_METRIC = "Monitoring",
+                     trip_count_GOA = "n",
+                     TRIP_PCT_GOA = "%",
+                     weight_GOA = "mt",
+                     WT_PCT_GOA = "%",
+                     trip_count_BSAI = "n",
+                     TRIP_PCT_BSAI = "%",
+                     weight_BSAI = "mt",
+                     WT_PCT_BSAI = "%",
+                     "trip_count_All Areas" = "n",
+                     "TRIP_PCT_All Areas" = "%",
+                     "weight_All Areas" = "mt",
+                     "WT_PCT_All Areas" = "%") %>%  
+   align(i = 3, j = c(1), align = "left", part = "header") %>% 
+   align(i = 3, j = c(2:13), align = "right", part = "header") %>% 
+   # Format the columns:
+   colformat_double(j = c(3,5,7,9,11,13), big.mark = ",", digits = 0) %>% 
+   colformat_double(j = c(4,6,8,10,12,14), big.mark = ",", digits = 1) %>%
+   # Add dashed horizontal lines before subtotal:
+   border(i = c(1,3,6), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+   border(i = c(2,4,5), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+   # Merge the strata labels into a single cell: 
+   merge_v(j = 1, part = "body") 
+
+``` 
+ 
+ 
+```{r export_data, include=FALSE} 
+ 
+ # Clean up workspace and save RData file --------------------------------------------------------------
+ 
+ 
+ # Clean up workspace (removes everything EXCEPT the objects listed) and save RData
+ rm(list= ls()[!(ls() %in% c('YEAR', 'tem_summary', 'other_summary', 'valhalla_tem'))])
+ 
+ save(YEAR, tem_summary, other_summary, valhalla_tem, 
+      file = paste0("AR_descriptive_", YEAR, "_tem_data.RData"))
+ 
+``` 
