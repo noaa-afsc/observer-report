@@ -6,7 +6,7 @@ The primary author(s) responsible for maintaining this repository are:
 * Craig H. Faunce (craig.faunce@noaa.gov)
   
 The final chapter is co-authored by these individuals and
-* Jaclyn Smith (Jaclyn.Smith@noaa.gov) of NOAA's Office of Law Enforcement.
+* Jaclyn Smith (jaclyn.Smith@noaa.gov) of NOAA's Office of Law Enforcement.
 
 ## Purpose
 
