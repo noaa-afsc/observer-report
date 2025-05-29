@@ -27,7 +27,7 @@ if(FALSE) {
   gdrive_upload("source_data/FMA_Days_Paid.rdata", data_dribble)
 }
 
-gdrive_download("source_data/FMA_Days_Paid.rdata", data_dribble)
+gdrive_download("source_data/FMA_Days_Paid.rdata", data_dribble, ver = 1)
 load("source_data/FMA_Days_Paid.rdata")
 days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
@@ -44,9 +44,9 @@ if(FALSE) gdrive_upload("source_data/final_adp_2024_results.rdata", ADP_Output_d
 if(FALSE) gdrive_upload("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
 
 # 2024 Final ADP Outputs
-gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
-gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
-gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble)
+gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble, ver = 1)
+gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble, ver = 1)
+gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble, ver = 1)
 load("source_data/final_adp_2024_results.rdata")
 load("source_data/final_adp_tables_and_figures_2024.rdata")  # table_b3_flex contains predicted days by stratum
 load("source_data/costs_boot_lst_2024AR.rdata")              # simulated observer days and costs
@@ -84,7 +84,7 @@ bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOT
 # * Valhalla ----
 
 # Create a copy of Valhalla named 'work.data' that will be manipulated
-gdrive_download("source_data/valhalla.Rdata", data_dribble)
+gdrive_download("source_data/valhalla.Rdata", data_dribble, ver = 5)
 load("source_data/valhalla.Rdata")
 work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
 rm(valhalla)
@@ -562,7 +562,7 @@ work.data <- work.data %>%
 # Initial upload to Shared Gdrive
 if(FALSE) gdrive_upload("source_data/ak_shp.rdata", data_dribble)
 ## Load land and NMFS stat area shapefiles 
-gdrive_download("source_data/ak_shp.rdata", data_dribble)
+gdrive_download("source_data/ak_shp.rdata", data_dribble, ver = 1)
 (load(("source_data/ak_shp.rdata")))
 
 # Make FMP-specific polygons
