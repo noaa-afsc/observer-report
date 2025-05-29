@@ -28,7 +28,7 @@ if(FALSE) {
 }
 
 gdrive_download("source_data/FMA_Days_Paid.rdata", data_dribble, ver = 1)
-load("source_data/FMA_Days_Paid.rdata")
+load("source_data/FMA_Days_Paid_v001.rdata")
 days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
 # * ADP outputs ----
@@ -47,9 +47,9 @@ if(FALSE) gdrive_upload("source_data/final_adp_tables_and_figures_2024.rdata", A
 gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble, ver = 1)
 gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble, ver = 1)
 gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble, ver = 1)
-load("source_data/final_adp_2024_results.rdata")
-load("source_data/final_adp_tables_and_figures_2024.rdata")  # table_b3_flex contains predicted days by stratum
-load("source_data/costs_boot_lst_2024AR.rdata")              # simulated observer days and costs
+load("source_data/final_adp_2024_results_v001.rdata")
+load("source_data/final_adp_tables_and_figures_2024_v001.rdata")  # table_b3_flex contains predicted days by stratum
+load("source_data/costs_boot_lst_2024AR_v001.rdata")              # simulated observer days and costs
 
 ## Predicted monitored days by stratum
 predicted <- table_b3_flex$body$dataset[15:29,] %>%
@@ -85,7 +85,7 @@ bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOT
 
 # Create a copy of Valhalla named 'work.data' that will be manipulated
 gdrive_download("source_data/valhalla.Rdata", data_dribble, ver = 5)
-load("source_data/valhalla.Rdata")
+load("source_data/valhalla_v005.Rdata")
 work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
 rm(valhalla)
 
@@ -563,7 +563,7 @@ work.data <- work.data %>%
 if(FALSE) gdrive_upload("source_data/ak_shp.rdata", data_dribble)
 ## Load land and NMFS stat area shapefiles 
 gdrive_download("source_data/ak_shp.rdata", data_dribble, ver = 1)
-(load(("source_data/ak_shp.rdata")))
+(load(("source_data/ak_shp_v001.rdata")))
 
 # Make FMP-specific polygons
 #' \TODO Maybe add these to 1_AR_data.R  This takes longer than it did before.

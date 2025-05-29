@@ -32,7 +32,7 @@ gdrive_download("2_AR_data.Rdata", gdrive_set_dribble("Projects/AnnRpt-Deploymen
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #' Load data and set parameters
-load("2_AR_data.RData")
+load("2_AR_data_v025.RData")
 
 # Avoid showing code
 knitr::opts_chunk$set(echo = FALSE)
@@ -391,6 +391,8 @@ cpd.budget <- OB_DOLLARS.BUDGET /  OB_DAYS.BUDGET
 cpd.actual <- OB_DOLLARS.ACTUAL$Total.Dollars /  OB_DAYS.ACTUAL
 # PERC DIFF - 
 cpd.perc <- round((cpd.actual - cpd.budget) / cpd.budget * 100, 1)
+
+em_days <- formatC(round(trip.budget.emfg_total$pred_days), big.mark = ",")
 
 ```
 
