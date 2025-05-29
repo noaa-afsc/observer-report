@@ -1,10 +1,14 @@
 # Enforcement Chapter - North Pacific Fishery Monitoring Program
+## Collaborators
+The primary author(s) responsible for maintaining this repository are:
+* Craig H. Faunce (craig.faunce@noaa.gov)
+* Andy Kingham (andy.kingham@noaa.gov)
 
-# Purpose
+## Purpose
 
 The purpose of this chapter is to inform the public through the Council process of the potential violations with maritime law that have been reported by fishery observers.
 
-# Organization
+## Organization
 
 This repository is organized into two folders that are pretty self-explanatory
 
@@ -12,7 +16,7 @@ This repository is organized into two folders that are pretty self-explanatory
 -   charts
 -   tables
 
-## Scripts
+### Scripts
 
 Five main scripts are used
 
@@ -34,6 +38,6 @@ Outputs currently exclude confidential reporting where less than three observers
 
 For details on how to connect to the AFSC database using the `eval(parse())` method, see [this page](https://github.com/Alaska-Fisheries-Monitoring-Analytics/AnnRpt-Deployment-Chapter/blob/master/database_connection.md).
 
-# Disclaimer
+## Disclaimer
 
 This repository is a scientific product and is not official communication of the National Oceanic and Atmospheric Administration, or the United States Department of Commerce. All NOAA GitHub project content is provided on an "as is" basis and the user assumes responsibility for its use. Any claims against the Department of Commerce or Department of Commerce bureaus stemming from the use of this GitHub project will be governed by all applicable Federal law. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recommendation or favoring by the Department of Commerce. The Department of Commerce seal and logo, or the seal and logo of a DOC bureau, shall not be used in any manner to imply endorsement of any commercial product or activity by DOC or the United States Government.
