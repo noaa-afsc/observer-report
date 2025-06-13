@@ -27,8 +27,8 @@ if(FALSE) {
   gdrive_upload("source_data/FMA_Days_Paid.rdata", data_dribble)
 }
 
-gdrive_download("source_data/FMA_Days_Paid.rdata", data_dribble)
-load("source_data/FMA_Days_Paid.rdata")
+gdrive_download("source_data/FMA_Days_Paid.rdata", data_dribble, ver = 1)
+load("source_data/FMA_Days_Paid_v001.rdata")
 days_paid <- filter(FMA_Days_Paid, Calendar == year)
 
 # * ADP outputs ----
@@ -44,12 +44,12 @@ if(FALSE) gdrive_upload("source_data/final_adp_2024_results.rdata", ADP_Output_d
 if(FALSE) gdrive_upload("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
 
 # 2024 Final ADP Outputs
-gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble)
-gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble)
-gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble)
-load("source_data/final_adp_2024_results.rdata")
-load("source_data/final_adp_tables_and_figures_2024.rdata")  # table_b3_flex contains predicted days by stratum
-load("source_data/costs_boot_lst_2024AR.rdata")              # simulated observer days and costs
+gdrive_download("source_data/final_adp_2024_results.rdata", ADP_Output_dribble, ver = 1)
+gdrive_download("source_data/final_adp_tables_and_figures_2024.rdata", ADP_Tables_dribble, ver = 1)
+gdrive_download("source_data/costs_boot_lst_2024AR.rdata", ADP_Tables_dribble, ver = 1)
+load("source_data/final_adp_2024_results_v001.rdata")
+load("source_data/final_adp_tables_and_figures_2024_v001.rdata")  # table_b3_flex contains predicted days by stratum
+load("source_data/costs_boot_lst_2024AR_v001.rdata")              # simulated observer days and costs
 
 ## Predicted monitored days by stratum
 predicted <- table_b3_flex$body$dataset[15:29,] %>%
@@ -84,8 +84,8 @@ bud_tbl <- sim_costs_dt[, .(SIM_ITER, ODDS_ITER, ADP_D = OB_DAYS, ADP_C = OB_TOT
 # * Valhalla ----
 
 # Create a copy of Valhalla named 'work.data' that will be manipulated
-gdrive_download("source_data/valhalla.Rdata", data_dribble)
-load("source_data/valhalla.Rdata")
+gdrive_download("source_data/valhalla.Rdata", data_dribble, ver = 5)
+load("source_data/valhalla_v005.Rdata")
 work.data <- valhalla[, PERMIT := as.character(PERMIT)][]
 rm(valhalla)
 
@@ -158,13 +158,17 @@ td_mod0 <- model_trip_duration(work.data, use_mod = "DAYS ~ RAW", channel = chan
 
 #' Yearly totals
 mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP)]
-#' It appears some observers were assigned to non-observer strata
-mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
-
+#' Check if any observers were assigned to non-observer strata
+if(nrow(mod_dat[!(STRATA %like% "OB")])) {
+  warning("Observers were assigned to non-observed strata?")
+  mod_dat[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
+}
+  
 #' Scraping all the non-observer strata matches to their observed strata counterparts. FMA is charged for sea
 #' days regardless of the observer was supposed to monitor these trips or not.
 mod_dat_copy <- copy(mod_dat)
-mod_dat_copy[STRATA == "ZERO", STRATA := "OB FIXED GOA"]
+#' Typically observing ZERO means it's a fixed gear issue, so if you need to hard-code a fix, do it here.
+#mod_dat_copy[STRATA == "ZERO", STRATA := "OB FIXED GOA"]
 mod_dat_copy[, .(DAYS = sum(DAYS)), keyby = .(ADP, STRATA)]
 
 # Stratum-specific totals
@@ -558,8 +562,8 @@ work.data <- work.data %>%
 # Initial upload to Shared Gdrive
 if(FALSE) gdrive_upload("source_data/ak_shp.rdata", data_dribble)
 ## Load land and NMFS stat area shapefiles 
-gdrive_download("source_data/ak_shp.rdata", data_dribble)
-(load(("source_data/ak_shp.rdata")))
+gdrive_download("source_data/ak_shp.rdata", data_dribble, ver = 1)
+(load(("source_data/ak_shp_v001.rdata")))
 
 # Make FMP-specific polygons
 #' \TODO Maybe add these to 1_AR_data.R  This takes longer than it did before.
