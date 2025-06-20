@@ -1,0 +1,284 @@
+---
+title: "Permutation Tests"
+date: "`r Sys.Date()`"
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, set.seed(49), include=FALSE, warning=FALSE, message=FALSE}
+# Get data
+load("2_AR_data.Rdata")
+
+# Get packages and functions
+source("3_helper.R")
+
+# Avoid dplyr summarise warnings
+options(dplyr.summarise.inform = FALSE)
+
+# Avoid showing code
+knitr::opts_chunk$set(echo = FALSE)
+
+# Cache chunk options
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r perm_results_2022, message=FALSE, warning=FALSE, include=FALSE}
+# Filter the data you want
+dat <- 
+  work.data %>% 
+  filter(ADP == 2022 & STRATA %in% partial$STRATA)
+
+# Identify the field to permute by
+YN_var = "OBSERVED_FLAG"
+
+# Identify the fields to group by (don't include TRIP_ID or the YN_var)
+gp_vec = c("STRATA")
+
+# Detatch the mosaic package
+detach(package:mosaic)
+
+# Run permutation tests
+perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
+
+# Decompose the output
+assign(paste(YN_var, "YN_perm", sep = "."), data.frame(perm[1]))
+assign(paste(YN_var, "summary", sep = "."), data.frame(perm[3]))
+assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FALSE))
+assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
+
+names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), variable)
+perm_sum <- filter(OBSERVED_FLAG.summary, STRATA != "EM TRW EFP")
+
+# See helper.r documentation on interpret_trip_metrics() 
+perm_sum <- interpret_trip_metrics(dat = perm_sum)
+
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% mutate(Metric = replace(Metric, Metric == "Observed difference", "OD"))  # Shorten metric
+OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>% 
+  merge(OBSERVED_FLAG.results, by = "Strata") %>%           # Merge in trip counts of observed/unobserved
+  mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
+         Unobserved = formatC(Unobserved, big.mark = ","))
+
+# REFORMAT RESULTS TABLE:
+OBSERVED_FLAG.results <- rbind(
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("OD", "OD (%)")) %>% 
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ format(.x, nsmall = 3, digits = 3)))
+  ,
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("p-value")) %>% 
+    # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
+                                                                   format(.x, nsmall = 3, digits = 3))))
+) %>% arrange(match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), Metric)
+
+# Replace "0" p-values; extra space in character is an artifact of the previous format()
+
+OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
+OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
+OBSERVED_FLAG.results_2022 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
+```
+
+# Table 2022
+
+```{r perm_table_2022}
+OBSERVED_FLAG.results_2022$Strata <- cell_spec(OBSERVED_FLAG.results_2022$Strata, italic = TRUE)
+
+kbl(OBSERVED_FLAG.results_2022, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r", times = 6)))  %>% 
+  kable_paper() %>%
+  collapse_rows(columns = 1:3, valign = "top")
+```
+
+```{r perm_text_2022, message=FALSE, warning=FALSE, include=FALSE}
+# This for loop creates the sections of markdown text for the stratum-specific results of the permutation test (H0: Observed trips = Unobserved trips).
+
+# Get rid of rows with NAs
+perm_sum <- na.omit(perm_sum)
+out_2022 <- NULL # create empty object
+
+for (i in as.character(unique(perm_sum$STRATA))) {
+  # Extract 'significant' metrics *with* Bonferroni adjustment
+  signif <- perm_sum %>% filter(STRATA == i & p < (0.05 / 6)) 
+  # The results section language changes depending on how many metrics are signficant. See helpfile for documentation of wordlist():
+  results_text <- ifelse(
+    length(signif$p) == 0,
+    # If none of the metrics are significant:
+    paste0("* Of the six metrics compared in the *", i, "* stratum, there were no metrics with low *p*-values."),
+    # If some are significant, say how many and list the results:
+    paste0( "* Of the six metrics compared in the *", i, "* stratum, ", numbers2words(length(signif$p)), " had low *p*-values. Observed trips in this stratum ", wordlist(signif$interpretation), " than unobserved trips."))
+  # use knit_expand to create a template for each paragraph. In-line r chunks that are usually defined with `r ...` are instead defined with {{...}}. The '\n' is a line break, giving the paragraph proper formatting. 
+  out_2022 <- c(out_2022, knit_expand(text = c('{{results_text}}', '\n\n')))
+}
+
+rm(perm_sum)
+```
+
+`r paste(knit(text = out_2022), collapse = '\n')`
+
+# Figure 2022
+
+```{r perm_plot_2022, fig.height=11, fig.width=8, message=FALSE, warning=FALSE}
+# Plot results
+OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA = as.character(STRATA)) 
+OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA = as.character(STRATA)) %>% 
+  # Apply Bonferroni adjustment to alpha value and format significant p-values  
+  mutate(p = ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0(formatC(p,digits = 3, format = "f"), "*"), formatC(p, digits = 3, format = "f"))) %>%
+  mutate(p = ifelse(p == "0.000*", 
+                    paste0("italic(p) < '0.001*'"), 
+                    ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0("italic(p) == '", p, "*'"), paste0("italic(p) == '", p, "'"))))
+
+# Filter out EM TRW EFP stratum
+OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
+OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
+
+# Generate permutation plot 
+Obs.perm.plot.2022 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
+  geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
+  geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
+  geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
+  geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
+  facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
+             # Make number of cols in facet_wrap = to number of strata
+             ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
+  geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels = c(TRUE, FALSE))), 
+             x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
+  scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
+  fig.theme +
+  xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
+  ylab("Density of outcomes\n") + 
+  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
+
+Obs.perm.plot.2022
+
+ggsave("figures/permutation_2022.png", width = 8, height = 11, units = "in")
+```
+
+```{r perm_results_2023, message=FALSE, warning=FALSE, include=FALSE}
+# Filter the data you want
+dat <- 
+  work.data %>% 
+  filter(ADP == 2023 & STRATA %in% partial$STRATA)
+
+# Identify the field to permute by
+YN_var = "OBSERVED_FLAG"
+
+# Identify the fields to group by (don't include TRIP_ID or the YN_var)
+gp_vec = c("STRATA")
+
+# Run permutation tests
+perm <- permutation.fxn(dat, YN_var, gp_vec, 1000)
+
+# Decompose the output
+assign(paste(YN_var, "YN_perm", sep = "."), data.frame(perm[1]))
+assign(paste(YN_var, "summary", sep = "."), data.frame(perm[3]))
+assign(paste(YN_var, "results", sep = "."), data.frame(perm[4], check.names = FALSE))
+assign(paste(YN_var, "Ntable", sep = "."), data.frame(perm[5]))
+
+names(OBSERVED_FLAG.Ntable) <- c("Strata", "Observed", "Unobserved")
+OBSERVED_FLAG.Ntable <- arrange(OBSERVED_FLAG.Ntable, match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")))
+OBSERVED_FLAG.summary <- arrange(OBSERVED_FLAG.summary, match(STRATA, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), variable)
+perm_sum <- filter(OBSERVED_FLAG.summary, STRATA != "EM TRW EFP")
+
+# See helper.r documentation on interpret_trip_metrics() 
+perm_sum <- interpret_trip_metrics(dat = perm_sum)
+
+OBSERVED_FLAG.results <- OBSERVED_FLAG.results %>% mutate(Metric = replace(Metric, Metric == "Observed difference", "OD"))  # Shorten metric
+OBSERVED_FLAG.results <- OBSERVED_FLAG.Ntable %>% 
+  merge(OBSERVED_FLAG.results, by = "Strata") %>%           # Merge in trip counts of observed/unobserved
+  mutate(Observed = formatC(Observed, big.mark = ","),      # Format trip counts
+         Unobserved = formatC(Unobserved, big.mark = ","))
+
+# REFORMAT RESULTS TABLE:
+OBSERVED_FLAG.results <- rbind(
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("OD", "OD (%)")) %>% 
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ format(.x, nsmall = 3, digits = 3)))
+  ,
+  OBSERVED_FLAG.results %>% 
+    filter(Metric %in% c("p-value")) %>% 
+    # Test against Bonferroni-adjusted alpha (0.05/ number of metrics)
+    mutate(across(unique(OBSERVED_FLAG.YN_perm$variable), ~ ifelse(as.numeric(.x) < 0.05/length(unique(OBSERVED_FLAG.YN_perm$variable)), paste0(format(.x, nsmall = 3, digits = 3), "*"), 
+                                                                   format(.x, nsmall = 3, digits = 3))))
+) %>% arrange(match(Strata, c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW", "EM TRW EFP")), Metric)
+
+# Replace "0" p-values; extra space in character is an artifact of the previous format()
+
+OBSERVED_FLAG.results[OBSERVED_FLAG.results == "0.000*"] <- "< 0.001*"
+OBSERVED_FLAG.results[OBSERVED_FLAG.results$Metric == "p-value",]$Metric <- "*p*-value"
+OBSERVED_FLAG.results_2023 <- OBSERVED_FLAG.results %>% filter(Strata != "EM TRW EFP")
+```
+
+# Table 2023
+
+```{r perm_table_2023}
+OBSERVED_FLAG.results_2023$Strata <- cell_spec(OBSERVED_FLAG.results_2023$Strata, italic = TRUE)
+
+kbl(OBSERVED_FLAG.results_2023, escape = FALSE, align = c('l', 'r', 'r', 'l', rep("r", times = 6)))  %>% 
+  kable_paper() %>%
+  collapse_rows(columns = 1:3, valign = "top")
+```
+
+```{r perm_text_2023, message=FALSE, warning=FALSE, include=FALSE}
+# This for loop creates the sections of markdown text for the stratum-specific results of the permutation test (H0: Observed trips = Unobserved trips).
+
+# Get rid of rows with NAs
+perm_sum <- na.omit(perm_sum)
+out_2023 <- NULL # create empty object
+
+for (i in as.character(unique(perm_sum$STRATA))) {
+  # Extract 'significant' metrics *with* Bonferroni adjustment
+  signif <- perm_sum %>% filter(STRATA == i & p < (0.05 / 6)) 
+  # The results section language changes depending on how many metrics are signficant. See helpfile for documentation of wordlist():
+  results_text <- ifelse(
+    length(signif$p) == 0,
+    # If none of the metrics are significant:
+    paste0("* Of the six metrics compared in the *", i, "* stratum, there were no metrics with low *p*-values."),
+    # If some are significant, say how many and list the results:
+    paste0("* Of the six metrics compared in the *", i, "* stratum, ", numbers2words(length(signif$p)), " had low *p*-values. Observed trips in this stratum ", wordlist(signif$interpretation), " than unobserved trips."))
+  # use knit_expand to create a template for each paragraph. In-line r chunks that are usually defined with `r ...` are instead defined with {{...}}. The '\n' is a line break, giving the paragraph proper formatting. 
+  out_2023 <- c(out_2023, knit_expand(text = c('{{results_text}}', '\n\n')))
+}
+
+rm(perm_sum)
+```
+
+`r paste(knit(text = out_2023), collapse = '\n')`
+
+# Figure 2023
+
+```{r perm_plot_2023, fig.height=11, fig.width=8, message=FALSE, warning=FALSE}
+# Plot results
+OBSERVED_FLAG.YN_perm_plot <- ungroup(OBSERVED_FLAG.YN_perm) %>% mutate(STRATA = as.character(STRATA)) 
+OBSERVED_FLAG.summary_plot <- ungroup(OBSERVED_FLAG.summary) %>% mutate(STRATA = as.character(STRATA)) %>% 
+  # Apply Bonferroni adjustment to alpha value and format significant p-values  
+  mutate(p = ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0(formatC(p,digits = 3, format = "f"), "*"), formatC(p, digits = 3, format = "f"))) %>%
+  mutate(p = ifelse(p == "0.000*", 
+                    paste0("italic(p) < '0.001*'"), 
+                    ifelse(p < (0.05 / length(unique(OBSERVED_FLAG.summary$variable))), paste0("italic(p) == '", p, "*'"), paste0("italic(p) == '", p, "'"))))
+
+# Filter out EM TRW EFP stratum
+OBSERVED_FLAG.YN_perm_plot <- OBSERVED_FLAG.YN_perm_plot %>% filter(STRATA != "EM TRW EFP")
+OBSERVED_FLAG.summary_plot <- OBSERVED_FLAG.summary_plot %>% filter(STRATA != "EM TRW EFP")
+
+# Generate permutation plot 
+Obs.perm.plot.2023 <- ggplot(OBSERVED_FLAG.YN_perm_plot, aes(x = perm_result_pct)) +
+  geom_histogram(aes(y = ..density..), col = "white", fill = "gray", bins = 30) +
+  geom_density(fill = "gray", alpha = 0.5, adjust = 3) +
+  geom_vline(aes(xintercept = 0), col = "black", lty = 3, linewidth = 1) +
+  geom_vline(aes(xintercept = obs.diff_pct), col = "red") +
+  facet_wrap(factor(STRATA, levels = c("OB HAL", "EM HAL", "OB POT", "EM POT", "OB TRW")) ~ variable, scales = "free", 
+             # Make number of cols in facet_wrap = to number of strata
+             ncol = length(unique(OBSERVED_FLAG.YN_perm_plot$STRATA)), dir = "v") +
+  geom_label(data = OBSERVED_FLAG.summary_plot, aes(label = paste(p), fill = factor(p %like% "\\*", levels=c(TRUE, FALSE))), 
+             x = -Inf, y = Inf, hjust = -0.1, vjust = 1.2, size = 3, parse = TRUE, label.padding = unit(0.15, "lines")) +
+  scale_fill_manual(values = c("pink", "white"), guide = FALSE) + 
+  fig.theme +
+  xlab("\nDifference (%) of observed minus unobserved trips relative to the mean") +
+  ylab("Density of outcomes\n") + 
+  theme(strip.text.x = element_text(size = 8, margin = margin(0.1, 0.1, 0.1, 0.1, unit = "lines")))
+
+Obs.perm.plot.2023
+
+ggsave("figures/permutation_2023.png", width = 8, height = 11, units = "in")
+```
