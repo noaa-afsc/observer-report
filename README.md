@@ -1,17 +1,23 @@
-# Instructions for including your repository in the noaa-afsc organization
-
-This is a default template for a noaa-afsc repository. It includes a `secretScan.yml` file that helps us check for secrets when new commits are made to the repositories.
-
+# The North Pacific Observer Program (Annual) Report
 ## Collaborators
+The primary author(s) responsible for maintaining this repository are:
+* Geoff Mayhew (geoff.mayhew@noaa.gov)
+* Andy Kingham (andy.kingham@noaa.gov)
 
-If you have NMFS collaborators (i.e. have noaa.gov email) on your repository who are not members of the NMFS GitHub Enterprise Cloud account, have them complete a user request. If they are not NOAA FTEs or Affiliates, contact an administrator to help you add them to your repository or to transfer in your repository with outside collaborators. 
+With contributions from Craig Faunce, Phil Ganz (AKRO-SF), Cathy Tide (AKRO-SF) and Christian Gredzens
 
-For repositories migrated to noaa-afsc organization
-1. Update your README.md file to include the disclaimer and an open access license. See below for a description of licenses.
-2. Add a description and info on who created the content (otherwise the org managers will not know who to contact).
-3. Add tags (far right side on repo) to help users find repositories. See the other repositories for examples.
-4. Add an open LICENSE file. For government work, we are required to use an open LICENSE. If non-government FTEs were contributors and the repository does not yet have an open license on it, make sure all parties agree before applying an open source license.
-5. Add the file .github/workflows/secretScan.yml. This will check for token and keys that are accidentally committed to a repository.
+# Description
+This (Annual) Report provides information, analysis, and recommendations based on the deployment of observers and Electronic Monitoring (EM) systems by the North Pacific Observer Program (Observer Program) in the halibut and groundfish fisheries off Alaska.  The report is a collaborative effort between the Fisheries Monitoring and Analysis Division (FMA) of the AFSC and the Sustainable Fisheries Division of the Alaska Regional Office (AKRO-SF). The NMFS presents this report to the North Pacific Fishery Management Council during its October meeting.  The report is also reviewed by the Council's various advisory bodies and occasionally Science and Statistical Committee. 
+
+Specifically, this repository contains code to generate elements in report chapters.  Each chapter is organized into a separate folder.
+* Fees and Budget (costs)
+* Deployment Performance Review
+* Office of Law Enforcement Chapter
+* Descriptive Information (Total Catch and Discards and Amount of Catch Monitored)
+
+Reports are submitted by NMFS to the North Pacific Fishery Management Council during their October meeting.
+
+To see the complete list of Reports click [here](https://www.fisheries.noaa.gov/tags/north-pacific-observer-program?title=annual%20report&field_species_vocab_target_id=&sort_by=created)
 
 # Disclaimer
 
