@@ -233,46 +233,6 @@ fee_total <- fee_detail %>%
 
 ```
 
-
-# 2  FEES AND BUDGET
- 
-
-### 2.1	Budget for Partial Coverage Category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
-
-Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-2` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
-
-Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees were billed.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX.  In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]`. <!--and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed.--> Additional notices will be mailed as needed.  Processors submitting late fee payments were charged a one time administrative fee of $25 plus interest on the observer fees with each notice. 
-
-
-
-
-
-*There is additional text for Section 2-1 (provided by Jennifer F)*
-
-
-
-
-### 2.2	Summaries of Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`
-
-Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
-
-The observer fee was 1.25% of the ex-vessel value of the groundfish and halibut subject to the fee through December 31, 2020.  Beginning January 1, 2021 a fee equal to 1.65% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.[^2]  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^3]  Table 2-2, Table 2-3, and Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1` by species, gear, and area.  Table 2-5 is new with the 2023 Annual Report and also summarizes fees by area, but differentiates the type of monitoring the vessel was subject to and which selection pool the vessel was in when the fees accrued.  *ADD SOMETHING ABOUT ALL THE MONEY GOES INTO A SINGLE POOL AND ISN'T DIVVIED APART?!?!?!?*  
-
-
-
-[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at 679.55(c) ([CFR 679.55(c) Observer Fees](https://www.ecfr.gov/cgi-bin/text-idx?SID=e928699f8903a416bed34b9bcaae6903&mc=true&node=pt50.13.679&rgn=div5#se50.13.679_155)) and shown on page 2 of an informational bulletin available online at: [Observer Fee Collection](https://media.fisheries.noaa.gov/dam-migration/observerfees.pdf).
-
-[^2]:Final Rule: Fee Adjustment to 1.65% (85 FR 41424, July 10, 2020).  Available online at: [85 FR 41424](https://www.federalregister.gov/documents/2020/07/10/2020-13775/fisheries-of-the-exclusive-economic-zone-off-alaska-adjust-the-north-pacific-observer-program-fee)
-
-[^3]:Available online at: [`r std_price_cfr`] (`r std_price_notice_url`). 
-
-
-
-
-**INSERT SECTION PAGE BREAK HERE:**
-
-Table 2-2. -- Observer fees [^4] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for _all areas combined_.
-
 ```{r table1_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Table prep work: 
@@ -360,52 +320,6 @@ pct_labels <- data.frame(
 
 ```
 
-
-
-```{r table1, echo=FALSE}
-
-# Create a table for the Fee Summaries in All Areas:
-flextable(all_areas) %>% 
-  # Adjust column header labels where necessary:
-  set_header_labels(TABLE_GEAR = "Gear",
-                    LOA_GROUP = "Vessel Length Category",
-                    PacificCod = "Pacific Cod",
-                    AllOtherSpecies = "All Other Species",
-                    TOTAL = "Total All Species")  %>% 
-  # Format the currency columns:
-  colformat_double(j = c(3,4,5,6,7,8), big.mark = ",", prefix = "$", digits = 0) %>% 
-  # Bold the headers, gear labels, and all gear totals:
-  bold(part = "header") %>% 
-  bold(j = 1) %>% 
-  bold(i = 14) %>%  #THIS SHOULD BE THE LAST, TOTAL ALL GEAR ROW number 
-  # Merge the gear labels into a single cell: 
-  merge_v(j = 1, part = "body") %>% 
-  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=14, j=c(1:2)) %>%     #THIS SHOULD BE THE LAST, TOTAL ALL GEAR ROW number 
-  # Add dashed horizontal lines before gear subtotals:
-  border(i = c(3,6,10,12), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
-  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  border(i = c(4,7,11,13), part = "body", border.bottom = fp_border(style = "solid")) %>% 
-  fix_border_issues(part = "body") %>% 
-  # Add percentages as a footer hack:
-  set_footer_df(mapping = pct_labels, key = "col_keys") %>% 
-  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
-  bold(part = "footer") %>% 
-  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
-  merge_at(j=c(1:2), part = "footer") 
-
-
-```
-Rounding error sometimes results in slight differences in row and column totals.
-
-[^4]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payments are not included.
-
-
-**INSERT PAGE BREAK HERE:**
-
-
-Table 2-3. -- Observer fees[^5] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Gulf of Alaska_.[^6]
-
 ```{r table2_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
 # GOA Table prep work: 
@@ -489,54 +403,6 @@ goa_pct_labels <- data.frame(
 
 ```
 
-
-```{r table2, echo=FALSE}
-
-# Create a table for the Fee Summaries in GOA:
-flextable(goa) %>% 
-  # Adjust column header labels where necessary:
-  set_header_labels(TABLE_GEAR = "Gear",
-                    LOA_GROUP = "Vessel Length Category",
-                    PacificCod = "Pacific Cod",
-                    AllOtherSpecies = "All Other Species",
-                    TOTAL = "Total All Species")  %>% 
-  # Format the currency columns:
-  colformat_double(j = c(3,4,5,6,7, 8), big.mark = ",", prefix = "$", digits = 0) %>% 
-  # Bold the headers, gear labels, and all gear totals:
-  bold(part = "header") %>% 
-  bold(j = 1) %>% 
-  bold(i = 14) %>% 
-  # Merge the gear labels into a single cell: 
-  merge_v(j = 1, part = "body") %>% 
-  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=14, j=c(1:2)) %>% 
-  # Add dashed horizontal lines before gear subtotals:
-  border(i = c(3,6,10,12), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
-  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  border(i = c(4,7,11,13), part = "body", border.bottom = fp_border(style = "solid")) %>% 
-  fix_border_issues(part = "body") %>% 
-  # Add percentages as a footer hack:
-  set_footer_df(mapping = goa_pct_labels, key = "col_keys") %>% 
-  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
-  bold(part = "footer") %>% 
-  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
-  merge_at(j=c(1:2), part = "footer") 
-
-
-
-```
-Rounding error sometimes results in slight differences in row and column totals.
-
-
-[^5]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
-
-[^6]:The Gulf of Alaska includes Pacific halibut regulatory areas 2C, 3A, and 3B; and sablefish regulatory areas Western GOA, Central GOA, West Yakutat, and Southeast Outside.
-
-**INSERT PAGE BREAK HERE:**
-
-Table 2-4. -- Observer fees[^7] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the _Bering Sea/Aleutian Islands_.[^8]
-
-
 ```{r table3_prep, echo=FALSE, message=FALSE, warning=FALSE}
 
 # BSAI Table prep work: 
@@ -619,56 +485,6 @@ bsai_pct_labels <- data.frame(
   stringsAsFactors = FALSE )
 
 ```
-
-
-```{r table3, echo=FALSE}
-
-# Create a table for the Fee Summaries in BSAI:
-flextable(bsai) %>% 
-  # Adjust column header labels where necessary:
-  set_header_labels(TABLE_GEAR = "Gear",
-                    LOA_GROUP = "Vessel Length Category",
-                    PacificCod = "Pacific Cod",
-                    AllOtherSpecies = "All Other Species",
-                    TOTAL = "Total All Species")  %>% 
-  # Format the currency columns:
-  colformat_double(j = c(3,4,5,6,7,8), big.mark = ",", prefix = "$", digits = 0) %>% 
-  # Bold the headers, gear labels, and all gear totals:
-  bold(part = "header") %>% 
-  bold(j = 1) %>% 
-  bold(i = 11) %>% 
-  # Merge the gear labels into a single cell: 
-  merge_v(j = 1, part = "body") %>% 
-  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
-  merge_at(i=11, j=c(1:2)) %>% 
-  # Add dashed horizontal lines before gear subtotals:
-  #border(i = c(3,5,9,11), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
-  border(i = c(3,7,9), part = "body", border.bottom = fp_border(style = "dashed")) %>%     # no jig on 2021
-  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
-  #border(i = c(4,6,10,12), part = "body", border.bottom = fp_border(style = "solid")) %>% 
-  border(i = c(4,8,10,11), part = "body", border.bottom = fp_border(style = "solid")) %>%   # no jig on 2021
-  fix_border_issues(part = "body") %>% 
-  # Add percentages as a footer hack:
-  set_footer_df(mapping = bsai_pct_labels, key = "col_keys") %>% 
-  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
-  bold(part = "footer") %>% 
-  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
-  merge_at(j=c(1:2), part = "footer")
-
-
-
-```
-Rounding error sometimes results in slight differences in row and column totals.
-
-
-[^7]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
-
-[^8]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
-
-
-
-
-
 
 
 
@@ -801,11 +617,189 @@ pool_summary <- working_strata %>%
   # Format tweak for subtotals:
   mutate(FEE_STRATA = ifelse(FEE_STRATA == 'All Strata', SELECTION_POOL, FEE_STRATA)) %>%
   select(-SELECTION_POOL)
-           
+         
+
+```
+
+
+
+# 2  FEES AND BUDGET
+ 
+
+### 2.1	Budget for Partial Coverage Category in `r as.numeric(format(Sys.Date(), "%Y"))-1`
+
+Section 313(d) of the Magnuson-Stevens Act authorizes the creation of the North Pacific Fishery Observer Fund ("Observer Fund") within the U.S. Treasury. This was the `r toOrdinal((as.numeric(format(Sys.Date(), "%Y")))-2013,language="English",convert_to = "ordinal_number")` year that fees were collected from the partial coverage fleet.  The following section provides information on the amount of fees that accrued on landings made in `r as.numeric(format(Sys.Date(), "%Y"))-1` that are anticipated to be collected in `r as.numeric(format(Sys.Date(), "%Y"))`, as well as the amount of fees collected in `r as.numeric(format(Sys.Date(), "%Y"))-2` that were obligated to the partial coverage contract to pay for sea days in `r as.numeric(format(Sys.Date(), "%Y"))-1`.   
+
+Fee billing statements for `r as.numeric(format(Sys.Date(), "%Y"))-1` were mailed to `r mailing_date$INVOICE_COUNT` processors and registered buyers in `r mailing_date$INVOICE_MONTH` `r as.numeric(format(Sys.Date(), "%Y"))`. <!-- All but `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` bills were paid in full by February 15. -->  A total of `r paste0('$',formatC(fee_total$FEE_TOTAL, format="d", big.mark=','))` in observer fees were billed.  At the time of this publication, XXX processors had not yet paid observer fees totaling XX,XXX.  In order to collect delinquent fees, `r notice_date[notice_date$ITEM=='30', "NOTICE_COUNT"]` 30-day notices were mailed in `r notice_date[notice_date$ITEM=='30', "NOTICE_MONTH"]`. <!--and `r notice_date[notice_date$ITEM=='60', "NOTICE_COUNT"]` 60-day notices were mailed in `r notice_date[notice_date$ITEM=='60', "NOTICE_MONTH"]` `r as.numeric(format(Sys.Date(), "%Y"))`.  90-Day notices will be mailed as needed.--> Additional notices will be mailed as needed.  Processors submitting late fee payments were charged a one time administrative fee of $25 plus interest on the observer fees with each notice. 
+
+
+
+
+
+*There is additional text for Section 2-1 (provided by Lisa Thompson with FMA)*
+
+
+
+
+### 2.2	Summaries of Fees Collected from `r as.numeric(format(Sys.Date(), "%Y"))-1`
+
+Observer coverage for the partial coverage category is funded through a system of fees based on the ex-vessel value of groundfish and Pacific halibut, with potential supplements from Federal appropriations. The observer fee is assessed on landings accruing against a Federal total allowable catch (TAC) for groundfish or a commercial halibut quota made by vessels that are subject to Federal regulations and not included in the full coverage category. Therefore, a fee is only assessed on landings of groundfish from vessels designated on a Federal Fisheries Permit or from vessels landing IFQ or CDQ halibut or IFQ sablefish. Within the subset of vessels subject to the observer fee, only landings accruing against the Federal TAC are included in the fee assessment.[^1]
+
+The observer fee equal to 1.65% of the ex-vessel value is assessed on the landings of groundfish and halibut subject to the fee.[^2]  Ex-vessel value is determined by multiplying the standard price for groundfish by the round weight equivalent for each species, gear, and port combination, and the standard price for halibut by the headed and gutted weight equivalent. The standard ex-vessel prices used for `r as.numeric(format(Sys.Date(), "%Y"))-1` fee assessments were published in the *Federal Register* on `r std_price_notice_date` (`r std_price_cfr`).[^3]  Table 2-2, Table 2-3, and Table 2-4 summarize the observer fees that accrued for `r as.numeric(format(Sys.Date(), "%Y"))-1`.  *INSERT SOMETHING SPECIFIC FOR THE YEAR:* Fees are $882,854 lower than the amount assessed in 2023. The decrease in fees is reflected for halibut, sablefish, and Pacific cod landings. While the drop may result from lower standard prices or lower catch, or a combination of the two, some of the decrease in the Bering Sea/Aleutian Islands is from implementation of the Pacific Cod Trawl Cooperative
+program, which is in the full coverage category and whose landings are not subject to observer fees. Table 2-5 also summarizes fees by area, but differentiates the type of monitoring the vessel was subject to and which selection pool or strata the vessel was in when the fees accrued. In
+`r as.numeric(format(Sys.Date(), "%Y"))-1`, trips with at-sea observers contributed `r paste0('$', prettyNum(pool_summary[pool_summary$FEE_STRATA == 'Observer Trip Selection',"All Areas"], prefix = "$", big.mark = ","))` (`r paste0(round(pool_summary[pool_summary$FEE_STRATA == 'Observer Trip Selection',"All Areas"]/pool_summary[pool_summary$FEE_STRATA == 'All Partial Coverage',"All Areas"]*100,1),'%')`) to the fees; those with electronic monitoring `r paste0('$', prettyNum(pool_summary[pool_summary$FEE_STRATA == 'EM Subtotal',"All Areas"], prefix = "$", big.mark = ","))` (`r paste0(round(pool_summary[pool_summary$FEE_STRATA == 'EM Subtotal',"All Areas"]/pool_summary[pool_summary$FEE_STRATA == 'All Partial Coverage',"All Areas"]*100,1),'%')`), and trips with no monitoring `r paste0('$', prettyNum(pool_summary[pool_summary$FEE_STRATA == 'No Selection',"All Areas"], prefix = "$", big.mark = ","))` (`r paste0(round(pool_summary[pool_summary$FEE_STRATA == 'No Selection',"All Areas"]/pool_summary[pool_summary$FEE_STRATA == 'All Partial Coverage',"All Areas"]*100,1),'%')`). The proportion of fees paid by trips with at-sea observers is a decrease from 2023 (67.1%) and is an increase for trips with electronic monitoring (25.7% in 2023).
+
+
+
+[^1]:A table with additional information about which landings are and are not subject to the observer fee is in NMFS regulations at 679.55(c) ([CFR 679.55(c) Observer Fees](https://www.ecfr.gov/cgi-bin/text-idx?SID=e928699f8903a416bed34b9bcaae6903&mc=true&node=pt50.13.679&rgn=div5#se50.13.679_155)) and shown on page 2 of an informational bulletin available online at: [Observer Fee Collection](https://media.fisheries.noaa.gov/dam-migration/observerfees.pdf).
+
+[^2]:Final Rule: Fee Adjustment to 1.65% (85 FR 41424, July 10, 2020).  Available online at: [85 FR 41424](https://www.federalregister.gov/documents/2020/07/10/2020-13775/fisheries-of-the-exclusive-economic-zone-off-alaska-adjust-the-north-pacific-observer-program-fee)
+
+[^3]:Available online at: [`r std_price_cfr`] (`r std_price_notice_url`). 
+
+
+
+
+**INSERT SECTION PAGE BREAK HERE:**
+
+Table 2-2. -- Observer fees [^4] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group for all areas combined.
+
+
+```{r table1, echo=FALSE}
+
+# Create a table for the Fee Summaries in All Areas:
+flextable(all_areas) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(TABLE_GEAR = "Gear",
+                    LOA_GROUP = "Vessel Length Category",
+                    PacificCod = "Pacific Cod",
+                    AllOtherSpecies = "All Other Species",
+                    TOTAL = "Total All Species")  %>% 
+  # Format the currency columns:
+  colformat_double(j = c(3,4,5,6,7,8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers, gear labels, and all gear totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 14) %>%  #THIS SHOULD BE THE LAST, TOTAL ALL GEAR ROW number 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
+  merge_at(i=14, j=c(1:2)) %>%     #THIS SHOULD BE THE LAST, TOTAL ALL GEAR ROW number 
+  # Add dashed horizontal lines before gear subtotals:
+  border(i = c(3,6,10,12), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
+  border(i = c(4,7,11,13), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  fix_border_issues(part = "body") %>% 
+  # Add percentages as a footer hack:
+  set_footer_df(mapping = pct_labels, key = "col_keys") %>% 
+  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
+  bold(part = "footer") %>% 
+  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
+  merge_at(j=c(1:2), part = "footer") 
+
+
+```
+Rounding error sometimes results in slight differences in row and column totals.
+
+[^4]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payments are not included.
+
+
+**INSERT PAGE BREAK HERE:**
+
+
+Table 2-3. -- Observer fees[^5] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the Gulf of Alaska.[^6]
+
+
+```{r table2, echo=FALSE}
+
+# Create a table for the Fee Summaries in GOA:
+flextable(goa) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(TABLE_GEAR = "Gear",
+                    LOA_GROUP = "Vessel Length Category",
+                    PacificCod = "Pacific Cod",
+                    AllOtherSpecies = "All Other Species",
+                    TOTAL = "Total All Species")  %>% 
+  # Format the currency columns:
+  colformat_double(j = c(3,4,5,6,7, 8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers, gear labels, and all gear totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 14) %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
+  merge_at(i=14, j=c(1:2)) %>% 
+  # Add dashed horizontal lines before gear subtotals:
+  border(i = c(3,6,10,12), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
+  border(i = c(4,7,11,13), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  fix_border_issues(part = "body") %>% 
+  # Add percentages as a footer hack:
+  set_footer_df(mapping = goa_pct_labels, key = "col_keys") %>% 
+  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
+  bold(part = "footer") %>% 
+  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
+  merge_at(j=c(1:2), part = "footer") 
 
 
 
 ```
+Rounding error sometimes results in slight differences in row and column totals.
+
+
+[^5]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
+
+[^6]:The Gulf of Alaska includes Pacific halibut regulatory areas 2C, 3A, and 3B; and sablefish regulatory areas Western GOA, Central GOA, West Yakutat, and Southeast Outside.
+
+**INSERT PAGE BREAK HERE:**
+
+Table 2-4. -- Observer fees[^7] in `r as.numeric(format(Sys.Date(), "%Y"))-1` by gear, vessel size category, and species or species group in the Bering Sea/Aleutian Islands.[^8]
+
+
+```{r table3, echo=FALSE}
+
+# Create a table for the Fee Summaries in BSAI:
+flextable(bsai) %>% 
+  # Adjust column header labels where necessary:
+  set_header_labels(TABLE_GEAR = "Gear",
+                    LOA_GROUP = "Vessel Length Category",
+                    PacificCod = "Pacific Cod",
+                    AllOtherSpecies = "All Other Species",
+                    TOTAL = "Total All Species")  %>% 
+  # Format the currency columns:
+  colformat_double(j = c(3,4,5,6,7,8), big.mark = ",", prefix = "$", digits = 0) %>% 
+  # Bold the headers, gear labels, and all gear totals:
+  bold(part = "header") %>% 
+  bold(j = 1) %>% 
+  bold(i = 11) %>% 
+  # Merge the gear labels into a single cell: 
+  merge_v(j = 1, part = "body") %>% 
+  # Merge 'Total All Gear' label across 2 cells (gear and vessel length category):
+  merge_at(i=11, j=c(1:2)) %>% 
+  # Add dashed horizontal lines before gear subtotals:
+  #border(i = c(3,5,9,11), part = "body", border.bottom = fp_border(style = "dashed")) %>% 
+  border(i = c(3,7,9), part = "body", border.bottom = fp_border(style = "dashed")) %>%     # no jig on 2021
+  # Add solid horizontal lines after gear subtotals and add "fix" needed because of cell merges:
+  #border(i = c(4,6,10,12), part = "body", border.bottom = fp_border(style = "solid")) %>% 
+  border(i = c(4,8,10,11), part = "body", border.bottom = fp_border(style = "solid")) %>%   # no jig on 2021
+  fix_border_issues(part = "body") %>% 
+  # Add percentages as a footer hack:
+  set_footer_df(mapping = bsai_pct_labels, key = "col_keys") %>% 
+  align(j = c(3,4,5,6,7,8), align = "right", part = "footer") %>% 
+  bold(part = "footer") %>% 
+  # Merge 'Percent by Species' label across 2 cells (gear and vessel length category):
+  merge_at(j=c(1:2), part = "footer")
+
+
+
+```
+Rounding error sometimes results in slight differences in row and column totals.
+
+
+[^7]:The unpaid portion of the observer fees are included. Administrative fees and interest charged for late fee payment are not included.
+
+[^8]:The Bering Sea/Aleutian Islands includes Pacific halibut regulatory areas 4A, 4B, 4C, and 4D; and sablefish regulatory areas Bering Sea and Aleutian Islands.
 
 
 **INSERT PAGE BREAK HERE:**
